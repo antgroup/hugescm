@@ -1,0 +1,20 @@
+# https://toml.io/en/
+name = "zeta"
+summary = "HugeSCM - A next generation cloud-based version control system"
+description = "HugeSCM - A next generation cloud-based version control system"
+package-name = "alipay-linkc-zeta"
+version = "0.12.14"
+license = "MIT"
+prefix = "/usr/local"
+packager = "江二"
+vendor = "蚂蚁集团代码平台团队"
+group = "alipay/application"
+authors = [""]
+crates = [
+    "cmd/zeta",    # zeta client
+    "cmd/zeta-mc", # zeta migrate tool
+]
+
+[[include]]
+path = "LEGAL.md"
+destination = "share/zeta"

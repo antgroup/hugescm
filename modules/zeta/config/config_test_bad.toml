@@ -1,0 +1,9 @@
+[core]
+compression-algo = "zstd"
+hash-algo = "BLAKE3"
+remote = "https://example.com/tom/mono-zeta"
+sparse-checkout = ["dev/app/client", "dev/modules/basic", 10086]
+
+[user]
+email = "zeta@example.io"
+name = "admin"

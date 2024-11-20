@@ -1,0 +1,19 @@
+listen = "127.0.0.1:21000"
+endpoint = "zeta.io"
+repositories = "/tmp/repositories"
+host_private_keys = []
+# decrypted_key = """"""
+# 
+[database]
+name = "zetadev"
+user = ""
+host = ""
+port = 2883
+passwd = ""
+
+[oss]
+endpoint = ""
+shared_endpoint = ""
+bucket = ""
+access_key_id = ""
+access_key_secret = ""

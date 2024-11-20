@@ -1,0 +1,10 @@
+[core]
+remote = "https://example.com/tom/mono-zeta"
+# https://git-scm.com/docs/sparse-index
+sparse-checkout = ["dev/app/client", "dev/modules/basic"]
+hash-algo = "BLAKE3"
+compression-algo = "zstd"
+
+[user]
+name = "admin"
+email = "zeta@example.io"

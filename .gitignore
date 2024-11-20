@@ -1,0 +1,17 @@
+bin/*
+/build/
+/dest/
+/etc/zeta.toml
+/cmd/zeta/zeta
+*.exe
+*.dll
+*.so
+*.a
+*.tar.gz
+*.zip
+/*.sh
+local/*
+.DS_Store
+utils/viewport/viewport
+/out/
+/.vscode/

@@ -1,0 +1,66 @@
+package chardet
+
+import (
+	"fmt"
+
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/encoding/korean"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/traditionalchinese"
+	"golang.org/x/text/encoding/unicode"
+)
+
+var encodings = map[string]encoding.Encoding{
+	"ISO-8859-2":   charmap.ISO8859_2,
+	"ISO-8859-3":   charmap.ISO8859_3,
+	"ISO-8859-4":   charmap.ISO8859_4,
+	"ISO-8859-5":   charmap.ISO8859_5,
+	"ISO-8859-6":   charmap.ISO8859_6,
+	"ISO-8859-7":   charmap.ISO8859_7,
+	"ISO-8859-8":   charmap.ISO8859_8,
+	"ISO-8859-8I":  charmap.ISO8859_8I,
+	"ISO-8859-10":  charmap.ISO8859_10,
+	"ISO-8859-13":  charmap.ISO8859_13,
+	"ISO-8859-14":  charmap.ISO8859_14,
+	"ISO-8859-15":  charmap.ISO8859_15,
+	"ISO-8859-16":  charmap.ISO8859_16,
+	"KOI8-R":       charmap.KOI8R,
+	"KOI8-U":       charmap.KOI8U,
+	"windows-874":  charmap.Windows874,
+	"windows-1250": charmap.Windows1250,
+	"windows-1251": charmap.Windows1251,
+	"windows-1252": charmap.Windows1252,
+	"windows-1253": charmap.Windows1253,
+	"windows-1254": charmap.Windows1254,
+	"windows-1255": charmap.Windows1255,
+	"windows-1256": charmap.Windows1256,
+	"windows-1257": charmap.Windows1257,
+	"windows-1258": charmap.Windows1258,
+	"GBK":          simplifiedchinese.GBK,
+	"GB18030":      simplifiedchinese.GB18030,
+	"Big5":         traditionalchinese.Big5,
+	"EUC-JP":       japanese.EUCJP,
+	"ISO-2022-JP":  japanese.ISO2022JP,
+	"Shift_JIS":    japanese.ShiftJIS,
+	"EUC-KR":       korean.EUCKR,
+	"UTF-16BE":     unicode.UTF16(unicode.BigEndian, unicode.UseBOM),
+	"UTF-16LE":     unicode.UTF16(unicode.LittleEndian, unicode.UseBOM),
+}
+
+// DecodeFromCharset decode input to utf8
+func DecodeFromCharset(input []byte, charset string) ([]byte, error) {
+	if enc, ok := encodings[charset]; ok {
+		return enc.NewDecoder().Bytes(input)
+	}
+	return nil, fmt.Errorf("unrecognized charset %s", charset)
+}
+
+// EncodeToCharset encode input to charset
+func EncodeToCharset(input []byte, charset string) ([]byte, error) {
+	if enc, ok := encodings[charset]; ok {
+		return enc.NewEncoder().Bytes(input)
+	}
+	return nil, fmt.Errorf("unrecognized charset %s", charset)
+}

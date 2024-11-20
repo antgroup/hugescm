@@ -1,0 +1,68 @@
+built-in merge
+
+celery
+salmon
+tomatoes
+garlic
+<<<<<<< a.txt
+onions
+=======
+salmon
+tomatoes
+onions
+>>>>>>> b.txt
+wine
+
+git merge-file
+
+celery
+<<<<<<< a.txt
+salmon
+tomatoes
+garlic
+=======
+garlic
+salmon
+tomatoes
+>>>>>>> b.txt
+onions
+wine
+
+simple-diff3
+
+celery
+<<<<<<< a
+=======
+garlic
+>>>>>>> a
+salmon
+tomatoes
+<<<<<<< a
+garlic
+onions
+=======
+onions
+>>>>>>> a
+wine
+
+
+diff3
+
+celery
+<<<<<<< a.txt
+||||||| a.txt
+celery
+garlic
+=======
+garlic
+>>>>>>> b.txt
+tomatoes
+<<<<<<< a.txt
+garlic
+onions
+||||||| a.txt
+salmon
+tomatoes
+=======
+onions
+>>>>>>> b.txt

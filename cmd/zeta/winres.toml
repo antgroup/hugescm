@@ -1,0 +1,62 @@
+# icon = "res/bali.ico"
+manifest = """data:<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+  <description>HugeSCM</description>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- Windows 10 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+    </application>
+  </compatibility>
+  <asmv3:application>
+    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">
+      <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
+    </asmv3:windowsSettings>
+  </asmv3:application>
+</assembly>
+"""
+
+[FixedFileInfo]
+FileFlagsMask = "3f"
+FileFlags = "00"
+FileOS = "40004"
+FileType = "01"
+FileSubType = "00"
+
+[FixedFileInfo.FileVersion]
+Major = 0
+Minor = 0
+Patch = 0
+Build = 0
+
+[FixedFileInfo.ProductVersion]
+Major = 0
+Minor = 0
+Patch = 0
+Build = 0
+
+[StringFileInfo]
+Comments = ""
+CompanyName = "AntCode Team"
+FileDescription = "HugeSCM - A next generation cloud-based version control system"
+FileVersion = ""
+InternalName = "zeta.exe"
+LegalCopyright = "Copyright \u00A9 2024. HugeSCM contributors"
+LegalTrademarks = ""
+OriginalFilename = "zeta.exe"
+PrivateBuild = ""
+ProductName = "HugeSCM"
+ProductVersion = ""
+SpecialBuild = ""
+
+[VarFileInfo]
+[VarFileInfo.Translation]
+LangID = "0409"
+CharsetID = "04B0"

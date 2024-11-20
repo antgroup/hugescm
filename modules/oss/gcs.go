@@ -1,0 +1,130 @@
+// Copyright ©️ Ant Group. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package oss
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"time"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+)
+
+type gscBucket struct {
+	bucket *storage.BucketHandle
+}
+
+var (
+	_ Bucket = &gscBucket{}
+)
+
+func NewGscBucket(ctx context.Context, credentialsJSON []byte, ossBucketName string) (Bucket, error) {
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON(credentialsJSON))
+	if err != nil {
+		return nil, err
+	}
+	return &gscBucket{bucket: client.Bucket(ossBucketName)}, nil
+}
+
+func (b *gscBucket) Stat(ctx context.Context, resourcePath string) (*Stat, error) {
+	h := b.bucket.Object(resourcePath)
+	attr, err := h.Attrs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Stat{Size: attr.Size}, nil
+}
+
+// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Content-Range
+func (b *gscBucket) Open(ctx context.Context, resourcePath string, start, length int64) (RangeReader, error) {
+	h := b.bucket.Object(resourcePath)
+	if (start >= 0 && length > 0) || start > 0 {
+		gr, err := h.NewRangeReader(ctx, start, length)
+		if err != nil {
+			return nil, err
+		}
+		rangeHdr := fmt.Sprintf("bytes %d-%d/%d", gr.Attrs.StartOffset, gr.Attrs.StartOffset+length-1, gr.Attrs.Size)
+		return NewRangeReader(gr, gr.Attrs.Size, rangeHdr), nil
+	}
+	gr, err := h.NewReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return NewRangeReader(gr, gr.Attrs.Size, ""), nil
+}
+
+func (b *gscBucket) Delete(ctx context.Context, resourcePath string) error {
+	h := b.bucket.Object(resourcePath)
+	return h.Delete(ctx)
+}
+
+func (b *gscBucket) Put(ctx context.Context, resourcePath string, r io.Reader, mime string) error {
+	h := b.bucket.Object(resourcePath)
+	w := h.NewWriter(ctx)
+	w.ContentType = mime
+	defer w.Close()
+	if _, err := io.Copy(w, r); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *gscBucket) StartUpload(ctx context.Context, resourcePath, filePath string, mime string) error {
+	fd, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	return b.Put(ctx, resourcePath, fd, mime)
+}
+
+func (b *gscBucket) LinearUpload(ctx context.Context, resourcePath string, r io.Reader, size int64, mime string) error {
+	if size < maxPartSize {
+		return b.Put(ctx, resourcePath, r, mime)
+	}
+	h := b.bucket.Object(resourcePath)
+	w := h.NewWriter(ctx)
+	w.ContentType = mime
+	w.ChunkSize = int(defaultPartSize)
+	defer w.Close()
+	if _, err := io.Copy(w, r); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *gscBucket) DeleteMultipleObjects(ctx context.Context, objectKeys []string) error {
+	for _, o := range objectKeys {
+		_ = b.bucket.Object(o).Delete(ctx)
+	}
+	return nil
+}
+
+func (b *gscBucket) ListObjects(ctx context.Context, prefix, continuationToken string) ([]*Object, string, error) {
+	objects := make([]*Object, 0, 100)
+	q := &storage.Query{Prefix: prefix}
+	it := b.bucket.Objects(ctx, q)
+	it.PageInfo().Token = continuationToken
+	for i := 0; i < 1000; i++ {
+		o, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, "", err
+		}
+		objects = append(objects, &Object{Key: o.Name, Size: o.Size, ETag: o.Etag})
+	}
+	return objects, it.PageInfo().Token, nil
+}
+
+func (b *gscBucket) Sharing(ctx context.Context, resourcePath string, expiresAt int64) string {
+	signedURL, _ := b.bucket.SignedURL(resourcePath, &storage.SignedURLOptions{Method: http.MethodGet, Expires: time.Now().Add(time.Second * time.Duration(expiresAt))})
+	return signedURL
+}

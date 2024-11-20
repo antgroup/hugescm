@@ -114,3 +114,56 @@ func SimpleAtob(s string, dv bool) bool {
 	}
 	return dv
 }
+
+const (
+	Byte int64 = 1 << (iota * 10)
+	KiByte
+	MiByte
+	GiByte
+	TiByte
+	PiByte
+	EiByte
+)
+
+func toLower(c byte) byte {
+	if 'A' <= c && c <= 'Z' {
+		c += 'a' - 'A'
+	}
+	return c
+}
+
+var (
+	ErrSyntaxSize = errors.New("size synatx error")
+)
+
+func ParseSize(data string) (int64, error) {
+	var ratio int64 = Byte
+	if len(data) == 0 {
+		return 0, ErrSyntaxSize
+	}
+	switch toLower(data[len(data)-1]) {
+	case 'k':
+		ratio = KiByte
+		data = data[0 : len(data)-1]
+	case 'm':
+		ratio = MiByte
+		data = data[0 : len(data)-1]
+	case 'g':
+		ratio = GiByte
+		data = data[0 : len(data)-1]
+	case 't':
+		ratio = GiByte
+		data = data[0 : len(data)-1]
+	case 'p':
+		ratio = PiByte
+		data = data[0 : len(data)-1]
+	case 'e':
+		ratio = EiByte
+		data = data[0 : len(data)-1]
+	}
+	sz, err := strconv.ParseInt(strings.TrimSpace(data), 10, 64)
+	if err != nil {
+		return 0, ErrSyntaxSize
+	}
+	return sz * ratio, nil
+}

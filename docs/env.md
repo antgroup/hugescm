@@ -6,6 +6,8 @@
 +  `ZETA_TRACE` 开启 zeta 调试模式
 +  `ZETA_EXTENSION_DRAGONFLY_GET` 设置 `dfget` 路径。
 +  `ZETA_SHARING_ROOT` 设置 `core.shardingRoot` 目录，该配置存在时，zeta 会使用该变量设置的目录作为 BLOB 的存储目录。
++  `ZETA_TRANSPORT_MAX_ENTRIES` 指定批量下载对象一次性下载数量，默认 32000，用户可以修改。
++  `ZETA_TRANSPORT_LARGE_SIZE` 将指定大小的文件试为大文件，使用单个文件下载接口，默认为 10M，用户可以指定 `ZETA_TRANSPORT_LARGE_SIZE=512k`。
 
 ## 注入配置
 

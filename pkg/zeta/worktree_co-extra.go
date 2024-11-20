@@ -152,7 +152,7 @@ type treeEntries struct {
 	small  []*odb.TreeEntry
 }
 
-func (t *treeEntries) append(e *odb.TreeEntry) {
+func (t *treeEntries) append(e *odb.TreeEntry, largeSize int64) {
 	if e.Size > largeSize {
 		t.larges = append(t.larges, e)
 		return
@@ -168,6 +168,7 @@ func (w *Worktree) resolveBatchObjects(ctx context.Context, root *object.Tree, r
 		larges: make([]*odb.TreeEntry, 0, 100),
 		small:  make([]*odb.TreeEntry, 0, 100),
 	}
+	largSize := w.largeSize()
 	for br.Scan() {
 		p := path.Clean(strings.TrimSpace(br.Text()))
 		if p == "." || !matcher.Match(p) {
@@ -178,9 +179,9 @@ func (w *Worktree) resolveBatchObjects(ctx context.Context, root *object.Tree, r
 		if err != nil {
 			return nil, nil, err
 		}
-		entries.append(&odb.TreeEntry{Path: p, TreeEntry: e})
+		entries.append(&odb.TreeEntry{Path: p, TreeEntry: e}, largSize)
 		if e.Type() == object.BlobObject {
-			m.store(w.odb, e.Hash, e.Size)
+			m.store(w.odb, e.Hash, e.Size, largSize)
 			continue
 		}
 		if e.Type() == object.FragmentsObject {
@@ -189,7 +190,7 @@ func (w *Worktree) resolveBatchObjects(ctx context.Context, root *object.Tree, r
 				return nil, nil, err
 			}
 			for _, ee := range fe.Entries {
-				m.store(w.odb, ee.Hash, int64(ee.Size))
+				m.store(w.odb, ee.Hash, int64(ee.Size), largSize)
 			}
 			continue
 		}
@@ -366,17 +367,18 @@ func (w *Worktree) doPathCheckoutWorktreeOnly(ctx context.Context, patterns []st
 				}})
 	}
 	ci := newMissingFetcher()
+	largeSize := w.largeSize()
 	for _, e := range entries {
 		switch e.Type() {
 		case object.BlobObject:
-			ci.store(w.odb, e.Hash, e.Size)
+			ci.store(w.odb, e.Hash, e.Size, largeSize)
 		case object.FragmentsObject:
 			fragmentEntry, err := w.odb.Fragments(ctx, e.Hash)
 			if err != nil {
 				return fmt.Errorf("open fragments: %w", err)
 			}
 			for _, ee := range fragmentEntry.Entries {
-				ci.store(w.odb, ee.Hash, int64(ee.Size))
+				ci.store(w.odb, ee.Hash, int64(ee.Size), largeSize)
 			}
 		default:
 		}
@@ -423,17 +425,18 @@ func (w *Worktree) DoPathCo(ctx context.Context, worktreeOnly bool, oid plumbing
 	}
 	w.DbgPrint("matched entries: %d", len(entries))
 	ci := newMissingFetcher()
+	largeSize := w.largeSize()
 	for _, e := range entries {
 		switch e.Type() {
 		case object.BlobObject:
-			ci.store(w.odb, e.Hash, e.Size)
+			ci.store(w.odb, e.Hash, e.Size, largeSize)
 		case object.FragmentsObject:
 			fragmentEntry, err := w.odb.Fragments(ctx, e.Hash)
 			if err != nil {
 				return fmt.Errorf("open fragments: %w", err)
 			}
 			for _, ee := range fragmentEntry.Entries {
-				ci.store(w.odb, ee.Hash, int64(ee.Size))
+				ci.store(w.odb, ee.Hash, int64(ee.Size), largeSize)
 			}
 		default:
 		}

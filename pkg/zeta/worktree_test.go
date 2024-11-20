@@ -243,31 +243,31 @@ func TestTreeNode(t *testing.T) {
 }
 
 func TestCalculateChunk(t *testing.T) {
-	chunks := calculateChunk(config.GiByte*10+config.MiByte, config.GiByte)
-	fmt.Fprintf(os.Stderr, "size: %d\n", config.GiByte*10+config.MiByte)
+	chunks := calculateChunk(strengthen.GiByte*10+strengthen.MiByte, strengthen.GiByte)
+	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*10+strengthen.MiByte)
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
 	}
-	chunks = calculateChunk(config.GiByte*1+config.MiByte, config.FragmentSize)
-	fmt.Fprintf(os.Stderr, "size: %d\n", config.GiByte*1+config.MiByte)
+	chunks = calculateChunk(strengthen.GiByte*1+strengthen.MiByte, config.FragmentSize)
+	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
 	}
 	chunks = calculateChunk(3221000000, config.FragmentSize)
-	fmt.Fprintf(os.Stderr, "size: %d\n", config.GiByte*1+config.MiByte)
+	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
 	}
 }
 
 func TestCalculateChunk2(t *testing.T) {
-	chunks := calculateChunk(config.GiByte*10-config.MiByte, config.GiByte)
-	fmt.Fprintf(os.Stderr, "size: %d\n", config.GiByte*10+config.MiByte)
+	chunks := calculateChunk(strengthen.GiByte*10-strengthen.MiByte, strengthen.GiByte)
+	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*10+strengthen.MiByte)
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
 	}
-	chunks = calculateChunk(config.GiByte*1, config.FragmentSize)
-	fmt.Fprintf(os.Stderr, "size: %d\n", config.GiByte*1+config.MiByte)
+	chunks = calculateChunk(strengthen.GiByte*1, config.FragmentSize)
+	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
 	}

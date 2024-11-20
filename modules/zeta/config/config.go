@@ -6,12 +6,14 @@ package config
 import (
 	"errors"
 	"fmt"
+
+	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
 const (
 	NoZetaDir               = ""
-	FragmentThreshold int64 = 1 * GiByte //1G
-	FragmentSize      int64 = 1 * GiByte //1G
+	FragmentThreshold int64 = 1 * strengthen.GiByte //1G
+	FragmentSize      int64 = 1 * strengthen.GiByte //1G
 )
 
 // ErrNotExist commit not exist error
@@ -103,23 +105,23 @@ type Fragment struct {
 }
 
 func (f *Fragment) Overwrite(o *Fragment) {
-	if o.ThresholdRaw.Size != 0 {
+	if o.ThresholdRaw.Size > 0 {
 		f.ThresholdRaw.Size = o.ThresholdRaw.Size
 	}
-	if o.SizeRaw.Size != 0 {
+	if o.SizeRaw.Size > 0 {
 		f.SizeRaw.Size = o.SizeRaw.Size
 	}
 }
 
 func (f Fragment) Threshold() int64 {
-	if f.ThresholdRaw.Size < MiByte {
+	if f.ThresholdRaw.Size < strengthen.MiByte {
 		return FragmentThreshold
 	}
 	return f.ThresholdRaw.Size
 }
 
 func (f Fragment) Size() int64 {
-	if f.SizeRaw.Size < MiByte {
+	if f.SizeRaw.Size < strengthen.MiByte {
 		return FragmentSize
 	}
 	return f.SizeRaw.Size
@@ -137,11 +139,38 @@ func (h *HTTP) Overwrite(o *HTTP) {
 	h.SSLVerify.Merge(&o.SSLVerify)
 }
 
+type Transport struct {
+	MaxEntries   int  `toml:"maxEntries,omitempty"`
+	LargeSizeRaw Size `toml:"largeSize,omitempty"`
+}
+
+const (
+	minLargSize = 512 << 10 // 512K
+	largeSize   = 10 << 20  // 10M
+)
+
+func (t Transport) LargeSize() int64 {
+	if t.LargeSizeRaw.Size < minLargSize {
+		return largeSize
+	}
+	return t.LargeSizeRaw.Size
+}
+
+func (t *Transport) Overwrite(o *Transport) {
+	if o.LargeSizeRaw.Size >= minLargSize {
+		t.LargeSizeRaw.Size = o.LargeSizeRaw.Size
+	}
+	if o.MaxEntries > 0 {
+		t.MaxEntries = o.MaxEntries
+	}
+}
+
 type Config struct {
-	Core     Core     `toml:"core,omitempty"`
-	User     User     `toml:"user,omitempty"`
-	Fragment Fragment `toml:"fragment,omitempty"`
-	HTTP     HTTP     `toml:"http,omitempty"`
+	Core      Core      `toml:"core,omitempty"`
+	User      User      `toml:"user,omitempty"`
+	Fragment  Fragment  `toml:"fragment,omitempty"`
+	HTTP      HTTP      `toml:"http,omitempty"`
+	Transport Transport `toml:"transport,omitempty"`
 }
 
 // Overwrite: use local config overwrite config
@@ -150,4 +179,5 @@ func (c *Config) Overwrite(co *Config) {
 	c.User.Overwrite(&co.User)
 	c.Fragment.Overwrite(&co.Fragment)
 	c.HTTP.Overwrite(&co.HTTP)
+	c.Transport.Overwrite(&co.Transport)
 }

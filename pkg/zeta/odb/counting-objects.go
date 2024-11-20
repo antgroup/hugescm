@@ -24,7 +24,7 @@ func newEntry(h plumbing.Hash, size int64) *Entry {
 type Entries []*Entry
 
 const (
-	MaxEntries = 320000 // 32w objects
+	defaultMaxEntries = 320000 // 32w objects
 )
 
 type Fetcher func(ctx context.Context, entries Entries) error
@@ -38,7 +38,7 @@ func (g *entriesGroup) clean() {
 	g.entries = g.entries[:0]
 }
 
-func (d *ODB) countingFragments(ctx context.Context, oid plumbing.Hash, g *entriesGroup, fetcher Fetcher) error {
+func (d *ODB) countingFragments(ctx context.Context, oid plumbing.Hash, g *entriesGroup, maxEntries int, fetcher Fetcher) error {
 	f, err := d.Fragments(ctx, oid)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (d *ODB) countingFragments(ctx context.Context, oid plumbing.Hash, g *entri
 			g.seen[e.Hash] = true
 			continue
 		}
-		if len(g.entries) >= MaxEntries {
+		if len(g.entries) >= maxEntries {
 			if err := fetcher(ctx, g.entries); err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ func (d *ODB) countingFragments(ctx context.Context, oid plumbing.Hash, g *entri
 	return nil
 }
 
-func (o *ODB) countingTreeObjects(ctx context.Context, oid plumbing.Hash, g *entriesGroup, fetcher Fetcher) error {
+func (o *ODB) countingTreeObjects(ctx context.Context, oid plumbing.Hash, g *entriesGroup, maxEntries int, fetcher Fetcher) error {
 	t, err := o.Tree(ctx, oid)
 	if err != nil {
 		return err
@@ -71,13 +71,13 @@ func (o *ODB) countingTreeObjects(ctx context.Context, oid plumbing.Hash, g *ent
 	for _, e := range t.Entries {
 		typ := e.Type()
 		if typ == object.TreeObject {
-			if err := o.countingTreeObjects(ctx, e.Hash, g, fetcher); err != nil {
+			if err := o.countingTreeObjects(ctx, e.Hash, g, maxEntries, fetcher); err != nil {
 				return err
 			}
 			continue
 		}
 		if typ == object.FragmentsObject {
-			if err := o.countingFragments(ctx, e.Hash, g, fetcher); err != nil {
+			if err := o.countingFragments(ctx, e.Hash, g, maxEntries, fetcher); err != nil {
 				return err
 			}
 			continue
@@ -88,7 +88,7 @@ func (o *ODB) countingTreeObjects(ctx context.Context, oid plumbing.Hash, g *ent
 		if g.seen[e.Hash] {
 			continue
 		}
-		if len(g.entries) >= MaxEntries {
+		if len(g.entries) >= defaultMaxEntries {
 			if err := fetcher(ctx, g.entries); err != nil {
 				return err
 			}
@@ -104,9 +104,9 @@ func (o *ODB) countingTreeObjects(ctx context.Context, oid plumbing.Hash, g *ent
 	return nil
 }
 
-func (o *ODB) sparseCountingTreeObjects(ctx context.Context, oid plumbing.Hash, m noder.Matcher, g *entriesGroup, fetcher Fetcher) error {
+func (o *ODB) sparseCountingTreeObjects(ctx context.Context, oid plumbing.Hash, m noder.Matcher, g *entriesGroup, maxEntries int, fetcher Fetcher) error {
 	if m == nil || m.Len() == 0 {
-		return o.countingTreeObjects(ctx, oid, g, fetcher)
+		return o.countingTreeObjects(ctx, oid, g, maxEntries, fetcher)
 	}
 	t, err := o.Tree(ctx, oid)
 	if err != nil {
@@ -115,14 +115,14 @@ func (o *ODB) sparseCountingTreeObjects(ctx context.Context, oid plumbing.Hash, 
 	for _, e := range t.Entries {
 		typ := e.Type()
 		if typ == object.FragmentsObject {
-			if err := o.countingFragments(ctx, e.Hash, g, fetcher); err != nil {
+			if err := o.countingFragments(ctx, e.Hash, g, maxEntries, fetcher); err != nil {
 				return err
 			}
 			continue
 		}
 		if typ == object.TreeObject {
 			if sub, ok := m.Match(e.Name); ok {
-				if err := o.sparseCountingTreeObjects(ctx, e.Hash, sub, g, fetcher); err != nil {
+				if err := o.sparseCountingTreeObjects(ctx, e.Hash, sub, g, maxEntries, fetcher); err != nil {
 					return err
 				}
 			}
@@ -134,7 +134,7 @@ func (o *ODB) sparseCountingTreeObjects(ctx context.Context, oid plumbing.Hash, 
 		if g.seen[e.Hash] {
 			continue
 		}
-		if len(g.entries) >= MaxEntries {
+		if len(g.entries) >= defaultMaxEntries {
 			if err := fetcher(ctx, g.entries); err != nil {
 				return err
 			}
@@ -150,7 +150,7 @@ func (o *ODB) sparseCountingTreeObjects(ctx context.Context, oid plumbing.Hash, 
 	return nil
 }
 
-func (o *ODB) sparseCountingObjects(ctx context.Context, target plumbing.Hash, sparseDirs []string, fetcher Fetcher) error {
+func (o *ODB) sparseCountingObjects(ctx context.Context, target plumbing.Hash, sparseDirs []string, maxEntries int, fetcher Fetcher) error {
 	g := &entriesGroup{
 		entries: make(Entries, 0, 1000),
 		seen:    make(map[plumbing.Hash]bool),
@@ -164,7 +164,7 @@ func (o *ODB) sparseCountingObjects(ctx context.Context, target plumbing.Hash, s
 		return err
 	}
 	m := noder.NewSparseTreeMatcher(sparseDirs)
-	if err := o.sparseCountingTreeObjects(ctx, root.Hash, m, g, fetcher); err != nil {
+	if err := o.sparseCountingTreeObjects(ctx, root.Hash, m, g, maxEntries, fetcher); err != nil {
 		return err
 	}
 	if len(g.entries) != 0 {
@@ -174,9 +174,12 @@ func (o *ODB) sparseCountingObjects(ctx context.Context, target plumbing.Hash, s
 }
 
 // CountingSliceObjects: counting all objects for current commit
-func (o *ODB) CountingSliceObjects(ctx context.Context, target plumbing.Hash, sparseDirs []string, fetcher Fetcher) error {
+func (o *ODB) CountingSliceObjects(ctx context.Context, target plumbing.Hash, sparseDirs []string, maxEntries int, fetcher Fetcher) error {
+	if maxEntries <= 0 {
+		maxEntries = defaultMaxEntries
+	}
 	if len(sparseDirs) != 0 {
-		return o.sparseCountingObjects(ctx, target, sparseDirs, fetcher)
+		return o.sparseCountingObjects(ctx, target, sparseDirs, maxEntries, fetcher)
 	}
 	c, err := o.ParseRevExhaustive(ctx, target)
 	if err != nil {
@@ -187,7 +190,7 @@ func (o *ODB) CountingSliceObjects(ctx context.Context, target plumbing.Hash, sp
 		entries: make(Entries, 0, 1000),
 		seen:    make(map[plumbing.Hash]bool),
 	}
-	if err := o.countingTreeObjects(ctx, c.Tree, g, fetcher); err != nil {
+	if err := o.countingTreeObjects(ctx, c.Tree, g, maxEntries, fetcher); err != nil {
 		return err
 	}
 	if len(g.entries) != 0 {
@@ -198,7 +201,7 @@ func (o *ODB) CountingSliceObjects(ctx context.Context, target plumbing.Hash, sp
 
 // CountingObjects: counting objects for current commit and parents...
 // deepenFrom is zero --> counting all objects
-func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.Hash, fetcher Fetcher) error {
+func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.Hash, maxEntries int, fetcher Fetcher) error {
 	g := &entriesGroup{
 		entries: make(Entries, 0, 1000),
 		seen:    make(map[plumbing.Hash]bool),
@@ -206,6 +209,9 @@ func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.H
 	c, err := o.ParseRevExhaustive(ctx, commit)
 	if err != nil {
 		return err
+	}
+	if maxEntries <= 0 {
+		maxEntries = defaultMaxEntries
 	}
 	iter := object.NewCommitIterBSF(c, nil, nil)
 	defer iter.Close()
@@ -220,7 +226,7 @@ func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.H
 		if cc.Hash == deepenFrom {
 			break
 		}
-		if err := o.countingTreeObjects(ctx, cc.Tree, g, fetcher); err != nil {
+		if err := o.countingTreeObjects(ctx, cc.Tree, g, maxEntries, fetcher); err != nil {
 			return err
 		}
 	}

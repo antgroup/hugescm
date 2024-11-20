@@ -545,6 +545,17 @@ func (r *Repository) getIntFromValueOrEnv(k, e string) (int, bool) {
 	return i, true
 }
 
+func (r *Repository) getSizeFromValueOrEnv(k, e string) (int64, bool) {
+	a, ok := getFromValueOrEnv(k, e, r.values)
+	if !ok {
+		return 0, false
+	}
+	if size, err := strengthen.ParseSize(a); err == nil {
+		return size, true
+	}
+	return 0, false
+}
+
 func (r *Repository) Accelerator() config.Accelerator {
 	if s, ok := r.getFromValueOrEnv("core.accelerator", ENV_ZETA_CORE_ACCELERATOR); ok {
 		return config.Accelerator(s)
@@ -600,6 +611,20 @@ func (r *Repository) committerEmail() string {
 // ZETA_CORE_PROMISOR=0 disable promisor
 func (r *Repository) promisorEnabled() bool {
 	return strengthen.SimpleAtob(os.Getenv(ENV_ZETA_CORE_PROMISOR), true)
+}
+
+func (r *Repository) maxEntries() int {
+	if maxEntries, ok := r.getIntFromValueOrEnv("transport.maxEntries", ENV_ZETA_TRANSPORT_MAX_ENTRIES); ok && maxEntries > 0 {
+		return maxEntries
+	}
+	return r.Transport.MaxEntries
+}
+
+func (r *Repository) largeSize() int64 {
+	if largeSize, ok := r.getSizeFromValueOrEnv("transport.largeSize", ENV_ZETA_TRANSPORT_LARGE_SIZE); ok && largeSize > 0 {
+		return largeSize
+	}
+	return r.Transport.LargeSize()
 }
 
 func (r *Repository) NewCommitter() *object.Signature {

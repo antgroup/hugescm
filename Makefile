@@ -5,7 +5,7 @@ SOURCE_DIR    := $(abspath $(dir $(lastword ${MAKEFILE_LIST})))
 BUILD_DIR     := ${SOURCE_DIR}/_build
 BUILD_TIME    := $(shell date +'%Y-%m-%dT%H:%M:%S%z')
 BUILD_COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo 'none')
-BUILD_VERSION := $(shell cat VERSION || echo '0.12.14')
+BUILD_VERSION := $(shell cat VERSION || echo '0.13.0')
 GO_PACKAGES   := $(shell go list ./... | grep -v '^${PKG}/mock/' | grep -v '^${PKG}/proto/')
 GO_LDFLAGS    := -ldflags '-X ${PKG}/pkg/version.version=${BUILD_VERSION} -X ${PKG}/pkg/version.buildTime=${BUILD_TIME} -X ${PKG}/pkg/version.buildCommit=${BUILD_COMMIT}'
 

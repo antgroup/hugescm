@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/env"
-	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/survey"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -167,7 +166,7 @@ func (c *client) openPrivateKey(name string) (ssh.Signer, error) {
 }
 
 func (c *client) sshAuthSigners() ([]ssh.Signer, error) {
-	if strengthen.SimpleAtob("ZETA_NO_SSH_AUTH_SOCK", false) {
+	if env.ZETA_NO_SSH_AUTH_SOCK.SimpleAtob(false) {
 		return nil, nil
 	}
 	sock, ok := os.LookupEnv("SSH_AUTH_SOCK")

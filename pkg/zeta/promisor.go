@@ -18,9 +18,10 @@ func (r *Repository) fetchObjects(ctx context.Context, t transport.Transport, ta
 	if sizeLimit < 0 {
 		sizeLimit = math.MaxInt64
 	}
+	largeSize := r.largeSize()
 	larges := make([]*odb.Entry, 0, 100)
 	seen := make(map[plumbing.Hash]bool)
-	if err := r.odb.CountingSliceObjects(ctx, target, r.Core.SparseDirs, func(ctx context.Context, entries odb.Entries) error {
+	if err := r.odb.CountingSliceObjects(ctx, target, r.Core.SparseDirs, r.maxEntries(), func(ctx context.Context, entries odb.Entries) error {
 		smalls := make([]plumbing.Hash, 0, len(entries))
 		for _, e := range entries {
 			if e.Hash == backend.BLANK_BLOB_HASH {
@@ -89,7 +90,7 @@ func newMissingFetcher() *missingFetcher {
 	}
 }
 
-func (m *missingFetcher) store(o *odb.ODB, oid plumbing.Hash, size int64) {
+func (m *missingFetcher) store(o *odb.ODB, oid plumbing.Hash, size int64, largeSize int64) {
 	if m.seen[oid] {
 		return
 	}

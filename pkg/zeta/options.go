@@ -20,7 +20,7 @@ import (
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	fdiff "github.com/antgroup/hugescm/modules/plumbing/format/diff"
-	"github.com/antgroup/hugescm/modules/zeta/config"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -456,7 +456,7 @@ func (o *GrepOptions) validate(r *Repository) error {
 		o.CommitHash = ref.Hash()
 	}
 	if o.Limit == 0 {
-		o.Limit = 128 * config.MiByte // limit 128M
+		o.Limit = 128 * strengthen.MiByte // limit 128M
 	}
 
 	return nil

@@ -30,17 +30,18 @@ func (w *Worktree) lsRestoreEntriesFromTree(ctx context.Context, opts *RestoreOp
 	}
 	w.DbgPrint("matched entries: %d", len(entries))
 	ci := newMissingFetcher()
+	largeSize := w.largeSize()
 	for _, e := range entries {
 		switch e.Type() {
 		case object.BlobObject:
-			ci.store(w.odb, e.Hash, e.Size)
+			ci.store(w.odb, e.Hash, e.Size, largeSize)
 		case object.FragmentsObject:
 			fragmentEntry, err := w.odb.Fragments(ctx, e.Hash)
 			if err != nil {
 				return nil, fmt.Errorf("open fragments: %w", err)
 			}
 			for _, ee := range fragmentEntry.Entries {
-				ci.store(w.odb, ee.Hash, int64(ee.Size))
+				ci.store(w.odb, ee.Hash, int64(ee.Size), largeSize)
 			}
 		default:
 		}
@@ -72,6 +73,7 @@ func (w *Worktree) lsRestoreEntries(ctx context.Context, opts *RestoreOptions) (
 		return nil, err
 	}
 	m := NewMatcher(opts.Paths)
+	largeSize := w.largeSize()
 	entries := make([]*odb.TreeEntry, 0, 100)
 	for _, e := range idx.Entries {
 		if !m.Match(e.Name) {
@@ -90,14 +92,14 @@ func (w *Worktree) lsRestoreEntries(ctx context.Context, opts *RestoreOptions) (
 	for _, e := range entries {
 		switch e.Type() {
 		case object.BlobObject:
-			ci.store(w.odb, e.Hash, e.Size)
+			ci.store(w.odb, e.Hash, e.Size, largeSize)
 		case object.FragmentsObject:
 			fragmentEntry, err := w.odb.Fragments(ctx, e.Hash)
 			if err != nil {
 				return nil, fmt.Errorf("open fragments: %w", err)
 			}
 			for _, ee := range fragmentEntry.Entries {
-				ci.store(w.odb, ee.Hash, int64(ee.Size))
+				ci.store(w.odb, ee.Hash, int64(ee.Size), largeSize)
 			}
 		default:
 		}

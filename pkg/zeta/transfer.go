@@ -31,10 +31,6 @@ var termWidth = func() (width int, err error) {
 	return 0, err
 }
 
-const (
-	largeSize = 10 << 20 // 10M
-)
-
 func (r *Repository) getLinks(ctx context.Context, t transport.Transport, larges []*odb.Entry) ([]*transport.Representation, error) {
 	wantObjects := make([]*transport.WantObject, 0, len(larges))
 	for _, o := range larges {

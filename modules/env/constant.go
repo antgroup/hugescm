@@ -12,8 +12,9 @@ type K string
 
 // VALUE
 const (
-	ZETA_TERMINAL_PROMPT K      = "ZETA_TERMINAL_PROMPT"
-	StandardSeparator    string = ";"
+	ZETA_TERMINAL_PROMPT  K      = "ZETA_TERMINAL_PROMPT"
+	ZETA_NO_SSH_AUTH_SOCK K      = "ZETA_NO_SSH_AUTH_SOCK"
+	StandardSeparator     string = ";"
 )
 
 func (k K) With(s string) string {
@@ -57,12 +58,18 @@ func (k K) StrSplit(sep string) []string {
 
 // SimpleAtob Obtain the boolean variable from the environment variable, if it does not exist, return the default value
 func (k K) SimpleAtob(dv bool) bool {
-	v := os.Getenv(string(k))
-	return strengthen.SimpleAtob(v, dv)
+	s, ok := os.LookupEnv(string(k))
+	if !ok {
+		return dv
+	}
+	return strengthen.SimpleAtob(s, dv)
 }
 
 func (k K) SimpleAtoi(dv int64) int64 {
-	s := os.Getenv(string(k))
+	s, ok := os.LookupEnv(string(k))
+	if !ok {
+		return dv
+	}
 	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return i
 	}

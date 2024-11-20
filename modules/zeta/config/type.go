@@ -5,21 +5,11 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
-)
 
-const (
-	Byte int64 = 1 << (iota * 10)
-	KiByte
-	MiByte
-	GiByte
-	TiByte
-	PiByte
-	EiByte
+	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
 const (
@@ -135,51 +125,12 @@ type Size struct {
 	Size int64
 }
 
-func toLower(c byte) byte {
-	if 'A' <= c && c <= 'Z' {
-		c += 'a' - 'A'
-	}
-	return c
-}
-
-var (
-	ErrSyntaxSize = errors.New("size synatx error")
-)
-
-func (s *Size) UnmarshalText(text []byte) error {
+func (s *Size) UnmarshalText(text []byte) (err error) {
 	if bytes.HasSuffix(text, []byte("b")) || bytes.HasSuffix(text, []byte("B")) {
 		text = text[0 : len(text)-1]
 	}
-	if len(text) == 0 {
-		return ErrSyntaxSize
-	}
-	var ratio int64 = Byte
-	switch toLower(text[len(text)-1]) {
-	case 'k':
-		ratio = KiByte
-		text = text[0 : len(text)-1]
-	case 'm':
-		ratio = MiByte
-		text = text[0 : len(text)-1]
-	case 'g':
-		ratio = GiByte
-		text = text[0 : len(text)-1]
-	case 't':
-		ratio = GiByte
-		text = text[0 : len(text)-1]
-	case 'p':
-		ratio = PiByte
-		text = text[0 : len(text)-1]
-	case 'e':
-		ratio = EiByte
-		text = text[0 : len(text)-1]
-	}
-	sz, err := strconv.ParseInt(strings.TrimSpace(string(text)), 10, 64)
-	if err != nil {
-		return ErrSyntaxSize
-	}
-	s.Size = sz * ratio
-	return nil
+	s.Size, err = strengthen.ParseSize(string(text))
+	return
 }
 
 type Accelerator string
@@ -342,27 +293,17 @@ func valuesToInt64Array(o any) []int64 {
 	return nil
 }
 
-func simpleAtob(s string, dv bool) bool {
-	switch strings.ToLower(s) {
-	case "true", "yes", "on", "1":
-		return true
-	case "false", "no", "off", "0":
-		return false
-	}
-	return dv
-}
-
 func valuesToBoolArray(o any) []bool {
 	switch v := o.(type) {
 	case string:
-		return []bool{simpleAtob(v, false)}
+		return []bool{strengthen.SimpleAtob(v, false)}
 	case bool:
 		return []bool{v}
 	case []any:
 		values := make([]bool, 0, len(v)+1)
 		for _, e := range v {
 			if s, ok := e.(string); ok {
-				values = append(values, simpleAtob(s, false))
+				values = append(values, strengthen.SimpleAtob(s, false))
 				continue
 			}
 			if i, ok := e.(bool); ok {

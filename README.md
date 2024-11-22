@@ -1,5 +1,11 @@
 # HugeSCM - A next generation cloud-based version control system
 
+[![license badge](https://img.shields.io/github/license/antgroup/hugescm.svg)](LICENSE)
+[![Master Branch Status](https://github.com/antgroup/hugescm/workflows/BaulkCI/badge.svg)](https://github.com/antgroup/hugescm/actions)
+[![Latest Release Downloads](https://img.shields.io/github/downloads/antgroup/hugescm/latest/total.svg)](https://github.com/antgroup/hugescm/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/antgroup/hugescm/total.svg)](https://github.com/antgroup/hugescm/releases)
+[![Version](https://img.shields.io/github/v/release/antgroup/hugescm)](https://github.com/antgroup/hugescm/releases/latest)
+
 [简体中文](./README.zh-CN.md)
 
 ## Overview

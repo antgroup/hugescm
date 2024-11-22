@@ -23,7 +23,7 @@ catch {
 
 $HugescmIss = Join-Path $PSScriptRoot -ChildPath "zeta.iss"
 
-$ps = Start-Process -FilePath "go" -WorkingDirectory "install github.com/balibuild/bali/v3/cmd/bali@latest" -PassThru -Wait -NoNewWindow
+$ps = Start-Process -FilePath "go" -WorkingDirectory $SOURCE_DIR -ArgumentList "install github.com/balibuild/bali/v3/cmd/bali@latest" -PassThru -Wait -NoNewWindow
 if ($ps.ExitCode -ne 0) {
     Exit $ps.ExitCode
 }

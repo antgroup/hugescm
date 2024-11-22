@@ -80,7 +80,7 @@ zeta commit -m "Hello world"
 
 ```shell
 zeta push
-zeta push
+zeta pull
 ```
 
 ## Features

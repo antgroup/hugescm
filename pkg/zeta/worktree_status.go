@@ -57,7 +57,7 @@ var (
 	ErrGlobNoMatches = errors.New("glob pattern did not match any files")
 )
 
-func (w *Worktree) showFs(verbose bool) {
+func (w *Worktree) ShowFs(verbose bool) {
 	if !verbose {
 		return
 	}
@@ -76,7 +76,6 @@ func (w *Worktree) showFs(verbose bool) {
 
 // Status returns the working tree status.
 func (w *Worktree) Status(ctx context.Context, verbose bool) (Status, error) {
-	w.showFs(verbose) //
 	var hash plumbing.Hash
 
 	ref, err := w.Current()

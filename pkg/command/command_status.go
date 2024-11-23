@@ -36,6 +36,7 @@ func (s *Status) Run(g *Globals) error {
 	}
 	defer r.Close()
 	w := r.Worktree()
+	w.ShowFs(g.Verbose)
 	shortFormat := s.Short || s.Z
 	status, err := w.Status(context.Background(), !shortFormat)
 	if err != nil {

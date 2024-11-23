@@ -7,7 +7,9 @@
 package zeta
 
 import (
+	"bytes"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
@@ -51,7 +53,7 @@ type hasher interface {
 	Mode() filemode.FileMode
 }
 
-func (w *Worktree) hijackChange(ch *merkletrie.Change) bool {
+func (w *Worktree) hijackChangeFileMode(ch *merkletrie.Change) bool {
 	if ch.From == nil || ch.To == nil {
 		return false
 	}
@@ -91,12 +93,10 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 	if err != nil {
 		return changes
 	}
-
+	var newItems merkletrie.Changes
 	var res merkletrie.Changes
+	rmItems := make(map[string]merkletrie.Change)
 	for _, ch := range changes {
-		if w.hijackChange(&ch) {
-			continue
-		}
 		var path []string
 		for _, n := range ch.To {
 			path = append(path, n.Name())
@@ -114,6 +114,34 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 				}
 			}
 		}
+		if w.hijackChangeFileMode(&ch) {
+			continue
+		}
+		// Add
+		if ch.From == nil {
+			newItems = append(newItems, ch)
+			continue
+		}
+		// Del
+		if ch.To == nil {
+			rmItems[strings.ToLower(ch.From.String())] = ch
+			continue
+		}
+		res = append(res, ch)
+	}
+	for _, ch := range newItems {
+		name := strings.ToLower(ch.To.String())
+		if c, ok := rmItems[name]; ok {
+			if !bytes.Equal(c.From.Hash(), ch.To.Hash()) {
+				ch.From = c.From
+				res = append(res, ch) // rename and modify
+			}
+			delete(rmItems, name)
+			continue
+		}
+		res = append(res, ch)
+	}
+	for _, ch := range rmItems {
 		res = append(res, ch)
 	}
 	return res

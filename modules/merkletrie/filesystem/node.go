@@ -67,6 +67,10 @@ func (n *Node) Mode() filemode.FileMode {
 	return m
 }
 
+func (n *Node) HijackMode(mode filemode.FileMode) {
+	n.mode, _ = mode.ToOSFileMode()
+}
+
 func (n *Node) ModifiedAt() time.Time {
 	return n.modifiedAt
 }

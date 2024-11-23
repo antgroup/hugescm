@@ -9,6 +9,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
@@ -16,7 +17,6 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta/config"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
-	"github.com/BurntSushi/toml"
 )
 
 func TestWorktree(t *testing.T) {
@@ -752,4 +752,8 @@ func TestEncode(t *testing.T) {
 		C: `"'{\"appname\":\"tcloudantcodeweb\",\"name\":\"tcloudantcodewebTBaseCache\",\"type\":\"G\",\"zdcUrl\":\"AAAAAAA\"}'"`,
 	}
 	_ = toml.NewEncoder(os.Stderr).Encode(a)
+}
+
+func TestMode(t *testing.T) {
+	fmt.Fprintf(os.Stderr, "%o\n", filemode.Regular&filemode.Executable)
 }

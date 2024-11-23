@@ -319,36 +319,6 @@ func (w *Worktree) ignoredChanges(changes merkletrie.Changes) []string {
 	return ignored
 }
 
-func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.Changes {
-	m, err := w.ignoreMatcher()
-	if err != nil {
-		return changes
-	}
-
-	var res merkletrie.Changes
-	for _, ch := range changes {
-		var path []string
-		for _, n := range ch.To {
-			path = append(path, n.Name())
-		}
-		if len(path) == 0 {
-			for _, n := range ch.From {
-				path = append(path, n.Name())
-			}
-		}
-		if len(path) != 0 {
-			isDir := (len(ch.To) > 0 && ch.To.IsDir()) || (len(ch.From) > 0 && ch.From.IsDir())
-			if m.Match(path, isDir) {
-				if len(ch.From) == 0 {
-					continue
-				}
-			}
-		}
-		res = append(res, ch)
-	}
-	return res
-}
-
 func (w *Worktree) doAddDirectory(ctx context.Context, idx *index.Index, s Status, directory string, ignorePattern []ignore.Pattern, dryRun bool) (added bool, err error) {
 	if len(ignorePattern) > 0 {
 		m := ignore.NewMatcher(ignorePattern)

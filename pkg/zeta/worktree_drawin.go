@@ -7,6 +7,8 @@
 package zeta
 
 import (
+	"bytes"
+	"strings"
 	"syscall"
 	"time"
 
@@ -42,8 +44,9 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 	if err != nil {
 		return changes
 	}
-
+	var newItems merkletrie.Changes
 	var res merkletrie.Changes
+	rmItems := make(map[string]merkletrie.Change)
 	for _, ch := range changes {
 		var path []string
 		for _, n := range ch.To {
@@ -62,6 +65,31 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 				}
 			}
 		}
+		// Add
+		if ch.From == nil {
+			newItems = append(newItems, ch)
+			continue
+		}
+		// Del
+		if ch.To == nil {
+			rmItems[strings.ToLower(ch.From.String())] = ch
+			continue
+		}
+		res = append(res, ch)
+	}
+	for _, ch := range newItems {
+		name := strings.ToLower(ch.To.String())
+		if c, ok := rmItems[name]; ok {
+			if !bytes.Equal(c.From.Hash(), ch.To.Hash()) {
+				ch.From = c.From
+				res = append(res, ch) // rename and modify
+			}
+			delete(rmItems, name)
+			continue
+		}
+		res = append(res, ch)
+	}
+	for _, ch := range rmItems {
 		res = append(res, ch)
 	}
 	return res

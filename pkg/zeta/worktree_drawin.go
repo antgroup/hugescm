@@ -1,8 +1,8 @@
 // Copyright 2018 Sourced Technologies, S.L.
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build freebsd || netbsd
-// +build freebsd netbsd
+//go:build darwin
+// +build darwin
 
 package zeta
 

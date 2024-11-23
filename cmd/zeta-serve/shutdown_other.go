@@ -1,7 +1,7 @@
 // Copyright ©️ Ant Group. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build darwin || linux || freebsd || netbsd || openbsd
+//go:build darwin || linux || freebsd || netbsd || openbsd || dragonfly
 
 package main
 

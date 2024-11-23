@@ -134,6 +134,10 @@ func (e *Encoder) Name() string {
 	return e.sum.String()
 }
 
+const (
+	offset64PosMask = uint64(1) << 31
+)
+
 // https://codewords.recurse.com/issues/three/unpacking-git-packfiles
 func (e *Encoder) WriteIndex(fd *os.File) error {
 	sort.Sort(e.objects)
@@ -169,12 +173,12 @@ func (e *Encoder) WriteIndex(fd *os.File) error {
 		}
 	}
 	offset64Set := make([]uint64, 0, 20)
-	var offset64Pos int
+	var offset64Pos uint64
 	for _, o := range e.objects {
 		offset := o.Offset
 		if offset > math.MaxInt32 {
 			offset64Set = append(offset64Set, offset)
-			offset = uint64(offset64Pos | (1 << 31))
+			offset = uint64(offset64Pos | offset64PosMask)
 			offset64Pos++
 		}
 		if err := binary.WriteUint32(w, uint32(offset)); err != nil {

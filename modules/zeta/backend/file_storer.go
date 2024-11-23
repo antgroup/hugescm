@@ -7,20 +7,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"syscall"
-	"time"
 
 	"github.com/antgroup/hugescm/modules/mime"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/streamio"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/zeta/backend/storage"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -228,80 +225,8 @@ func mkdir(paths ...string) error {
 	return nil
 }
 
-var (
-	delay     = []time.Duration{0, 1, 10, 20, 40}
-	isWindows = func() bool {
-		return runtime.GOOS == "windows"
-	}()
-)
-
-const (
-	ERROR_ACCESS_DENIED     syscall.Errno = 5
-	ERROR_SHARING_VIOLATION syscall.Errno = 32
-	ERROR_LOCK_VIOLATION    syscall.Errno = 33
-)
-
-func isRetryErr(err error) bool {
-	if !isWindows {
-		return false
-	}
-	if os.IsPermission(err) {
-		return true
-	}
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
-		switch errno {
-		case ERROR_ACCESS_DENIED,
-			ERROR_SHARING_VIOLATION,
-			ERROR_LOCK_VIOLATION:
-			return true
-		}
-	}
-	return false
-}
-
-func finalizeObject0(oldpath string, newpath string) (err error) {
-	if err = os.Link(oldpath, newpath); err == nil {
-		_ = os.Remove(oldpath)
-		return
-	}
-	// no retry rename
-	if err = os.Rename(oldpath, newpath); err == nil {
-		return
-	}
-	// on Windows and
-	if !isRetryErr(err) {
-		return
-	}
-	for tries := 0; tries < len(delay); tries++ {
-		/*
-		 * We assume that some other process had the source or
-		 * destination file open at the wrong moment and retry.
-		 * In order to give the other process a higher chance to
-		 * complete its operation, we give up our time slice now.
-		 * If we have to retry again, we do sleep a bit.
-		 */
-		time.Sleep(delay[tries] * time.Millisecond)
-		_ = os.Chmod(newpath, 0644) // & ~FILE_ATTRIBUTE_READONLY
-		// retry run
-		if err = os.Rename(oldpath, newpath); err == nil {
-			return
-		}
-		// Only windows retry
-		if !isRetryErr(err) {
-			return
-		}
-	}
-	// FIXME: Windows platform security software can cause some bizarre phenomena, such as star points.
-	if os.IsPermission(err) && isWindows {
-		_, err = os.Stat(newpath)
-		return
-	}
-	return
-}
-
 func finalizeObject(oldpath string, newpath string) (err error) {
-	if err = finalizeObject0(oldpath, newpath); err == nil {
+	if err = strengthen.FinalizeObject(oldpath, newpath); err == nil {
 		_ = os.Chmod(newpath, 0444)
 	}
 	return

@@ -2,12 +2,14 @@
 
 package strengthen
 
-import "os"
+import (
+	"os"
+)
 
-func Rename(oldpath, newpath string) error {
+func FinalizeObject(oldpath string, newpath string) (err error) {
+	if err = os.Link(oldpath, newpath); err == nil {
+		_ = os.Remove(oldpath)
+		return
+	}
 	return os.Rename(oldpath, newpath)
-}
-
-func Remove(name string) error {
-	return os.Remove(name)
 }

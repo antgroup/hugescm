@@ -11,45 +11,47 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-// initializeGW todo
+// initializeGW: detect git for windows installation
 func initializeGW() (string, error) {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\GitForWindows`, registry.QUERY_VALUE)
 	if err != nil {
-		if k, err = registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\WOW6432Node\GitForWindows`, registry.QUERY_VALUE); err != nil {
-			return "", err
-		}
+		return "", nil
 	}
 	defer k.Close()
 	installPath, _, err := k.GetStringValue("InstallPath")
 	if err != nil {
 		return "", err
 	}
-	installPath = filepath.Clean(installPath)
-	git := filepath.Join(installPath, "cmd\\git.exe")
-	if _, err := os.Stat(git); err != nil {
+	gitForWindowsBinDir := filepath.Clean(filepath.Join(installPath, "cmd"))
+	if _, err := os.Stat(filepath.Join(gitForWindowsBinDir, "git.exe")); err != nil {
 		return "", err
 	}
-	return filepath.Join(installPath, "cmd"), nil
+	return gitForWindowsBinDir, nil
 }
 
-// InitializeEnv todo
+// InitializeEnv: initialize path env
 func InitializeEnv() error {
-	if _, err := exec.LookPath("git"); err == nil {
-		return nil
-	}
-	gitBinDir, err := initializeGW()
-	if err != nil {
-		return err
-	}
 	pathEnv := os.Getenv("PATH")
 	pathList := strings.Split(pathEnv, string(os.PathListSeparator))
 	pathNewList := make([]string, 0, len(pathList)+2)
-	pathNewList = append(pathNewList, filepath.Clean(gitBinDir))
-	for _, s := range pathList {
-		cleanedPath := filepath.Clean(s)
+	if _, err := exec.LookPath("git"); err != nil {
+		gitForWindowsBinDir, err := initializeGW()
+		if err != nil {
+			return err
+		}
+		pathNewList = append(pathNewList, filepath.Clean(gitForWindowsBinDir))
+	}
+	seen := make(map[string]bool)
+	for _, p := range pathList {
+		cleanedPath := filepath.Clean(p)
 		if cleanedPath == "." {
 			continue
 		}
+		u := strings.ToLower(cleanedPath)
+		if seen[u] {
+			continue
+		}
+		seen[u] = true
 		pathNewList = append(pathNewList, cleanedPath)
 	}
 	os.Setenv("PATH", strings.Join(pathNewList, string(os.PathListSeparator)))

@@ -85,32 +85,36 @@ func removeHideAttrbutes(fd windows.Handle) error {
 		return err
 	}
 	du.FileAttributes &^= (windows.FILE_ATTRIBUTE_HIDDEN | windows.FILE_ATTRIBUTE_READONLY)
-	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&du)), uint32(unsafe.Sizeof(&du)))
+	return windows.SetFileInformationByHandle(fd, windows.FileBasicInfo, (*byte)(unsafe.Pointer(&du)), uint32(unsafe.Sizeof(du)))
 }
 
 func removeInternal(fd windows.Handle) error {
 	infoEx := FILE_DISPOSITION_INFO_EX{
-		Flags: windows.FILE_DISPOSITION_POSIX_SEMANTICS,
+		Flags: windows.FILE_DISPOSITION_DELETE | windows.FILE_DISPOSITION_POSIX_SEMANTICS,
 	}
 	var err error
-	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(&infoEx))); err == nil {
+	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(infoEx))); err == nil {
 		return nil
 	}
 	if err == windows.ERROR_ACCESS_DENIED {
 		if err := removeHideAttrbutes(fd); err != nil {
 			return err
 		}
-		if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(&infoEx))); err == nil {
+		if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(infoEx))); err == nil {
 			return nil
 		}
 	}
-	if err != windows.ERROR_INVALID_PARAMETER && err != windows.ERROR_INVALID_FUNCTION && err != windows.ERROR_NOT_SUBSTED {
+	switch {
+	case err == windows.ERROR_INVALID_PARAMETER:
+	case err == windows.ERROR_INVALID_FUNCTION:
+	case err == windows.ERROR_NOT_SUPPORTED:
+	default:
 		return err
 	}
 	info := FILE_DISPOSITION_INFO{
 		Flags: 0x13, // DELETE
 	}
-	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(&info))); err == nil {
+	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info))); err == nil {
 		return nil
 	}
 	if err != windows.ERROR_ACCESS_DENIED {
@@ -119,7 +123,7 @@ func removeInternal(fd windows.Handle) error {
 	if err := removeHideAttrbutes(fd); err != nil {
 		return err
 	}
-	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(&info)))
+	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)))
 }
 
 func Remove(name string) error {

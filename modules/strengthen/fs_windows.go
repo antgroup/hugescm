@@ -3,7 +3,11 @@
 package strengthen
 
 import (
+	"errors"
+	"os"
+	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -43,8 +47,15 @@ type FILE_RENAME_INFO struct {
 	FileName        [1]uint16
 }
 
-// Rename: posix rename semantics
-func Rename(oldpath, newpath string) error {
+var (
+	errUnsupported = map[error]bool{
+		windows.ERROR_INVALID_PARAMETER: true,
+		windows.ERROR_INVALID_FUNCTION:  true,
+		windows.ERROR_NOT_SUPPORTED:     true,
+	}
+)
+
+func posixSemanticsRename(oldpath, newpath string) error {
 	oldPathUTF16, err := windows.UTF16PtrFromString(oldpath)
 	if err != nil {
 		return err
@@ -74,28 +85,37 @@ func Rename(oldpath, newpath string) error {
 	return windows.SetFileInformationByHandle(fd, windows.FileRenameInfoEx, &buffer[0], uint32(bufferSize))
 }
 
-func removeHiddenAttr(fd windows.Handle) error {
+// rename: posix rename semantics
+func rename(oldpath, newpath string) error {
+	err := posixSemanticsRename(oldpath, newpath)
+	if errUnsupported[err] {
+		return os.Rename(oldpath, newpath)
+	}
+	return err
+}
+
+func removeHideAttrbutes(fd windows.Handle) error {
 	var du FILE_BASIC_INFO
 	if err := windows.GetFileInformationByHandleEx(fd, windows.FileBasicInfo, (*byte)(unsafe.Pointer(&du)), uint32(unsafe.Sizeof(du))); err != nil {
 		return err
 	}
 	du.FileAttributes &^= (windows.FILE_ATTRIBUTE_HIDDEN | windows.FILE_ATTRIBUTE_READONLY)
-	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&du)), uint32(unsafe.Sizeof(&du)))
+	return windows.SetFileInformationByHandle(fd, windows.FileBasicInfo, (*byte)(unsafe.Pointer(&du)), uint32(unsafe.Sizeof(du)))
 }
 
 func posixSemanticsRemove(fd windows.Handle) error {
 	infoEx := FILE_DISPOSITION_INFO_EX{
-		Flags: windows.FILE_DISPOSITION_POSIX_SEMANTICS,
+		Flags: windows.FILE_DISPOSITION_DELETE | windows.FILE_DISPOSITION_POSIX_SEMANTICS,
 	}
 	var err error
-	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(&infoEx))); err == nil {
+	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(infoEx))); err == nil {
 		return nil
 	}
 	if err == windows.ERROR_ACCESS_DENIED {
-		if err := removeHiddenAttr(fd); err != nil {
+		if err := removeHideAttrbutes(fd); err != nil {
 			return err
 		}
-		if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(&infoEx))); err == nil {
+		if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(infoEx))); err == nil {
 			return nil
 		}
 	}
@@ -105,19 +125,19 @@ func posixSemanticsRemove(fd windows.Handle) error {
 	info := FILE_DISPOSITION_INFO{
 		Flags: 0x13, // DELETE
 	}
-	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(&info))); err == nil {
+	if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info))); err == nil {
 		return nil
 	}
 	if err != windows.ERROR_ACCESS_DENIED {
 		return err
 	}
-	if err := removeHiddenAttr(fd); err != nil {
+	if err := removeHideAttrbutes(fd); err != nil {
 		return err
 	}
-	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(&info)))
+	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)))
 }
 
-func Remove(name string) error {
+func remove(name string) error {
 	nameUTF16, err := windows.UTF16PtrFromString(name)
 	if err != nil {
 		return err
@@ -134,4 +154,91 @@ func Remove(name string) error {
 	}
 	defer windows.CloseHandle(fd)
 	return posixSemanticsRemove(fd)
+}
+
+var (
+	delay     = []time.Duration{0, 1, 10, 20, 40}
+	isWindows = func() bool {
+		return runtime.GOOS == "windows"
+	}()
+)
+
+const (
+	ERROR_ACCESS_DENIED     syscall.Errno = 5
+	ERROR_SHARING_VIOLATION syscall.Errno = 32
+	ERROR_LOCK_VIOLATION    syscall.Errno = 33
+)
+
+func isRetryErr(err error) bool {
+	if !isWindows {
+		return false
+	}
+	if os.IsPermission(err) {
+		return true
+	}
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		switch errno {
+		case ERROR_ACCESS_DENIED,
+			ERROR_SHARING_VIOLATION,
+			ERROR_LOCK_VIOLATION:
+			return true
+		}
+	}
+	return false
+}
+
+func windowsLink(oldpath, newpath string) (err error) {
+	for i := 0; i < 2; i++ {
+		if err = os.Link(oldpath, newpath); err == nil {
+			_ = os.Remove(oldpath)
+			return nil
+		}
+		if !errors.Is(err, windows.ERROR_ALREADY_EXISTS) {
+			break
+		}
+		if removeErr := os.Remove(newpath); removeErr != nil {
+			break
+		}
+	}
+	return err
+}
+
+func FinalizeObject(oldpath string, newpath string) (err error) {
+	if err = windowsLink(oldpath, newpath); err == nil {
+		return err
+	}
+	// no retry rename
+	if err = rename(oldpath, newpath); err == nil {
+		return
+	}
+	// on Windows and
+	if !isRetryErr(err) {
+		return
+	}
+	for tries := 0; tries < len(delay); tries++ {
+		/*
+		 * We assume that some other process had the source or
+		 * destination file open at the wrong moment and retry.
+		 * In order to give the other process a higher chance to
+		 * complete its operation, we give up our time slice now.
+		 * If we have to retry again, we do sleep a bit.
+		 */
+		time.Sleep(delay[tries] * time.Millisecond)
+		_ = os.Chmod(newpath, 0644) // & ~FILE_ATTRIBUTE_READONLY
+		// retry run
+		if err = rename(oldpath, newpath); err == nil {
+			return
+		}
+		// Only windows retry
+		if !isRetryErr(err) {
+			return
+		}
+	}
+	// FIXME: Windows platform security software can cause some bizarre phenomena, such as star points.
+	if os.IsPermission(err) {
+		_, err = os.Stat(newpath)
+		return
+	}
+	return
 }

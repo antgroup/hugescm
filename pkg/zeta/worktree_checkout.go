@@ -13,7 +13,6 @@ import (
 
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/plumbing/format/index"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/progress"
@@ -423,7 +422,7 @@ func (cg *checkoutGroup) coco(ctx context.Context, w *Worktree, bar ProgressBar)
 			fmt.Fprintf(os.Stderr, "\x1b[2K\rcheckout file %s error: %v\n", e.name, err)
 			return err
 		}
-		if err := w.addIndex(e.name, e.entry.Hash, cg.recv, e.entry.IsFragments()); err != nil {
+		if err := w.addIndex(e.name, e.entry, cg.recv); err != nil {
 			fmt.Fprintf(os.Stderr, "\x1b[2K\rreset file %s index error: %v\n", e.name, err)
 			return err
 		}
@@ -440,23 +439,15 @@ func (cg *checkoutGroup) run(ctx context.Context, w *Worktree, bar ProgressBar) 
 	}()
 }
 
-func (w *Worktree) addIndex(name string, h plumbing.Hash, recv indexRecv, isFragments bool) error {
+func (w *Worktree) addIndex(name string, entry *object.TreeEntry, recv indexRecv) error {
 	fi, err := w.fs.Lstat(name)
 	if err != nil {
 		return err
 	}
-
-	mode, err := filemode.NewFromOS(fi.Mode())
-	if err != nil {
-		return err
-	}
-	if isFragments {
-		mode |= filemode.Fragments
-	}
 	e := &index.Entry{
-		Hash:       h,
+		Hash:       entry.Hash,
 		Name:       name,
-		Mode:       mode,
+		Mode:       entry.Mode,
 		ModifiedAt: fi.ModTime(),
 		Size:       uint64(fi.Size()),
 	}
@@ -470,15 +461,15 @@ func (w *Worktree) addIndex(name string, h plumbing.Hash, recv indexRecv, isFrag
 	return nil
 }
 
-func (w *Worktree) addPseudoIndexRecv(name string, oe *object.TreeEntry, recv indexRecv) {
+func (w *Worktree) addPseudoIndexRecv(name string, entry *object.TreeEntry, recv indexRecv) {
 	now := time.Now()
 	e := &index.Entry{
-		Hash:       oe.Hash,
+		Hash:       entry.Hash,
 		Name:       name,
-		Mode:       oe.Mode,
+		Mode:       entry.Mode,
 		ModifiedAt: now,
 		CreatedAt:  now,
-		Size:       uint64(oe.Size),
+		Size:       uint64(entry.Size),
 	}
 	recv(e)
 }

@@ -54,9 +54,6 @@ type hasher interface {
 }
 
 func (w *Worktree) hijackChangeFileMode(ch *merkletrie.Change) bool {
-	if ch.From == nil || ch.To == nil {
-		return false
-	}
 	from := ch.From.Last()
 	to := ch.To.Last()
 	a, ok := from.(hasher)
@@ -114,9 +111,6 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 				}
 			}
 		}
-		if w.hijackChangeFileMode(&ch) {
-			continue
-		}
 		// Add
 		if ch.From == nil {
 			newItems = append(newItems, ch)
@@ -125,6 +119,10 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 		// Del
 		if ch.To == nil {
 			rmItems[strings.ToLower(ch.From.String())] = ch
+			continue
+		}
+		// modified
+		if w.hijackChangeFileMode(&ch) {
 			continue
 		}
 		res = append(res, ch)

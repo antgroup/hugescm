@@ -13,5 +13,9 @@ bin/*
 local/*
 .DS_Store
 utils/viewport/viewport
+
 /out/
 /.vscode/
+
+.idea/*
+vendor/*

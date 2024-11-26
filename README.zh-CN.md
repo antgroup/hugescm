@@ -142,6 +142,12 @@ zeta commit -m "XXX"
 zeta push
 ```
 
+### 将存储库从 Git 迁移到 HugeSCM
+
+```shell
+zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
+```
+
 ## 许可证
 
 Apache License Version 2.0, 请查看 [LICENSE](LICENSE)

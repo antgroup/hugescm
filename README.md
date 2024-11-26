@@ -137,6 +137,13 @@ zeta commit -m "XXX"
 zeta push
 ```
 
+### Migrate repository from Git to HugeSCM
+
+```shell
+zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
+```
+
+
 ## License
 
 Apache License Version 2.0, see [LICENSE](LICENSE)

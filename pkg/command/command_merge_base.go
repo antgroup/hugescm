@@ -52,5 +52,5 @@ func (c *MergeBase) Run(g *Globals) error {
 		diev("At least two versions are required,  eg: zeta merge-base A B")
 		return ErrArgRequired
 	}
-	return r.MergeBase(context.Background(), c.Args)
+	return r.MergeBase(context.Background(), c.Args, c.All)
 }

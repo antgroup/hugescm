@@ -260,6 +260,12 @@ func (w *Worktree) mergeInternal(ctx context.Context, into, from plumbing.Hash, 
 	}
 	result, err := w.mergeTree(ctx, c1, c2, nil, branch1, branch2, allowUnrelatedHistories, textconv)
 	if err != nil {
+		if mr, ok := err.(*odb.MergeResult); ok {
+			for _, m := range mr.Messages {
+				fmt.Fprintln(os.Stderr, m)
+			}
+			return plumbing.ZeroHash, ErrHasConflicts
+		}
 		return plumbing.ZeroHash, err
 	}
 	for _, m := range result.Messages {
@@ -275,7 +281,7 @@ func (w *Worktree) mergeInternal(ctx context.Context, into, from plumbing.Hash, 
 	parents := []plumbing.Hash{into}
 	message := messageFn()
 	if squash {
-		if message, err = w.makeSquashMessage(ctx, from, result.Base, message); err != nil {
+		if message, err = w.makeSquashMessage(ctx, from, result.b0, message); err != nil {
 			return plumbing.ZeroHash, err
 		}
 	} else {

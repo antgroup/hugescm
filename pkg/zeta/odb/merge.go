@@ -350,6 +350,10 @@ type MergeResult struct {
 	Messages  []string      `json:"messages,omitempty"`
 }
 
+func (mr *MergeResult) Error() string {
+	return "conflicts"
+}
+
 func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOptions, result *MergeResult) (*TreeEntry, error) {
 	// Both sides add
 	if ch.Ancestor == nil {
@@ -490,7 +494,10 @@ func (d *ODB) unifiedText(ctx context.Context, oid plumbing.Hash, textConv bool)
 // MergeTree: three way merge tree
 func (d *ODB) MergeTree(ctx context.Context, o, a, b *object.Tree, opts *MergeOptions) (*MergeResult, error) {
 	if opts.Branch1 == "" {
-		opts.Branch1 = a.Hash.String()
+		opts.Branch1 = "Branch1"
+	}
+	if opts.Branch2 == "" {
+		opts.Branch2 = "Branch2"
 	}
 	if opts.MergeDriver == nil {
 		opts.MergeDriver = diffmatchpatch.Merge // fallback

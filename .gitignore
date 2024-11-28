@@ -12,10 +12,9 @@ bin/*
 /*.sh
 local/*
 .DS_Store
-utils/viewport/viewport
-
+*.gop1
+*.rej
 /out/
 /.vscode/
-
 .idea/*
 vendor/*

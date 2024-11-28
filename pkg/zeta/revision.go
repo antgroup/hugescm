@@ -315,7 +315,7 @@ func (r *Repository) IsAncestor(ctx context.Context, a, b string) error {
 	return ErrNotAncestor
 }
 
-func (r *Repository) MergeBase(ctx context.Context, revisions []string) error {
+func (r *Repository) MergeBase(ctx context.Context, revisions []string, all bool) error {
 	commits := make([]*object.Commit, 0, len(revisions))
 	for _, a := range revisions {
 		cc, err := r.parseRevExhaustive(ctx, a)
@@ -330,11 +330,12 @@ func (r *Repository) MergeBase(ctx context.Context, revisions []string) error {
 		return ErrAborting
 	}
 	c0 := commits[0]
-	base := c0
+	bases := make([]*object.Commit, 0, 2)
+	var err error
+	current := c0
 	for i := 1; i < len(commits); i++ {
 		rev := commits[i]
-		bases, err := rev.MergeBase(ctx, base)
-		if err != nil {
+		if bases, err = rev.MergeBase(ctx, current); err != nil {
 			die_error("merge-base: %v", err)
 			return err
 		}
@@ -342,8 +343,14 @@ func (r *Repository) MergeBase(ctx context.Context, revisions []string) error {
 			fmt.Fprintln(os.Stderr, "merge-base: unrelated histories")
 			return ErrUnrelatedHistories
 		}
-		base = bases[0]
+		current = bases[0]
 	}
-	fmt.Fprintln(os.Stdout, base.Hash.String())
+	if all {
+		for _, b := range bases {
+			fmt.Fprintln(os.Stdout, b.Hash)
+		}
+		return nil
+	}
+	fmt.Fprintln(os.Stdout, bases[0].Hash)
 	return nil
 }

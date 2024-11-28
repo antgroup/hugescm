@@ -6,11 +6,11 @@ require (
 	cloud.google.com/go/storage v1.47.0
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
-	github.com/ProtonMail/go-crypto v1.1.2
+	github.com/ProtonMail/go-crypto v1.1.3
 	github.com/aws/aws-sdk-go-v2 v1.32.5
 	github.com/aws/aws-sdk-go-v2/config v1.28.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.46
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.67.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.69.0
 	github.com/creack/pty v1.1.24
 	github.com/danieljoos/wincred v1.2.2
 	github.com/dgraph-io/ristretto/v2 v2.0.0
@@ -27,7 +27,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/rivo/uniseg v0.4.7
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/vbauerster/mpb/v8 v8.8.3
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.29.0
@@ -36,14 +36,14 @@ require (
 	golang.org/x/sys v0.27.0
 	golang.org/x/term v0.26.0
 	golang.org/x/text v0.20.0
-	google.golang.org/api v0.207.0
+	google.golang.org/api v0.209.0
 )
 
 require (
 	cel.dev/expr v0.18.0 // indirect
 	cloud.google.com/go v0.116.0 // indirect
-	cloud.google.com/go/auth v0.10.2 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
+	cloud.google.com/go/auth v0.11.0 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.2 // indirect
 	cloud.google.com/go/monitoring v1.21.2 // indirect

@@ -233,14 +233,14 @@ func (r *Repository) prepareFetch(ctx context.Context, current *plumbing.Referen
 }
 
 // DoFetch: Fetch reference or commit
-func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (plumbing.Hash, error) {
+func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (*FetchResult, error) {
 	current, refname, err := r.resolveRef(opts.ReferenceName())
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 	t, err := r.newTransport(ctx, transport.DOWNLOAD)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 	var want plumbing.Hash
 	ref, err := t.FetchReference(ctx, refname)
@@ -248,20 +248,20 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (plumbin
 	case err == transport.ErrReferenceNotExist:
 		if !plumbing.ValidateHashHex(string(opts.Name)) {
 			die_error("couldn't find remote ref %s", opts.Name)
-			return plumbing.ZeroHash, err
+			return nil, err
 		}
 		refname = plumbing.ReferenceName(opts.Name)
 		want = plumbing.NewHash(string(opts.Name))
 	case err != nil:
 		die("fetch remote reference '%s' error: %v", opts.Name, err)
-		return plumbing.ZeroHash, err
+		return nil, err
 	default:
 		want = plumbing.NewHash(ref.Hash)
 	}
 
 	o, err := r.prepareFetch(ctx, current, want, opts)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 
 	// Unless the user modifies the sparse checkout configuration, we do not have to repeat the fetch metadata.
@@ -270,19 +270,19 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (plumbin
 		if opts.FetchAlways {
 			if err := r.fetchObjects(ctx, t, o.Target, o.SizeLimit, o.SkipLarges); err != nil {
 				die_error("fetch missing object error: %v", err)
-				return plumbing.ZeroHash, err
+				return nil, err
 			}
 		}
-		return o.Target, nil
+		return &FetchResult{Reference: ref, FETCH_HEAD: o.Target}, nil
 	}
 
 	if err := r.fetch(ctx, t, o); err != nil {
 		die_error("fetch target '%s' error: %v", o.Target, err)
-		return o.Target, err
+		return nil, err
 	}
 	if err := r.odb.SpecReferenceUpdate(odb.FETCH_HEAD, o.Target); err != nil {
 		die_error("update FETCH_HEAD: %v", err)
-		return o.Target, err
+		return nil, err
 	}
 	if opts.Unshallow {
 		_ = r.odb.Unshallow()
@@ -293,15 +293,15 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (plumbin
 		originBranch := plumbing.NewRemoteReferenceName(plumbing.Origin, refname.BranchName())
 		if err := r.ReferenceUpdate(plumbing.NewHashReference(originBranch, o.Target), nil); err != nil {
 			die_error("update-ref '%s' error: %v", originBranch, err)
-			return o.Target, err
+			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "* branch %s -> FETCH_HEAD\n", refname.BranchName())
 	case refname.IsTag():
 		if err := r.updateTagReference(ctx, refname, o.Target, opts.Force); err != nil {
-			return plumbing.ZeroHash, nil
+			return nil, nil
 		}
 	default:
 		fmt.Fprintf(os.Stderr, "* %s -> FETCH_HEAD\n", refname)
 	}
-	return o.Target, nil
+	return &FetchResult{Reference: ref, FETCH_HEAD: o.Target}, nil
 }

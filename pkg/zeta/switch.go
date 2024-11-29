@@ -43,16 +43,22 @@ func switchError(target string, err error) {
 }
 
 func (r *Repository) switchBranchFromRemote(ctx context.Context, branch string, so *SwitchOptions) error {
-	FETCH_HEAD, err := r.DoFetch(ctx, &DoFetchOptions{Name: branch, FetchAlways: true, Limit: so.Limit})
+	fo, err := r.DoFetch(ctx, &DoFetchOptions{Name: branch, FetchAlways: true, Limit: so.Limit})
 	if err != nil {
 		return err
 	}
-	if err := r.CreateBranch(ctx, branch, FETCH_HEAD.String(), so.ForceCreate, true); err != nil {
-		return err
+	opts := &CheckoutOptions{Merge: so.Merge, Force: so.Force, First: false, One: so.one}
+	if fo.Reference != nil && fo.Reference.Name.IsBranch() {
+		if err := r.CreateBranch(ctx, branch, fo.FETCH_HEAD.String(), so.ForceCreate, true); err != nil {
+			return err
+		}
+		opts.Branch = plumbing.NewBranchReferenceName(branch)
+	} else {
+		opts.Hash = fo.FETCH_HEAD
 	}
 	w := r.Worktree()
 	w.missingNotFailure = true
-	if err := w.Checkout(ctx, &CheckoutOptions{Branch: plumbing.NewBranchReferenceName(branch), Merge: so.Merge, Force: so.Force, First: false, One: so.one}); err != nil {
+	if err := w.Checkout(ctx, opts); err != nil {
 		switchError(branch, err)
 		return err
 	}

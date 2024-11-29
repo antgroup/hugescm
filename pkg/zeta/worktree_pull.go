@@ -28,11 +28,11 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 		die_error("reference '%s' not branch", currentName)
 		return errors.New("reference not branch")
 	}
-	FETCH_HEAD, err := w.DoFetch(ctx, &DoFetchOptions{Name: currentName.String(), Unshallow: opts.Unshallow, Limit: opts.Limit, FetchAlways: true, SkipLarges: opts.One})
+	fo, err := w.DoFetch(ctx, &DoFetchOptions{Name: currentName.String(), Unshallow: opts.Unshallow, Limit: opts.Limit, FetchAlways: true, SkipLarges: opts.One})
 	if err != nil {
 		return err
 	}
-	if FETCH_HEAD == current.Hash() {
+	if fo.FETCH_HEAD == current.Hash() {
 		fmt.Fprintln(os.Stderr, W("Already up to date."))
 		return nil
 	}
@@ -60,7 +60,7 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 		}
 		ignoreParents = append(ignoreParents, d.Parents...)
 	}
-	headAheadOfRef, err := w.isFastForward(ctx, FETCH_HEAD, current.Hash(), ignoreParents)
+	headAheadOfRef, err := w.isFastForward(ctx, fo.FETCH_HEAD, current.Hash(), ignoreParents)
 	if err != nil {
 		die_error("check fast-forward error: %v", err)
 		return err
@@ -71,14 +71,14 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 		return nil
 	}
 
-	fasfForward, err := w.isFastForward(ctx, current.Hash(), FETCH_HEAD, ignoreParents)
+	fasfForward, err := w.isFastForward(ctx, current.Hash(), fo.FETCH_HEAD, ignoreParents)
 	if err != nil {
 		die_error("check fast-forward error: %v", err)
 		return err
 	}
 	branchName := currentName.BranchName()
 	if fasfForward {
-		newRev := FETCH_HEAD
+		newRev := fo.FETCH_HEAD
 		if !opts.FF {
 			messagePrefix := fmt.Sprintf("Merge branch '%s of %s' into %s", branchName, w.cleanedRemote(), branchName)
 			message, err := w.mergeMessageFromPrompt(ctx, messagePrefix)
@@ -113,7 +113,7 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 	remoteRefName := plumbing.NewRemoteReferenceName("origin", branchName)
 	if opts.Rebase {
 		messagePrefix := fmt.Sprintf("Rebase branch '%s of %s' into %s", branchName, w.cleanedRemote(), branchName)
-		newRev, err := w.rebaseInternal(ctx, current.Hash(), FETCH_HEAD, currentName, remoteRefName, false)
+		newRev, err := w.rebaseInternal(ctx, current.Hash(), fo.FETCH_HEAD, currentName, remoteRefName, false)
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 		return nil
 	}
 	messagePrefix := fmt.Sprintf("Merge branch '%s of %s' into %s", branchName, w.cleanedRemote(), branchName)
-	newRev, err := w.mergeInternal(ctx, current.Hash(), FETCH_HEAD, branchName, string(remoteRefName), opts.Squash, false, false, false, func() string {
+	newRev, err := w.mergeInternal(ctx, current.Hash(), fo.FETCH_HEAD, branchName, string(remoteRefName), opts.Squash, false, false, false, func() string {
 		message, _ := w.mergeMessageFromPrompt(ctx, messagePrefix)
 		return message
 	})

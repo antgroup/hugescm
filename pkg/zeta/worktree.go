@@ -230,6 +230,26 @@ func (r *Repository) getTreeFromHash(ctx context.Context, oid plumbing.Hash) (*o
 	return nil, fmt.Errorf("object '%s' not tree or commit", oid)
 }
 
+func (w *Worktree) Prefetch(ctx context.Context, revision string, limit int64, skipLarge bool) (plumbing.Hash, error) {
+	oid, err := w.Revision(ctx, revision)
+	switch {
+	case err == nil:
+		fo, err := w.DoFetch(ctx, &DoFetchOptions{Name: revision, FetchAlways: true, Limit: limit})
+		if err != nil {
+			return plumbing.ZeroHash, err
+		}
+		oid = fo.FETCH_HEAD
+	case plumbing.IsNoSuchObject(err):
+	default:
+		return plumbing.ZeroHash, err
+	}
+	if err := w.FetchObjects(ctx, oid, skipLarge); err != nil {
+		fmt.Fprintf(os.Stderr, "prefetch: fetch missing objects error: %v\n", err)
+		return plumbing.ZeroHash, err
+	}
+	return oid, nil
+}
+
 func (w *Worktree) Reset(ctx context.Context, opts *ResetOptions) error {
 	if opts.One {
 		w.missingNotFailure = true

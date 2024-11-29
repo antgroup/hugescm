@@ -23,6 +23,7 @@ type Reset struct {
 	Keep     bool     `name:"keep" help:"Reset HEAD but keep local changes"`
 	Fetch    bool     `name:"fetch" help:"Fetch missing objects"`
 	One      bool     `name:"one" help:"Checkout large files one after another, --hard mode only"`
+	Limit    int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
 	Quiet    bool     `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`
 	paths    []string `kong:"-"`
 }
@@ -79,6 +80,18 @@ func (c *Reset) validateFlags() string {
 	return ""
 }
 
+func (c *Reset) resetAutoFetch(w *zeta.Worktree) error {
+	oid, err := w.Prefetch(context.Background(), c.Revision, c.Limit, c.One)
+	if err != nil {
+		return err
+	}
+	if err := w.Reset(context.Background(), &zeta.ResetOptions{Commit: oid, Mode: c.ResetMode(), Fetch: c.Fetch, One: c.One, Quiet: c.Quiet}); err != nil {
+		fmt.Fprintf(os.Stderr, "zeta reset to %s error: %v\n", oid, err)
+		return err
+	}
+	return nil
+}
+
 func (c *Reset) Run(g *Globals) error {
 	if action := c.validateFlags(); len(action) != 0 {
 		diev("cannot %s reset with paths.", action)
@@ -103,9 +116,16 @@ func (c *Reset) Run(g *Globals) error {
 		}
 		r.Close()
 	}()
+	w := r.Worktree()
+
 	if len(c.Revision) == 0 {
 		c.Revision = string(plumbing.HEAD)
 	}
+
+	if c.Fetch || c.One {
+		return c.resetAutoFetch(w)
+	}
+
 	oid, err := r.Revision(context.Background(), c.Revision)
 	if plumbing.IsNoSuchObject(err) {
 		fmt.Fprintf(os.Stderr, "zeta reset: %s not found\n", c.Revision)
@@ -120,20 +140,12 @@ func (c *Reset) Run(g *Globals) error {
 		return errors.New("no such revision")
 	}
 	if len(c.paths) != 0 {
-		w := r.Worktree()
 		if err := w.ResetSpec(context.Background(), oid, slashPaths(c.paths)); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta reset: error: %v\n", err)
 			return err
 		}
 		return nil
 	}
-	if c.Fetch || c.One {
-		if err := r.FetchObjects(context.Background(), oid, c.One); err != nil {
-			fmt.Fprintf(os.Stderr, "zeta reset: fetch missing objects error: %v\n", err)
-			return err
-		}
-	}
-	w := r.Worktree()
 	if err := w.Reset(context.Background(), &zeta.ResetOptions{Commit: oid, Mode: c.ResetMode(), Fetch: c.Fetch, One: c.One, Quiet: c.Quiet}); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta reset to %s error: %v\n", oid, err)
 		return err

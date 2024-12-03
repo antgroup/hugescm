@@ -94,7 +94,7 @@ zeta pull
 
 | 加速器 | 加速逻辑 | 备注 |
 | :---: | --- | --- |
-| `direct` | 由 zeta 客户端获取签名地址直接从 OSS 下载，流量不经 Zeta Server | **<font style="color:#ED740C;">像 AI 场景可以使用该机制，实际上 oss 走签名下载后，速度是足够的。相反，如果未设置加速器，下载网速可能达不到理想状态，因此，用户应当尽量开启直连（当无法访问 oss 签名 url 时，则不应设置）。</font>** |
+| `direct` | 由 zeta 客户端获取签名地址直接从 OSS 下载，流量不经 Zeta Server | 像 AI 场景可以使用该机制，实际上 oss 走签名下载后，速度是足够的。相反，如果未设置加速器，下载网速可能达不到理想状态，因此，用户应当尽量开启直连（当无法访问 oss 签名 url 时，则不应设置）。|
 | `dragonfly` | 调用 dragonfly 客户端 dfget 下载，dfget 能使用 dragonfly 集群能力。 | 可以使用 `ZETA_EXTENSION_DRAGONFLY_GET`指定 dfget 路径，而不是使用 PATH 中的 dfget。  |
 | `aria2` | 调用 aria2c 命令行下载，aria2 是业内著名的下载工具。 | 可以使用 `ZETA_EXTENSION_ARIA2C`指定 aria2c 路径，而不是使用 PATH 中的 aria2c。  |
 

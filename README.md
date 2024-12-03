@@ -91,7 +91,7 @@ The zeta client supports three acceleration types—`direct`, `dragonfly`, and `
 
 | accelerator | mechanism | remark |
 | :---: | --- | --- |
-| `direct` | The zeta client directly retrieves the signature address from OSS, bypassing the Zeta Server. | **<font style="color:#ED740C;">This mechanism is applicable in AI scenarios. After OSS downloads with signatures, speed is adequate. Without an accelerator, download speed may be suboptimal. Users should enable direct connection unless the OSS signature URL is inaccessible.</font>** |
+| `direct` | The zeta client directly retrieves the signature address from OSS, bypassing the Zeta Server. | This mechanism is applicable in AI scenarios. After OSS downloads with signatures, speed is adequate. Without an accelerator, download speed may be suboptimal. Users should enable direct connection unless the OSS signature URL is inaccessible. |
 | `dragonfly` | Use the dragonfly client dfget to download, leveraging dragonfly cluster capabilities. | You can use `ZETA_EXTENSION_DRAGONFLY_GET` to specify the dfget path instead of using the dfget in PATH.|
 | `aria2` | Use the aria2c command line to download; aria2 is a well-known download tool in the industry. | You can use `ZETA_EXTENSION_ARIA2C` to specify the aria2c path instead of using the aria2c in PATH. |
 

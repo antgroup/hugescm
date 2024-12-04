@@ -24,13 +24,22 @@ type MergeRunes struct {
 	StrIndexArrayB []rune
 }
 
-func (dmp *DiffMatchPatch) MergeLinesToRunes(textO, textA, textB string) *MergeRunes {
+func (dmp *DiffMatchPatch) MergeLinesToRunes(textO, textA, textB string) (*MergeRunes, error) {
 	lines := make(LineMap)
 	lineHash := make(map[string]rune)
-	strIndexArrayO := dmp.diffLinesToRunesMunge(textO, lines, lineHash)
-	strIndexArrayA := dmp.diffLinesToRunesMunge(textA, lines, lineHash)
-	strIndexArrayB := dmp.diffLinesToRunesMunge(textB, lines, lineHash)
-	return &MergeRunes{Lines: lines, StrIndexArrayO: strIndexArrayO, StrIndexArrayA: strIndexArrayA, StrIndexArrayB: strIndexArrayB}
+	strIndexArrayO, err := dmp.diffLinesToRunesMunge(textO, lines, lineHash)
+	if err != nil {
+		return nil, err
+	}
+	strIndexArrayA, err := dmp.diffLinesToRunesMunge(textA, lines, lineHash)
+	if err != nil {
+		return nil, err
+	}
+	strIndexArrayB, err := dmp.diffLinesToRunesMunge(textB, lines, lineHash)
+	if err != nil {
+		return nil, err
+	}
+	return &MergeRunes{Lines: lines, StrIndexArrayO: strIndexArrayO, StrIndexArrayA: strIndexArrayA, StrIndexArrayB: strIndexArrayB}, nil
 }
 
 // Merge: Run a three-way text merge
@@ -92,7 +101,10 @@ func (dmp *DiffMatchPatch) MergeLinesToRunes(textO, textA, textB string) *MergeR
 //	 >>>>>>> B
 //	 6
 func (dmp *DiffMatchPatch) Merge(textO, textA, textB string, labelA, labelB string) (string, bool, error) {
-	m := dmp.MergeLinesToRunes(textO, textA, textB)
+	m, err := dmp.MergeLinesToRunes(textO, textA, textB)
+	if err != nil {
+		return "", false, err
+	}
 	diffsA := dmp.DiffMainRunes(m.StrIndexArrayO, m.StrIndexArrayA, false)
 	diffsB := dmp.DiffMainRunes(m.StrIndexArrayO, m.StrIndexArrayB, false)
 	p1 := diffsToPair(diffsA)

@@ -17,7 +17,7 @@ import (
 // string into the dst string. The underlying algorithm is Meyers,
 // its complexity is O(N*d) where N is min(lines(src), lines(dst)) and d
 // is the size of the diff.
-func Do(src, dst string) (diffs []diffmatchpatch.Diff) {
+func Do(src, dst string) ([]diffmatchpatch.Diff, error) {
 	// the default timeout is time.Second which may be too small under heavy load
 	return DoWithTimeout(src, dst, time.Hour)
 }
@@ -29,13 +29,16 @@ func Do(src, dst string) (diffs []diffmatchpatch.Diff) {
 // a bulk delete+insert and the half-baked suboptimal result is returned at once.
 // The underlying algorithm is Meyers, its complexity is O(N*d) where N is
 // min(lines(src), lines(dst)) and d is the size of the diff.
-func DoWithTimeout(src, dst string, timeout time.Duration) (diffs []diffmatchpatch.Diff) {
+func DoWithTimeout(src, dst string, timeout time.Duration) ([]diffmatchpatch.Diff, error) {
 	dmp := diffmatchpatch.New()
 	dmp.DiffTimeout = timeout
-	wSrc, wDst, warray := dmp.DiffLinesToRunes(src, dst)
-	diffs = dmp.DiffMainRunes(wSrc, wDst, false)
+	wSrc, wDst, warray, err := dmp.DiffLinesToRunes(src, dst)
+	if err != nil {
+		return nil, err
+	}
+	diffs := dmp.DiffMainRunes(wSrc, wDst, false)
 	diffs = dmp.DiffCharsToLines(diffs, warray)
-	return diffs
+	return diffs, nil
 }
 
 // Dst computes and returns the destination text.

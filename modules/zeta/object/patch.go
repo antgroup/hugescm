@@ -79,8 +79,10 @@ func filePatchWithContext(ctx context.Context, codecvt bool, c *Change) (fdiff.F
 		return nil, err
 	}
 
-	diffs := diff.Do(fromContent, toContent)
-
+	diffs, err := diff.Do(fromContent, toContent)
+	if err != nil {
+		return &textFilePatch{from: c.From, to: c.To}, nil
+	}
 	var chunks []fdiff.Chunk
 	for _, d := range diffs {
 		select {

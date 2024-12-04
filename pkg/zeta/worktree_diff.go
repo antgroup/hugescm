@@ -134,7 +134,10 @@ func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Chang
 	if isBinA || isBinB {
 		return object.NewFilePatchWrapper(nil, from, to, false), nil
 	}
-	diffs := diff.Do(fromContent, toContent)
+	diffs, err := diff.Do(fromContent, toContent)
+	if err != nil {
+		return object.NewFilePatchWrapper(nil, from, to, false), nil
+	}
 
 	var chunks []fdiff.Chunk
 	for _, d := range diffs {

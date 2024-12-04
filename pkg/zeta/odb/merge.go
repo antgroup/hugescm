@@ -380,7 +380,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 			M:        opts.MergeDriver,
 			G:        opts.TextGetter,
 		})
-		if err == object.ErrNotTextContent {
+		if err == object.ErrNotTextContent || err == diffmatchpatch.ErrTooManyUniqueLines {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil
@@ -428,10 +428,9 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 				M:        opts.MergeDriver,
 				G:        opts.TextGetter,
 			})
-		if err == object.ErrNotTextContent {
+		if err == object.ErrNotTextContent || err == diffmatchpatch.ErrTooManyUniqueLines {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
-			// Only filemode changes
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil
 		}
 		if err != nil {

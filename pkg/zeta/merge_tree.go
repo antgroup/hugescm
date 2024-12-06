@@ -11,8 +11,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/antgroup/hugescm/modules/diff3"
-	"github.com/antgroup/hugescm/modules/diffmatchpatch"
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -61,15 +60,11 @@ func (r *Repository) resolveMergeDriver() odb.MergeDriver {
 				r.DbgPrint("Use diff3 as text merge driver")
 				return r.odb.Diff3Merge
 			}
-			r.DbgPrint("Use diff3 [epiclabs-io/diff3] as text merge driver")
-			return diff3.SimpleMerge
-		case "simple-diff3":
-			return diff3.SimpleMerge
 		default:
 			r.DbgPrint("Unsupport merge driver '%s'", driverName)
 		}
 	}
-	return diffmatchpatch.Merge
+	return diferenco.Merge
 }
 
 func (o *MergeTreeOptions) formatJson(result *odb.MergeResult) {

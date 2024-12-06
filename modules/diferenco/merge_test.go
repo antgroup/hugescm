@@ -25,12 +25,13 @@ wine
 `
 
 	const textB = `celery
-garlic
 salmon
-tomatoes
+garlic
 onions
+tomatoes
 wine
 `
+
 	content, conflict, err := Merge(context.Background(), textO, textA, textB, "o.txt", "a.txt", "b.txt")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)

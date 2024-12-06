@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/diffmatchpatch"
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
@@ -499,7 +500,7 @@ func (d *ODB) MergeTree(ctx context.Context, o, a, b *object.Tree, opts *MergeOp
 		opts.Branch2 = "Branch2"
 	}
 	if opts.MergeDriver == nil {
-		opts.MergeDriver = diffmatchpatch.Merge // fallback
+		opts.MergeDriver = diferenco.Merge // fallback
 	}
 	if opts.TextGetter == nil {
 		opts.TextGetter = d.unifiedText

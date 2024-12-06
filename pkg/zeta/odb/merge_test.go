@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/antgroup/hugescm/modules/diffmatchpatch"
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
 )
 
@@ -175,7 +175,7 @@ tomatoes
 onions
 wine
 `
-	s, conflict, err := diffmatchpatch.Merge(context.Background(), textO, textA, textB, "a.txt", "a.txt", "b.txt")
+	s, conflict, err := diferenco.Merge(context.Background(), textO, textA, textB, "a.txt", "a.txt", "b.txt")
 	if err != nil {
 		return
 	}

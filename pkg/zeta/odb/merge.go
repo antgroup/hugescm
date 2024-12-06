@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
-	"github.com/antgroup/hugescm/modules/diffmatchpatch"
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -381,7 +380,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 			M:        opts.MergeDriver,
 			G:        opts.TextGetter,
 		})
-		if err == object.ErrNotTextContent || err == diffmatchpatch.ErrTooManyUniqueLines {
+		if err == object.ErrNotTextContent {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil
@@ -429,7 +428,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 				M:        opts.MergeDriver,
 				G:        opts.TextGetter,
 			})
-		if err == object.ErrNotTextContent || err == diffmatchpatch.ErrTooManyUniqueLines {
+		if err == object.ErrNotTextContent {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil

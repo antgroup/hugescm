@@ -18,6 +18,8 @@ HugeSCM mainly solves the repository scale problem in the following ways:
 + Advanced algorithms and data structures: HugeSCM uses advanced algorithms and data structures to organize and manage repository data. These algorithms and data structures can effectively handle the storage and retrieval requirements of large-scale repositories and improve the efficiency and performance of operations. HugeSCM introduces fragments objects to solve the scale problem of a single file. This means that in addition to storing source code, HugeSCM can also conveniently store binary data, AI models, binary dependencies, and so on.
 Through the above strategies and technologies, HugeSCM can effectively solve the repository scale problem and provide high-performance, reliable and flexible version control services.
 
+**It draws on Git's experience and gets rid of Git's historical baggage. In short, we are grateful to these predecessors.**
+
 ## Technical Details
 
 Object format: [object-format.md](./docs/object-format.md)  

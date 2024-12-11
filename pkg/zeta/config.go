@@ -258,6 +258,10 @@ func UpdateConfig(opts *UpdateConfigOptions) error {
 			i++
 			continue
 		}
+		if len(opts.NameAndValues) <= i+1 {
+			fmt.Fprintf(os.Stderr, "error: config missing args\n")
+			return errors.New("missing args")
+		}
 		values[kv] = valueCast(opts.NameAndValues[i+1])
 		i += 2
 	}

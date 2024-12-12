@@ -76,7 +76,7 @@ func (c *onpCtx[E]) compare() []Change {
 
 func (c *onpCtx[E]) snake(k int) {
 	var y int
-	var prev *lcs
+	var prev *onpLcs
 	kk := k + (c.M + 1)
 
 	h := &c.fp[kk-1]
@@ -111,7 +111,7 @@ func (c *onpCtx[E]) snake(k int) {
 	if n == 0 {
 		p.lcs = prev
 	} else {
-		p.lcs = &lcs{
+		p.lcs = &onpLcs{
 			x:    x - n,
 			y:    y - n,
 			n:    n,
@@ -120,7 +120,7 @@ func (c *onpCtx[E]) snake(k int) {
 	}
 }
 
-func (c *onpCtx[E]) reverse(curr *lcs) (next *lcs, n int) {
+func (c *onpCtx[E]) reverse(curr *onpLcs) (next *onpLcs, n int) {
 	for ; curr != nil; n++ {
 		curr.next, next, curr = next, curr, curr.next
 	}
@@ -129,13 +129,13 @@ func (c *onpCtx[E]) reverse(curr *lcs) (next *lcs, n int) {
 
 type point struct {
 	y   int
-	lcs *lcs
+	lcs *onpLcs
 }
 
-type lcs struct {
+type onpLcs struct {
 	x, y int
 	n    int
-	next *lcs
+	next *onpLcs
 }
 
 // OnpDiff returns the differences between data.

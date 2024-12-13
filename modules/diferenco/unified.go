@@ -6,6 +6,8 @@ package diferenco
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 )
 
 // DefaultContextLines is the number of unchanged lines of surrounding
@@ -15,21 +17,89 @@ const DefaultContextLines = 3
 type File struct {
 	Path string
 	Hash string
-	Mode int
+	Mode uint32
 }
 
 // unified represents a set of edits as a unified diff.
 type Unified struct {
 	// From is the name of the original file.
-	From File
+	From *File
 	// To is the name of the modified file.
-	To File
+	To *File
 	// IsBinary returns true if this patch is representing a binary file.
 	IsBinary bool
 	// Fragments returns true if this patch is representing a fragments file.
 	IsFragments bool
+	// Message prefix, eg: warning: something
+	Message string
 	// Hunks is the set of edit Hunks needed to transform the file content.
 	Hunks []*Hunk
+}
+
+// String converts a unified diff to the standard textual form for that diff.
+// The output of this function can be passed to tools like patch.
+func (u Unified) String() string {
+	if len(u.Hunks) == 0 {
+		return ""
+	}
+	b := new(strings.Builder)
+	if u.From != nil {
+		fmt.Fprintf(b, "--- %s\n", u.From.Path)
+	} else {
+		fmt.Fprintf(b, "--- /dev/null\n")
+	}
+	if u.To != nil {
+		fmt.Fprintf(b, "+++ %s\n", u.To.Path)
+	} else {
+		fmt.Fprintf(b, "+++ /dev/null\n")
+	}
+
+	for _, hunk := range u.Hunks {
+		fromCount, toCount := 0, 0
+		for _, l := range hunk.Lines {
+			switch l.Kind {
+			case Delete:
+				fromCount++
+			case Insert:
+				toCount++
+			default:
+				fromCount++
+				toCount++
+			}
+		}
+		fmt.Fprint(b, "@@")
+		if fromCount > 1 {
+			fmt.Fprintf(b, " -%d,%d", hunk.FromLine, fromCount)
+		} else if hunk.FromLine == 1 && fromCount == 0 {
+			// Match odd GNU diff -u behavior adding to empty file.
+			fmt.Fprintf(b, " -0,0")
+		} else {
+			fmt.Fprintf(b, " -%d", hunk.FromLine)
+		}
+		if toCount > 1 {
+			fmt.Fprintf(b, " +%d,%d", hunk.ToLine, toCount)
+		} else if hunk.ToLine == 1 && toCount == 0 {
+			// Match odd GNU diff -u behavior adding to empty file.
+			fmt.Fprintf(b, " +0,0")
+		} else {
+			fmt.Fprintf(b, " +%d", hunk.ToLine)
+		}
+		fmt.Fprint(b, " @@\n")
+		for _, l := range hunk.Lines {
+			switch l.Kind {
+			case Delete:
+				fmt.Fprintf(b, "-%s", l.Content)
+			case Insert:
+				fmt.Fprintf(b, "+%s", l.Content)
+			default:
+				fmt.Fprintf(b, " %s", l.Content)
+			}
+			if !strings.HasSuffix(l.Content, "\n") {
+				fmt.Fprintf(b, "\n\\ No newline at end of file\n")
+			}
+		}
+	}
+	return b.String()
 }
 
 // Hunk represents a contiguous set of line edits to apply.
@@ -48,26 +118,36 @@ type Line struct {
 }
 
 type Options struct {
-	Old, New string
-	From     File
-	To       File
-	ALGO     Algorithm
+	From, To *File
+	A, B     string
+	Algo     Algorithm
 }
 
 func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
 	sk := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sk.ParseLines(opts.Old)
-	b := sk.ParseLines(opts.New)
+	a := sk.ParseLines(opts.A)
+	b := sk.ParseLines(opts.B)
+	var err error
 	var changes []Change
-	switch opts.ALGO {
+	switch opts.Algo {
 	case Histogram:
-		changes = HistogramDiff(a, b)
+		if changes, err = HistogramDiff(ctx, a, b); err != nil {
+			return nil, err
+		}
 	case Myers:
-		changes = MyersDiff(a, b)
+		if changes, err = MyersDiff(ctx, a, b); err != nil {
+			return nil, err
+		}
 	case ONP:
-		changes = OnpDiff(a, b)
+		if changes, err = OnpDiff(ctx, a, b); err != nil {
+			return nil, err
+		}
+	case Patience:
+		if changes, err = PatienceDiff(ctx, a, b); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, errors.New("unsupported algorithm")
 	}

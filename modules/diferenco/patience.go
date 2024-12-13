@@ -22,7 +22,10 @@
 
 package diferenco
 
-import "slices"
+import (
+	"context"
+	"slices"
+)
 
 // uniqueElements returns a slice of unique elements from a slice of
 // strings, and a slice of the original indices of each element.
@@ -86,42 +89,45 @@ func patienceLCS[E comparable](a, b []E) [][2]int {
 	return s
 }
 
-func PatienceDiff[E comparable](a, b []E) []Dfio[E] {
-	if len(a) == 0 && len(b) == 0 {
-		return nil
+func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
 	}
-	if len(a) == 0 {
-		return []Dfio[E]{{E: b, T: Insert}}
+	if len(L1) == 0 && len(L2) == 0 {
+		return []Change{}, nil
 	}
-	if len(b) == 0 {
-		return []Dfio[E]{{E: a, T: Delete}}
+	if len(L1) == 0 {
+		return []Change{{P1: P1, P2: P2, Ins: len(L2)}}, nil
 	}
+	if len(L2) == 0 {
+		return []Change{{P1: P1, P2: P2, Del: len(L1)}}, nil
+	}
+
 	i := 0
-	for i < len(a) && i < len(b) && a[i] == b[i] {
+	for i < len(L1) && i < len(L2) && L1[i] == L2[i] {
 		i++
 	}
 	if i > 0 {
-		return append([]Dfio[E]{{E: a[:i], T: Equal}}, PatienceDiff(a[i:], b[i:])...)
+		return patienceDiff(ctx, L1[i:], P1+i, L2[i:], P2+i)
 	}
 	// Find equal elements at the tail of slices a and b.
 	j := 0
-	for j < len(a) && j < len(b) && a[len(a)-1-j] == b[len(b)-1-j] {
+	for j < len(L1) && j < len(L2) && L1[len(L1)-1-j] == L2[len(L2)-1-j] {
 		j++
 	}
 	if j > 0 {
-		return append(
-			PatienceDiff(a[:len(a)-j], b[:len(b)-j]),
-			Dfio[E]{E: a[len(a)-j:], T: Equal},
-		)
+		return patienceDiff(ctx, L1[:len(L1)-j], P1, L2[:len(L2)-j], P2)
 	}
 	// Find the longest common subsequence of unique elements in a and b.
-	ua, idxa := uniqueElements(a)
-	ub, idxb := uniqueElements(b)
+	ua, idxa := uniqueElements(L1)
+	ub, idxb := uniqueElements(L2)
 	lcs := patienceLCS(ua, ub)
 
 	// If the LCS is empty, the diff is all deletions and insertions.
 	if len(lcs) == 0 {
-		return append([]Dfio[E]{{E: a, T: Delete}}, []Dfio[E]{{E: b, T: Insert}}...)
+		return []Change{{P1: P1, P2: P2, Del: len(L1), Ins: len(L2)}}, nil
 	}
 
 	// Lookup the original indices of slices a and b.
@@ -129,19 +135,34 @@ func PatienceDiff[E comparable](a, b []E) []Dfio[E] {
 		lcs[i][0] = idxa[x[0]]
 		lcs[i][1] = idxb[x[1]]
 	}
-
-	diffs := []Dfio[E]{}
+	changes := make([]Change, 0, 10)
 	ga, gb := 0, 0
 	for _, ip := range lcs {
 		// Diff the gaps between the lcs elements.
-		diffs = append(diffs, PatienceDiff(a[ga:ip[0]], b[gb:ip[1]])...)
+		sub, err := patienceDiff(ctx, L1[ga:ip[0]], P1+ga, L2[gb:ip[1]], P2+gb)
+		if err != nil {
+			return nil, err
+		}
 		// Append the LCS elements to the diff.
-		diffs = append(diffs, Dfio[E]{T: Equal, E: []E{a[ip[0]]}})
+		changes = append(changes, sub...)
 		ga = ip[0] + 1
 		gb = ip[1] + 1
 	}
 	// Diff the remaining elements of a and b after the final LCS element.
-	diffs = append(diffs, PatienceDiff(a[ga:], b[gb:])...)
+	sub, err := patienceDiff(ctx, L1[ga:], P1+ga, L2[gb:], P2+gb)
+	if err != nil {
+		return nil, err
+	}
+	changes = append(changes, sub...)
+	return changes, nil
+}
 
-	return diffs
+func PatienceDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
+	prefix := commonPrefixLength(L1, L2)
+	L1 = L1[prefix:]
+	L2 = L2[prefix:]
+	suffix := commonSuffixLength(L1, L2)
+	L1 = L1[:len(L1)-suffix]
+	L2 = L2[:len(L2)-suffix]
+	return patienceDiff(ctx, L1, prefix, L2, prefix)
 }

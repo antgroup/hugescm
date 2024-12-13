@@ -9,7 +9,9 @@
 // "An O(NP) Sequence Comparison Algorithm" August 1989.
 package diferenco
 
-func onpDiff[E comparable](L1 []E, P1 int, L2 []E, P2 int) []Change {
+import "context"
+
+func onpDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {
 	m, n := len(L1), len(L2)
 	c := &onpCtx[E]{L1: L1, L2: L2, P1: P1, P2: P2}
 	if n >= m {
@@ -21,7 +23,7 @@ func onpDiff[E comparable](L1 []E, P1 int, L2 []E, P2 int) []Change {
 		c.xchg = true
 	}
 	c.Δ = c.N - c.M
-	return c.compare()
+	return c.compare(ctx)
 }
 
 type onpCtx[E comparable] struct {
@@ -33,7 +35,12 @@ type onpCtx[E comparable] struct {
 	xchg   bool
 }
 
-func (c *onpCtx[E]) compare() []Change {
+func (c *onpCtx[E]) compare(ctx context.Context) ([]Change, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	c.fp = make([]point, (c.M+1)+(c.N+1)+1)
 	for i := range c.fp {
 		c.fp[i].y = -1
@@ -71,7 +78,7 @@ func (c *onpCtx[E]) compare() []Change {
 			changes = append(changes, Change{y + c.P1, x + c.P2, c.N - y, c.M - x})
 		}
 	}
-	return changes
+	return changes, nil
 }
 
 func (c *onpCtx[E]) snake(k int) {
@@ -140,7 +147,7 @@ type onpLcs struct {
 
 // OnpDiff returns the differences between data.
 // It makes O(NP) (the worst case) calls to data.Equal.
-func OnpDiff[E comparable](L1, L2 []E) []Change {
+func OnpDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	//return myersDiff(L1, 0, L2, 0)
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
@@ -148,5 +155,5 @@ func OnpDiff[E comparable](L1, L2 []E) []Change {
 	suffix := commonSuffixLength(L1, L2)
 	L1 = L1[:len(L1)-suffix]
 	L2 = L2[:len(L2)-suffix]
-	return onpDiff(L1, prefix, L2, prefix)
+	return onpDiff(ctx, L1, prefix, L2, prefix)
 }

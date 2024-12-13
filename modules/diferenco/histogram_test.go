@@ -1,6 +1,7 @@
 package diferenco
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,7 +29,7 @@ func TestHistogram(t *testing.T) {
 	}
 	a := sink.ParseLines(textA)
 	b := sink.ParseLines(textB)
-	changes := HistogramDiff(a, b)
+	changes, _ := HistogramDiff(context.Background(), a, b)
 	i := 0
 	for _, c := range changes {
 		for ; i < c.P1; i++ {

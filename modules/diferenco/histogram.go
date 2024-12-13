@@ -1,6 +1,8 @@
 // Refer to https://github.com/pascalkuthe/imara-diff reimplemented in Golang.
 package diferenco
 
+import "context"
+
 // https://stackoverflow.com/questions/32365271/whats-the-difference-between-git-diff-patience-and-git-diff-histogram/32367597#32367597
 // https://arxiv.org/abs/1902.02467
 
@@ -141,29 +143,40 @@ type changesOut struct {
 	changes []Change
 }
 
-func (h *histogram[E]) run(beforce []E, beforePos int, after []E, afterPos int, o *changesOut) {
+func (h *histogram[E]) run(ctx context.Context, beforce []E, beforePos int, after []E, afterPos int, o *changesOut) error {
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 		if len(beforce) == 0 {
 			if len(after) != 0 {
 				o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Ins: len(after)})
 			}
-			return
+			return nil
 		}
 		if len(after) == 0 {
 			o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Del: len(beforce)})
-			return
+			return nil
 		}
 		h.populate(beforce)
 		lcs := findLcs(beforce, after, h)
 		if lcs == nil {
-			o.changes = append(o.changes, onpDiff(beforce, beforePos, after, afterPos)...)
-			return
+			changes, err := onpDiff(ctx, beforce, beforePos, after, afterPos)
+			if err != nil {
+				return err
+			}
+			o.changes = append(o.changes, changes...)
+			return nil
 		}
 		if lcs.length == 0 {
 			o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Del: len(beforce), Ins: len(after)})
-			return
+			return nil
 		}
-		h.run(beforce[:lcs.beforeStart], beforePos, after[:lcs.afterStart], afterPos, o)
+		if err := h.run(ctx, beforce[:lcs.beforeStart], beforePos, after[:lcs.afterStart], afterPos, o); err != nil {
+			return err
+		}
 		e1 := lcs.beforeStart + lcs.length
 		beforce = beforce[e1:]
 		beforePos += e1
@@ -173,7 +186,7 @@ func (h *histogram[E]) run(beforce []E, beforePos int, after []E, afterPos int, 
 	}
 }
 
-func HistogramDiff[E comparable](L1, L2 []E) []Change {
+func HistogramDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]
@@ -184,6 +197,8 @@ func HistogramDiff[E comparable](L1, L2 []E) []Change {
 		tokenOccurances: make(map[E][]int, len(L1)),
 	}
 	o := &changesOut{changes: make([]Change, 0, 100)}
-	h.run(L1, prefix, L2, prefix, o)
-	return o.changes
+	if err := h.run(ctx, L1, prefix, L2, prefix, o); err != nil {
+		return nil, err
+	}
+	return o.changes, nil
 }

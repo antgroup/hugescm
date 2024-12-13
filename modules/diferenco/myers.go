@@ -6,19 +6,22 @@
 
 package diferenco
 
-import "slices"
+import (
+	"context"
+	"slices"
+)
 
-func MyersDiff[E comparable](seq1, seq2 []E) []Change {
+func MyersDiff[E comparable](ctx context.Context, seq1, seq2 []E) ([]Change, error) {
 	// These are common special cases.
 	// The early return improves performance dramatically.
 	if len(seq1) == 0 && len(seq2) == 0 {
-		return []Change{}
+		return []Change{}, nil
 	}
 	if len(seq1) == 0 {
-		return []Change{{Ins: len(seq2)}}
+		return []Change{{Ins: len(seq2)}}, nil
 	}
 	if len(seq2) == 0 {
-		return []Change{{Del: len(seq1)}}
+		return []Change{{Del: len(seq1)}}, nil
 	}
 	seqX := seq1
 	seqY := seq2
@@ -48,6 +51,11 @@ func MyersDiff[E comparable](seq1, seq2 []E) []Change {
 	k := 0
 outer:
 	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
 		d++
 		// The paper has `for (k = -d; k <= d; k += 2)`, but we can ignore diagonals that cannot influence the result.
 		lowerBound := -min(d, len(seqY)+(d%2))
@@ -110,7 +118,7 @@ outer:
 		path = path.pre
 	}
 	slices.Reverse(changes)
-	return changes
+	return changes, nil
 }
 
 type SnakePath struct {

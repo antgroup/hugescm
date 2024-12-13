@@ -1,6 +1,7 @@
 package diferenco
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,7 +29,7 @@ func TestMyersDiff(t *testing.T) {
 	}
 	a := sink.ParseLines(textA)
 	b := sink.ParseLines(textB)
-	changes := MyersDiff(a, b)
+	changes, _ := MyersDiff(context.Background(), a, b)
 	i := 0
 	for _, c := range changes {
 		for ; i < c.P1; i++ {
@@ -68,8 +69,8 @@ func TestMyersDiff2(t *testing.T) {
 	}
 	a := sink.ParseLines(textA)
 	b := sink.ParseLines(textB)
-	changes := MyersDiff(a, b)
-	u := sink.ToUnified(File{Path: "a.txt"}, File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := MyersDiff(context.Background(), a, b)
+	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
 }
 
@@ -89,7 +90,7 @@ func TestMyersDiff3(t *testing.T) {
 	}
 	a := sink.ParseLines(textA)
 	b := sink.ParseLines(textB)
-	changes := MyersDiff(a, b)
-	u := sink.ToUnified(File{Path: "a.txt"}, File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := MyersDiff(context.Background(), a, b)
+	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
 }

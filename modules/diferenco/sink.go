@@ -125,7 +125,7 @@ func (s *Sink) addEqualLines(h *Hunk, index []int, start, end int) int {
 	return delta
 }
 
-func (s *Sink) ToUnified(from, to File, changes []Change, linesA, linesB []int, contextLines int) *Unified {
+func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int, contextLines int) *Unified {
 	gap := contextLines * 2
 	u := &Unified{
 		From: from,
@@ -179,61 +179,4 @@ func (s *Sink) ToUnified(from, to File, changes []Change, linesA, linesB []int, 
 		u.Hunks = append(u.Hunks, h)
 	}
 	return u
-}
-
-// String converts a unified diff to the standard textual form for that diff.
-// The output of this function can be passed to tools like patch.
-func (u Unified) String() string {
-	if len(u.Hunks) == 0 {
-		return ""
-	}
-	b := new(strings.Builder)
-	fmt.Fprintf(b, "--- %s\n", u.From.Path)
-	fmt.Fprintf(b, "+++ %s\n", u.To.Path)
-	for _, hunk := range u.Hunks {
-		fromCount, toCount := 0, 0
-		for _, l := range hunk.Lines {
-			switch l.Kind {
-			case Delete:
-				fromCount++
-			case Insert:
-				toCount++
-			default:
-				fromCount++
-				toCount++
-			}
-		}
-		fmt.Fprint(b, "@@")
-		if fromCount > 1 {
-			fmt.Fprintf(b, " -%d,%d", hunk.FromLine, fromCount)
-		} else if hunk.FromLine == 1 && fromCount == 0 {
-			// Match odd GNU diff -u behavior adding to empty file.
-			fmt.Fprintf(b, " -0,0")
-		} else {
-			fmt.Fprintf(b, " -%d", hunk.FromLine)
-		}
-		if toCount > 1 {
-			fmt.Fprintf(b, " +%d,%d", hunk.ToLine, toCount)
-		} else if hunk.ToLine == 1 && toCount == 0 {
-			// Match odd GNU diff -u behavior adding to empty file.
-			fmt.Fprintf(b, " +0,0")
-		} else {
-			fmt.Fprintf(b, " +%d", hunk.ToLine)
-		}
-		fmt.Fprint(b, " @@\n")
-		for _, l := range hunk.Lines {
-			switch l.Kind {
-			case Delete:
-				fmt.Fprintf(b, "-%s", l.Content)
-			case Insert:
-				fmt.Fprintf(b, "+%s", l.Content)
-			default:
-				fmt.Fprintf(b, " %s", l.Content)
-			}
-			if !strings.HasSuffix(l.Content, "\n") {
-				fmt.Fprintf(b, "\n\\ No newline at end of file\n")
-			}
-		}
-	}
-	return b.String()
 }

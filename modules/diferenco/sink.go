@@ -109,3 +109,131 @@ func (s *Sink) AsStringDiff(o []Dfio[int]) []StringDiff {
 	}
 	return diffs
 }
+
+func (s *Sink) addEqualLines(h *Hunk, index []int, start, end int) int {
+	delta := 0
+	for i := start; i < end; i++ {
+		if i < 0 {
+			continue
+		}
+		if i >= len(index) {
+			return delta
+		}
+		h.Lines = append(h.Lines, Line{Kind: Equal, Content: s.Lines[index[i]]})
+		delta++
+	}
+	return delta
+}
+
+func (s *Sink) ToUnified(from, to File, changes []Change, linesA, linesB []int, contextLines int) *Unified {
+	gap := contextLines * 2
+	u := &Unified{
+		From: from,
+		To:   to,
+	}
+	if len(changes) == 0 {
+		return u
+	}
+	var h *Hunk
+	last := 0
+	toLine := 0
+	for _, ch := range changes {
+		start := ch.P1
+		end := ch.P1 + ch.Del
+		switch {
+		case h != nil && start == last:
+		case h != nil && start <= last+gap:
+			// within range of previous lines, add the joiners
+			s.addEqualLines(h, linesA, last, start)
+		default:
+			// need to start a new hunk
+			if h != nil {
+				// add the edge to the previous hunk
+				s.addEqualLines(h, linesA, last, last+contextLines)
+				u.Hunks = append(u.Hunks, h)
+			}
+			toLine += start - last
+			h = &Hunk{
+				FromLine: start + 1,
+				ToLine:   toLine + 1,
+			}
+			// add the edge to the new hunk
+			delta := s.addEqualLines(h, linesA, start-contextLines, start)
+			h.FromLine -= delta
+			h.ToLine -= delta
+		}
+		last = start
+		for i := start; i < end; i++ {
+			h.Lines = append(h.Lines, Line{Kind: Delete, Content: s.Lines[linesA[i]]})
+			last++
+		}
+		addEnd := ch.P2 + ch.Ins
+		for i := ch.P2; i < addEnd; i++ {
+			h.Lines = append(h.Lines, Line{Kind: Insert, Content: s.Lines[linesB[i]]})
+			toLine++
+		}
+	}
+	if h != nil {
+		// add the edge to the final hunk
+		s.addEqualLines(h, linesA, last, last+contextLines)
+		u.Hunks = append(u.Hunks, h)
+	}
+	return u
+}
+
+// String converts a unified diff to the standard textual form for that diff.
+// The output of this function can be passed to tools like patch.
+func (u Unified) String() string {
+	if len(u.Hunks) == 0 {
+		return ""
+	}
+	b := new(strings.Builder)
+	fmt.Fprintf(b, "--- %s\n", u.From.Path)
+	fmt.Fprintf(b, "+++ %s\n", u.To.Path)
+	for _, hunk := range u.Hunks {
+		fromCount, toCount := 0, 0
+		for _, l := range hunk.Lines {
+			switch l.Kind {
+			case Delete:
+				fromCount++
+			case Insert:
+				toCount++
+			default:
+				fromCount++
+				toCount++
+			}
+		}
+		fmt.Fprint(b, "@@")
+		if fromCount > 1 {
+			fmt.Fprintf(b, " -%d,%d", hunk.FromLine, fromCount)
+		} else if hunk.FromLine == 1 && fromCount == 0 {
+			// Match odd GNU diff -u behavior adding to empty file.
+			fmt.Fprintf(b, " -0,0")
+		} else {
+			fmt.Fprintf(b, " -%d", hunk.FromLine)
+		}
+		if toCount > 1 {
+			fmt.Fprintf(b, " +%d,%d", hunk.ToLine, toCount)
+		} else if hunk.ToLine == 1 && toCount == 0 {
+			// Match odd GNU diff -u behavior adding to empty file.
+			fmt.Fprintf(b, " +0,0")
+		} else {
+			fmt.Fprintf(b, " +%d", hunk.ToLine)
+		}
+		fmt.Fprint(b, " @@\n")
+		for _, l := range hunk.Lines {
+			switch l.Kind {
+			case Delete:
+				fmt.Fprintf(b, "-%s", l.Content)
+			case Insert:
+				fmt.Fprintf(b, "+%s", l.Content)
+			default:
+				fmt.Fprintf(b, " %s", l.Content)
+			}
+			if !strings.HasSuffix(l.Content, "\n") {
+				fmt.Fprintf(b, "\n\\ No newline at end of file\n")
+			}
+		}
+	}
+	return b.String()
+}

@@ -1,6 +1,8 @@
 package diferenco
 
-import "slices"
+import (
+	"slices"
+)
 
 // https://github.com/Wilfred/difftastic/wiki/Line-Based-Diffs
 // https://neil.fraser.name/writing/diff/
@@ -18,6 +20,15 @@ const (
 	Insert Operation = 1
 	// Equal item represents an equal hunk.
 	Equal Operation = 0
+)
+
+type Algorithm int
+
+const (
+	Histogram Algorithm = iota
+	Myers
+	ONP
+	Patience
 )
 
 // commonPrefixLength returns the length of the common prefix of two T slices.

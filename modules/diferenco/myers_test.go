@@ -47,3 +47,49 @@ func TestMyersDiff(t *testing.T) {
 	}
 	fmt.Fprintf(os.Stderr, "\n\nEND\n\n")
 }
+
+func TestMyersDiff2(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	bytesA, err := os.ReadFile(filepath.Join(dir, "testdata/a.txt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read a error: %v\n", err)
+		return
+	}
+	textA := string(bytesA)
+	bytesB, err := os.ReadFile(filepath.Join(dir, "testdata/b.txt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
+		return
+	}
+	textB := string(bytesB)
+	sink := &Sink{
+		Index: make(map[string]int),
+	}
+	a := sink.ParseLines(textA)
+	b := sink.ParseLines(textB)
+	changes := MyersDiff(a, b)
+	u := sink.ToUnified(File{Path: "a.txt"}, File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
+}
+
+func TestMyersDiff3(t *testing.T) {
+	textA := `1
+2
+3
+4
+5`
+	textB := `1
+4
+5
+4
+5`
+	sink := &Sink{
+		Index: make(map[string]int),
+	}
+	a := sink.ParseLines(textA)
+	b := sink.ParseLines(textB)
+	changes := MyersDiff(a, b)
+	u := sink.ToUnified(File{Path: "a.txt"}, File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
+}

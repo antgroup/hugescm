@@ -87,3 +87,25 @@ func (s *Sink) WriteLine(w io.Writer, E ...int) {
 		_, _ = io.WriteString(w, s.Lines[e])
 	}
 }
+
+func (s *Sink) AsStringDiff(o []Dfio[int]) []StringDiff {
+	var newLine string
+	switch s.NewLine {
+	case NEWLINE_CRLF:
+		newLine = "\r\n"
+	case NEWLINE_LF:
+		newLine = "\n"
+	}
+	diffs := make([]StringDiff, 0, len(o))
+	for _, e := range o {
+		ss := make([]string, 0, len(e.E))
+		for _, i := range e.E {
+			ss = append(ss, s.Lines[i])
+		}
+		diffs = append(diffs, StringDiff{
+			Type: e.T,
+			Text: strings.Join(ss, newLine),
+		})
+	}
+	return diffs
+}

@@ -5,6 +5,8 @@ import "slices"
 // https://github.com/Wilfred/difftastic/wiki/Line-Based-Diffs
 // https://neil.fraser.name/writing/diff/
 // https://prettydiff.com/2/guide/unrelated_diff.xhtml
+// https://blog.robertelder.org/diff-algorithm/
+// https://news.ycombinator.com/item?id=33417466
 
 // Operation defines the operation of a diff item.
 type Operation int8

@@ -40,8 +40,7 @@ func diffSlices[E comparable](ctx context.Context, s1, s2 []E) ([]Dfio[E], error
 }
 
 func diffHalfMatchI[E comparable](l, s []E, i int) [][]E {
-	var bestCommonA []E
-	var bestCommonB []E
+	var bestCommon []E
 	var bestCommonLen int
 	var bestLongtextA []E
 	var bestLongtextB []E
@@ -56,9 +55,8 @@ func diffHalfMatchI[E comparable](l, s []E, i int) [][]E {
 		suffixLength := commonSuffixLength(l[:i], s[:j])
 
 		if bestCommonLen < suffixLength+prefixLength {
-			bestCommonA = s[j-suffixLength : j]
-			bestCommonB = s[j : j+prefixLength]
-			bestCommonLen = len(bestCommonA) + len(bestCommonB)
+			bestCommon = s[j-suffixLength : j+prefixLength]
+			bestCommonLen = len(bestCommon)
 			bestLongtextA = l[:i-suffixLength]
 			bestLongtextB = l[i+prefixLength:]
 			bestShorttextA = s[:j-suffixLength]
@@ -75,7 +73,7 @@ func diffHalfMatchI[E comparable](l, s []E, i int) [][]E {
 		bestLongtextB,
 		bestShorttextA,
 		bestShorttextB,
-		append(bestCommonA, bestCommonB...),
+		bestCommon,
 	}
 }
 

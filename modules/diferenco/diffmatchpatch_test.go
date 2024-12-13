@@ -50,3 +50,40 @@ func TestDiffSlices(t *testing.T) {
 		}
 	}
 }
+
+func TestDiffSlicesAsStringDiff(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	bytesA, err := os.ReadFile(filepath.Join(dir, "testdata/a.txt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read a error: %v\n", err)
+		return
+	}
+	a := string(bytesA)
+	bytesB, err := os.ReadFile(filepath.Join(dir, "testdata/b.txt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
+		return
+	}
+	b := string(bytesB)
+	sink := &Sink{
+		Index: make(map[string]int),
+	}
+	aa := sink.ParseLines(a)
+	bb := sink.ParseLines(b)
+	dd, err := DiffSlices(context.Background(), aa, bb)
+	if err != nil {
+		return
+	}
+	diffs := sink.AsStringDiff(dd)
+	for _, d := range diffs {
+		switch d.Type {
+		case Equal:
+			fmt.Fprintf(os.Stderr, "%s", d.Text)
+		case Delete:
+			fmt.Fprintf(os.Stderr, "\x1b[31m%s\x1b[0m", d.Text)
+		case Insert:
+			fmt.Fprintf(os.Stderr, "\x1b[32m%s\x1b[0m", d.Text)
+		}
+	}
+}

@@ -8,15 +8,6 @@ package diferenco
 
 import "slices"
 
-type Range struct {
-	Start int
-	End   int
-}
-
-type SequenceDiff struct {
-	S1, S2 Range
-}
-
 func MyersDiff[E comparable](seq1, seq2 []E) []Change {
 	// These are common special cases.
 	// The early return improves performance dramatically.

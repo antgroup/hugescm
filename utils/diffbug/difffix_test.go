@@ -1,6 +1,7 @@
 package diffbug
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"os"
@@ -9,8 +10,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/antgroup/hugescm/modules/diff"
-	"github.com/antgroup/hugescm/modules/diffmatchpatch"
+	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/diferenco/color"
 )
 
 func TestDiffText(t *testing.T) {
@@ -26,22 +27,22 @@ func TestDiffText(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
 		return
 	}
-	diffs, err := diff.Do(string(bytesA), string(bytesB))
+	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
+		From: &diferenco.File{
+			Path: "a.go",
+		},
+		To: &diferenco.File{
+			Path: "a.go",
+		},
+		S1: string(bytesA),
+		S2: string(bytesB),
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "binary diff\n")
 		return
 	}
-	for _, d := range diffs {
-		switch d.Type {
-		case diffmatchpatch.DiffDelete:
-			fmt.Fprintf(os.Stderr, "- %s", d.Text)
-		case diffmatchpatch.DiffEqual:
-			fmt.Fprintf(os.Stderr, "  %s", d.Text)
-		case diffmatchpatch.DiffInsert:
-			fmt.Fprintf(os.Stderr, "+ %s", d.Text)
-		}
-
-	}
+	e := diferenco.NewUnifiedEncoder(os.Stderr)
+	e.SetColor(color.NewColorConfig())
+	e.Encode([]*diferenco.Unified{u})
 }
 
 func TestRuneToString(t *testing.T) {

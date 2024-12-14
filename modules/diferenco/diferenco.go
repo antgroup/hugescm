@@ -31,6 +31,20 @@ const (
 	Patience
 )
 
+func (a Algorithm) String() string {
+	switch a {
+	case Histogram:
+		return "Histogram"
+	case Myers:
+		return "Myers"
+	case ONP:
+		return "O(NP)"
+	case Patience:
+		return "Patience"
+	}
+	return "Unknown"
+}
+
 // commonPrefixLength returns the length of the common prefix of two T slices.
 func commonPrefixLength[E comparable](a, b []E) int {
 	n := min(len(a), len(b))

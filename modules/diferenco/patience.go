@@ -89,7 +89,7 @@ func patienceLCS[E comparable](a, b []E) [][2]int {
 	return s
 }
 
-func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {
+func patienceCompute[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -110,7 +110,7 @@ func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 
 		i++
 	}
 	if i > 0 {
-		return patienceDiff(ctx, L1[i:], P1+i, L2[i:], P2+i)
+		return patienceCompute(ctx, L1[i:], P1+i, L2[i:], P2+i)
 	}
 	// Find equal elements at the tail of slices a and b.
 	j := 0
@@ -118,7 +118,7 @@ func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 
 		j++
 	}
 	if j > 0 {
-		return patienceDiff(ctx, L1[:len(L1)-j], P1, L2[:len(L2)-j], P2)
+		return patienceCompute(ctx, L1[:len(L1)-j], P1, L2[:len(L2)-j], P2)
 	}
 	// Find the longest common subsequence of unique elements in a and b.
 	ua, idxa := uniqueElements(L1)
@@ -139,7 +139,7 @@ func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 
 	ga, gb := 0, 0
 	for _, ip := range lcs {
 		// Diff the gaps between the lcs elements.
-		sub, err := patienceDiff(ctx, L1[ga:ip[0]], P1+ga, L2[gb:ip[1]], P2+gb)
+		sub, err := patienceCompute(ctx, L1[ga:ip[0]], P1+ga, L2[gb:ip[1]], P2+gb)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 
 		gb = ip[1] + 1
 	}
 	// Diff the remaining elements of a and b after the final LCS element.
-	sub, err := patienceDiff(ctx, L1[ga:], P1+ga, L2[gb:], P2+gb)
+	sub, err := patienceCompute(ctx, L1[ga:], P1+ga, L2[gb:], P2+gb)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +157,7 @@ func patienceDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 
 	return changes, nil
 }
 
+// PatienceDiff: Calculates the difference using the patience algorithm
 func PatienceDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
@@ -164,5 +165,5 @@ func PatienceDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, 
 	suffix := commonSuffixLength(L1, L2)
 	L1 = L1[:len(L1)-suffix]
 	L2 = L2[:len(L2)-suffix]
-	return patienceDiff(ctx, L1, prefix, L2, prefix)
+	return patienceCompute(ctx, L1, prefix, L2, prefix)
 }

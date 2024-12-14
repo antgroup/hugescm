@@ -27,8 +27,8 @@ func TestMyersDiff(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sink.ParseLines(textA)
-	b := sink.ParseLines(textB)
+	a := sink.SplitLines(textA)
+	b := sink.SplitLines(textB)
 	changes, _ := MyersDiff(context.Background(), a, b)
 	i := 0
 	for _, c := range changes {
@@ -67,8 +67,8 @@ func TestMyersDiff2(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sink.ParseLines(textA)
-	b := sink.ParseLines(textB)
+	a := sink.SplitLines(textA)
+	b := sink.SplitLines(textB)
 	changes, _ := MyersDiff(context.Background(), a, b)
 	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
@@ -88,8 +88,8 @@ func TestMyersDiff3(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sink.ParseLines(textA)
-	b := sink.ParseLines(textB)
+	a := sink.SplitLines(textA)
+	b := sink.SplitLines(textB)
 	changes, _ := MyersDiff(context.Background(), a, b)
 	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())

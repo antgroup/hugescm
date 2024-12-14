@@ -11,7 +11,7 @@ package diferenco
 
 import "context"
 
-func onpDiff[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {
+func onpCompute[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {
 	m, n := len(L1), len(L2)
 	c := &onpCtx[E]{L1: L1, L2: L2, P1: P1, P2: P2}
 	if n >= m {
@@ -145,15 +145,14 @@ type onpLcs struct {
 	next *onpLcs
 }
 
-// OnpDiff returns the differences between data.
-// It makes O(NP) (the worst case) calls to data.Equal.
+// OnpDiff returns the differences between []E.
+// It makes O(NP) (the worst case) calls to equal.
 func OnpDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
-	//return myersDiff(L1, 0, L2, 0)
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]
 	suffix := commonSuffixLength(L1, L2)
 	L1 = L1[:len(L1)-suffix]
 	L2 = L2[:len(L2)-suffix]
-	return onpDiff(ctx, L1, prefix, L2, prefix)
+	return onpCompute(ctx, L1, prefix, L2, prefix)
 }

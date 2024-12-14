@@ -27,8 +27,8 @@ func TestPatienceDiff(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sink.ParseLines(textA)
-	b := sink.ParseLines(textB)
+	a := sink.SplitLines(textA)
+	b := sink.SplitLines(textB)
 	changes, _ := PatienceDiff(context.Background(), a, b)
 	i := 0
 	for _, c := range changes {

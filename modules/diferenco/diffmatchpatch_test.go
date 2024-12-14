@@ -27,8 +27,8 @@ func TestDiffSlices(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	aa := sink.ParseLines(a)
-	bb := sink.ParseLines(b)
+	aa := sink.SplitLines(a)
+	bb := sink.SplitLines(b)
 	diffs, err := DiffSlices(context.Background(), aa, bb)
 	if err != nil {
 		return
@@ -69,8 +69,8 @@ func TestDiffSlicesAsStringDiff(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	aa := sink.ParseLines(a)
-	bb := sink.ParseLines(b)
+	aa := sink.SplitLines(a)
+	bb := sink.SplitLines(b)
 	dd, err := DiffSlices(context.Background(), aa, bb)
 	if err != nil {
 		return

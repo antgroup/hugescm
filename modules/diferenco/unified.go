@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -118,20 +119,26 @@ type Line struct {
 }
 
 type Options struct {
-	From, To *File
-	A, B     string
-	Algo     Algorithm
+	From, To  *File
+	S1, S2    string
+	R1, R2    io.Reader
+	Algorithm Algorithm
 }
 
 func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
-	sk := &Sink{
+	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sk.ParseLines(opts.A)
-	b := sk.ParseLines(opts.B)
-	var err error
+	a, err := sink.parseLines(opts.R1, opts.S1)
+	if err != nil {
+		return nil, err
+	}
+	b, err := sink.parseLines(opts.R2, opts.S2)
+	if err != nil {
+		return nil, err
+	}
 	var changes []Change
-	switch opts.Algo {
+	switch opts.Algorithm {
 	case Histogram:
 		if changes, err = HistogramDiff(ctx, a, b); err != nil {
 			return nil, err
@@ -151,5 +158,5 @@ func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
 	default:
 		return nil, errors.New("unsupported algorithm")
 	}
-	return sk.ToUnified(opts.From, opts.To, changes, a, b, DefaultContextLines), nil
+	return sink.ToUnified(opts.From, opts.To, changes, a, b, DefaultContextLines), nil
 }

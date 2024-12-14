@@ -163,7 +163,7 @@ func (h *histogram[E]) run(ctx context.Context, beforce []E, beforePos int, afte
 		h.populate(beforce)
 		lcs := findLcs(beforce, after, h)
 		if lcs == nil {
-			changes, err := onpDiff(ctx, beforce, beforePos, after, afterPos)
+			changes, err := myersCompute(ctx, beforce, beforePos, after, afterPos)
 			if err != nil {
 				return err
 			}
@@ -186,6 +186,7 @@ func (h *histogram[E]) run(ctx context.Context, beforce []E, beforePos int, afte
 	}
 }
 
+// HistogramDiff: calculates the difference using the histogram algorithm
 func HistogramDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]

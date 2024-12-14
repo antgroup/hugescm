@@ -373,9 +373,9 @@ func Merge(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (
 		labelB = " " + labelB
 	}
 	sink := NewSink(NEWLINE_RAW)
-	slicesO := sink.ParseLines(o)
-	slicesA := sink.ParseLines(a)
-	slicesB := sink.ParseLines(b)
+	slicesO := sink.SplitLines(o)
+	slicesA := sink.SplitLines(a)
+	slicesB := sink.SplitLines(b)
 	regions := Diff3Merge(slicesA, slicesO, slicesB, true)
 	out := &strings.Builder{}
 	out.Grow(max(len(o), len(a), len(b)))

@@ -1,6 +1,7 @@
 package diferenco
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"strings"
@@ -37,7 +38,36 @@ func (s *Sink) addLine(line string) int {
 	return index
 }
 
-func (s *Sink) ProcessRawLines(text string) []int {
+func (s *Sink) ScanRawLines(r io.Reader) ([]int, error) {
+	lines := make([]int, 0, 200)
+	br := bufio.NewReader(r)
+	for {
+		line, err := br.ReadString('\n')
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+		// line including '\n' always >= 1
+		if len(line) == 0 {
+			break
+		}
+		lines = append(lines, s.addLine(line))
+	}
+	return lines, nil
+}
+
+func (s *Sink) ScanLines(r io.Reader) ([]int, error) {
+	if s.NewLine == NEWLINE_RAW {
+		return s.ScanRawLines(r)
+	}
+	lines := make([]int, 0, 200)
+	br := bufio.NewScanner(r)
+	for br.Scan() {
+		lines = append(lines, s.addLine(strings.TrimSuffix(br.Text(), "\r")))
+	}
+	return lines, br.Err()
+}
+
+func (s *Sink) SplitRawLines(text string) []int {
 	lines := make([]int, 0, 200)
 	for pos := 0; pos < len(text); {
 		part := text[pos:]
@@ -52,9 +82,9 @@ func (s *Sink) ProcessRawLines(text string) []int {
 	return lines
 }
 
-func (s *Sink) ParseLines(text string) []int {
+func (s *Sink) SplitLines(text string) []int {
 	if s.NewLine == NEWLINE_RAW {
-		return s.ProcessRawLines(text)
+		return s.SplitRawLines(text)
 	}
 	lines := make([]int, 0, 200)
 	for pos := 0; pos < len(text); {
@@ -68,6 +98,13 @@ func (s *Sink) ParseLines(text string) []int {
 		pos += newPos + 1
 	}
 	return lines
+}
+
+func (s *Sink) parseLines(r io.Reader, text string) ([]int, error) {
+	if r != nil {
+		return s.ScanLines(r)
+	}
+	return s.SplitLines(text), nil
 }
 
 func (s *Sink) WriteLine(w io.Writer, E ...int) {

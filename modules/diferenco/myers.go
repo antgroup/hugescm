@@ -11,17 +11,28 @@ import (
 	"slices"
 )
 
-func MyersDiff[E comparable](ctx context.Context, seq1, seq2 []E) ([]Change, error) {
+// MyersDiff: An O(ND) diff algorithm that has a quadratic space worst-case complexity.
+func MyersDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
+	prefix := commonPrefixLength(L1, L2)
+	L1 = L1[prefix:]
+	L2 = L2[prefix:]
+	suffix := commonSuffixLength(L1, L2)
+	L1 = L1[:len(L1)-suffix]
+	L2 = L2[:len(L2)-suffix]
+	return myersCompute(ctx, L1, prefix, L2, prefix)
+}
+
+func myersCompute[E comparable](ctx context.Context, seq1 []E, P1 int, seq2 []E, P2 int) ([]Change, error) {
 	// These are common special cases.
 	// The early return improves performance dramatically.
 	if len(seq1) == 0 && len(seq2) == 0 {
 		return []Change{}, nil
 	}
 	if len(seq1) == 0 {
-		return []Change{{Ins: len(seq2)}}, nil
+		return []Change{{P1: P1, P2: P2, Ins: len(seq2)}}, nil
 	}
 	if len(seq2) == 0 {
-		return []Change{{Del: len(seq1)}}, nil
+		return []Change{{P1: P1, P2: P2, Del: len(seq1)}}, nil
 	}
 	seqX := seq1
 	seqY := seq2
@@ -108,7 +119,7 @@ outer:
 			endY = path.y + path.length
 		}
 		if endX != lastAligningPosS1 || endY != lastAligningPosS2 {
-			changes = append(changes, Change{P1: endX, P2: endY, Del: lastAligningPosS1 - endX, Ins: lastAligningPosS2 - endY})
+			changes = append(changes, Change{P1: P1 + endX, P2: P2 + endY, Del: lastAligningPosS1 - endX, Ins: lastAligningPosS2 - endY})
 		}
 		if path == nil {
 			break

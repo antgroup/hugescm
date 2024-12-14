@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/antgroup/hugescm/modules/diferenco/color"
 )
 
 func TestHistogram(t *testing.T) {
@@ -27,24 +29,11 @@ func TestHistogram(t *testing.T) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
-	a := sink.ParseLines(textA)
-	b := sink.ParseLines(textB)
+	a := sink.SplitLines(textA)
+	b := sink.SplitLines(textB)
 	changes, _ := HistogramDiff(context.Background(), a, b)
-	i := 0
-	for _, c := range changes {
-		for ; i < c.P1; i++ {
-			fmt.Fprintf(os.Stderr, "  %s", sink.Lines[a[i]])
-		}
-		for j := c.P1; j < c.P1+c.Del; j++ {
-			fmt.Fprintf(os.Stderr, "- %s", sink.Lines[a[j]])
-		}
-		for j := c.P2; j < c.P2+c.Ins; j++ {
-			fmt.Fprintf(os.Stderr, "+ %s", sink.Lines[b[j]])
-		}
-		i += c.Del
-	}
-	for ; i < len(a); i++ {
-		fmt.Fprintf(os.Stderr, "  %s", sink.Lines[a[i]])
-	}
-	fmt.Fprintf(os.Stderr, "\n\nEND\n\n")
+	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	e := NewUnifiedEncoder(os.Stderr)
+	e.SetColor(color.NewColorConfig())
+	e.Encode([]*Unified{u})
 }

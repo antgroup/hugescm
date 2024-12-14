@@ -209,12 +209,12 @@ func (e *UnifiedEncoder) writeLine(b *strings.Builder, o *Line) {
 	if strings.HasSuffix(o.Content, "\n") {
 		_, _ = b.WriteString(strings.TrimSuffix(o.Content, "\n"))
 		_, _ = b.WriteString(e.color.Reset(colorKey))
-	} else {
-		_, _ = b.WriteString(o.Content)
-		_, _ = b.WriteString(e.color.Reset(colorKey))
-		_, _ = b.WriteString("\n\\ No newline at end of file")
+		_ = b.WriteByte('\n')
+		return
 	}
-	_ = b.WriteByte('\n')
+	_, _ = b.WriteString(o.Content)
+	_, _ = b.WriteString(e.color.Reset(colorKey))
+	_, _ = b.WriteString("\n\\ No newline at end of file\n")
 }
 
 func (e *UnifiedEncoder) writeUnified(u *Unified) error {

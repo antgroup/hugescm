@@ -204,3 +204,77 @@ foo bar
 	e.SetColor(color.NewColorConfig())
 	_ = e.Encode([]*Unified{u})
 }
+
+func TestPatchScss(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	bytesA, err := os.ReadFile(filepath.Join(dir, "testdata/simple_1.scss"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read a error: %v\n", err)
+		return
+	}
+	textA := string(bytesA)
+	bytesB, err := os.ReadFile(filepath.Join(dir, "testdata/simple_2.scss"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
+		return
+	}
+	textB := string(bytesB)
+	u, err := DoUnified(context.Background(), &Options{
+		From: &File{
+			Path: "a.txt",
+			Hash: "4789568",
+			Mode: 0o10644,
+		},
+		To: &File{
+			Path: "b.txt",
+			Hash: "6547898",
+			Mode: 0o10644,
+		},
+		S1: textA,
+		S2: textB,
+	})
+	if err != nil {
+		return
+	}
+	e := NewUnifiedEncoder(os.Stderr)
+	e.SetColor(color.NewColorConfig())
+	_ = e.Encode([]*Unified{u})
+}
+
+func TestPatchCss(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	bytesA, err := os.ReadFile(filepath.Join(dir, "testdata/css_1.css"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read a error: %v\n", err)
+		return
+	}
+	textA := string(bytesA)
+	bytesB, err := os.ReadFile(filepath.Join(dir, "testdata/css_2.css"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
+		return
+	}
+	textB := string(bytesB)
+	u, err := DoUnified(context.Background(), &Options{
+		From: &File{
+			Path: "a.txt",
+			Hash: "4789568",
+			Mode: 0o10644,
+		},
+		To: &File{
+			Path: "b.txt",
+			Hash: "6547898",
+			Mode: 0o10644,
+		},
+		S1: textA,
+		S2: textB,
+	})
+	if err != nil {
+		return
+	}
+	e := NewUnifiedEncoder(os.Stderr)
+	e.SetColor(color.NewColorConfig())
+	_ = e.Encode([]*Unified{u})
+}

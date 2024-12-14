@@ -174,3 +174,33 @@ func TestPatchDelete(t *testing.T) {
 	e.SetColor(color.NewColorConfig())
 	_ = e.Encode([]*Unified{u})
 }
+
+func TestDiff2(t *testing.T) {
+	textA := `hello
+world
+
+foo
+c07e640b246c7885cbc3d5c627acbcb2d2ab9c95`
+	textB := `hello
+novel
+world
+
+foo bar
+31df1778815171897c907daf454c4419cfaa46f9`
+	u, err := DoUnified(context.Background(), &Options{
+		From: &File{
+			Path: "a.txt",
+			Hash: "6547898",
+			Mode: 0o10644,
+		},
+		To: nil,
+		S1: textA,
+		S2: textB,
+	})
+	if err != nil {
+		return
+	}
+	e := NewUnifiedEncoder(os.Stderr)
+	e.SetColor(color.NewColorConfig())
+	_ = e.Encode([]*Unified{u})
+}

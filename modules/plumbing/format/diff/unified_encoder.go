@@ -393,9 +393,11 @@ func (o *op) writeTo(sb *strings.Builder, color ColorConfig) {
 	sb.WriteByte(operationChar[o.t])
 	if strings.HasSuffix(o.text, "\n") {
 		sb.WriteString(strings.TrimSuffix(o.text, "\n"))
+		sb.WriteString(color.Reset(colorKey))
 	} else {
-		sb.WriteString(o.text + "\n\\ No newline at end of file")
+		sb.WriteString(o.text)
+		sb.WriteString(color.Reset(colorKey))
+		sb.WriteString("\n\\ No newline at end of file")
 	}
-	sb.WriteString(color.Reset(colorKey))
 	sb.WriteByte('\n')
 }

@@ -208,10 +208,12 @@ func (e *UnifiedEncoder) writeLine(b *strings.Builder, o *Line) {
 	_ = b.WriteByte(operationChar[o.Kind])
 	if strings.HasSuffix(o.Content, "\n") {
 		_, _ = b.WriteString(strings.TrimSuffix(o.Content, "\n"))
+		_, _ = b.WriteString(e.color.Reset(colorKey))
 	} else {
-		_, _ = b.WriteString(o.Content + "\n\\ No newline at end of file")
+		_, _ = b.WriteString(o.Content)
+		_, _ = b.WriteString(e.color.Reset(colorKey))
+		_, _ = b.WriteString("\n\\ No newline at end of file")
 	}
-	_, _ = b.WriteString(e.color.Reset(colorKey))
 	_ = b.WriteByte('\n')
 }
 

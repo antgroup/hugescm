@@ -1,6 +1,9 @@
 package diferenco
 
 import (
+	"context"
+	"errors"
+	"io"
 	"slices"
 )
 
@@ -25,7 +28,8 @@ const (
 type Algorithm int
 
 const (
-	Histogram Algorithm = iota
+	Unspecified Algorithm = iota
+	Histogram
 	Myers
 	ONP
 	Patience
@@ -33,6 +37,8 @@ const (
 
 func (a Algorithm) String() string {
 	switch a {
+	case Unspecified:
+		return "Unspecified"
 	case Histogram:
 		return "Histogram"
 	case Myers:
@@ -44,6 +50,10 @@ func (a Algorithm) String() string {
 	}
 	return "Unknown"
 }
+
+var (
+	ErrUnsupportedAlgorithm = errors.New("unsupport algorithm")
+)
 
 // commonPrefixLength returns the length of the common prefix of two T slices.
 func commonPrefixLength[E comparable](a, b []E) int {
@@ -116,4 +126,64 @@ type Dfio[E comparable] struct {
 type StringDiff struct {
 	Type Operation
 	Text string
+}
+
+type Stats struct {
+	Del, Ins, Hunks int
+}
+
+type Options struct {
+	From, To *File
+	S1, S2   string
+	R1, R2   io.Reader
+	A        Algorithm
+}
+
+func diffInternal(ctx context.Context, L1, L2 []int, a Algorithm) ([]Change, error) {
+	if a == Unspecified {
+		switch {
+		case len(L1) < 5000 && len(L2) < 5000:
+			a = Histogram
+		default:
+			a = ONP
+		}
+	}
+	switch a {
+	case Histogram:
+		return HistogramDiff(ctx, L1, L2)
+	case Myers:
+		return MyersDiff(ctx, L1, L2)
+	case ONP:
+		return OnpDiff(ctx, L1, L2)
+	case Patience:
+		return PatienceDiff(ctx, L1, L2)
+	default:
+		return nil, ErrUnsupportedAlgorithm
+	}
+}
+
+func DoStats(ctx context.Context, opts *Options) (*Stats, error) {
+	sink := &Sink{
+		Index: make(map[string]int),
+	}
+	a, err := sink.parseLines(opts.R1, opts.S1)
+	if err != nil {
+		return nil, err
+	}
+	b, err := sink.parseLines(opts.R2, opts.S2)
+	if err != nil {
+		return nil, err
+	}
+	changes, err := diffInternal(ctx, a, b, opts.A)
+	if err != nil {
+		return nil, err
+	}
+	stats := &Stats{
+		Hunks: len(changes),
+	}
+	for _, ch := range changes {
+		stats.Del += ch.Del
+		stats.Ins += ch.Ins
+	}
+	return stats, nil
 }

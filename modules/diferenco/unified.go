@@ -5,9 +5,7 @@ package diferenco
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -118,13 +116,6 @@ type Line struct {
 	Content string
 }
 
-type Options struct {
-	From, To  *File
-	S1, S2    string
-	R1, R2    io.Reader
-	Algorithm Algorithm
-}
-
 func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
 	sink := &Sink{
 		Index: make(map[string]int),
@@ -137,26 +128,9 @@ func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
 	if err != nil {
 		return nil, err
 	}
-	var changes []Change
-	switch opts.Algorithm {
-	case Histogram:
-		if changes, err = HistogramDiff(ctx, a, b); err != nil {
-			return nil, err
-		}
-	case Myers:
-		if changes, err = MyersDiff(ctx, a, b); err != nil {
-			return nil, err
-		}
-	case ONP:
-		if changes, err = OnpDiff(ctx, a, b); err != nil {
-			return nil, err
-		}
-	case Patience:
-		if changes, err = PatienceDiff(ctx, a, b); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("unsupported algorithm")
+	changes, err := diffInternal(ctx, a, b, opts.A)
+	if err != nil {
+		return nil, err
 	}
 	return sink.ToUnified(opts.From, opts.To, changes, a, b, DefaultContextLines), nil
 }

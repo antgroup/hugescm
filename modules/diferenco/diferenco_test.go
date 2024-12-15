@@ -34,10 +34,10 @@ func TestDiff(t *testing.T) {
 			From: &File{
 				Path: "a.txt",
 			},
-			To:        nil,
-			S1:        textA,
-			S2:        textB,
-			Algorithm: a,
+			To: nil,
+			S1: textA,
+			S2: textB,
+			A:  a,
 		})
 		if err != nil {
 			return

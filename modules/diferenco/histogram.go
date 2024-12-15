@@ -30,7 +30,9 @@ func (h *histogram[E]) numTokenOccurances(e E) int {
 }
 
 func (h *histogram[E]) clear() {
-	clear(h.tokenOccurances)
+	// runtime: clear() is slow for maps with big capacity and small number of items
+	// https://github.com/golang/go/issues/70617
+	h.tokenOccurances = make(map[E][]int)
 }
 
 type Lcs struct {
@@ -163,7 +165,7 @@ func (h *histogram[E]) run(ctx context.Context, beforce []E, beforePos int, afte
 		h.populate(beforce)
 		lcs := findLcs(beforce, after, h)
 		if lcs == nil {
-			changes, err := myersCompute(ctx, beforce, beforePos, after, afterPos)
+			changes, err := onpCompute(ctx, beforce, beforePos, after, afterPos)
 			if err != nil {
 				return err
 			}

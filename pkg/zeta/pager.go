@@ -18,27 +18,12 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
-// var (
-// 	lessFound bool
-// )
-
-// func init() {
-// 	if _, err := exec.LookPath("less"); err == nil {
-// 		lessFound = true
-// 	}
-// }
-
 // https://github.com/sharkdp/bat/blob/master/src/less.rs
-
-func lookupPager() (string, bool) {
+func lookupPagerEnv() (string, bool) {
 	pager, ok := os.LookupEnv("ZETA_PAGER")
 	if ok {
 		return pager, ok
 	}
-	// pager, ok = os.LookupEnv("GIT_PAGER")
-	// if ok {
-	// 	return pager, ok
-	// }
 	return os.LookupEnv("PAGER")
 }
 
@@ -157,8 +142,9 @@ func NewPrinter(ctx context.Context) *Printer {
 	if !isTrueColorTerminal {
 		return &Printer{useColor: isTrueColorTerminal, w: os.Stdout}
 	}
-	pager, ok := lookupPager()
+	pager, ok := lookupPagerEnv()
 	if ok && len(pager) == 0 {
+		// PAPER disabled
 		return &Printer{useColor: isTrueColorTerminal, w: os.Stdout}
 	}
 	if len(pager) == 0 {

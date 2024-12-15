@@ -4,10 +4,46 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime/pprof"
+	"time"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/diferenco/color"
+	"github.com/antgroup/hugescm/pkg/zeta"
 )
+
+type Debuger struct {
+	closeFn func()
+}
+
+func NewDebuger(debugMode bool) *Debuger {
+	d := &Debuger{}
+	if !debugMode {
+		return d
+	}
+	pprofName := filepath.Join(os.TempDir(), fmt.Sprintf("zeta-%d.pprof", os.Getpid()))
+	fd, err := os.Create(pprofName)
+	if err != nil {
+		return d
+	}
+	if err = pprof.StartCPUProfile(fd); err != nil {
+		_ = fd.Close()
+		return d
+	}
+	d.closeFn = func() {
+		pprof.StopCPUProfile()
+		fd.Close()
+		fmt.Fprintf(os.Stderr, "Task operation completed\ngo tool pprof -http=\":8080\" %s\n", pprofName)
+	}
+	return d
+}
+
+func (d *Debuger) Close() {
+	if d.closeFn != nil {
+		d.closeFn()
+	}
+}
 
 func main() {
 	if len(os.Args) < 3 {
@@ -26,8 +62,10 @@ func main() {
 		return
 	}
 	defer fd2.Close()
-
+	d := NewDebuger(true)
+	now := time.Now()
 	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
+		A: diferenco.Histogram,
 		From: &diferenco.File{
 			Path: os.Args[1],
 		},
@@ -40,7 +78,11 @@ func main() {
 	if err != nil {
 		return
 	}
-	e := diferenco.NewUnifiedEncoder(os.Stderr)
+	d.Close()
+	fmt.Fprintf(os.Stderr, "use time: %v\n", time.Since(now))
+	p := zeta.NewPrinter(context.Background())
+	defer p.Close()
+	e := diferenco.NewUnifiedEncoder(p)
 	e.SetColor(color.NewColorConfig())
 	_ = e.Encode([]*diferenco.Unified{u})
 

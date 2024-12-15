@@ -30,8 +30,9 @@ type Algorithm int
 const (
 	Unspecified Algorithm = iota
 	Histogram
-	Myers
 	ONP
+	Myers
+	Minimal
 	Patience
 )
 
@@ -43,6 +44,8 @@ func (a Algorithm) String() string {
 		return "Histogram"
 	case Myers:
 		return "Myers"
+	case Minimal:
+		return "Minimal"
 	case ONP:
 		return "O(NP)"
 	case Patience:
@@ -151,10 +154,12 @@ func diffInternal(ctx context.Context, L1, L2 []int, a Algorithm) ([]Change, err
 	switch a {
 	case Histogram:
 		return HistogramDiff(ctx, L1, L2)
-	case Myers:
-		return MyersDiff(ctx, L1, L2)
 	case ONP:
 		return OnpDiff(ctx, L1, L2)
+	case Myers:
+		return MyersDiff(ctx, L1, L2)
+	case Minimal:
+		return MinimalDiff(ctx, L1, L2)
 	case Patience:
 		return PatienceDiff(ctx, L1, L2)
 	default:

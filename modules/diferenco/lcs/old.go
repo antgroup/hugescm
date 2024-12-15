@@ -34,6 +34,10 @@ func diff(seqs sequences) []Diff {
 	return diff
 }
 
+func DiffSlices[E comparable](a, b []E) []Diff {
+	return diff(comparableSeqs[E]{a, b})
+}
+
 // compute computes the list of differences between two sequences,
 // along with the LCS. It is exercised directly by tests.
 // The algorithm is one of {forward, backward, twosided}.

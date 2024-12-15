@@ -103,3 +103,34 @@ func commonSuffixLenString(a, b string) int {
 	}
 	return i
 }
+
+type comparableSeqs[E comparable] struct{ a, b []E }
+
+// commonPrefixLength returns the length of the common prefix of two T slices.
+func commonPrefixLength[E comparable](a, b []E) int {
+	n := min(len(a), len(b))
+	i := 0
+	for i < n && a[i] == b[i] {
+		i++
+	}
+	return i
+}
+
+// commonSuffixLength returns the length of the common suffix of two rune slices.
+func commonSuffixLength[E comparable](a, b []E) int {
+	i1, i2 := len(a), len(b)
+	n := min(i1, i2)
+	i := 0
+	for i < n && a[i1-1-i] == b[i2-1-i] {
+		i++
+	}
+	return i
+}
+
+func (s comparableSeqs[E]) lengths() (int, int) { return len(s.a), len(s.b) }
+func (s comparableSeqs[E]) commonPrefixLen(ai, aj, bi, bj int) int {
+	return commonPrefixLength(s.a[ai:aj:aj], s.b[bi:bj:bj])
+}
+func (s comparableSeqs[E]) commonSuffixLen(ai, aj, bi, bj int) int {
+	return commonSuffixLength(s.a[ai:aj:aj], s.b[bi:bj:bj])
+}

@@ -24,7 +24,7 @@ type Node struct {
 	children  []noder.Noder
 	isDir     bool
 	skip      bool
-	fragments bool
+	fragments plumbing.Hash
 }
 
 type FragmentsGetter func(ctx context.Context, e *index.Entry) *index.Entry
@@ -49,8 +49,8 @@ func NewRootNode(ctx context.Context, idx *index.Index, fn FragmentsGetter) node
 			n := &Node{path: fullpath}
 			if fullpath == e.Name {
 				if e.Mode&filemode.Fragments != 0 {
+					n.fragments = e.Hash
 					n.entry = fn(ctx, e)
-					n.fragments = true
 				} else {
 					n.entry = e
 				}
@@ -90,9 +90,13 @@ func (n *Node) Hash() []byte {
 	return append(n.entry.Hash[:], n.entry.Mode.Bytes()...)
 }
 
+// HashRaw: Get the original Hash of Entry. If it is fragments, get the hash of fragments, otherwise get the hash of blob
 func (n *Node) HashRaw() plumbing.Hash {
 	if n.entry == nil {
 		return plumbing.ZeroHash
+	}
+	if !n.fragments.IsZero() {
+		return n.fragments
 	}
 	return n.entry.Hash
 }
@@ -108,7 +112,7 @@ func (n *Node) TrueMode() filemode.FileMode {
 	if n.entry == nil {
 		return filemode.Empty
 	}
-	if n.fragments {
+	if !n.fragments.IsZero() {
 		return n.entry.Mode | filemode.Fragments
 	}
 	return n.entry.Mode
@@ -119,7 +123,7 @@ func (n *Node) ModifiedAt() time.Time {
 }
 
 func (n *Node) IsFragments() bool {
-	return n.fragments
+	return !n.fragments.IsZero()
 }
 
 func (n *Node) Size() int64 {

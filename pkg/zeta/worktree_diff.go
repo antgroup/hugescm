@@ -7,41 +7,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 
-	"github.com/antgroup/hugescm/modules/diff"
-	dmp "github.com/antgroup/hugescm/modules/diffmatchpatch"
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/merkletrie/filesystem"
 	mindex "github.com/antgroup/hugescm/modules/merkletrie/index"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/plumbing/filemode"
-	fdiff "github.com/antgroup/hugescm/modules/plumbing/format/diff"
 	"github.com/antgroup/hugescm/modules/zeta/object"
-)
-
-type fileWrapper struct {
-	name string
-	hash plumbing.Hash
-	mode filemode.FileMode
-}
-
-func (f *fileWrapper) Path() string {
-	return f.name
-}
-
-func (f *fileWrapper) Hash() plumbing.Hash {
-	return f.hash
-}
-
-func (f *fileWrapper) Mode() filemode.FileMode {
-	return f.mode
-}
-
-var (
-	_ fdiff.File = &fileWrapper{}
 )
 
 func (w *Worktree) openText(p string, size int64, textConv bool) (string, error) {
@@ -64,49 +38,45 @@ func (w *Worktree) openBlobText(ctx context.Context, oid plumbing.Hash, textConv
 	return content, err
 }
 
-const (
-	diffSizeLimit = 50 * 1024 * 1024 // 50M
-)
-
-func (w *Worktree) resolveContent(ctx context.Context, p noder.Path, textconv bool) (f fdiff.File, content string, fragments bool, bin bool, err error) {
+func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool) (f *diferenco.File, content string, fragments bool, bin bool, err error) {
 	if p == nil {
 		return nil, "", false, false, nil
 	}
 	name := p.String()
 	switch a := p.Last().(type) {
 	case *filesystem.Node:
-		f = &fileWrapper{name: name, hash: a.HashRaw(), mode: a.Mode()}
-		if a.Size() > diffSizeLimit {
+		f = &diferenco.File{Name: name, Hash: a.HashRaw().String(), Mode: uint32(a.Mode())}
+		if a.Size() > object.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
-		content, err = w.openText(name, a.Size(), textconv)
+		content, err = w.openText(name, a.Size(), textConv)
 		if err == object.ErrNotTextContent {
 			return f, "", false, true, nil
 		}
 		return f, content, false, false, nil
 	case *mindex.Node:
-		f = &fileWrapper{name: name, hash: a.HashRaw(), mode: a.Mode()}
+		f = &diferenco.File{Name: name, Hash: a.HashRaw().String(), Mode: uint32(a.Mode())}
 		if a.IsFragments() {
 			return f, "", true, false, err
 		}
-		if a.Size() > diffSizeLimit {
+		if a.Size() > object.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
-		content, err = w.openBlobText(ctx, a.HashRaw(), textconv)
+		content, err = w.openBlobText(ctx, a.HashRaw(), textConv)
 		// When the current repository uses an incomplete checkout mechanism, we treat these files as binary files, i.e. no differences can be calculated.
 		if err == object.ErrNotTextContent || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
 		return f, content, false, false, nil
 	case *object.TreeNoder:
-		f = &fileWrapper{name: name, hash: a.HashRaw(), mode: a.Mode()}
+		f = &diferenco.File{Name: name, Hash: a.HashRaw().String(), Mode: uint32(a.Mode())}
 		if a.IsFragments() {
 			return f, "", true, false, err
 		}
-		if a.Size() > diffSizeLimit {
+		if a.Size() > object.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
-		content, err = w.openBlobText(ctx, a.HashRaw(), textconv)
+		content, err = w.openBlobText(ctx, a.HashRaw(), textConv)
 		if err == object.ErrNotTextContent || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
@@ -116,55 +86,30 @@ func (w *Worktree) resolveContent(ctx context.Context, p noder.Path, textconv bo
 	return nil, "", false, false, errors.New("unsupport noder type")
 }
 
-func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (fdiff.FilePatch, error) {
+func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (*diferenco.Unified, error) {
 	if c.From == nil && c.To == nil {
 		return nil, errors.New("malformed change: nil from and to")
 	}
-	from, fromContent, isFragmentsA, isBinA, err := w.resolveContent(ctx, c.From, textconv)
+	from, fromContent, isFragmentsA, isBinA, err := w.readContent(ctx, c.From, textconv)
 	if err != nil {
 		return nil, err
 	}
-	to, toContent, isFragmentsB, isBinB, err := w.resolveContent(ctx, c.To, textconv)
+	to, toContent, isFragmentsB, isBinB, err := w.readContent(ctx, c.To, textconv)
 	if err != nil {
 		return nil, err
 	}
 	if isFragmentsA || isFragmentsB {
-		return object.NewFilePatchWrapper(nil, from, to, true), nil
+		return &diferenco.Unified{From: from, To: to, IsFragments: true}, nil
 	}
 	if isBinA || isBinB {
-		return object.NewFilePatchWrapper(nil, from, to, false), nil
+		return &diferenco.Unified{From: from, To: to, IsBinary: true}, nil
 	}
-	diffs, err := diff.Do(fromContent, toContent)
-	if err != nil {
-		return object.NewFilePatchWrapper(nil, from, to, false), nil
-	}
-
-	var chunks []fdiff.Chunk
-	for _, d := range diffs {
-		select {
-		case <-ctx.Done():
-			return nil, object.ErrCanceled
-		default:
-		}
-
-		var op fdiff.Operation
-		switch d.Type {
-		case dmp.DiffEqual:
-			op = fdiff.Equal
-		case dmp.DiffDelete:
-			op = fdiff.Delete
-		case dmp.DiffInsert:
-			op = fdiff.Add
-		}
-
-		chunks = append(chunks, object.NewTextChunk(d.Text, op))
-	}
-	return object.NewFilePatchWrapper(chunks, from, to, false), nil
+	return diferenco.DoUnified(ctx, &diferenco.Options{From: from, To: to, S1: fromContent, S2: toContent})
 }
 
 // getPatchContext: In the object package, there is no patch implementation for worktree diff, so we need
-func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool) ([]fdiff.FilePatch, error) {
-	var filePatches []fdiff.FilePatch
+func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textConv bool) ([]*diferenco.Unified, error) {
+	var filePatches []*diferenco.Unified
 	for _, c := range changes {
 		select {
 		case <-ctx.Done():
@@ -175,33 +120,111 @@ func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Chang
 		if !m.Match(name) {
 			continue
 		}
-		fp, err := w.filePatchWithContext(ctx, &c, textconv)
+		p, err := w.filePatchWithContext(ctx, &c, textConv)
 		if err != nil {
 			return nil, err
 		}
 
-		filePatches = append(filePatches, fp)
+		filePatches = append(filePatches, p)
 	}
 	return filePatches, nil
 }
 
-func (w *Worktree) diffWorktree(ctx context.Context, opts *DiffContextOptions, writer io.Writer) error {
-	changes, err := w.diffStagingWithWorktree(ctx, false, true)
-	if err != nil {
-		return err
+func nameFromDifeName(from, to *diferenco.File) string {
+	if from == nil && to == nil {
+		return ""
 	}
+	if from == nil {
+		return to.Name
+	}
+	if to == nil {
+		return from.Name
+	}
+	if from.Name != to.Name {
+		return fmt.Sprintf("%s => %s", from.Name, to.Name)
+	}
+	return from.Name
+}
+
+func (w *Worktree) fileStatWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (*object.FileStat, error) {
+	if c.From == nil && c.To == nil {
+		return nil, errors.New("malformed change: nil from and to")
+	}
+	from, fromContent, isFragmentsA, isBinA, err := w.readContent(ctx, c.From, textconv)
+	if err != nil {
+		return nil, err
+	}
+	to, toContent, isFragmentsB, isBinB, err := w.readContent(ctx, c.To, textconv)
+	if err != nil {
+		return nil, err
+	}
+	s := &object.FileStat{Name: nameFromDifeName(from, to)}
+	if isFragmentsA || isFragmentsB {
+		return s, nil
+	}
+	if isBinA || isBinB {
+		return s, nil
+	}
+	stat, err := diferenco.Stat(ctx, &diferenco.Options{From: from, To: to, S1: fromContent, S2: toContent})
+	if err != nil {
+		return nil, err
+	}
+	s.Addition = stat.Addition
+	s.Deletion = stat.Deletion
+	return s, nil
+}
+
+func (w *Worktree) getStatsContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textConv bool) (object.FileStats, error) {
+	var fileStats []object.FileStat
+	for _, c := range changes {
+		select {
+		case <-ctx.Done():
+			return nil, object.ErrCanceled
+		default:
+		}
+		name := nameFromAction(&c)
+		if !m.Match(name) {
+			continue
+		}
+		s, err := w.fileStatWithContext(ctx, &c, textConv)
+		if err != nil {
+			return nil, err
+		}
+
+		fileStats = append(fileStats, *s)
+	}
+	return fileStats, nil
+}
+
+func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes merkletrie.Changes) error {
 	if opts.NameOnly || opts.NameStatus {
-		return opts.formatChanges(changes, writer)
+		return opts.showChangesStatus(ctx, changes)
 	}
 	m := NewMatcher(opts.PathSpec)
+	if opts.showStatsOnly() {
+		fileStats, err := w.getStatsContext(ctx, changes, m, opts.Textconv)
+		if err != nil {
+			return err
+		}
+		return opts.showStats(ctx, fileStats)
+	}
+
 	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
 	if err != nil {
 		return err
 	}
-	return opts.format(object.NewPatch("", filePatchs), writer)
+	return opts.showPatch(ctx, filePatchs)
 }
 
-func (w *Worktree) readBaseTree(ctx context.Context, oid plumbing.Hash, opts *DiffContextOptions) (*object.Tree, error) {
+func (w *Worktree) diffWorktree(ctx context.Context, opts *DiffOptions) error {
+	changes, err := w.diffStagingWithWorktree(ctx, false, true)
+	if err != nil {
+		return err
+	}
+	return w.showChanges(ctx, opts, changes)
+}
+
+func (w *Worktree) readBaseTree(ctx context.Context, oid plumbing.Hash, opts *DiffOptions) (*object.Tree, error) {
 	if len(opts.MergeBase) == 0 {
 		return w.readTree(ctx, oid, "")
 	}
@@ -223,7 +246,7 @@ func (w *Worktree) readBaseTree(ctx context.Context, oid plumbing.Hash, opts *Di
 	return bases[0].Root(ctx)
 }
 
-func (w *Worktree) DiffTreeWithIndex(ctx context.Context, oid plumbing.Hash, opts *DiffContextOptions, writer io.Writer) error {
+func (w *Worktree) DiffTreeWithIndex(ctx context.Context, oid plumbing.Hash, opts *DiffOptions) error {
 	tree, err := w.readBaseTree(ctx, oid, opts)
 	if err != nil {
 		return err
@@ -232,18 +255,10 @@ func (w *Worktree) DiffTreeWithIndex(ctx context.Context, oid plumbing.Hash, opt
 	if err != nil {
 		return err
 	}
-	if opts.NameOnly || opts.NameStatus {
-		return opts.formatChanges(changes, writer)
-	}
-	m := NewMatcher(opts.PathSpec)
-	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
-	if err != nil {
-		return err
-	}
-	return opts.format(object.NewPatch("", filePatchs), writer)
+	return w.showChanges(ctx, opts, changes)
 }
 
-func (w *Worktree) DiffTreeWithWorktree(ctx context.Context, oid plumbing.Hash, opts *DiffContextOptions, writer io.Writer) error {
+func (w *Worktree) DiffTreeWithWorktree(ctx context.Context, oid plumbing.Hash, opts *DiffOptions) error {
 	tree, err := w.readBaseTree(ctx, oid, opts)
 	if err != nil {
 		return err
@@ -253,19 +268,11 @@ func (w *Worktree) DiffTreeWithWorktree(ctx context.Context, oid plumbing.Hash, 
 		return err
 	}
 	changes := w.excludeIgnoredChanges(rawChanges)
-	if opts.NameOnly || opts.NameStatus {
-		return opts.formatChanges(changes, writer)
-	}
-	m := NewMatcher(opts.PathSpec)
-	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
-	if err != nil {
-		return err
-	}
-	return opts.format(object.NewPatch("", filePatchs), writer)
+	return w.showChanges(ctx, opts, changes)
 }
 
-func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffContextOptions) (oldTree *object.Tree, newTree *object.Tree, err error) {
-	if !opts.ThreeWayCompare {
+func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffOptions) (oldTree *object.Tree, newTree *object.Tree, err error) {
+	if !opts.W3 {
 		if oldTree, err = w.parseTreeExhaustive(ctx, opts.From, ""); err != nil {
 			fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.From, err)
 			return
@@ -309,7 +316,8 @@ func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffContextOpti
 	return
 }
 
-func (w *Worktree) between(ctx context.Context, opts *DiffContextOptions, writer io.Writer) error {
+func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
+	w.DbgPrint("from %s to %s", opts.From, opts.To)
 	oldTree, newTree, err := w.resolveBetweenTree(ctx, opts)
 	if err != nil {
 		return err
@@ -318,23 +326,19 @@ func (w *Worktree) between(ctx context.Context, opts *DiffContextOptions, writer
 		DetectRenames:    true,
 		OnlyExactRenames: true,
 	}
+	w.DbgPrint("oldTree %s newTree %s", oldTree.Hash, newTree.Hash)
 	changes, err := object.DiffTreeWithOptions(ctx, oldTree, newTree, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "diff tree error: %v\n", err)
 		return err
 	}
-	patch, err := opts.PatchContext(ctx, changes)
-	if err != nil {
-		die_error("patch %v", err)
-		return err
-	}
-	return opts.formatEx(patch, writer)
+	return opts.ShowChanges(ctx, changes)
 }
 
-func (w *Worktree) DiffContext(ctx context.Context, opts *DiffContextOptions, writer io.Writer) error {
+func (w *Worktree) DiffContext(ctx context.Context, opts *DiffOptions) error {
 	if len(opts.From) != 0 && len(opts.To) != 0 {
-		w.DbgPrint("from %s to %s", opts.From, opts.To)
-		return w.between(ctx, opts, writer)
+
+		return w.between(ctx, opts)
 	}
 	if len(opts.From) != 0 {
 		oid, err := w.Revision(ctx, opts.From)
@@ -343,14 +347,14 @@ func (w *Worktree) DiffContext(ctx context.Context, opts *DiffContextOptions, wr
 			return err
 		}
 		if opts.Staged {
-			if err := w.DiffTreeWithIndex(ctx, oid, opts, writer); err != nil {
+			if err := w.DiffTreeWithIndex(ctx, oid, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "zeta diff --cached error: %v\n", err)
 				return err
 			}
 			return nil
 		}
 		w.DbgPrint("from %s to worktree", oid)
-		if err := w.DiffTreeWithWorktree(ctx, oid, opts, writer); err != nil {
+		if err := w.DiffTreeWithWorktree(ctx, oid, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta diff error: %v\n", err)
 			return err
 		}
@@ -362,13 +366,13 @@ func (w *Worktree) DiffContext(ctx context.Context, opts *DiffContextOptions, wr
 			fmt.Fprintf(os.Stderr, "resolve current branch error: %v\n", err)
 			return err
 		}
-		if err := w.DiffTreeWithIndex(ctx, ref.Hash(), opts, writer); err != nil {
+		if err := w.DiffTreeWithIndex(ctx, ref.Hash(), opts); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta diff --cached error: %v\n", err)
 			return err
 		}
 		return nil
 	}
-	if err := w.diffWorktree(ctx, opts, writer); err != nil {
+	if err := w.diffWorktree(ctx, opts); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta diff error: %v\n", err)
 		return err
 	}

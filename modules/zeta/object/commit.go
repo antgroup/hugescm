@@ -313,31 +313,9 @@ func (c *Commit) Root(ctx context.Context) (*Tree, error) {
 	return resolveTree(ctx, c.b, c.Tree)
 }
 
-// PatchContext returns the Patch between the actual commit and the provided one.
-// Error will be return if context expires. Provided context must be non-nil.
-//
-// NOTE: Since version 5.1.0 the renames are correctly handled, the settings
-// used are the recommended options DefaultDiffTreeOptions.
-func (c *Commit) PatchContext(ctx context.Context, to *Commit, m noder.Matcher, codecvt bool) (*Patch, error) {
-	fromTree, err := c.Root(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var toTree *Tree
-	if to != nil {
-		toTree, err = to.Root(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return fromTree.PatchContext(ctx, toTree, m, codecvt)
-}
-
 // StatsContext returns the stats of a commit. Error will be return if context
 // expires. Provided context must be non-nil.
-func (c *Commit) StatsContext(ctx context.Context, m noder.Matcher, codecvt bool) (FileStats, error) {
+func (c *Commit) StatsContext(ctx context.Context, m noder.Matcher, opts *PatchOptions) (FileStats, error) {
 	from, err := c.Root(ctx)
 	if err != nil {
 		return nil, err
@@ -355,13 +333,7 @@ func (c *Commit) StatsContext(ctx context.Context, m noder.Matcher, codecvt bool
 			return nil, err
 		}
 	}
-
-	patch, err := to.PatchContext(ctx, from, m, codecvt)
-	if err != nil {
-		return nil, err
-	}
-
-	return getFileStatsFromFilePatches(patch.FilePatches()), nil
+	return to.StatsContext(ctx, from, m, opts)
 }
 
 // CommitIter is a generic closable interface for iterating over commits.

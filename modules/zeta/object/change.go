@@ -6,9 +6,11 @@ package object
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/merkletrie"
 )
 
@@ -21,14 +23,20 @@ type Change struct {
 	To   ChangeEntry
 }
 
-var empty ChangeEntry
+var (
+	empty              ChangeEntry
+	ErrMalformedChange = errors.New("malformed change: empty from and to")
+)
+
+func (c *Change) Name() string {
+	return c.name()
+}
 
 // Action returns the kind of action represented by the change, an
 // insertion, a deletion or a modification.
 func (c *Change) Action() (merkletrie.Action, error) {
 	if c.From.Equal(&empty) && c.To.Equal(&empty) {
-		return merkletrie.Action(0),
-			fmt.Errorf("malformed change: empty from and to")
+		return merkletrie.Action(0), ErrMalformedChange
 	}
 
 	if c.From.Equal(&empty) {
@@ -77,20 +85,6 @@ func (c *Change) String() string {
 	return fmt.Sprintf("<Action: %s, Path: %s>", action, c.name())
 }
 
-// Patch returns a Patch with all the file changes in chunks. This
-// representation can be used to create several diff outputs.
-func (c *Change) Patch(codecvt bool) (*Patch, error) {
-	return c.PatchContext(context.Background(), codecvt)
-}
-
-// Patch returns a Patch with all the file changes in chunks. This
-// representation can be used to create several diff outputs.
-// If context expires, an non-nil error will be returned
-// Provided context must be non-nil
-func (c *Change) PatchContext(ctx context.Context, codecvt bool) (*Patch, error) {
-	return getPatchContext(ctx, "", codecvt, c)
-}
-
 func (c *Change) name() string {
 	if !c.From.Equal(&empty) {
 		return c.From.Name
@@ -107,10 +101,6 @@ type ChangeEntry struct {
 	Tree *Tree
 	// The entry of the node.
 	TreeEntry TreeEntry
-}
-
-func (e *ChangeEntry) IsFragments() bool {
-	return e.TreeEntry.IsFragments()
 }
 
 func (e *ChangeEntry) Equal(o *ChangeEntry) bool {
@@ -148,16 +138,12 @@ func (c Changes) String() string {
 	return buffer.String()
 }
 
-// Patch returns a Patch with all the changes in chunks. This
-// representation can be used to create several diff outputs.
-func (c Changes) Patch(codecvt bool) (*Patch, error) {
-	return c.PatchContext(context.Background(), codecvt)
+func (c Changes) Stats(ctx context.Context, opts *PatchOptions) (FileStats, error) {
+	return getStatsContext(ctx, opts, c...)
 }
 
 // Patch returns a Patch with all the changes in chunks. This
 // representation can be used to create several diff outputs.
-// If context expires, an non-nil error will be returned
-// Provided context must be non-nil
-func (c Changes) PatchContext(ctx context.Context, codecvt bool) (*Patch, error) {
-	return getPatchContext(ctx, "", codecvt, c...)
+func (c Changes) Patch(ctx context.Context, opts *PatchOptions) ([]*diferenco.Unified, error) {
+	return getPatchContext(ctx, opts, c...)
 }

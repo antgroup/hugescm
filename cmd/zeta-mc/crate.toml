@@ -1,7 +1,7 @@
 name = "zeta-mc"
 description = "zeta-mc - Migrate Git repository to zeta"
 destination = "bin"
-version = "0.14.0"
+version = "0.15.0"
 goflags = [
     "-ldflags",
     "-X github.com/antgroup/hugescm/pkg/version.version=$BUILD_VERSION -X github.com/antgroup/hugescm/pkg/version.buildTime=$BUILD_TIME -X github.com/antgroup/hugescm/pkg/version.buildCommit=$BUILD_COMMIT",

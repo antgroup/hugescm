@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
@@ -26,10 +27,15 @@ type Diff struct {
 	Textconv        bool     `name:"textconv" help:"Convert text to Unicode and compare differences"`
 	MergeBase       string   `name:"merge-base" help:"If --merge-base is given, use the common ancestor of <commit> and HEAD instead"`
 	Output          string   `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
+	Histogram       bool     `name:"histogram" help:"Generate a diff using the \"Histogram diff\" algorithm"`
+	ONP             bool     `name:"onp" help:"Generate a diff using the \"O(NP) diff\" algorithm"`
+	Myers           bool     `name:"myers" help:"Generate a diff using the \"Myers diff\" algorithm"`
+	Patience        bool     `name:"patience" help:"Generate a diff using the \"Patience diff\" algorithm"`
+	Minimal         bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
+	DiffAlgorithm   string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal"`
 	From            string   `arg:"" optional:"" name:"from" help:"Revision from"`
 	To              string   `arg:"" optional:"" name:"to" help:"Revision to"`
 	passthroughArgs []string `kong:"-"`
-	useColor        bool     `kong:"-"`
 }
 
 const (
@@ -55,8 +61,47 @@ func (c *Diff) Passthrough(paths []string) {
 	c.passthroughArgs = append(c.passthroughArgs, paths...)
 }
 
-func (c *Diff) NewOptions() *zeta.DiffContextOptions {
-	opts := &zeta.DiffContextOptions{
+var (
+	diffAlgorithms = map[string]diferenco.Algorithm{
+		"histogram": diferenco.Histogram,
+		"onp":       diferenco.ONP,
+		"myers":     diferenco.Myers,
+		"patience":  diferenco.Patience,
+		"minimal":   diferenco.Minimal,
+	}
+)
+
+func (c *Diff) checkAlgorithm() (diferenco.Algorithm, error) {
+	if len(c.DiffAlgorithm) != 0 {
+		if a, ok := diffAlgorithms[c.DiffAlgorithm]; ok {
+			return a, nil
+		}
+		return diferenco.Unspecified, fmt.Errorf("unsupport algorithms %s'", c.DiffAlgorithm)
+	}
+	if c.Histogram {
+		return diferenco.Histogram, nil
+	}
+	if c.ONP {
+		return diferenco.ONP, nil
+	}
+	if c.Myers {
+		return diferenco.Myers, nil
+	}
+	if c.Patience {
+		return diferenco.Patience, nil
+	}
+	if c.Minimal {
+		return diferenco.Minimal, nil
+	}
+	return diferenco.Unspecified, nil
+}
+
+func (c *Diff) NewOptions() (*zeta.DiffOptions, error) {
+	a, err := c.checkAlgorithm()
+	if err != nil {
+		return nil, err
+	}
+	opts := &zeta.DiffOptions{
 		NameOnly:   c.NameOnly,
 		NameStatus: c.NameStatus,
 		NumStat:    c.Numstat,
@@ -68,36 +113,36 @@ func (c *Diff) NewOptions() *zeta.DiffContextOptions {
 		From:       c.From,
 		To:         c.To,
 		MergeBase:  c.MergeBase,
-		UseColor:   c.useColor,
 		Textconv:   c.Textconv,
+		Algorithm:  a,
+		NewOutput:  c.NewOutput,
 	}
 	if len(c.To) == 0 {
 		if from, to, ok := strings.Cut(c.From, "..."); ok {
 			opts.From = from
 			opts.To = to
-			opts.ThreeWayCompare = true
-			return opts
+			opts.W3 = true
+			return opts, nil
 		}
 		if from, to, ok := strings.Cut(c.From, ".."); ok {
 			opts.From = from
 			opts.To = to
-			return opts
+			return opts, nil
 		}
 	}
-	return opts
+	return opts, nil
 }
 
-func (c *Diff) NewOut(ctx context.Context) (io.WriteCloser, error) {
+func (c *Diff) NewOutput(ctx context.Context) (io.WriteCloser, bool, error) {
 	if len(c.Output) != 0 {
 		if err := os.MkdirAll(filepath.Dir(c.Output), 0755); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		fd, err := os.Create(c.Output)
-		return fd, err
+		return fd, false, err
 	}
 	printer := zeta.NewPrinter(ctx)
-	c.useColor = printer.UseColor()
-	return printer, nil
+	return printer, printer.UseColor(), nil
 }
 
 func (c *Diff) Run(g *Globals) error {
@@ -111,16 +156,13 @@ func (c *Diff) Run(g *Globals) error {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	newCtx, cancelCtx := context.WithCancelCause(context.Background())
-	defer cancelCtx(nil)
-	out, err := c.NewOut(newCtx)
+	opts, err := c.NewOptions()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "new output file error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "parse options error: %v\n", err)
 		return err
 	}
-	defer out.Close()
-	if err = w.DiffContext(newCtx, c.NewOptions(), out); err != nil {
-		cancelCtx(err)
+	if err = w.DiffContext(context.Background(), opts); err != nil {
+		return err
 	}
-	return err
+	return nil
 }

@@ -67,10 +67,10 @@ func main() {
 	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
 		A: diferenco.Histogram,
 		From: &diferenco.File{
-			Path: os.Args[1],
+			Name: os.Args[1],
 		},
 		To: &diferenco.File{
-			Path: os.Args[2],
+			Name: os.Args[2],
 		},
 		R1: fd1,
 		R2: fd2,

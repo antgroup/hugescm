@@ -131,8 +131,8 @@ type StringDiff struct {
 	Text string
 }
 
-type Stats struct {
-	Del, Ins, Hunks int
+type FileStat struct {
+	Addition, Deletion, Hunks int
 }
 
 type Options struct {
@@ -167,7 +167,7 @@ func diffInternal(ctx context.Context, L1, L2 []int, a Algorithm) ([]Change, err
 	}
 }
 
-func DoStats(ctx context.Context, opts *Options) (*Stats, error) {
+func Stat(ctx context.Context, opts *Options) (*FileStat, error) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
@@ -183,12 +183,12 @@ func DoStats(ctx context.Context, opts *Options) (*Stats, error) {
 	if err != nil {
 		return nil, err
 	}
-	stats := &Stats{
+	stats := &FileStat{
 		Hunks: len(changes),
 	}
 	for _, ch := range changes {
-		stats.Del += ch.Del
-		stats.Ins += ch.Ins
+		stats.Addition += ch.Ins
+		stats.Deletion += ch.Del
 	}
 	return stats, nil
 }

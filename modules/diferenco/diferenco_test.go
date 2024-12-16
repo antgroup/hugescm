@@ -32,7 +32,7 @@ func TestDiff(t *testing.T) {
 		now := time.Now()
 		u, err := DoUnified(context.Background(), &Options{
 			From: &File{
-				Path: "a.txt",
+				Name: "a.txt",
 			},
 			To: nil,
 			S1: textA,
@@ -64,12 +64,12 @@ func TestPatchFD(t *testing.T) {
 	textB := string(bytesB)
 	u, err := DoUnified(context.Background(), &Options{
 		From: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "4789568",
 			Mode: 0o10644,
 		},
 		To: &File{
-			Path: "b.txt",
+			Name: "b.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -101,12 +101,12 @@ func TestPatch(t *testing.T) {
 	textB := string(bytesB)
 	u, err := DoUnified(context.Background(), &Options{
 		From: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "4789568",
 			Mode: 0o10644,
 		},
 		To: &File{
-			Path: "b.txt",
+			Name: "b.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -133,7 +133,7 @@ func TestPatchNew(t *testing.T) {
 	u, err := DoUnified(context.Background(), &Options{
 		From: nil,
 		To: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -159,7 +159,7 @@ func TestPatchDelete(t *testing.T) {
 	textA := string(bytesA)
 	u, err := DoUnified(context.Background(), &Options{
 		From: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -189,7 +189,7 @@ foo bar
 31df1778815171897c907daf454c4419cfaa46f9`
 	u, err := DoUnified(context.Background(), &Options{
 		From: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -222,12 +222,12 @@ func TestPatchScss(t *testing.T) {
 	textB := string(bytesB)
 	u, err := DoUnified(context.Background(), &Options{
 		From: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "4789568",
 			Mode: 0o10644,
 		},
 		To: &File{
-			Path: "b.txt",
+			Name: "b.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -259,12 +259,12 @@ func TestPatchCss(t *testing.T) {
 	textB := string(bytesB)
 	u, err := DoUnified(context.Background(), &Options{
 		From: &File{
-			Path: "a.txt",
+			Name: "a.txt",
 			Hash: "4789568",
 			Mode: 0o10644,
 		},
 		To: &File{
-			Path: "b.txt",
+			Name: "b.txt",
 			Hash: "6547898",
 			Mode: 0o10644,
 		},
@@ -277,4 +277,28 @@ func TestPatchCss(t *testing.T) {
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
 	_ = e.Encode([]*Unified{u})
+}
+
+func TestShowPatch(t *testing.T) {
+	patch := []*Unified{
+		{
+			From: &File{
+				Name: "docs/a.png",
+				Hash: "1ab12893fc666524ed79caae503e12c20a748e2f92db7730c8be09d981970f96",
+				Mode: 33188,
+			},
+			IsBinary: true,
+		},
+		{
+			To: &File{
+				Name: "images/windows7.iso",
+				Hash: "adba50d9794b9ef3f7ec8cbc680f7f1fa3fbf9df0ac8d1f9b9ccab6d941bc11b",
+				Mode: 33188,
+			},
+			IsFragments: true,
+		},
+	}
+	e := NewUnifiedEncoder(os.Stderr)
+	e.SetColor(color.NewColorConfig())
+	_ = e.Encode(patch)
 }

@@ -485,11 +485,10 @@ func (w *Worktree) mergeStat(ctx context.Context, oldRev, newRev plumbing.Hash) 
 		die_error("unable diff tree: old %v new %v: %v", oldRev, newRev, err)
 		return err
 	}
-	patch, err := changes.PatchContext(ctx, false)
+	stats, err := changes.Stats(ctx, &object.PatchOptions{})
 	if err != nil {
 		return err
 	}
-	stats := patch.Stats()
 	var added, deleted int
 	for _, s := range stats {
 		added += s.Addition

@@ -270,6 +270,12 @@
 "If --merge-base is given, use the common ancestor of <commit> and HEAD instead" = "如果给定 --merge-base，则使用 <commit> 与 HEAD 的共同祖先"
 "Convert text to Unicode and compare differences" = "将文本转变为 Unicode 然后再比较差异"
 "Output to a specific file instead of stdout" = "输出到特定文件而不是 stdout"
+"Generate a diff using the \"Histogram diff\" algorithm" = "使用 \"Histogram diff\" 算法生成差异"
+"Generate a diff using the \"O(NP) diff\" algorithm" = "使用 \"O(NP) diff\" 算法生成差异"
+"Generate a diff using the \"Myers diff\" algorithm" = "使用 \"Myers diff\" 算法生成差异"
+"Generate a diff using the \"Patience diff\" algorithm" = "使用 \"Patience diff\" 算法生成差异"
+"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" = "选择一个 diff 算法，支持：histogram|onp|myers|patience|minimal"
+"Spend extra time to make sure the smallest possible diff is produced" = "花费额外的时间来确保产生尽可能最小的差异"
 # RM
 "Remove files from the working tree and from the index" = "从工作树和索引中删除文件"
 "Override the up-to-date check" = "忽略文件更新状态检查"

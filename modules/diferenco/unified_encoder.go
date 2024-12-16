@@ -9,6 +9,10 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco/color"
 )
 
+const (
+	ZERO_OID = "0000000000000000000000000000000000000000000000000000000000000000" // zeta zero OID
+)
+
 var (
 	operationChar = map[Operation]byte{
 		Insert: '+',
@@ -89,10 +93,6 @@ func (e *UnifiedEncoder) appendPathLines(lines []string, fromPath, toPath string
 	)
 }
 
-const (
-	ZERO_OID = "0000000000000000000000000000000000000000000000000000000000000000" // zeta zero OID
-)
-
 func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 	from, to := u.From, u.To
 	if from == nil && to == nil {
@@ -104,7 +104,7 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 		hashEquals := from.Hash == to.Hash
 		lines = append(lines,
 			fmt.Sprintf("diff --zeta %s%s %s%s",
-				e.srcPrefix, from.Path, e.dstPrefix, to.Path),
+				e.srcPrefix, from.Name, e.dstPrefix, to.Name),
 		)
 		if from.Mode != to.Mode {
 			lines = append(lines,
@@ -112,10 +112,10 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 				fmt.Sprintf("new mode %o", to.Mode),
 			)
 		}
-		if from.Path != to.Path {
+		if from.Name != to.Name {
 			lines = append(lines,
-				fmt.Sprintf("rename from %s", from.Path),
-				fmt.Sprintf("rename to %s", to.Path),
+				fmt.Sprintf("rename from %s", from.Name),
+				fmt.Sprintf("rename to %s", to.Name),
 			)
 		}
 		if from.Mode != to.Mode && !hashEquals {
@@ -128,22 +128,22 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 			)
 		}
 		if !hashEquals {
-			lines = e.appendPathLines(lines, e.srcPrefix+from.Path, e.dstPrefix+to.Path, u.IsBinary, u.IsFragments)
+			lines = e.appendPathLines(lines, e.srcPrefix+from.Name, e.dstPrefix+to.Name, u.IsBinary, u.IsFragments)
 		}
 	case from == nil:
 		lines = append(lines,
-			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+to.Path, e.dstPrefix+to.Path),
+			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+to.Name, e.dstPrefix+to.Name),
 			fmt.Sprintf("new file mode %o", to.Mode),
 			fmt.Sprintf("index %s..%s", ZERO_OID, to.Hash),
 		)
-		lines = e.appendPathLines(lines, "/dev/null", e.dstPrefix+to.Path, u.IsBinary, u.IsFragments)
+		lines = e.appendPathLines(lines, "/dev/null", e.dstPrefix+to.Name, u.IsBinary, u.IsFragments)
 	case to == nil:
 		lines = append(lines,
-			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+from.Path, e.dstPrefix+from.Path),
+			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+from.Name, e.dstPrefix+from.Name),
 			fmt.Sprintf("deleted file mode %o", from.Mode),
 			fmt.Sprintf("index %s..%s", from.Hash, ZERO_OID),
 		)
-		lines = e.appendPathLines(lines, e.srcPrefix+from.Path, "/dev/null", u.IsBinary, u.IsFragments)
+		lines = e.appendPathLines(lines, e.srcPrefix+from.Name, "/dev/null", u.IsBinary, u.IsFragments)
 	}
 	b.WriteString(e.color[color.Meta])
 	b.WriteString(lines[0])
@@ -227,6 +227,9 @@ func (e *UnifiedEncoder) writeUnified(u *Unified) error {
 	}
 	e.writeFilePatchHeader(u, b)
 	if len(u.Hunks) == 0 {
+		if _, err := io.WriteString(e.Writer, b.String()); err != nil {
+			return err
+		}
 		return nil
 	}
 	for _, hunk := range u.Hunks {

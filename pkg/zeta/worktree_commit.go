@@ -293,7 +293,7 @@ func (w *Worktree) Stats(ctx context.Context) error {
 		die_error("open HEAD: %v", err)
 		return err
 	}
-	stats, err := cc.StatsContext(ctx, noder.NewSparseTreeMatcher(w.Core.SparseDirs), false)
+	stats, err := cc.StatsContext(ctx, noder.NewSparseTreeMatcher(w.Core.SparseDirs), &object.PatchOptions{})
 	if plumbing.IsNoSuchObject(err) {
 		fmt.Fprintf(os.Stderr, "incomplete checkout, skipping change line count statistics\n")
 		return nil

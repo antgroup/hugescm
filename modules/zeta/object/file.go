@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/streamio"
@@ -33,6 +34,20 @@ func newFile(name string, m filemode.FileMode, hash plumbing.Hash, size int64, b
 type readCloser struct {
 	io.Reader
 	io.Closer
+}
+
+func (f *File) IsFragments() bool {
+	if f == nil {
+		return false
+	}
+	return f.Mode.IsFragments()
+}
+
+func (f *File) asFile() *diferenco.File {
+	if f == nil {
+		return nil
+	}
+	return &diferenco.File{Name: f.Name, Hash: f.Hash.String(), Mode: uint32(f.Mode.Origin())}
 }
 
 // OriginReader return ReadCloser

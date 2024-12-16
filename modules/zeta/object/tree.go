@@ -585,26 +585,13 @@ func (t *Tree) DiffContext(ctx context.Context, to *Tree, m noder.Matcher) (Chan
 	return DiffTreeWithOptions(ctx, t, to, DefaultDiffTreeOptions, m)
 }
 
-// Patch returns a slice of Patch objects with all the changes between trees
-// in chunks. This representation can be used to create several diff outputs.
-func (t *Tree) Patch(to *Tree, m noder.Matcher, codecvt bool) (*Patch, error) {
-	return t.PatchContext(context.Background(), to, m, codecvt)
-}
-
-// PatchContext returns a slice of Patch objects with all the changes between
-// trees in chunks. This representation can be used to create several diff
-// outputs. If context expires, an error will be returned. Provided context must
-// be non-nil.
-//
-// NOTE: Since version 5.1.0 the renames are correctly handled, the settings
-// used are the recommended options DefaultDiffTreeOptions.
-func (t *Tree) PatchContext(ctx context.Context, to *Tree, m noder.Matcher, codecvt bool) (*Patch, error) {
+// StatsContext: stats
+func (t *Tree) StatsContext(ctx context.Context, to *Tree, m noder.Matcher, opts *PatchOptions) (FileStats, error) {
 	changes, err := t.DiffContext(ctx, to, m)
 	if err != nil {
 		return nil, err
 	}
-
-	return changes.PatchContext(ctx, codecvt)
+	return changes.Stats(ctx, opts)
 }
 
 // treeEntryIter facilitates iterating through the TreeEntry objects in a Tree.

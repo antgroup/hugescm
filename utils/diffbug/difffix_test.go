@@ -29,10 +29,10 @@ func TestDiffText(t *testing.T) {
 	}
 	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
 		From: &diferenco.File{
-			Path: "a.go",
+			Name: "a.go",
 		},
 		To: &diferenco.File{
-			Path: "a.go",
+			Name: "a.go",
 		},
 		S1: string(bytesA),
 		S2: string(bytesB),

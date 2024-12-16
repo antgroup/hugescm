@@ -70,7 +70,7 @@ func TestMyersDiff2(t *testing.T) {
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
 	changes, _ := MyersDiff(context.Background(), a, b)
-	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
 }
 
@@ -91,6 +91,6 @@ func TestMyersDiff3(t *testing.T) {
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
 	changes, _ := MyersDiff(context.Background(), a, b)
-	u := sink.ToUnified(&File{Path: "a.txt"}, &File{Path: "b.txt"}, changes, a, b, DefaultContextLines)
+	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
 }

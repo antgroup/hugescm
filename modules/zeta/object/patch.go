@@ -4,7 +4,6 @@
 package object
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,270 +11,158 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/antgroup/hugescm/modules/diff"
-	dmp "github.com/antgroup/hugescm/modules/diffmatchpatch"
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/plumbing/filemode"
-	fdiff "github.com/antgroup/hugescm/modules/plumbing/format/diff"
 )
 
 var (
 	ErrCanceled = errors.New("operation canceled")
 )
 
-func getPatchContext(ctx context.Context, message string, codecvt bool, changes ...*Change) (*Patch, error) {
-	var filePatches []fdiff.FilePatch
-	for _, c := range changes {
-		select {
-		case <-ctx.Done():
-			return nil, ErrCanceled
-		default:
-		}
-
-		fp, err := filePatchWithContext(ctx, codecvt, c)
-		if err != nil {
-			return nil, err
-		}
-
-		filePatches = append(filePatches, fp)
-	}
-	return &Patch{message, filePatches}, nil
+type PatchOptions struct {
+	Algorithm diferenco.Algorithm
+	Textconv  bool
+	Match     func(string) bool
 }
 
 func sizeOverflow(f *File) bool {
 	return f != nil && f.Size > MAX_DIFF_SIZE
 }
 
-func filePatchWithContext(ctx context.Context, codecvt bool, c *Change) (fdiff.FilePatch, error) {
-	if c.From.IsFragments() || c.To.IsFragments() {
-		return &textFilePatch{from: c.From, to: c.To, fragments: true}, nil
+func fileStatName(from, to *File) string {
+	if from == nil {
+		// New File is created.
+		return to.Name
 	}
+	if to == nil {
+		// File is deleted.
+		return from.Name
+	}
+	if from.Name != to.Name {
+		// File is renamed.
+		return fmt.Sprintf("%s => %s", from.Name, to.Name)
+	}
+	return from.Name
+}
+
+func fileStatWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*FileStat, error) {
 	from, to, err := c.Files()
 	if err != nil {
 		return nil, err
 	}
+	if from == nil && to == nil {
+		return nil, ErrMalformedChange
+	}
+	s := &FileStat{
+		Name: fileStatName(from, to),
+	}
+	if from.IsFragments() || to.IsFragments() {
+		return s, nil
+	}
 	// --- check size limit
 	if sizeOverflow(from) || sizeOverflow(to) {
-		return &textFilePatch{from: c.From, to: c.To}, nil
+		return s, nil
 	}
-	fromContent, err := from.UnifiedText(ctx, codecvt)
-	if plumbing.IsNoSuchObject(err) {
-		return &textFilePatch{from: c.From, to: c.To}, nil
-	}
-	if err == ErrNotTextContent {
-		return &textFilePatch{from: c.From, to: c.To}, nil
+	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
+	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+		return s, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	toContent, err := to.UnifiedText(ctx, codecvt)
-	if plumbing.IsNoSuchObject(err) {
-		return &textFilePatch{from: c.From, to: c.To}, nil
-	}
-	if err == ErrNotTextContent {
-		return &textFilePatch{from: c.From, to: c.To}, nil
+	toContent, err := to.UnifiedText(ctx, opts.Textconv)
+	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+		return s, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-
-	diffs, err := diff.Do(fromContent, toContent)
+	stat, err := diferenco.Stat(ctx, &diferenco.Options{S1: fromContent, S2: toContent, A: opts.Algorithm})
 	if err != nil {
-		return &textFilePatch{from: c.From, to: c.To}, nil
+		return nil, err
 	}
-	var chunks []fdiff.Chunk
-	for _, d := range diffs {
-		select {
-		case <-ctx.Done():
-			return nil, ErrCanceled
-		default:
+	s.Addition = stat.Addition
+	s.Deletion = stat.Deletion
+	return s, nil
+}
+
+func getStatsContext(ctx context.Context, opts *PatchOptions, changes ...*Change) ([]FileStat, error) {
+	if opts.Match == nil {
+		opts.Match = func(s string) bool {
+			return true
 		}
-
-		var op fdiff.Operation
-		switch d.Type {
-		case dmp.DiffEqual:
-			op = fdiff.Equal
-		case dmp.DiffDelete:
-			op = fdiff.Delete
-		case dmp.DiffInsert:
-			op = fdiff.Add
+	}
+	stats := make([]FileStat, 0, 100)
+	for _, c := range changes {
+		if !opts.Match(c.name()) {
+			continue
 		}
-
-		chunks = append(chunks, &textChunk{d.Text, op})
+		s, err := fileStatWithContext(ctx, opts, c)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, *s)
 	}
-
-	return &textFilePatch{
-		chunks: chunks,
-		from:   c.From,
-		to:     c.To,
-	}, nil
-
+	return stats, nil
 }
 
-// Patch is an implementation of fdiff.Patch interface
-type Patch struct {
-	message     string
-	filePatches []fdiff.FilePatch
-}
-
-func NewPatch(message string, filePatches []fdiff.FilePatch) *Patch {
-	return &Patch{message: message, filePatches: filePatches}
-}
-
-func (p *Patch) FilePatches() []fdiff.FilePatch {
-	return p.filePatches
-}
-
-func (p *Patch) Message() string {
-	return p.message
-}
-
-func (p *Patch) Encode(w io.Writer) error {
-	e := fdiff.NewUnifiedEncoder(w, fdiff.DefaultContextLines)
-
-	return e.Encode(p)
-}
-
-func (p *Patch) EncodeEx(w io.Writer, useColor bool) error {
-	e := fdiff.NewUnifiedEncoder(w, fdiff.DefaultContextLines)
-	if useColor {
-		e.SetColor(fdiff.NewColorConfig())
-	}
-	return e.Encode(p)
-}
-
-func (p *Patch) Stats() FileStats {
-	return getFileStatsFromFilePatches(p.FilePatches())
-}
-
-func (p *Patch) String() string {
-	buf := bytes.NewBuffer(nil)
-	err := p.Encode(buf)
+func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*diferenco.Unified, error) {
+	from, to, err := c.Files()
 	if err != nil {
-		return fmt.Sprintf("malformed patch: %s", err.Error())
+		return nil, err
 	}
-
-	return buf.String()
-}
-
-// changeEntryWrapper is an implementation of fdiff.File interface
-type changeEntryWrapper struct {
-	ce ChangeEntry
-}
-
-func (f *changeEntryWrapper) Hash() plumbing.Hash {
-	if !f.ce.TreeEntry.Mode.IsFile() {
-		return plumbing.ZeroHash
+	if from == nil && to == nil {
+		return nil, ErrMalformedChange
 	}
-
-	return f.ce.TreeEntry.Hash
-}
-
-func (f *changeEntryWrapper) Mode() filemode.FileMode {
-	return f.ce.TreeEntry.Mode.Origin()
-}
-func (f *changeEntryWrapper) Path() string {
-	if !f.ce.TreeEntry.Mode.IsFile() {
-		return ""
+	if from.IsFragments() || to.IsFragments() {
+		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsFragments: true}, nil
 	}
-
-	return f.ce.Name
-}
-
-func (f *changeEntryWrapper) Empty() bool {
-	return !f.ce.TreeEntry.Mode.IsFile()
-}
-
-// textFilePatch is an implementation of fdiff.FilePatch interface
-type textFilePatch struct {
-	chunks    []fdiff.Chunk
-	from, to  ChangeEntry
-	fragments bool
-}
-
-func NewTextFilePatch(chunks []fdiff.Chunk, from, to ChangeEntry, fragments bool) fdiff.FilePatch {
-	return &textFilePatch{chunks: chunks, from: from, to: to, fragments: fragments}
-}
-
-func (tf *textFilePatch) Files() (from fdiff.File, to fdiff.File) {
-	f := &changeEntryWrapper{tf.from}
-	t := &changeEntryWrapper{tf.to}
-
-	if !f.Empty() {
-		from = f
+	// --- check size limit
+	if sizeOverflow(from) || sizeOverflow(to) {
+		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
-
-	if !t.Empty() {
-		to = t
+	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
+	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
-
-	return
+	if err != nil {
+		return nil, err
+	}
+	toContent, err := to.UnifiedText(ctx, opts.Textconv)
+	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return diferenco.DoUnified(ctx, &diferenco.Options{From: from.asFile(), To: to.asFile(), S1: fromContent, S2: toContent, A: opts.Algorithm})
 }
 
-func (tf *textFilePatch) IsFragments() bool {
-	return tf.fragments
-}
-
-func (tf *textFilePatch) IsBinary() bool {
-	return len(tf.chunks) == 0
-}
-
-func (tf *textFilePatch) Chunks() []fdiff.Chunk {
-	return tf.chunks
-}
-
-type filePatchWrapper struct {
-	chunks    []fdiff.Chunk
-	from, to  fdiff.File
-	fragments bool
-}
-
-func (f *filePatchWrapper) Files() (from fdiff.File, to fdiff.File) {
-	from = f.from
-	to = f.to
-
-	return
-}
-
-func (f *filePatchWrapper) IsFragments() bool {
-	return f.fragments
-}
-
-func (f *filePatchWrapper) IsBinary() bool {
-	return len(f.chunks) == 0
-}
-
-func (f *filePatchWrapper) Chunks() []fdiff.Chunk {
-	return f.chunks
-}
-
-func NewFilePatchWrapper(chunks []fdiff.Chunk, from, to fdiff.File, fragments bool) fdiff.FilePatch {
-	return &filePatchWrapper{chunks: chunks, from: from, to: to, fragments: fragments}
-}
-
-// textChunk is an implementation of fdiff.Chunk interface
-type textChunk struct {
-	content string
-	op      fdiff.Operation
-}
-
-func (t *textChunk) Content() string {
-	return t.content
-}
-
-func (t *textChunk) Type() fdiff.Operation {
-	return t.op
-}
-
-func NewTextChunk(content string, op fdiff.Operation) fdiff.Chunk {
-	return &textChunk{content: content, op: op}
+func getPatchContext(ctx context.Context, opts *PatchOptions, changes ...*Change) ([]*diferenco.Unified, error) {
+	if opts.Match == nil {
+		opts.Match = func(s string) bool {
+			return true
+		}
+	}
+	patch := make([]*diferenco.Unified, 0, len(changes))
+	for _, c := range changes {
+		if !opts.Match(c.name()) {
+			continue
+		}
+		p, err := filePatchWithContext(ctx, opts, c)
+		if err != nil {
+			return nil, err
+		}
+		patch = append(patch, p)
+	}
+	return patch, nil
 }
 
 // FileStat stores the status of changes in content of a file.
 type FileStat struct {
-	Name     string
-	Addition int
-	Deletion int
+	Name     string `json:"name"`
+	Addition int    `json:"addition"`
+	Deletion int    `json:"deletion"`
 }
 
 func (fs FileStat) String() string {
@@ -343,54 +230,4 @@ func StatsWriteTo(w io.Writer, fileStats []FileStat, color bool) {
 		}
 		_, _ = fmt.Fprintf(w, " %s%s | %s%d %s%s\n", fs.Name, namePad, changePad, total, adds, dels)
 	}
-}
-
-func getFileStatsFromFilePatches(filePatches []fdiff.FilePatch) FileStats {
-	var fileStats FileStats
-
-	for _, fp := range filePatches {
-		// ignore empty patches (binary files, submodule refs updates)
-		if len(fp.Chunks()) == 0 {
-			continue
-		}
-
-		cs := FileStat{}
-		from, to := fp.Files()
-		if from == nil {
-			// New File is created.
-			cs.Name = to.Path()
-		} else if to == nil {
-			// File is deleted.
-			cs.Name = from.Path()
-		} else if from.Path() != to.Path() {
-			// File is renamed.
-			cs.Name = fmt.Sprintf("%s => %s", from.Path(), to.Path())
-		} else {
-			cs.Name = from.Path()
-		}
-
-		for _, chunk := range fp.Chunks() {
-			s := chunk.Content()
-			if len(s) == 0 {
-				continue
-			}
-
-			switch chunk.Type() {
-			case fdiff.Add:
-				cs.Addition += strings.Count(s, "\n")
-				if s[len(s)-1] != '\n' {
-					cs.Addition++
-				}
-			case fdiff.Delete:
-				cs.Deletion += strings.Count(s, "\n")
-				if s[len(s)-1] != '\n' {
-					cs.Deletion++
-				}
-			}
-		}
-
-		fileStats = append(fileStats, cs)
-	}
-
-	return fileStats
 }

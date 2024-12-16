@@ -44,7 +44,7 @@ func newChangeEntry(p noder.Path) (ChangeEntry, error) {
 		TreeEntry: TreeEntry{
 			Name: asTreeNoder.name,
 			Size: asTreeNoder.size,
-			Mode: asTreeNoder.Mode(),
+			Mode: asTreeNoder.TrueMode(),
 			Hash: asTreeNoder.HashRaw(),
 		},
 	}, nil

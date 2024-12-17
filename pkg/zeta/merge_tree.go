@@ -221,12 +221,12 @@ func (r *Repository) mergeTree(ctx context.Context, into, from, base *object.Com
 		return nil, err
 	}
 	r.DbgPrint("merge from %s to %s base: %s", from.Hash, into.Hash, base0)
-	a, err := from.Root(ctx)
+	a, err := into.Root(ctx)
 	if err != nil {
 		die_error("read tree '%s:' %v", from.Hash, err)
 		return nil, err
 	}
-	b, err := into.Root(ctx)
+	b, err := from.Root(ctx)
 	if err != nil {
 		die_error("read tree '%s:' %v", into.Hash, err)
 		return nil, err

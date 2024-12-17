@@ -64,7 +64,26 @@ func (r *Repository) resolveMergeDriver() odb.MergeDriver {
 			r.DbgPrint("Unsupport merge driver '%s'", driverName)
 		}
 	}
-	return diferenco.Merge
+	var diffAlgorithm diferenco.Algorithm
+	var err error
+	if len(r.Diff.Algorithm) != 0 {
+		if diffAlgorithm, err = diferenco.ParseAlgorithm(r.Diff.Algorithm); err != nil {
+			warn("diff: bad config, key: diff.algorithm value: %s", r.Diff.Algorithm)
+		}
+	}
+	mergeConflictStyle := diferenco.ParseConflictStyle(r.Merge.ConflictStyle)
+	return func(ctx context.Context, o, a, b, labelO, labelA, labelB string) (string, bool, error) {
+		return diferenco.Merge(ctx, &diferenco.MergeOptions{
+			TextO:  o,
+			TextA:  a,
+			TextB:  b,
+			LabelO: labelO,
+			LabelA: labelA,
+			LabelB: labelB,
+			A:      diffAlgorithm,
+			Style:  mergeConflictStyle,
+		})
+	}
 }
 
 func (o *MergeTreeOptions) formatJson(result *odb.MergeResult) {

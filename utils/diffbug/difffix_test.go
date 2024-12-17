@@ -42,7 +42,7 @@ func TestDiffText(t *testing.T) {
 	}
 	e := diferenco.NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	e.Encode([]*diferenco.Unified{u})
+	_ = e.Encode([]*diferenco.Unified{u})
 }
 
 func TestRuneToString(t *testing.T) {

@@ -3,8 +3,10 @@ package diferenco
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
+	"strings"
 )
 
 // https://github.com/Wilfred/difftastic/wiki/Line-Based-Diffs
@@ -57,6 +59,23 @@ func (a Algorithm) String() string {
 var (
 	ErrUnsupportedAlgorithm = errors.New("unsupport algorithm")
 )
+
+var (
+	diffAlgorithms = map[string]Algorithm{
+		"histogram": Histogram,
+		"onp":       ONP,
+		"myers":     Myers,
+		"patience":  Patience,
+		"minimal":   Minimal,
+	}
+)
+
+func ParseAlgorithm(s string) (Algorithm, error) {
+	if a, ok := diffAlgorithms[strings.ToLower(s)]; ok {
+		return a, nil
+	}
+	return Unspecified, fmt.Errorf("unsupport algoritm '%s' %w", s, ErrUnsupportedAlgorithm)
+}
 
 // commonPrefixLength returns the length of the common prefix of two T slices.
 func commonPrefixLength[E comparable](a, b []E) int {
@@ -139,10 +158,10 @@ type Options struct {
 	From, To *File
 	S1, S2   string
 	R1, R2   io.Reader
-	A        Algorithm
+	A        Algorithm // algorithm
 }
 
-func diffInternal(ctx context.Context, L1, L2 []int, a Algorithm) ([]Change, error) {
+func diffInternal[E comparable](ctx context.Context, L1, L2 []E, a Algorithm) ([]Change, error) {
 	if a == Unspecified {
 		switch {
 		case len(L1) < 5000 && len(L2) < 5000:

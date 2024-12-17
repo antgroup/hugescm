@@ -499,7 +499,7 @@ func (d *ODB) MergeTree(ctx context.Context, o, a, b *object.Tree, opts *MergeOp
 		opts.Branch2 = "Branch2"
 	}
 	if opts.MergeDriver == nil {
-		opts.MergeDriver = diferenco.Merge // fallback
+		opts.MergeDriver = diferenco.DefaultMerge // fallback
 	}
 	if opts.TextGetter == nil {
 		opts.TextGetter = d.unifiedText

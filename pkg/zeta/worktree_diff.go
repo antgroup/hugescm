@@ -24,7 +24,7 @@ func (w *Worktree) openText(p string, size int64, textConv bool) (string, error)
 		return "", err
 	}
 	defer fd.Close()
-	content, _, err := object.GetUnifiedText(fd, size, textConv)
+	content, _, err := diferenco.ReadUnifiedText(fd, size, textConv)
 	return content, err
 }
 
@@ -34,7 +34,7 @@ func (w *Worktree) openBlobText(ctx context.Context, oid plumbing.Hash, textConv
 		return "", err
 	}
 	defer br.Close()
-	content, _, err := object.GetUnifiedText(br.Contents, br.Size, textConv)
+	content, _, err := diferenco.ReadUnifiedText(br.Contents, br.Size, textConv)
 	return content, err
 }
 
@@ -46,11 +46,11 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool)
 	switch a := p.Last().(type) {
 	case *filesystem.Node:
 		f = &diferenco.File{Name: name, Hash: a.HashRaw().String(), Mode: uint32(a.Mode())}
-		if a.Size() > object.MAX_DIFF_SIZE {
+		if a.Size() > diferenco.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
 		content, err = w.openText(name, a.Size(), textConv)
-		if err == object.ErrNotTextContent {
+		if err == diferenco.ErrNonTextContent {
 			return f, "", false, true, nil
 		}
 		return f, content, false, false, nil
@@ -59,12 +59,12 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool)
 		if a.IsFragments() {
 			return f, "", true, false, err
 		}
-		if a.Size() > object.MAX_DIFF_SIZE {
+		if a.Size() > diferenco.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
 		content, err = w.openBlobText(ctx, a.HashRaw(), textConv)
 		// When the current repository uses an incomplete checkout mechanism, we treat these files as binary files, i.e. no differences can be calculated.
-		if err == object.ErrNotTextContent || plumbing.IsNoSuchObject(err) {
+		if err == diferenco.ErrNonTextContent || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
 		return f, content, false, false, nil
@@ -73,11 +73,11 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool)
 		if a.IsFragments() {
 			return f, "", true, false, err
 		}
-		if a.Size() > object.MAX_DIFF_SIZE {
+		if a.Size() > diferenco.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
 		content, err = w.openBlobText(ctx, a.HashRaw(), textConv)
-		if err == object.ErrNotTextContent || plumbing.IsNoSuchObject(err) {
+		if err == diferenco.ErrNonTextContent || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
 		return f, content, a.IsFragments(), false, nil
@@ -336,8 +336,14 @@ func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
 }
 
 func (w *Worktree) DiffContext(ctx context.Context, opts *DiffOptions) error {
+	if opts.Algorithm == diferenco.Unspecified && len(w.Diff.Algorithm) != 0 {
+		if a, err := diferenco.AlgorithmFromName(w.Diff.Algorithm); err != nil {
+			warn("diff: bad config, key: diff.algorithm value: %s", w.Diff.Algorithm)
+		} else {
+			opts.Algorithm = a
+		}
+	}
 	if len(opts.From) != 0 && len(opts.To) != 0 {
-
 		return w.between(ctx, opts)
 	}
 	if len(opts.From) != 0 {

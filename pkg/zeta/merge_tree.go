@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -44,27 +43,7 @@ func (r *Repository) readMissingText(ctx context.Context, oid plumbing.Hash, tex
 		return "", "", err
 	}
 	defer br.Close()
-	return object.GetUnifiedText(br.Contents, br.Size, textConv)
-}
-
-func (r *Repository) resolveMergeDriver() odb.MergeDriver {
-	if driverName, ok := os.LookupEnv(ENV_ZETA_MERGE_TEXT_DRIVER); ok {
-		switch driverName {
-		case "git":
-			if _, err := exec.LookPath("git"); err == nil {
-				r.DbgPrint("Use git merge-file as text merge driver")
-				return r.odb.ExternalMerge
-			}
-		case "diff3":
-			if _, err := exec.LookPath("diff3"); err == nil {
-				r.DbgPrint("Use diff3 as text merge driver")
-				return r.odb.Diff3Merge
-			}
-		default:
-			r.DbgPrint("Unsupport merge driver '%s'", driverName)
-		}
-	}
-	return diferenco.Merge
+	return diferenco.ReadUnifiedText(br.Contents, br.Size, textConv)
 }
 
 func (o *MergeTreeOptions) formatJson(result *odb.MergeResult) {

@@ -380,6 +380,14 @@
 "Write the object into the object database" = "将对象写入对象数据库"
 "Read the object from stdin" = "从标准输入读取对象"
 "Process file as it were from this path" = "处理文件并假设其来自于此路径"
+# merge-file
+"Run a three-way file merge" = "运行三向文件合并"
+"Send results to standard output" = "将结果发送到标准输出"
+"Use object IDs instead of filenames" = "使用对象 ID 替换文件名"
+"Use a diff3 based merge" = "使用基于 diff3 的合并"
+"Use a zealous diff3 based merge" = "使用基于狂热 diff3（zealous diff3）的合并"
+"Set labels for file1/orig-file/file2" = "为 文件1/初始文件/文件2 设置标签"
+
 # Others
 "WARNING" = "警告"
 "not zeta repository" = "不是 zeta 存储库"

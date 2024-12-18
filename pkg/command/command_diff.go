@@ -61,22 +61,9 @@ func (c *Diff) Passthrough(paths []string) {
 	c.passthroughArgs = append(c.passthroughArgs, paths...)
 }
 
-var (
-	diffAlgorithms = map[string]diferenco.Algorithm{
-		"histogram": diferenco.Histogram,
-		"onp":       diferenco.ONP,
-		"myers":     diferenco.Myers,
-		"patience":  diferenco.Patience,
-		"minimal":   diferenco.Minimal,
-	}
-)
-
 func (c *Diff) checkAlgorithm() (diferenco.Algorithm, error) {
 	if len(c.DiffAlgorithm) != 0 {
-		if a, ok := diffAlgorithms[c.DiffAlgorithm]; ok {
-			return a, nil
-		}
-		return diferenco.Unspecified, fmt.Errorf("unsupport algorithms %s'", c.DiffAlgorithm)
+		return diferenco.AlgorithmFromName(c.DiffAlgorithm)
 	}
 	if c.Histogram {
 		return diferenco.Histogram, nil

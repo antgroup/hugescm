@@ -16,8 +16,9 @@ package diferenco
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"slices"
+	"io"
 	"sort"
 	"strings"
 )
@@ -68,113 +69,9 @@ const (
 	Sep2 = "======="
 	// Sep3 signifies the end of a conflict.
 	Sep3 = ">>>>>>>"
+	// SepO origin content
+	SepO = "|||||||"
 )
-
-type candidate struct {
-	file1index int
-	file2index int
-	chain      *candidate
-}
-
-// Text diff algorithm following Hunt and McIlroy 1976.
-// J. W. Hunt and M. D. McIlroy, An algorithm for differential file
-// comparison, Bell Telephone Laboratories CSTR #41 (1976)
-// http://www.cs.dartmouth.edu/~doug/
-func d3Lcs[E comparable](file1, file2 []E) *candidate {
-	var equivalenceClasses map[E][]int
-	var file2indices []int
-
-	var candidates []*candidate
-	var line E
-	var c *candidate
-	var i, j, jX, r, s int
-
-	equivalenceClasses = make(map[E][]int)
-	for j = 0; j < len(file2); j++ {
-		line = file2[j]
-		equivalenceClasses[line] = append(equivalenceClasses[line], j)
-	}
-
-	candidates = append(candidates, &candidate{file1index: -1, file2index: -1, chain: nil})
-
-	for i = 0; i < len(file1); i++ {
-		line = file1[i]
-		file2indices = equivalenceClasses[line] // || []
-
-		r = 0
-		c = candidates[0]
-
-		for jX = 0; jX < len(file2indices); jX++ {
-			j = file2indices[jX]
-
-			for s = r; s < len(candidates); s++ {
-				if (candidates[s].file2index < j) && ((s == len(candidates)-1) || (candidates[s+1].file2index > j)) {
-					break
-				}
-			}
-
-			if s < len(candidates) {
-				newCandidate := &candidate{file1index: i, file2index: j, chain: candidates[s]}
-				if r == len(candidates) {
-					candidates = append(candidates, c)
-				} else {
-					candidates[r] = c
-				}
-				r = s + 1
-				c = newCandidate
-				if r == len(candidates) {
-					break // no point in examining further (j)s
-				}
-			}
-		}
-
-		if r == len(candidates) {
-			candidates = append(candidates, c)
-		} else {
-			if r > len(candidates) {
-				panic("out of range")
-			} else {
-				candidates[r] = c
-			}
-		}
-	}
-
-	// At this point, we know the LCS: it's in the reverse of the
-	// linked-list through .chain of candidates[candidates.length - 1].
-
-	return candidates[len(candidates)-1]
-}
-
-type diffIndicesResult struct {
-	file1 []int
-	file2 []int
-}
-
-// We apply the LCS to give a simple representation of the
-// offsets and lengths of mismatched chunks in the input
-// files. This is used by diff3MergeIndices below.
-func diffIndices[E comparable](file1, file2 []E) []*diffIndicesResult {
-	var result []*diffIndicesResult
-	tail1 := len(file1)
-	tail2 := len(file2)
-
-	for candidate := d3Lcs(file1, file2); candidate != nil; candidate = candidate.chain {
-		mismatchLength1 := tail1 - candidate.file1index - 1
-		mismatchLength2 := tail2 - candidate.file2index - 1
-		tail1 = candidate.file1index
-		tail2 = candidate.file2index
-
-		if mismatchLength1 != 0 || mismatchLength2 != 0 {
-			result = append(result, &diffIndicesResult{
-				file1: []int{tail1 + 1, mismatchLength1},
-				file2: []int{tail2 + 1, mismatchLength2},
-			})
-		}
-	}
-
-	slices.Reverse(result)
-	return result
-}
 
 type hunk [5]int
 type hunkList []*hunk
@@ -194,13 +91,18 @@ func (h hunkList) Less(i, j int) bool { return h[i][0] < h[j][0] }
 // Computer Science (FSTTCS), December 2007.
 //
 // (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf)
-func diff3MergeIndices[E comparable](a, o, b []E) [][]int {
-	m1 := diffIndices(o, a)
-	m2 := diffIndices(o, b)
-
+func diff3MergeIndices[E comparable](ctx context.Context, o, a, b []E, algo Algorithm) ([][]int, error) {
+	m1, err := diffInternal(ctx, o, a, algo)
+	if err != nil {
+		return nil, err
+	}
+	m2, err := diffInternal(ctx, o, b, algo)
+	if err != nil {
+		return nil, err
+	}
 	var hunks []*hunk
-	addHunk := func(h *diffIndicesResult, side int) {
-		hunks = append(hunks, &hunk{h.file1[0], side, h.file1[1], h.file2[0], h.file2[1]})
+	addHunk := func(h Change, side int) {
+		hunks = append(hunks, &hunk{h.P1, side, h.Del, h.P2, h.Ins})
 	}
 	for i := 0; i < len(m1); i++ {
 		addHunk(m1[i], 0)
@@ -276,7 +178,7 @@ func diff3MergeIndices[E comparable](a, o, b []E) [][]int {
 	}
 
 	copyCommon(len(o))
-	return result
+	return result, nil
 }
 
 // Conflict describes a merge conflict
@@ -298,10 +200,13 @@ type Diff3MergeResult[E comparable] struct {
 // Diff3Merge applies the output of diff3MergeIndices to actually
 // construct the merged file; the returned result alternates
 // between 'ok' and 'conflict' blocks.
-func Diff3Merge[E comparable](a, o, b []E, excludeFalseConflicts bool) []*Diff3MergeResult[E] {
+func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, excludeFalseConflicts bool) ([]*Diff3MergeResult[E], error) {
 	var result []*Diff3MergeResult[E]
 	files := [][]E{a, o, b}
-	indices := diff3MergeIndices(a, o, b)
+	indices, err := diff3MergeIndices(ctx, o, a, b, algo)
+	if err != nil {
+		return nil, err
+	}
 
 	var okLines []E
 	flushOk := func() {
@@ -356,43 +261,178 @@ func Diff3Merge[E comparable](a, o, b []E, excludeFalseConflicts bool) []*Diff3M
 	}
 
 	flushOk()
-	return result
+	return result, nil
+}
+
+const (
+	// Only show the zealously minified conflicting lines of the local changes and the incoming (other) changes,
+	// hiding the base version entirely.
+	//
+	// ```text
+	// line1-changed-by-both
+	// <<<<<<< local
+	// line2-to-be-changed-in-incoming
+	// =======
+	// line2-changed
+	// >>>>>>> incoming
+	// ```
+	STYLE_DEFAULT = iota
+	// Show non-minimized hunks of local changes, the base, and the incoming (other) changes.
+	//
+	// This mode does not hide any information.
+	//
+	// ```text
+	// <<<<<<< local
+	// line1-changed-by-both
+	// line2-to-be-changed-in-incoming
+	// ||||||| 9a8d80c
+	// line1-to-be-changed-by-both
+	// line2-to-be-changed-in-incoming
+	// =======
+	// line1-changed-by-both
+	// line2-changed
+	// >>>>>>> incoming
+	// ```
+	STYLE_DIFF3
+	// Like diff3, but will show *minimized* hunks of local change and the incoming (other) changes,
+	// as well as non-minimized hunks of the base.
+	//
+	// ```text
+	// line1-changed-by-both
+	// <<<<<<< local
+	// line2-to-be-changed-in-incoming
+	// ||||||| 9a8d80c
+	// line1-to-be-changed-by-both
+	// line2-to-be-changed-in-incoming
+	// =======
+	// line2-changed
+	// >>>>>>> incoming
+	// ```
+	STYLE_ZEALOUS_DIFF3
+)
+
+var (
+	styles = map[string]int{
+		"merge":  STYLE_DEFAULT,
+		"diff3":  STYLE_DIFF3,
+		"zdiff3": STYLE_ZEALOUS_DIFF3,
+	}
+)
+
+func ParseConflictStyle(s string) int {
+	if s, ok := styles[strings.ToLower(s)]; ok {
+		return s
+	}
+	return STYLE_DEFAULT
+}
+
+type MergeOptions struct {
+	TextO, TextA, TextB    string
+	RO, R1, R2             io.Reader // when if set
+	LabelO, LabelA, LabelB string
+	A                      Algorithm
+	Style                  int // Conflict Style
+}
+
+func (opts *MergeOptions) ValidateOptions() error {
+	if opts == nil {
+		return errors.New("invalid merge options")
+	}
+	if opts.A == Unspecified {
+		opts.A = Histogram
+	}
+	if len(opts.LabelO) != 0 {
+		opts.LabelO = " " + opts.LabelO
+	}
+	if len(opts.LabelA) != 0 {
+		opts.LabelA = " " + opts.LabelA
+	}
+	if len(opts.LabelB) != 0 {
+		opts.LabelB = " " + opts.LabelB
+	}
+	return nil
+}
+
+func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *Conflict[int]) {
+	if opts.Style == STYLE_DIFF3 {
+		fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
+		s.WriteLine(out, conflict.a...)
+		fmt.Fprintf(out, "%s%s\n", SepO, opts.LabelO)
+		s.WriteLine(out, conflict.o...)
+		fmt.Fprintf(out, "%s\n", Sep2)
+		s.WriteLine(out, conflict.b...)
+		fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
+		return
+	}
+	a, b := conflict.a, conflict.b
+	prefix := commonPrefixLength(a, b)
+	s.WriteLine(out, a[:prefix]...)
+	a = a[prefix:]
+	b = b[prefix:]
+	suffix := commonSuffixLength(a, b)
+	fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
+	s.WriteLine(out, a[:len(a)-suffix]...)
+
+	if opts.Style == STYLE_ZEALOUS_DIFF3 {
+		// Zealous Diff3
+		fmt.Fprintf(out, "%s%s\n", SepO, opts.LabelO)
+		s.WriteLine(out, conflict.o...)
+	}
+
+	fmt.Fprintf(out, "%s\n", Sep2)
+	s.WriteLine(out, b[:len(b)-suffix]...)
+	fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
+	if suffix != 0 {
+		s.WriteLine(out, b[suffix:]...)
+	}
 }
 
 // Merge implements the diff3 algorithm to merge two texts into a common base.
-func Merge(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (string, bool, error) {
+//
+//	Support multiple diff algorithms and multiple conflict styles
+func Merge(ctx context.Context, opts *MergeOptions) (string, bool, error) {
+	if err := opts.ValidateOptions(); err != nil {
+		return "", false, err
+	}
 	select {
 	case <-ctx.Done():
 		return "", false, ctx.Err()
 	default:
 	}
-	if len(labelA) != 0 {
-		labelA = " " + labelA
+	s := NewSink(NEWLINE_RAW)
+	slicesO, err := s.parseLines(opts.RO, opts.TextO)
+	if err != nil {
+		return "", false, err
 	}
-	if len(labelB) != 0 {
-		labelB = " " + labelB
+	slicesA, err := s.parseLines(opts.R1, opts.TextA)
+	if err != nil {
+		return "", false, err
 	}
-	sink := NewSink(NEWLINE_RAW)
-	slicesO := sink.SplitLines(o)
-	slicesA := sink.SplitLines(a)
-	slicesB := sink.SplitLines(b)
-	regions := Diff3Merge(slicesA, slicesO, slicesB, true)
+	slicesB, err := s.parseLines(opts.R2, opts.TextB)
+	if err != nil {
+		return "", false, err
+	}
+	regions, err := Diff3Merge(ctx, slicesO, slicesA, slicesB, opts.A, true)
+	if err != nil {
+		return "", false, err
+	}
 	out := &strings.Builder{}
-	out.Grow(max(len(o), len(a), len(b)))
+	out.Grow(max(len(opts.TextO), len(opts.TextA), len(opts.TextB)))
 	var conflicts = false
 	for _, r := range regions {
 		if r.ok != nil {
-			sink.WriteLine(out, r.ok...)
+			s.WriteLine(out, r.ok...)
 			continue
 		}
 		if r.conflict != nil {
 			conflicts = true
-			fmt.Fprintf(out, "%s%s\n", Sep1, labelA)
-			sink.WriteLine(out, r.conflict.a...)
-			fmt.Fprintf(out, "%s\n", Sep2)
-			sink.WriteLine(out, r.conflict.b...)
-			fmt.Fprintf(out, "%s%s\n", Sep3, labelB)
+			s.writeConflict(out, opts, r.conflict)
 		}
 	}
 	return out.String(), conflicts, nil
+}
+
+// DefaultMerge implements the diff3 algorithm to merge two texts into a common base.
+func DefaultMerge(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (string, bool, error) {
+	return Merge(ctx, &MergeOptions{TextO: o, TextA: a, TextB: b, LabelO: labelO, LabelA: labelA, LabelB: labelB, A: Histogram})
 }

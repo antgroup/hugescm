@@ -175,7 +175,7 @@ tomatoes
 onions
 wine
 `
-	s, conflict, err := diferenco.Merge(context.Background(), textO, textA, textB, "a.txt", "a.txt", "b.txt")
+	s, conflict, err := diferenco.DefaultMerge(context.Background(), textO, textA, textB, "a.txt", "a.txt", "b.txt")
 	if err != nil {
 		return
 	}

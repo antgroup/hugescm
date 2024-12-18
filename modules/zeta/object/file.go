@@ -62,6 +62,10 @@ func (f *File) OriginReader(ctx context.Context) (io.ReadCloser, int64, error) {
 	return &readCloser{Reader: br.Contents, Closer: br}, br.Size, nil
 }
 
+const (
+	sniffLen = 8000
+)
+
 func (f *File) Reader(ctx context.Context) (io.ReadCloser, bool, error) {
 	if f.b == nil {
 		return nil, false, io.ErrUnexpectedEOF
@@ -89,7 +93,7 @@ func (f *File) UnifiedText(ctx context.Context, codecvt bool) (content string, e
 		return "", err
 	}
 	defer r.Close()
-	content, _, err = GetUnifiedText(r, f.Size, codecvt)
+	content, _, err = diferenco.ReadUnifiedText(r, f.Size, codecvt)
 	return content, err
 }
 

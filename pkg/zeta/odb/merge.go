@@ -380,7 +380,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 			M:        opts.MergeDriver,
 			G:        opts.TextGetter,
 		})
-		if err == object.ErrNotTextContent {
+		if err == diferenco.ErrNonTextContent {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil
@@ -428,7 +428,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 				M:        opts.MergeDriver,
 				G:        opts.TextGetter,
 			})
-		if err == object.ErrNotTextContent {
+		if err == diferenco.ErrNonTextContent {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil
@@ -487,7 +487,7 @@ func (d *ODB) unifiedText(ctx context.Context, oid plumbing.Hash, textConv bool)
 		return "", "", err
 	}
 	defer br.Close()
-	return object.GetUnifiedText(br.Contents, br.Size, textConv)
+	return diferenco.ReadUnifiedText(br.Contents, br.Size, textConv)
 }
 
 // MergeTree: three way merge tree
@@ -499,7 +499,7 @@ func (d *ODB) MergeTree(ctx context.Context, o, a, b *object.Tree, opts *MergeOp
 		opts.Branch2 = "Branch2"
 	}
 	if opts.MergeDriver == nil {
-		opts.MergeDriver = diferenco.Merge // fallback
+		opts.MergeDriver = diferenco.DefaultMerge // fallback
 	}
 	if opts.TextGetter == nil {
 		opts.TextGetter = d.unifiedText

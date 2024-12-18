@@ -165,12 +165,30 @@ func (t *Transport) Overwrite(o *Transport) {
 	}
 }
 
+type Diff struct {
+	Algorithm string `toml:"algorithm,omitempty"`
+}
+
+func (d *Diff) Overwrite(o *Diff) {
+	d.Algorithm = overwrite(d.Algorithm, o.Algorithm)
+}
+
+type Merge struct {
+	ConflictStyle string `toml:"conflictStyle,omitempty"`
+}
+
+func (m *Merge) Overwrite(o *Merge) {
+	m.ConflictStyle = overwrite(m.ConflictStyle, o.ConflictStyle)
+}
+
 type Config struct {
 	Core      Core      `toml:"core,omitempty"`
 	User      User      `toml:"user,omitempty"`
 	Fragment  Fragment  `toml:"fragment,omitempty"`
 	HTTP      HTTP      `toml:"http,omitempty"`
 	Transport Transport `toml:"transport,omitempty"`
+	Diff      Diff      `toml:"diff,omitempty"`
+	Merge     Merge     `toml:"merge,omitempty"`
 }
 
 // Overwrite: use local config overwrite config
@@ -180,4 +198,6 @@ func (c *Config) Overwrite(co *Config) {
 	c.Fragment.Overwrite(&co.Fragment)
 	c.HTTP.Overwrite(&co.HTTP)
 	c.Transport.Overwrite(&co.Transport)
+	c.Diff.Overwrite(&co.Diff)
+	c.Merge.Overwrite(&co.Merge)
 }

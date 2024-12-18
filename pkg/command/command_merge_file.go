@@ -30,6 +30,13 @@ func (c *MergeFile) Summary() string {
 	return fmt.Sprintf(mergeFileSummaryFormat, W("Usage: "))
 }
 
+func (c *MergeFile) labelName(i int, n string) string {
+	if i < len(c.L) {
+		return c.L[i]
+	}
+	return n
+}
+
 func readText(p string, textConv bool) (string, error) {
 	fd, err := os.Open(p)
 	if err != nil {
@@ -76,16 +83,17 @@ func (c *MergeFile) mergeExtra(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "merge-file: open <file2> error: %v\n", err)
 		return err
 	}
-	mergedText, conflict, err := diferenco.Merge(context.Background(), &diferenco.MergeOptions{
+	opts := &diferenco.MergeOptions{
 		TextO:  textO,
 		TextA:  textA,
 		TextB:  textB,
-		LabelO: c.O,
-		LabelA: c.F1,
-		LabelB: c.F1,
 		A:      a,
 		Style:  style,
-	})
+		LabelA: c.labelName(0, c.F1),
+		LabelO: c.labelName(1, c.O),
+		LabelB: c.labelName(2, c.F2),
+	}
+	mergedText, conflict, err := diferenco.Merge(context.Background(), opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "merge-file: merge error: %v\n", err)
 		return err
@@ -117,7 +125,16 @@ func (c *MergeFile) Run(g *Globals) error {
 	case c.ZDiff3:
 		style = diferenco.STYLE_ZEALOUS_DIFF3
 	}
-	if err := r.MergeFile(context.Background(), &zeta.MergeFileOptions{O: c.O, A: c.F1, B: c.F2, Style: style, DiffAlgorithm: c.DiffAlgorithm, Stdout: c.Stdout}); err != nil {
+	opts := &zeta.MergeFileOptions{
+		O: c.O, A: c.F1, B: c.F2,
+		Style:         style,
+		DiffAlgorithm: c.DiffAlgorithm,
+		Stdout:        c.Stdout,
+		LabelA:        c.labelName(0, c.F1),
+		LabelO:        c.labelName(1, c.O),
+		LabelB:        c.labelName(2, c.F2),
+	}
+	if err := r.MergeFile(context.Background(), opts); err != nil {
 		if !zeta.IsExitCode(err, 1) {
 			diev("merge-file: error: %v", err)
 		}

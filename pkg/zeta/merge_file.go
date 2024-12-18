@@ -52,11 +52,12 @@ func (r *Repository) resolveMergeDriver() odb.MergeDriver {
 }
 
 type MergeFileOptions struct {
-	O, A, B       string
-	Style         int
-	DiffAlgorithm string
-	Stdout        bool
-	TextConv      bool
+	O, A, B                string
+	LabelO, LabelA, LabelB string
+	Style                  int
+	DiffAlgorithm          string
+	Stdout                 bool
+	TextConv               bool
 }
 
 func (opts *MergeFileOptions) diffAlgorithmFromName(defaultDiffAlgorithm string) diferenco.Algorithm {
@@ -102,13 +103,14 @@ func (r *Repository) MergeFile(ctx context.Context, opts *MergeFileOptions) erro
 	if err != nil {
 		return err
 	}
+
 	merged, conflict, err := diferenco.Merge(ctx, &diferenco.MergeOptions{
 		TextO:  textO,
 		TextA:  textA,
 		TextB:  textB,
-		LabelO: o.String()[0:8],
-		LabelA: a.String()[0:8],
-		LabelB: b.String()[0:8],
+		LabelO: opts.LabelO,
+		LabelA: opts.LabelA,
+		LabelB: opts.LabelB,
 		A:      diffAlgorithm,
 		Style:  opts.Style,
 	})

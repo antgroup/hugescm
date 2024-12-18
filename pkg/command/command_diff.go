@@ -63,7 +63,7 @@ func (c *Diff) Passthrough(paths []string) {
 
 func (c *Diff) checkAlgorithm() (diferenco.Algorithm, error) {
 	if len(c.DiffAlgorithm) != 0 {
-		return diferenco.ParseAlgorithm(c.DiffAlgorithm)
+		return diferenco.AlgorithmFromName(c.DiffAlgorithm)
 	}
 	if c.Histogram {
 		return diferenco.Histogram, nil

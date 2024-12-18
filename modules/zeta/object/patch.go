@@ -26,7 +26,7 @@ type PatchOptions struct {
 }
 
 func sizeOverflow(f *File) bool {
-	return f != nil && f.Size > MAX_DIFF_SIZE
+	return f != nil && f.Size > diferenco.MAX_DIFF_SIZE
 }
 
 func fileStatName(from, to *File) string {
@@ -64,14 +64,14 @@ func fileStatWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*F
 		return s, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return s, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return s, nil
 	}
 	if err != nil {
@@ -122,14 +122,14 @@ func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == ErrNotTextContent {
+	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {

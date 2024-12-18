@@ -38,40 +38,38 @@ const (
 	Patience
 )
 
-func (a Algorithm) String() string {
-	switch a {
-	case Unspecified:
-		return "Unspecified"
-	case Histogram:
-		return "Histogram"
-	case Myers:
-		return "Myers"
-	case Minimal:
-		return "Minimal"
-	case ONP:
-		return "O(NP)"
-	case Patience:
-		return "Patience"
-	}
-	return "Unknown"
-}
-
 var (
 	ErrUnsupportedAlgorithm = errors.New("unsupport algorithm")
 )
 
 var (
-	diffAlgorithms = map[string]Algorithm{
+	algorithmValueMap = map[string]Algorithm{
 		"histogram": Histogram,
 		"onp":       ONP,
 		"myers":     Myers,
 		"patience":  Patience,
 		"minimal":   Minimal,
 	}
+	algorithmNameMap = map[Algorithm]string{
+		Unspecified: "unspecified",
+		Histogram:   "histogram",
+		ONP:         "onp",
+		Myers:       "myers",
+		Minimal:     "minimal",
+		Patience:    "patience",
+	}
 )
 
-func ParseAlgorithm(s string) (Algorithm, error) {
-	if a, ok := diffAlgorithms[strings.ToLower(s)]; ok {
+func (a Algorithm) String() string {
+	n, ok := algorithmNameMap[a]
+	if ok {
+		return n
+	}
+	return "unspecified"
+}
+
+func AlgorithmFromName(s string) (Algorithm, error) {
+	if a, ok := algorithmValueMap[strings.ToLower(s)]; ok {
 		return a, nil
 	}
 	return Unspecified, fmt.Errorf("unsupport algoritm '%s' %w", s, ErrUnsupportedAlgorithm)

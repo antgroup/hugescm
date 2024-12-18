@@ -328,6 +328,7 @@ func ParseConflictStyle(s string) int {
 
 type MergeOptions struct {
 	TextO, TextA, TextB    string
+	RO, R1, R2             io.Reader // when if set
 	LabelO, LabelA, LabelB string
 	A                      Algorithm
 	Style                  int // Conflict Style
@@ -399,9 +400,18 @@ func Merge(ctx context.Context, opts *MergeOptions) (string, bool, error) {
 	default:
 	}
 	s := NewSink(NEWLINE_RAW)
-	slicesO := s.SplitLines(opts.TextO)
-	slicesA := s.SplitLines(opts.TextA)
-	slicesB := s.SplitLines(opts.TextB)
+	slicesO, err := s.parseLines(opts.RO, opts.TextO)
+	if err != nil {
+		return "", false, err
+	}
+	slicesA, err := s.parseLines(opts.R1, opts.TextA)
+	if err != nil {
+		return "", false, err
+	}
+	slicesB, err := s.parseLines(opts.R2, opts.TextB)
+	if err != nil {
+		return "", false, err
+	}
 	regions, err := Diff3Merge(ctx, slicesO, slicesA, slicesB, opts.A, true)
 	if err != nil {
 		return "", false, err

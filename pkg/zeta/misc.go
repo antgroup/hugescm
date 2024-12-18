@@ -287,6 +287,16 @@ type ErrExitCode struct {
 	Message  string
 }
 
+func IsExitCode(err error, i int) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*ErrExitCode); ok {
+		return e.ExitCode == i
+	}
+	return false
+}
+
 func (e *ErrExitCode) Error() string {
 	return e.Message
 }

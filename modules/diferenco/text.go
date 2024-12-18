@@ -1,7 +1,4 @@
-// Copyright ©️ Ant Group. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package object
+package diferenco
 
 import (
 	"bytes"
@@ -23,43 +20,41 @@ import (
 //  #define MAX_XDIFF_SIZE (1024UL * 1024 * 1023)
 
 const (
-	// MAX_DIFF_SIZE  100MiB
-	MAX_DIFF_SIZE = 100 * 1024 * 1024
+	MAX_DIFF_SIZE = 100 << 20 // MAX_DIFF_SIZE 100MiB
 	BINARY        = "binary"
-	sniffLen      = 8000
 	UTF8          = "UTF-8"
+	sniffLen      = 8000
 )
 
 var (
-	ErrNotTextContent = errors.New("not a text content")
+	ErrNonTextContent = errors.New("non-text content")
 )
 
-func textCharset(s string) string {
+func checkCharset(s string) string {
 	if _, charset, ok := strings.Cut(s, ";"); ok {
 		return strings.TrimPrefix(strings.TrimSpace(charset), "charset=")
 	}
-	return "UTF-8"
+	return UTF8
 }
 
-func resolveCharset(payload []byte) string {
+func detectCharset(payload []byte) string {
 	result := mime.DetectAny(payload)
 	for p := result; p != nil; p = p.Parent() {
 		if p.Is("text/plain") {
-			return textCharset(p.String())
+			return checkCharset(p.String())
 		}
 	}
 	return BINARY
 }
 
-// readText: Read all text content: automatically detect text encoding and convert to UTF-8, binary will return ErrNotTextContent
-func readText(r io.Reader) (string, string, error) {
+func readUnifiedText(r io.Reader) (string, string, error) {
 	sniffBytes, err := streamio.ReadMax(r, sniffLen)
 	if err != nil {
 		return "", "", err
 	}
-	charset := resolveCharset(sniffBytes)
+	charset := detectCharset(sniffBytes)
 	if charset == BINARY {
-		return "", "", ErrNotTextContent
+		return "", "", ErrNonTextContent
 	}
 	reader := io.MultiReader(bytes.NewReader(sniffBytes), r)
 	if strings.EqualFold(charset, UTF8) {
@@ -75,7 +70,7 @@ func readText(r io.Reader) (string, string, error) {
 	}
 	buf, err := chardet.DecodeFromCharset(b.Bytes(), charset)
 	if err != nil {
-		return "", "", ErrNotTextContent
+		return "", "", ErrNonTextContent
 	}
 	if len(buf) == 0 {
 		return "", "", nil
@@ -83,30 +78,31 @@ func readText(r io.Reader) (string, string, error) {
 	return unsafe.String(unsafe.SliceData(buf), len(buf)), charset, nil
 }
 
-func readTextUTF8(r io.Reader) (string, error) {
+func readRawText(r io.Reader, size int) (string, error) {
 	var b bytes.Buffer
 	if _, err := b.ReadFrom(io.LimitReader(r, sniffLen)); err != nil {
 		return "", err
 	}
 	if bytes.IndexByte(b.Bytes(), 0) != -1 {
-		return "", ErrNotTextContent
+		return "", ErrNonTextContent
 	}
+	b.Grow(size)
 	if _, err := b.ReadFrom(r); err != nil {
 		return "", err
 	}
-	return b.String(), nil
+	content := b.Bytes()
+	return unsafe.String(unsafe.SliceData(content), len(content)), nil
 }
 
-// GetUnifiedText: Read all text content.
-func GetUnifiedText(r io.Reader, size int64, codecvt bool) (string, string, error) {
+func ReadUnifiedText(r io.Reader, size int64, textConv bool) (content string, charset string, err error) {
 	if size > MAX_DIFF_SIZE {
-		return "", "", ErrNotTextContent
+		return "", "", ErrNonTextContent
 	}
-	if codecvt {
-		return readText(r)
+	if textConv {
+		return readUnifiedText(r)
 	}
-	s, err := readTextUTF8(r)
-	return s, UTF8, err
+	content, err = readRawText(r, int(size))
+	return content, UTF8, err
 }
 
 func NewUnifiedReader(r io.Reader) (io.Reader, error) {
@@ -114,11 +110,22 @@ func NewUnifiedReader(r io.Reader) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	charset := resolveCharset(sniffBytes)
+	charset := detectCharset(sniffBytes)
 	reader := io.MultiReader(bytes.NewReader(sniffBytes), r)
 	// binary or UTF-8 not need convert
 	if charset == BINARY || strings.EqualFold(charset, UTF8) {
 		return reader, nil
 	}
 	return chardet.NewReader(reader, charset), nil
+}
+
+func NewTextReader(r io.Reader) (io.Reader, error) {
+	sniffBytes, err := streamio.ReadMax(r, sniffLen)
+	if err != nil {
+		return nil, err
+	}
+	if bytes.IndexByte(sniffBytes, 0) != -1 {
+		return nil, ErrNonTextContent
+	}
+	return io.MultiReader(bytes.NewReader(sniffBytes), r), nil
 }

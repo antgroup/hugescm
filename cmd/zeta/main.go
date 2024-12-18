@@ -52,6 +52,7 @@ type App struct {
 	MergeBase   command.MergeBase   `cmd:"merge-base" help:"Find optimal common ancestors for merge"`
 	LsFiles     command.LsFiles     `cmd:"ls-files" help:"Show information about files in the index and the working tree"`
 	HashObject  command.HashObject  `cmd:"hash-object" help:"Compute hash or create object"`
+	MergeFile   command.MergeFile   `cmd:"merge-file" help:"Run a three-way file merge"`
 	Version     command.Version     `cmd:"version" help:"Display version information"`
 	Debug       bool                `name:"debug" help:"Enable debug mode; analyze timing"`
 }

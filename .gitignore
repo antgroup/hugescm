@@ -13,6 +13,7 @@ bin/*
 local/*
 .DS_Store
 *.gop1
+*.tomlp1
 *.rej
 /out/
 /.vscode/

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/chardet"
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
 type MergeDriver func(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (string, bool, error)
@@ -47,7 +47,7 @@ func (d *ODB) mergeText(ctx context.Context, opts *mergeOptions) (*mergeTextResu
 	if err != nil {
 		return nil, err
 	}
-	if !opts.Textconv || strings.EqualFold(charset, object.UTF8) {
+	if !opts.Textconv || strings.EqualFold(charset, diferenco.UTF8) {
 		size := int64(len(mergedText))
 		oid, err := d.HashTo(ctx, strings.NewReader(mergedText), size)
 		if err != nil {

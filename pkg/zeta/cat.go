@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
@@ -108,7 +109,7 @@ func (r *Repository) catBlob(ctx context.Context, w io.Writer, oid plumbing.Hash
 	}
 	reader := b.Contents
 	if textconv {
-		if reader, err = object.NewUnifiedReader(b.Contents); err != nil {
+		if reader, err = diferenco.NewUnifiedReader(b.Contents); err != nil {
 			return err
 		}
 	}

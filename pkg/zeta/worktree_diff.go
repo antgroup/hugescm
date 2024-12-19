@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/merkletrie"
@@ -273,11 +274,13 @@ func (w *Worktree) DiffTreeWithWorktree(ctx context.Context, oid plumbing.Hash, 
 
 func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffOptions) (oldTree *object.Tree, newTree *object.Tree, err error) {
 	if !opts.Way3 {
-		if oldTree, err = w.parseTreeExhaustive(ctx, opts.From, ""); err != nil {
+		from, p, _ := strings.Cut(opts.From, ":")
+		if oldTree, err = w.parseTreeExhaustive(ctx, from, p); err != nil {
 			fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.From, err)
 			return
 		}
-		if newTree, err = w.parseTreeExhaustive(ctx, opts.To, ""); err != nil {
+		to, p, _ := strings.Cut(opts.To, ":")
+		if newTree, err = w.parseTreeExhaustive(ctx, to, p); err != nil {
 			fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.To, err)
 			return
 		}

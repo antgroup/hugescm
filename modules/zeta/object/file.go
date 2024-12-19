@@ -18,6 +18,8 @@ type File struct {
 	// Name is the path of the file. It might be relative to a tree,
 	// depending of the function that generates it.
 	Name string
+	// path
+	Path string
 	// Mode is the file mode.
 	Mode filemode.FileMode
 	// Hash of the blob.
@@ -27,8 +29,8 @@ type File struct {
 	b    Backend
 }
 
-func newFile(name string, m filemode.FileMode, hash plumbing.Hash, size int64, b Backend) *File {
-	return &File{Name: name, Mode: m, Hash: hash, Size: size, b: b}
+func newFile(name string, p string, m filemode.FileMode, hash plumbing.Hash, size int64, b Backend) *File {
+	return &File{Name: name, Path: p, Mode: m, Hash: hash, Size: size, b: b}
 }
 
 type readCloser struct {
@@ -47,7 +49,7 @@ func (f *File) asFile() *diferenco.File {
 	if f == nil {
 		return nil
 	}
-	return &diferenco.File{Name: f.Name, Hash: f.Hash.String(), Mode: uint32(f.Mode.Origin())}
+	return &diferenco.File{Name: f.Path, Hash: f.Hash.String(), Mode: uint32(f.Mode.Origin())}
 }
 
 // OriginReader return ReadCloser
@@ -122,7 +124,7 @@ func (iter *FileIter) Next(ctx context.Context) (*File, error) {
 			continue
 		}
 
-		return newFile(name, entry.Mode, entry.Hash, entry.Size, iter.b), nil
+		return newFile(name, "", entry.Mode, entry.Hash, entry.Size, iter.b), nil
 	}
 }
 

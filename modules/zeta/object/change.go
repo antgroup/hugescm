@@ -63,7 +63,7 @@ func (c *Change) Files() (from, to *File, err error) {
 			return nil, nil, nil
 		}
 		e := &c.To.TreeEntry
-		to = newFile(e.Name, e.Mode, e.Hash, e.Size, c.To.Tree.b)
+		to = newFile(e.Name, c.To.Name, e.Mode, e.Hash, e.Size, c.To.Tree.b)
 	}
 
 	if action == merkletrie.Delete || action == merkletrie.Modify {
@@ -71,7 +71,7 @@ func (c *Change) Files() (from, to *File, err error) {
 			return nil, nil, nil
 		}
 		e := &c.From.TreeEntry
-		from = newFile(e.Name, e.Mode, e.Hash, e.Size, c.From.Tree.b)
+		from = newFile(e.Name, c.From.Name, e.Mode, e.Hash, e.Size, c.From.Tree.b)
 	}
 	return
 }

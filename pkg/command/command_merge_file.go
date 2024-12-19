@@ -37,20 +37,6 @@ func (c *MergeFile) labelName(i int, n string) string {
 	return n
 }
 
-func readText(p string, textConv bool) (string, error) {
-	fd, err := os.Open(p)
-	if err != nil {
-		return "", err
-	}
-	defer fd.Close()
-	si, err := fd.Stat()
-	if err != nil {
-		return "", err
-	}
-	content, _, err := diferenco.ReadUnifiedText(fd, si.Size(), textConv)
-	return content, err
-}
-
 func (c *MergeFile) mergeExtra(g *Globals) error {
 	var a diferenco.Algorithm
 	var err error
@@ -68,17 +54,17 @@ func (c *MergeFile) mergeExtra(g *Globals) error {
 		style = diferenco.STYLE_ZEALOUS_DIFF3
 	}
 	g.DbgPrint("algorithm: %s conflict style: %v", a, style)
-	textO, err := readText(c.O, false)
+	textO, err := zeta.ReadText(c.O, false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "merge-file: open <orig-file> error: %v\n", err)
 		return err
 	}
-	textA, err := readText(c.F1, false)
+	textA, err := zeta.ReadText(c.F1, false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "merge-file: open <file1> error: %v\n", err)
 		return err
 	}
-	textB, err := readText(c.F2, false)
+	textB, err := zeta.ReadText(c.F2, false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "merge-file: open <file2> error: %v\n", err)
 		return err

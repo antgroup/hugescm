@@ -6,12 +6,15 @@ package zeta
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/wildmatch"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -330,4 +333,63 @@ func stringNoCRUD(s string) string {
 		_, _ = b.WriteRune(c)
 	}
 	return b.String()
+}
+
+type Content struct {
+	Text     string
+	Hash     string
+	Mode     filemode.FileMode
+	IsBinary bool
+}
+
+func ReadContent(p string, textConv bool) (*Content, error) {
+	fd, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+	si, err := fd.Stat()
+	if err != nil {
+		return nil, err
+	}
+	h := plumbing.NewHasher()
+	if _, err := io.Copy(h, fd); err != nil {
+		return nil, err
+	}
+	fc := &Content{
+		Hash: h.Sum().String(),
+	}
+
+	if fc.Mode, err = filemode.NewFromOS(si.Mode()); err != nil {
+		return nil, err
+	}
+	if si.Size() > diferenco.MAX_DIFF_SIZE {
+		fc.IsBinary = true
+		return fc, nil
+	}
+	if _, err := fd.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	if fc.Text, _, err = diferenco.ReadUnifiedText(fd, si.Size(), textConv); err != nil {
+		if err == diferenco.ErrNonTextContent {
+			fc.IsBinary = true
+			return fc, nil
+		}
+		return nil, err
+	}
+	return fc, nil
+}
+
+func ReadText(p string, textConv bool) (string, error) {
+	fd, err := os.Open(p)
+	if err != nil {
+		return "", err
+	}
+	defer fd.Close()
+	si, err := fd.Stat()
+	if err != nil {
+		return "", err
+	}
+	content, _, err := diferenco.ReadUnifiedText(fd, si.Size(), textConv)
+	return content, err
 }

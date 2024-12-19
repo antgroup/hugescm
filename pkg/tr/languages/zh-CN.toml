@@ -260,6 +260,7 @@
 "Given paths, show as match patterns; else, use root as sole argument" = "有路径时，显示为匹配模式；否则，使用根目录作为唯一路径参数"
 # Diff
 "Show changes between commits, commit and working tree, etc" = "显示提交之间的更改、提交和工作树等"
+"Compares two given paths on the filesystem" = "比较文件系统上给定的两个路径"
 "Show only names of changed files" = "仅显示已更改文件的名称"
 "Show names and status of changed files" = "显示已更改文件的名称和状态"
 "Show numeric diffstat instead of patch" = "显示数字 diffstat 而不是补丁"
@@ -387,7 +388,6 @@
 "Use a diff3 based merge" = "使用基于 diff3 的合并"
 "Use a zealous diff3 based merge" = "使用基于狂热 diff3（zealous diff3）的合并"
 "Set labels for file1/orig-file/file2" = "为 文件1/初始文件/文件2 设置标签"
-
 # Others
 "WARNING" = "警告"
 "not zeta repository" = "不是 zeta 存储库"

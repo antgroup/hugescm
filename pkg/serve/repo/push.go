@@ -300,7 +300,7 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 		_ = ro.ng(cmd, "store object error: %v", err)
 		return ErrReportStarted
 	}
-	_ = ro.status(cmd.W("objects verified")) //nolint:govet
+	_ = ro.status("%s", cmd.W("objects verified")) //nolint:govet
 	change := &database.Command{
 		ReferenceName: cmd.ReferenceName,
 		NewRev:        cmd.NewRev,

@@ -201,19 +201,19 @@ func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes m
 		return opts.showChangesStatus(ctx, changes)
 	}
 	m := NewMatcher(opts.PathSpec)
-	if opts.showStatsOnly() {
-		fileStats, err := w.getStatsContext(ctx, changes, m, opts.Textconv)
+	if opts.showStatOnly() {
+		fileStats, err := w.getStatsContext(ctx, changes, m, opts.TextConv)
 		if err != nil {
 			return err
 		}
-		return opts.showStats(ctx, fileStats)
+		return opts.ShowStats(ctx, fileStats)
 	}
 
-	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
+	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.TextConv)
 	if err != nil {
 		return err
 	}
-	return opts.showPatch(ctx, filePatchs)
+	return opts.ShowPatch(ctx, filePatchs)
 }
 
 func (w *Worktree) diffWorktree(ctx context.Context, opts *DiffOptions) error {
@@ -272,7 +272,7 @@ func (w *Worktree) DiffTreeWithWorktree(ctx context.Context, oid plumbing.Hash, 
 }
 
 func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffOptions) (oldTree *object.Tree, newTree *object.Tree, err error) {
-	if !opts.W3 {
+	if !opts.Way3 {
 		if oldTree, err = w.parseTreeExhaustive(ctx, opts.From, ""); err != nil {
 			fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.From, err)
 			return

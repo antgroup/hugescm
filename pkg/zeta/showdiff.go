@@ -17,25 +17,26 @@ import (
 type DiffOptions struct {
 	NameOnly   bool
 	NameStatus bool // name status
-	NumStat    bool
+	Numstat    bool
 	Stat       bool
-	ShortStat  bool
+	Shortstat  bool
 	Staged     bool
 	NewLine    byte
-	MergeBase  string
-	From       string
-	To         string
-	PathSpec   []string
-	Textconv   bool
-	UseColor   bool
-	W3         bool
-	Algorithm  diferenco.Algorithm
 	NewOutput  func(context.Context) (io.WriteCloser, bool, error) // new writer func
+	// index value
+	MergeBase string
+	From      string
+	To        string
+	PathSpec  []string
+	TextConv  bool
+	UseColor  bool
+	Way3      bool
+	Algorithm diferenco.Algorithm
 }
 
 func (opts *DiffOptions) po() *object.PatchOptions {
 	m := NewMatcher(opts.PathSpec)
-	return &object.PatchOptions{Textconv: opts.Textconv, Algorithm: opts.Algorithm, Match: m.Match}
+	return &object.PatchOptions{Textconv: opts.TextConv, Algorithm: opts.Algorithm, Match: m.Match}
 }
 
 func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes) error {
@@ -45,18 +46,18 @@ func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes
 	if opts.NameStatus {
 		return opts.showNameStatus(ctx, changes)
 	}
-	if opts.showStatsOnly() {
+	if opts.showStatOnly() {
 		fileStats, err := changes.Stats(ctx, opts.po())
 		if err != nil {
 			return err
 		}
-		return opts.showStats(ctx, fileStats)
+		return opts.ShowStats(ctx, fileStats)
 	}
 	patch, err := changes.Patch(ctx, opts.po())
 	if err != nil {
 		return err
 	}
-	return opts.showPatch(ctx, patch)
+	return opts.ShowPatch(ctx, patch)
 }
 
 func (opts *DiffOptions) showNameOnly(ctx context.Context, changes object.Changes) error {
@@ -112,8 +113,8 @@ func (opts *DiffOptions) showNameStatus(ctx context.Context, changes object.Chan
 	return nil
 }
 
-func (opts *DiffOptions) showStatsOnly() bool {
-	return opts.NameStatus || opts.NumStat || opts.ShortStat || opts.Stat
+func (opts *DiffOptions) showStatOnly() bool {
+	return opts.Numstat || opts.Stat || opts.Shortstat
 }
 
 func numPadding(i int, padding int) string {
@@ -132,19 +133,19 @@ func numPaddingLeft(i int, padding int) string {
 	return strings.Repeat(" ", padding-len(s)) + s
 }
 
-// showStats: show stats
+// ShowStats: show stats
 //
 // Original implementation: https://github.com/git/git/blob/1a87c842ece327d03d08096395969aca5e0a6996/diff.c#L2615
 // Parts of the output:
 // <pad><filename><pad>|<pad><changeNumber><pad><+++/---><newline>
 // example: " main.go | 10 +++++++--- "
-func (opts *DiffOptions) showStats(ctx context.Context, fileStats object.FileStats) error {
+func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileStats) error {
 	w, useColor, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
-	if opts.ShortStat {
+	if opts.Shortstat {
 		var added, deleted int
 		for _, s := range fileStats {
 			added += s.Addition
@@ -153,7 +154,7 @@ func (opts *DiffOptions) showStats(ctx context.Context, fileStats object.FileSta
 		fmt.Fprintf(w, " %d files changed, %d insertions(+), %d deletions(-)%c", len(fileStats), added, deleted, opts.NewLine)
 		return nil
 	}
-	if opts.NumStat {
+	if opts.Numstat {
 		var ma, md int
 		for _, s := range fileStats {
 			ma = max(ma, s.Addition)
@@ -199,7 +200,7 @@ func (opts *DiffOptions) showStats(ctx context.Context, fileStats object.FileSta
 	return nil
 }
 
-func (opts *DiffOptions) showPatch(ctx context.Context, patch []*diferenco.Unified) error {
+func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unified) error {
 	w, useColor, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
@@ -230,6 +231,7 @@ func (opts *DiffOptions) showChangesStatus(ctx context.Context, changes merkletr
 		}
 		return nil
 	}
+	// name-status
 	for _, c := range changes {
 		name := nameFromAction(&c)
 		if !m.Match(name) {

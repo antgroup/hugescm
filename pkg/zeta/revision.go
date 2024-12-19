@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -177,32 +178,136 @@ func (r *Repository) tagTargetTree(ctx context.Context, tag *object.Tag, p strin
 	if err != nil {
 		return nil, err
 	}
-	return root.Tree(ctx, p)
+	e, err := root.FindEntry(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	if e.Type() != object.TreeObject {
+		return nil, ErrNotTree
+	}
+	return r.odb.Tree(ctx, e.Hash)
 }
+
+var (
+	ErrNotTree = errors.New("not tree")
+)
 
 func (r *Repository) readTree(ctx context.Context, oid plumbing.Hash, p string) (*object.Tree, error) {
 	var err error
 	var o any
 	if o, err = r.odb.Object(ctx, oid); err != nil {
+		if plumbing.IsNoSuchObject(err) && r.odb.Exists(oid, false) {
+			return nil, ErrNotTree
+		}
 		return nil, err
 	}
 	switch a := o.(type) {
 	case *object.Tag:
 		return r.tagTargetTree(ctx, a, p)
 	case *object.Tree:
-		return a.Tree(ctx, p)
+		if len(p) == 0 {
+			return a, nil
+		}
+		e, err := a.FindEntry(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		if e.Type() != object.TreeObject {
+			return nil, ErrNotTree
+		}
+		return r.odb.Tree(ctx, e.Hash)
 	case *object.Commit:
 		root, err := r.odb.Tree(ctx, a.Tree)
 		if err != nil {
 			return nil, err
 		}
-		return root.Tree(ctx, p)
+		e, err := root.FindEntry(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		if e.Type() != object.TreeObject {
+			return nil, ErrNotTree
+		}
+		return r.odb.Tree(ctx, e.Hash)
 	}
-	return nil, errors.New("not a tree object")
+	return nil, ErrNotTree
 }
 
-func (r *Repository) parseTreeExhaustive(ctx context.Context, branchOrTag string, p string) (*object.Tree, error) {
-	oid, err := r.Revision(ctx, branchOrTag)
+func (r *Repository) parseTargetEntry(ctx context.Context, tag *object.Tag, p string) (*object.TreeEntry, error) {
+	var cc *object.Commit
+	var err error
+	switch tag.ObjectType {
+	case object.TagObject:
+		cc, err = r.odb.ParseRevExhaustive(ctx, tag.Object)
+	case object.CommitObject:
+		cc, err = r.odb.Commit(ctx, tag.Object)
+	default:
+		return nil, backend.NewErrMismatchedObjectType(tag.Object, "commit")
+	}
+	if err != nil {
+		return nil, err
+	}
+	root, err := cc.Root(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(p) == 0 {
+		return &object.TreeEntry{Hash: root.Hash, Mode: filemode.Dir}, nil
+	}
+	return root.FindEntry(ctx, p)
+}
+
+func (r *Repository) parseEntry(ctx context.Context, oid plumbing.Hash, p string) (*object.TreeEntry, error) {
+	var err error
+	var o any
+	if o, err = r.odb.Object(ctx, oid); err != nil {
+		if plumbing.IsNoSuchObject(err) && r.odb.Exists(oid, false) {
+			return &object.TreeEntry{Hash: oid, Name: oid.String(), Mode: filemode.Regular}, nil
+		}
+		return nil, err
+	}
+	switch a := o.(type) {
+	case *object.Tag:
+		return r.parseTargetEntry(ctx, a, p)
+	case *object.Tree:
+		if len(p) == 0 {
+			return &object.TreeEntry{Hash: a.Hash, Mode: filemode.Dir, Name: a.Hash.String()}, nil
+		}
+		return a.FindEntry(ctx, p)
+	case *object.Commit:
+		root, err := r.odb.Tree(ctx, a.Tree)
+		if err != nil {
+			return nil, err
+		}
+		if len(p) == 0 {
+			return &object.TreeEntry{Hash: root.Hash, Mode: filemode.Dir, Name: root.Hash.String()}, nil
+		}
+		return root.FindEntry(ctx, p)
+	case *object.Fragments:
+		return &object.TreeEntry{Hash: oid, Name: p, Mode: filemode.Regular | filemode.Fragments}, nil
+	}
+	return nil, ErrNotTree
+}
+
+func (r *Repository) parseTreeEntryExhaustive(ctx context.Context, branchOrTag string) (*object.TreeEntry, string, error) {
+	prefix, p, ok := strings.Cut(branchOrTag, ":")
+	oid, err := r.Revision(ctx, prefix)
+	if err != nil {
+		return nil, "", err
+	}
+	e, err := r.parseEntry(ctx, oid, p)
+	if err != nil {
+		return nil, "", err
+	}
+	if !ok {
+		p = prefix
+	}
+	return e, p, nil
+}
+
+func (r *Repository) parseTreeExhaustive(ctx context.Context, branchOrTag string) (*object.Tree, error) {
+	prefix, p, _ := strings.Cut(branchOrTag, ":")
+	oid, err := r.Revision(ctx, prefix)
 	if err != nil {
 		return nil, err
 	}

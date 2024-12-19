@@ -23,6 +23,7 @@ type DiffOptions struct {
 	Staged     bool
 	NewLine    byte
 	NewOutput  func(context.Context) (io.WriteCloser, bool, error) // new writer func
+	NoRename   bool
 	// index value
 	MergeBase string
 	From      string
@@ -209,6 +210,9 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unifi
 	e := diferenco.NewUnifiedEncoder(w)
 	if useColor {
 		e.SetColor(color.NewColorConfig())
+	}
+	if opts.NoRename {
+		e.SetNoRename()
 	}
 	_ = e.Encode(patch)
 	return nil

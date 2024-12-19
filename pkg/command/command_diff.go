@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
@@ -145,6 +146,7 @@ func (c *Diff) render(u *diferenco.Unified) error {
 		Shortstat:  c.Shortstat,
 		NewLine:    c.NewLine(),
 		NewOutput:  c.NewOutput,
+		NoRename:   true,
 	}
 	switch {
 	case c.Numstat, c.Stat, c.Shortstat:
@@ -180,6 +182,19 @@ func (c *Diff) nameStatus() error {
 	return nil
 }
 
+func hashNoIndexFile(p string) (string, error) {
+	fd, err := os.Open(p)
+	if err != nil {
+		return "", err
+	}
+	defer fd.Close()
+	h := plumbing.NewHasher()
+	if _, err := io.Copy(h, fd); err != nil {
+		return "", err
+	}
+	return h.Sum().String(), nil
+}
+
 func (c *Diff) diffNoIndex(g *Globals) error {
 	if len(c.From) == 0 || len(c.To) == 0 {
 		die("missing arg, example: zeta diff --no-index from to")
@@ -196,6 +211,11 @@ func (c *Diff) diffNoIndex(g *Globals) error {
 	}
 	g.DbgPrint("from %s to %s", c.From, c.To)
 	var isBinary bool
+	fromHash, err := hashNoIndexFile(c.From)
+	if err != nil {
+		diev("zeta diff --no-index hash error: %v", err)
+		return err
+	}
 	from, err := readText(c.From, c.TextConv)
 	if err != nil && err != diferenco.ErrNonTextContent {
 		diev("zeta diff --no-index read text error: %v", err)
@@ -204,24 +224,37 @@ func (c *Diff) diffNoIndex(g *Globals) error {
 	if err == diferenco.ErrNonTextContent {
 		isBinary = true
 	}
+	toHash, err := hashNoIndexFile(c.To)
+	if err != nil {
+		diev("zeta diff --no-index hash error: %v", err)
+		return err
+	}
+	if fromHash == toHash {
+		return c.render(&diferenco.Unified{
+			From:     &diferenco.File{Name: c.From, Hash: fromHash},
+			To:       &diferenco.File{Name: c.To, Hash: toHash},
+			IsBinary: isBinary,
+		})
+	}
 	to, err := readText(c.To, c.TextConv)
 	if err != nil && err != diferenco.ErrNonTextContent {
 		diev("zeta diff --no-index read text error: %v", err)
 		return err
 	}
+
 	if err == diferenco.ErrNonTextContent {
 		isBinary = true
 	}
 	if isBinary {
 		return c.render(&diferenco.Unified{
-			From:     &diferenco.File{Name: c.From},
-			To:       &diferenco.File{Name: c.To},
+			From:     &diferenco.File{Name: c.From, Hash: fromHash},
+			To:       &diferenco.File{Name: c.To, Hash: toHash},
 			IsBinary: true,
 		})
 	}
 	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
-		From: &diferenco.File{Name: c.From},
-		To:   &diferenco.File{Name: c.To},
+		From: &diferenco.File{Name: c.From, Hash: fromHash},
+		To:   &diferenco.File{Name: c.To, Hash: toHash},
 		S1:   from,
 		S2:   to,
 		A:    a,

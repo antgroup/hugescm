@@ -35,7 +35,7 @@ type UnifiedEncoder struct {
 	// srcPrefix and dstPrefix are prepended to file paths when encoding a diff.
 	srcPrefix string
 	dstPrefix string
-
+	noRename  bool
 	// colorConfig is the color configuration. The default is no color.
 	color color.ColorConfig
 }
@@ -64,6 +64,11 @@ func (e *UnifiedEncoder) SetSrcPrefix(prefix string) *UnifiedEncoder {
 // SetDstPrefix sets e's dstPrefix and returns e.
 func (e *UnifiedEncoder) SetDstPrefix(prefix string) *UnifiedEncoder {
 	e.dstPrefix = prefix
+	return e
+}
+
+func (e *UnifiedEncoder) SetNoRename() *UnifiedEncoder {
+	e.noRename = true
 	return e
 }
 
@@ -112,11 +117,13 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 				fmt.Sprintf("new mode %o", to.Mode),
 			)
 		}
-		if from.Name != to.Name {
-			lines = append(lines,
-				fmt.Sprintf("rename from %s", from.Name),
-				fmt.Sprintf("rename to %s", to.Name),
-			)
+		if !e.noRename {
+			if from.Name != to.Name {
+				lines = append(lines,
+					fmt.Sprintf("rename from %s", from.Name),
+					fmt.Sprintf("rename to %s", to.Name),
+				)
+			}
 		}
 		if from.Mode != to.Mode && !hashEquals {
 			lines = append(lines,

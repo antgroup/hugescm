@@ -55,13 +55,13 @@ func (w *Worktree) lsRestoreEntriesFromTree(ctx context.Context, opts *RestoreOp
 func (w *Worktree) lsRestoreEntries(ctx context.Context, opts *RestoreOptions) ([]*odb.TreeEntry, error) {
 	switch {
 	case len(opts.Source) != 0:
-		root, err := w.parseTreeExhaustive(ctx, opts.Source, "")
+		root, err := w.parseTreeExhaustive(ctx, opts.Source)
 		if err != nil {
 			return nil, err
 		}
 		return w.lsRestoreEntriesFromTree(ctx, opts, root)
 	case opts.Staged:
-		root, err := w.parseTreeExhaustive(ctx, "HEAD", "")
+		root, err := w.parseTreeExhaustive(ctx, "HEAD")
 		if err != nil {
 			return nil, err
 		}

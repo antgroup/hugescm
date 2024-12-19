@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/merkletrie"
@@ -272,20 +271,7 @@ func (w *Worktree) DiffTreeWithWorktree(ctx context.Context, oid plumbing.Hash, 
 	return w.showChanges(ctx, opts, changes)
 }
 
-func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffOptions) (oldTree *object.Tree, newTree *object.Tree, err error) {
-	if !opts.Way3 {
-		from, p, _ := strings.Cut(opts.From, ":")
-		if oldTree, err = w.parseTreeExhaustive(ctx, from, p); err != nil {
-			fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.From, err)
-			return
-		}
-		to, p, _ := strings.Cut(opts.To, ":")
-		if newTree, err = w.parseTreeExhaustive(ctx, to, p); err != nil {
-			fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.To, err)
-			return
-		}
-		return
-	}
+func (w *Worktree) resolveTwoTree(ctx context.Context, opts *DiffOptions) (oldTree *object.Tree, newTree *object.Tree, err error) {
 	var a, b *object.Commit
 	if a, err = w.parseRevExhaustive(ctx, opts.From); err != nil {
 		return nil, nil, err
@@ -319,10 +305,78 @@ func (w *Worktree) resolveBetweenTree(ctx context.Context, opts *DiffOptions) (o
 	return
 }
 
+func (w *Worktree) betweenThreeWay(ctx context.Context, opts *DiffOptions) error {
+	w.DbgPrint("from %s to %s", opts.From, opts.To)
+	oldTree, newTree, err := w.resolveTwoTree(ctx, opts)
+	if err != nil {
+		return err
+	}
+	o := &object.DiffTreeOptions{
+		DetectRenames:    true,
+		OnlyExactRenames: true,
+	}
+	w.DbgPrint("oldTree %s newTree %s", oldTree.Hash, newTree.Hash)
+	changes, err := object.DiffTreeWithOptions(ctx, oldTree, newTree, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "diff tree error: %v\n", err)
+		return err
+	}
+	return opts.ShowChanges(ctx, changes)
+}
+
+func (w *Worktree) blobDiff(ctx context.Context, opts *DiffOptions) error {
+	b1, n1, err := w.parseTreeEntryExhaustive(ctx, opts.From)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve tree entry: %s error: %v\n", opts.From, err)
+		return err
+	}
+	if !b1.Mode.IsFile() {
+		die_error("entry %s not file", opts.From)
+		return errors.New("not file")
+	}
+	b2, n2, err := w.parseTreeEntryExhaustive(ctx, opts.To)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve tree entry: %s error: %v\n", opts.From, err)
+		return err
+	}
+	if !b2.Mode.IsFile() {
+		die_error("entry %s not file", opts.From)
+		return errors.New("not file")
+	}
+	w.DbgPrint("diff (blob) %s %s", b1.Hash, b2.Hash)
+	opts.NoRename = true
+	change := &object.Change{
+		From: object.ChangeEntry{
+			Name: n1,
+			Tree: object.NewSnapshotTree(&object.Tree{
+				Entries: []*object.TreeEntry{b1},
+			}, w.odb),
+			TreeEntry: *b1,
+		},
+		To: object.ChangeEntry{
+			Name: n2,
+			Tree: object.NewSnapshotTree(&object.Tree{
+				Entries: []*object.TreeEntry{b2},
+			}, w.odb),
+			TreeEntry: *b2,
+		},
+	}
+	return opts.ShowChanges(ctx, []*object.Change{change})
+}
+
 func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
 	w.DbgPrint("from %s to %s", opts.From, opts.To)
-	oldTree, newTree, err := w.resolveBetweenTree(ctx, opts)
+	oldTree, err := w.parseTreeExhaustive(ctx, opts.From)
 	if err != nil {
+		if err == ErrNotTree {
+			return w.blobDiff(ctx, opts)
+		}
+		fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.From, err)
+		return err
+	}
+	newTree, err := w.parseTreeExhaustive(ctx, opts.To)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.To, err)
 		return err
 	}
 	o := &object.DiffTreeOptions{
@@ -347,6 +401,9 @@ func (w *Worktree) DiffContext(ctx context.Context, opts *DiffOptions) error {
 		}
 	}
 	if len(opts.From) != 0 && len(opts.To) != 0 {
+		if opts.Way3 {
+			return w.betweenThreeWay(ctx, opts)
+		}
 		return w.between(ctx, opts)
 	}
 	if len(opts.From) != 0 {

@@ -2,11 +2,17 @@ package zeta
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/diferenco/color"
+	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -15,7 +21,7 @@ type ShowOptions struct {
 	Textconv  bool
 	Algorithm diferenco.Algorithm
 	Limit     int64
-	w         io.Writer
+	w         *Printer
 	useColor  bool
 }
 
@@ -84,11 +90,13 @@ func (r *Repository) showOne(ctx context.Context, opts *ShowOptions, so *showObj
 	}
 	switch a := o.(type) {
 	case *object.Tree:
+		return r.showTree(ctx, opts, so, a)
 	case *object.Commit:
-		return r.showCommit(ctx, opts, so, a)
+		return r.showCommit(ctx, opts, a)
 	case *object.Tag:
-		return r.showTag(ctx, opts, so, a)
+		return r.showTag(ctx, opts, a)
 	case *object.Fragments:
+		return r.showFragments(ctx, opts, so, a)
 	}
 	return nil
 }
@@ -117,11 +125,130 @@ func (r *Repository) showBlob(ctx context.Context, opts *ShowOptions, so *showOb
 	return err
 }
 
-func (r *Repository) showCommit(ctx context.Context, opts *ShowOptions, so *showObject, t *object.Commit) error {
+func (r *Repository) showCommit(ctx context.Context, opts *ShowOptions, cc *object.Commit) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	rdb, err := r.ReferencesEx(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve references error: %v\n", err)
+		return err
+	}
+	if err := opts.w.LogOne(cc, rdb.M[cc.Hash]); err != nil {
+		return err
+	}
+	if len(cc.Parents) == 2 {
+		return nil
+	}
+	oldTree := r.odb.EmptyTree()
+	if len(cc.Parents) == 1 {
+		pc, err := r.odb.Commit(ctx, cc.Parents[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "resolve commit %s error: %v\n", cc.Parents[0], err)
+			return err
+		}
+		if oldTree, err = pc.Root(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "resolve parent tree %s error: %v\n", cc.Parents[0], err)
+			return err
+		}
+	}
+	newTree, err := cc.Root(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve current tree %s error: %v\n", cc.Parents[0], err)
+		return err
+	}
+	o := &object.DiffTreeOptions{
+		DetectRenames:    true,
+		OnlyExactRenames: true,
+	}
+	changes, err := object.DiffTreeWithOptions(ctx, oldTree, newTree, o, noder.NewSparseTreeMatcher(r.Core.SparseDirs))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "diff tree error: %v\n", err)
+		return err
+	}
+	patch, err := changes.Patch(ctx, &object.PatchOptions{
+		Algorithm: opts.Algorithm,
+		Textconv:  opts.Textconv,
+	})
+	if err != nil {
+		return err
+	}
+	e := diferenco.NewUnifiedEncoder(opts.w)
+	if opts.useColor {
+		e.SetColor(color.NewColorConfig())
+	}
+	_ = e.Encode(patch)
 	return nil
 }
 
-func (r *Repository) showTag(ctx context.Context, opts *ShowOptions, so *showObject, t *object.Tag) error {
+func (r *Repository) showTag(ctx context.Context, opts *ShowOptions, tag *object.Tag) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	if opts.useColor {
+		fmt.Fprintf(opts.w, "\x1b[33mtag %s\x1b[0m\n", tag.Name)
+	} else {
+		fmt.Fprintf(opts.w, "tag %s\n", tag.Name)
+	}
+	fmt.Fprintf(opts.w, "Tagger: %s <%s>\nDate:   %s\n\n%s\n", tag.Tagger.Name, tag.Tagger.Email, tag.Tagger.When.Format(time.RFC3339), tag.Content)
+	var cc *object.Commit
+	var err error
+	switch tag.ObjectType {
+	case object.TagObject:
+		cc, err = r.odb.ParseRevExhaustive(ctx, tag.Object)
+	case object.CommitObject:
+		cc, err = r.odb.Commit(ctx, tag.Object)
+	default:
+		return backend.NewErrMismatchedObjectType(tag.Object, "commit")
+	}
+	if err != nil {
+		return err
+	}
+	return r.showCommit(ctx, opts, cc)
+}
 
+func (r *Repository) showTree(ctx context.Context, opts *ShowOptions, so *showObject, tree *object.Tree) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	if opts.useColor {
+		fmt.Fprintf(opts.w, "\x1b[33mtree %s\x1b[0m\n\n", so.name)
+	} else {
+		fmt.Fprintf(opts.w, "tree %s\n\n", so.name)
+	}
+	for _, e := range tree.Entries {
+		t := e.Type()
+		if t == object.TreeObject {
+			fmt.Fprintf(opts.w, "%s/\n", e.Name)
+			continue
+		}
+		if t == object.FragmentsObject && opts.useColor {
+			fmt.Fprintf(opts.w, "\x1b[36m%s\x1b[0m\n", e.Name)
+		}
+		fmt.Fprintln(opts.w, e.Name)
+	}
+	return nil
+}
+
+func (r *Repository) showFragments(ctx context.Context, opts *ShowOptions, so *showObject, ff *object.Fragments) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	if opts.useColor {
+		fmt.Fprintf(opts.w, "\x1b[33mfragments %s\x1b[0m\nraw:  %s\nsize: %d\n\n", so.oid, ff.Origin, ff.Size)
+	} else {
+		fmt.Fprintf(opts.w, "fragments %s\nraw:  %s\nsize: %d\n", so.oid, ff.Origin, ff.Size)
+	}
+	for _, e := range ff.Entries {
+		fmt.Fprintf(opts.w, "%d\t%s %d\n", e.Index, e.Hash, e.Size)
+	}
 	return nil
 }

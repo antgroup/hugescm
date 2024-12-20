@@ -481,13 +481,13 @@ func flatBranchName(s string) string {
 	return b.String()
 }
 
-func (d *ODB) unifiedText(ctx context.Context, oid plumbing.Hash, textConv bool) (string, string, error) {
+func (d *ODB) unifiedText(ctx context.Context, oid plumbing.Hash, textconv bool) (string, string, error) {
 	br, err := d.Blob(ctx, oid)
 	if err != nil {
 		return "", "", err
 	}
 	defer br.Close()
-	return diferenco.ReadUnifiedText(br.Contents, br.Size, textConv)
+	return diferenco.ReadUnifiedText(br.Contents, br.Size, textconv)
 }
 
 // MergeTree: three way merge tree

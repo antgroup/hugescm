@@ -23,7 +23,7 @@ type Merge struct {
 	FFOnly                  bool     `name:"ff-only" help:"Abort if fast-forward is not possible"`
 	Squash                  bool     `name:"squash" help:"Create a single commit instead of doing a merge"`
 	AllowUnrelatedHistories bool     `name:"allow-unrelated-histories" help:"Allow merging unrelated histories"`
-	Textconv                bool     `name:"textconv" help:"Convert text to Unicode before merging"`
+	Textconv                bool     `name:"textconv" help:"Converting text to Unicode"`
 	Message                 []string `name:"message" short:"m" help:"Merge commit message (for a non-fast-forward merge)"`
 	File                    string   `name:"file" short:"F" help:"Read message from file"`
 	Signoff                 bool     `name:"signoff" negatable:"" help:"Add a Signed-off-by trailer" default:"false"`

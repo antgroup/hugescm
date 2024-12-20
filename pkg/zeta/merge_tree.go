@@ -27,7 +27,7 @@ type MergeTreeOptions struct {
 	AllowUnrelatedHistories, Z, NameOnly, Textconv, JSON bool
 }
 
-func (r *Repository) readMissingText(ctx context.Context, oid plumbing.Hash, textConv bool) (string, string, error) {
+func (r *Repository) readMissingText(ctx context.Context, oid plumbing.Hash, textconv bool) (string, string, error) {
 	br, err := r.odb.Blob(ctx, oid)
 	switch {
 	case err == nil:
@@ -43,7 +43,7 @@ func (r *Repository) readMissingText(ctx context.Context, oid plumbing.Hash, tex
 		return "", "", err
 	}
 	defer br.Close()
-	return diferenco.ReadUnifiedText(br.Contents, br.Size, textConv)
+	return diferenco.ReadUnifiedText(br.Contents, br.Size, textconv)
 }
 
 func (o *MergeTreeOptions) formatJson(result *odb.MergeResult) {

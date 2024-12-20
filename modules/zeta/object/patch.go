@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
 	"strconv"
 	"strings"
 
@@ -21,12 +22,26 @@ var (
 
 type PatchOptions struct {
 	Algorithm diferenco.Algorithm
-	TextConv  bool
+	Textconv  bool
 	Match     func(string) bool
 }
 
 func sizeOverflow(f *File) bool {
 	return f != nil && f.Size > diferenco.MAX_DIFF_SIZE
+}
+
+func PathRenameCombine(from, to string) string {
+	fromPaths := strings.Split(from, "/")
+	toPaths := strings.Split(to, "/")
+	n := min(len(fromPaths), len(toPaths))
+	i := 0
+	for i < n && fromPaths[i] == toPaths[i] {
+		i++
+	}
+	if i == 0 {
+		return fmt.Sprintf("%s => %s", from, to)
+	}
+	return fmt.Sprintf("%s/{%s => %s}", path.Join(fromPaths[0:i]...), path.Join(fromPaths[i:]...), path.Join(toPaths[i:]...))
 }
 
 func fileStatName(from, to *File) string {
@@ -40,7 +55,7 @@ func fileStatName(from, to *File) string {
 	}
 	if from.Path != to.Path {
 		// File is renamed.
-		return fmt.Sprintf("%s => %s", from.Path, to.Path)
+		return PathRenameCombine(from.Path, to.Path)
 	}
 	return from.Path
 }
@@ -63,14 +78,14 @@ func fileStatWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*F
 	if sizeOverflow(from) || sizeOverflow(to) {
 		return s, nil
 	}
-	fromContent, err := from.UnifiedText(ctx, opts.TextConv)
+	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
 	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return s, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	toContent, err := to.UnifiedText(ctx, opts.TextConv)
+	toContent, err := to.UnifiedText(ctx, opts.Textconv)
 	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return s, nil
 	}
@@ -121,14 +136,14 @@ func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*
 	if sizeOverflow(from) || sizeOverflow(to) {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
-	fromContent, err := from.UnifiedText(ctx, opts.TextConv)
+	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
 	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	toContent, err := to.UnifiedText(ctx, opts.TextConv)
+	toContent, err := to.UnifiedText(ctx, opts.Textconv)
 	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}

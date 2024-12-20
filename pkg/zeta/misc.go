@@ -47,6 +47,10 @@ var (
 	W                   = tr.W // translate func wrap
 )
 
+func IsTerminal(fd uintptr) bool {
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
 func checkIsTrueColorTerminal() bool {
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
 		return false
@@ -342,7 +346,7 @@ type Content struct {
 	IsBinary bool
 }
 
-func ReadContent(p string, textConv bool) (*Content, error) {
+func ReadContent(p string, textconv bool) (*Content, error) {
 	fd, err := os.Open(p)
 	if err != nil {
 		return nil, err
@@ -370,7 +374,7 @@ func ReadContent(p string, textConv bool) (*Content, error) {
 	if _, err := fd.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
-	if fc.Text, _, err = diferenco.ReadUnifiedText(fd, si.Size(), textConv); err != nil {
+	if fc.Text, _, err = diferenco.ReadUnifiedText(fd, si.Size(), textconv); err != nil {
 		if err == diferenco.ErrNonTextContent {
 			fc.IsBinary = true
 			return fc, nil
@@ -380,7 +384,7 @@ func ReadContent(p string, textConv bool) (*Content, error) {
 	return fc, nil
 }
 
-func ReadText(p string, textConv bool) (string, error) {
+func ReadText(p string, textconv bool) (string, error) {
 	fd, err := os.Open(p)
 	if err != nil {
 		return "", err
@@ -390,6 +394,14 @@ func ReadText(p string, textConv bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	content, _, err := diferenco.ReadUnifiedText(fd, si.Size(), textConv)
+	content, _, err := diferenco.ReadUnifiedText(fd, si.Size(), textconv)
 	return content, err
+}
+
+type NopWriteCloser struct {
+	io.Writer
+}
+
+func (NopWriteCloser) Close() error {
+	return nil
 }

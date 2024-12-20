@@ -15,7 +15,7 @@ type MergeTree struct {
 	MergeBase               string `name:"merge-base" help:"Specify a merge-base for the merge"`
 	AllowUnrelatedHistories bool   `name:"allow-unrelated-histories" help:"If branches lack common history, merge-tree errors. Use this flag to force merge"`
 	NameOnly                bool   `name:"name-only" help:"Only output conflict-related file names"`
-	Textconv                bool   `name:"textconv" help:"Convert text to Unicode before merging"`
+	Textconv                bool   `name:"textconv" help:"Converting text to Unicode"`
 	Z                       bool   `name:":z" short:"z" help:"Terminate entries with NUL byte"`
 	JSON                    bool   `name:"json" help:"Convert conflict results to JSON"`
 }

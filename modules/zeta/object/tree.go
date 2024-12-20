@@ -571,6 +571,16 @@ func resolveTree(ctx context.Context, b Backend, h plumbing.Hash) (*Tree, error)
 	return t, nil
 }
 
+// File returns the hash of the file identified by the `path` argument.
+// The path is interpreted as relative to the tree receiver.
+func (t *Tree) File(ctx context.Context, path string) (*File, error) {
+	e, err := t.FindEntry(ctx, path)
+	if err != nil {
+		return nil, &ErrEntryNotFound{entry: path}
+	}
+	return newFile(e.Name, path, e.Mode, e.Hash, e.Size, t.b), nil
+}
+
 // Diff returns a list of changes between this tree and the provided one
 func (t *Tree) Diff(to *Tree, m noder.Matcher) (Changes, error) {
 	return t.DiffContext(context.Background(), to, m)

@@ -29,7 +29,7 @@ type DiffOptions struct {
 	From      string
 	To        string
 	PathSpec  []string
-	TextConv  bool
+	Textconv  bool
 	UseColor  bool
 	Way3      bool
 	Algorithm diferenco.Algorithm
@@ -37,7 +37,7 @@ type DiffOptions struct {
 
 func (opts *DiffOptions) po() *object.PatchOptions {
 	m := NewMatcher(opts.PathSpec)
-	return &object.PatchOptions{TextConv: opts.TextConv, Algorithm: opts.Algorithm, Match: m.Match}
+	return &object.PatchOptions{Textconv: opts.Textconv, Algorithm: opts.Algorithm, Match: m.Match}
 }
 
 func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes) error {

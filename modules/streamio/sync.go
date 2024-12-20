@@ -13,7 +13,7 @@ var bufioReader = sync.Pool{
 }
 
 // GetBufioReader returns a *bufio.Reader that is managed by a sync.Pool.
-// Returns a bufio.Reader that is resetted with reader and ready for use.
+// Returns a bufio.Reader that is reset with reader and ready for use.
 //
 // After use, the *bufio.Reader should be put back into the sync.Pool
 // by calling PutBufioReader.
@@ -39,7 +39,7 @@ var bufferWriter = sync.Pool{
 }
 
 // GetBufferWriter returns a *bufio.Writer that is managed by a sync.Pool.
-// Returns a bufio.Writer that is resetted with writer and ready for use.
+// Returns a bufio.Writer that is reset with writer and ready for use.
 //
 // After use, the *bufio.Writer should be put back into the sync.Pool
 // by calling PutBufferWriter.

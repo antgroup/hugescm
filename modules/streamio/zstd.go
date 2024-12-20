@@ -31,7 +31,7 @@ type ZstdDecoder struct {
 }
 
 // GetZstdReader returns a ZstdDecoder that is managed by a sync.Pool.
-// Returns a ZLibReader that is resetted using a dictionary that is
+// Returns a ZLibReader that is reset using a dictionary that is
 // also managed by a sync.Pool.
 //
 // After use, the ZstdDecoder should be put back into the sync.Pool
@@ -55,7 +55,7 @@ type ZstdEncoder struct {
 }
 
 // GetZstdWriter returns a *ztsd.Encoder that is managed by a sync.Pool.
-// Returns a writer that is resetted with w and ready for use.
+// Returns a writer that is reset with w and ready for use.
 //
 // After use, the *ztsd.Encoder  should be put back into the sync.Pool
 // by calling PutZstdWriter.

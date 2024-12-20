@@ -313,6 +313,17 @@ func (c *Commit) Root(ctx context.Context) (*Tree, error) {
 	return resolveTree(ctx, c.b, c.Tree)
 }
 
+// File returns the file with the specified "path" in the commit and a
+// nil error if the file exists. If the file does not exist, it returns
+// a nil file and the ErrFileNotFound error.
+func (c *Commit) File(ctx context.Context, path string) (*File, error) {
+	tree, err := c.Root(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return tree.File(ctx, path)
+}
+
 // StatsContext returns the stats of a commit. Error will be return if context
 // expires. Provided context must be non-nil.
 func (c *Commit) StatsContext(ctx context.Context, m noder.Matcher, opts *PatchOptions) (FileStats, error) {

@@ -94,15 +94,35 @@ func readRawText(r io.Reader, size int) (string, error) {
 	return unsafe.String(unsafe.SliceData(content), len(content)), nil
 }
 
-func ReadUnifiedText(r io.Reader, size int64, textConv bool) (content string, charset string, err error) {
+func ReadUnifiedText(r io.Reader, size int64, textconv bool) (content string, charset string, err error) {
 	if size > MAX_DIFF_SIZE {
 		return "", "", ErrNonTextContent
 	}
-	if textConv {
+	if textconv {
 		return readUnifiedText(r)
 	}
 	content, err = readRawText(r, int(size))
 	return content, UTF8, err
+}
+
+func NewUnifiedReaderEx(r io.Reader, textconv bool) (io.Reader, string, error) {
+	sniffBytes, err := streamio.ReadMax(r, sniffLen)
+	if err != nil {
+		return nil, "", err
+	}
+	reader := io.MultiReader(bytes.NewReader(sniffBytes), r)
+	if !textconv {
+		if bytes.IndexByte(sniffBytes, 0) != -1 {
+			return reader, BINARY, nil
+		}
+		return reader, UTF8, nil
+	}
+	charset := detectCharset(sniffBytes)
+	// binary or UTF-8 not need convert
+	if charset == BINARY || strings.EqualFold(charset, UTF8) {
+		return reader, charset, nil
+	}
+	return chardet.NewReader(reader, charset), charset, nil
 }
 
 func NewUnifiedReader(r io.Reader) (io.Reader, error) {

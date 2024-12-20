@@ -31,5 +31,5 @@ func TestCat(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	_ = r.Cat(context.Background(), &CatOptions{Hash: "2be5d4418893425e546a6146fbda18eac95ea9a7fbb05faab02096738a974a11"})
+	_ = r.Cat(context.Background(), &CatOptions{Object: "2be5d4418893425e546a6146fbda18eac95ea9a7fbb05faab02096738a974a11"})
 }

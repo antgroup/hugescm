@@ -14,7 +14,7 @@ import (
 )
 
 type MergeDriver func(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (string, bool, error)
-type TextGetter func(ctx context.Context, oid plumbing.Hash, textConv bool) (string, string, error)
+type TextGetter func(ctx context.Context, oid plumbing.Hash, textconv bool) (string, string, error)
 
 type mergeOptions struct {
 	O, A, B                plumbing.Hash

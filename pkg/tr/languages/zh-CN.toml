@@ -16,7 +16,7 @@
 "fatal: " = "致命错误："
 "hint: " = "提示："
 "warning: " = "警告："
-# Checkout
+# checkout
 "Checkout remote, switch branches, or restore worktree files" = "检出远程，切换分支或还原工作区文件"
 "Remote url or branch" = "远程 URL 或分支"
 "Destination for the new repository" = "存储库的保存位置"
@@ -40,7 +40,7 @@
 "Checkout '%s' success.\n" = "成功检出 '%s'。\n"
 "Checkout one after another, total: %d\n" = "一个接着另一个的检出文件，总计：%d\n"
 "The repository filesystem is '%s', which may affect zeta's operation." = "存储库文件系统为 '%s'，可能会影响 zeta 运行。"
-# Switch
+# switch
 "Switch branches" = "切换分支"
 "Branch to switch to and start-point" = "要切换的分支和 start-point"
 "Create a new branch named <branch> starting at <start-point> before switching to the branch" = "在切换到分支之前，从 <start-point> 开始创建一个名为 <branch> 的新分支"
@@ -54,7 +54,7 @@
 "Attempt to checkout from remote when branch is absent" = "当分支不存在时，尝试从远程检出"
 "couldn't find branch '%s', add '--remote' download and switch to this branch" = "找不到分支 '%s'，添加 '--remote' 下载并切换到该分支"
 "missing branch or commit argument" = "缺少分支或提交参数"
-# Fetch
+# fetch
 "Download objects and reference from remote" = "从远程下载对象和引用"
 "Reference or commit to be downloaded" = "待下载的引用或者提交"
 "Get complete history" = "获取完整的历史"
@@ -76,7 +76,7 @@
 "non-fast-forward" = "非快进"
 "fetch missing object error: %v" = "拉取缺失对象错误：%v"
 "fetch target '%s' error: %v" = "拉取目标 '%s' 错误：%v"
-# Pull
+# pull
 "Fetch from and integrate with remote" = "从远程获取并与其集成"
 "Specifies which branch to fetch and update" = "指定要获取和更新的分支"
 "Allow fast-forward" = "允许快进"
@@ -89,7 +89,7 @@
 "Please enter a commit message to explain why this merge is necessary," = "请输入一个提交信息以解释此合并的必要性，尤其是将一个更新后的上游分支"
 "especially if it merges an updated upstream into a topic branch." = "合并到主题分支。"
 "Lines starting with '%c' will be ignored, and an empty message aborts." = "以 '%c' 开始的行将被忽略，而空的提交说明将终止提交。"
-# Commit
+# commit
 "Record changes to the repository" = "记录对存储库的更改"
 "Use the given as the commit message. Concatenate multiple -m options as separate paragraphs" = "使用给定的作为提交说明。多个 -m 选项的值会作为独立段落合并"
 "Take the commit message from the given file. Use - to read the message from the standard input" = "从给定文件中获取提交消息。 使用 - 从标准输入读取消息"
@@ -99,7 +99,7 @@
 "Replace the tip of the current branch by creating a new commit" = "通过创建新的提交来替换当前分支的提示"
 "Aborting commit due to empty commit message." = "终止提交因为提交说明为空。"
 "Please enter the commit message for your changes. Lines starting\nwith '%c' will be ignored, and an empty message aborts the commit." = "请为您的变更输入提交说明。以 '%c' 开始的行将被忽略，而一个空的提交\n说明将会终止提交。"
-# Push
+# push
 "Update remote refs along with associated objects" = "更新远程引用以及关联的对象"
 "Option to transmit" = "传输选项"
 "Update remote tag reference" = "更新远程标签引用"
@@ -112,7 +112,7 @@
 "upload large objects error: %v" = "上传大对象错误：%v"
 "Push failed: %v" = "推送失败：%v"
 "parse report error: %v" = "解析报告错误：%v"
-# Branch
+# branch
 "List, create, or delete branches" = "列出、创建或删除分支"
 "Get and set repository or global options" = "获取和设置存储库或全局选项"
 "Provide contents or details of repository objects" = "提供存储库对象的内容或类型和大小信息"
@@ -131,15 +131,16 @@
 "cannot delete branch '%s' used by worktree at '%s'" = "无法强制更新被工作区 '%[2]s' 所使用的分支 '%[1]s'"
 "Branch '%s' has been moved to '%s'\n" = "已经将分支 '%s' 移动到 '%s'\n"
 "Deleted branch %s (was %s).\n" = "已删除分支 %s（曾为 %s）。\n"
-# Cat
+# cat
 "The name of the object to show" = "要显示的对象的名称。"
 "Show object type" = "显示对象的类型"
 "Show object size" = "显示对象的大小"
 "Verify object hash" = "验证对象的哈希"
 "Blob output size limit; use 0 for unlimited. Units: KB, MB, GB, K, M, G" = "输出 blob 的大小限制；设置为 0 无限制。支持单位：KB, MB, GB, K, M, G"
 "Returns data as JSON; limited to commits, trees, fragments, and tags" = "仅提交、树、片段、标签数据以 JSON 格式返回"
-"Output text as Unicode; blobs only" = "输出文本转为 Unicode，仅限 blobs"
-# Config
+"Converting text to Unicode" = "将文本转为 Unicode"
+"View files directly" = "直接查看文件"
+# config
 "Name and value, support: <name value> appears in pairs or <name=value ...>, eg: zeta config K1=V1 K2=V2" = "名称和值，支持：<name value> 这样成对出现或者 <name=value ...>，举例：zeta config K1=V1 K2=V2"
 "Use system config file" = "使用系统级配置文件"
 "Only read or write to global ~/.zeta.toml" = "只读取或写入全局配置 ~/.zeta.toml"
@@ -152,7 +153,7 @@
 "Terminate values with NUL byte" = "终止值是 NUL 字节"
 "zeta config will ensure that any input or output is valid under the given type constraint(s), support: bool, int, float, date" = "zeta 配置将确保任何输入或输出在给定类型约束下有效, 支持类型: bool, int, float, date"
 "only one config file at a time" = "一次只能有一个配置文件"
-# Tag
+# tag
 "List, create, or delete tags" = "列出、创建或删除标签"
 "Annotated tag, needs a message" = "附注标签，需要一个说明"
 "Take the tag message from the given file. Use - to read the message from the standard input" = "从给定文件中获取标签消息。 使用 - 从标准输入读取消息"
@@ -166,12 +167,12 @@
 "no tag message?" = "无标签说明？"
 "Write a message for tag:" = "输入一个标签说明："
 "Lines starting with '%c' will be ignored." = "以 '%c' 开头的行将被忽略。"
-# Log
+# log
 "Show commit logs" = "显示提交日志"
 "Show the working tree status" = "显示工作树状态"
 "Give the output in the short-format" = "以短格式给出输出"
 "Revision range" = "版本范围"
-# Status
+# status
 "(use \"zeta restore --staged <file>...\" to unstage)" = "（使用 \"zeta restore --staged <文件>...\" 以取消暂存）"
 "Changes not staged for commit" = "尚未暂存以备提交的变更"
 "(use \"zeta add <file>...\" to update what will be committed)" = "（使用 \"zeta add <文件>...\" 更新要提交的内容）"
@@ -192,7 +193,7 @@
 "On branch" = "位于分支"
 "HEAD detached at" = "头指针分离于"
 "Changes to be committed:" = "要提交的变更："
-# Version
+# version
 "Display version information" = "显示版本信息"
 "Also print build options" = "还打印构建选项"
 "Run \"%s --help\" for more information." = "运行 \"%s --help\" 以获取更多信息。"
@@ -207,7 +208,7 @@
 "param '%s' must be either -x or +x" = "参数取值 '%s' 必须是 -x 或 +x"
 "Nothing specified, nothing added." = "没有指定文件，也没有文件被添加。"
 "hint: Maybe you wanted to say 'zeta add .'?" = "提示：也许您想要执行 'zeta add .'？"
-# GC
+# gc
 "Cleanup unnecessary files and optimize the local repository" = "清除不必要的文件和优化本地仓库"
 "Pack %s objects: loose object %d packed objects %d\n" = "打包 %s 对象：松散对象 %d 打包对象 %d\n"
 "Pack %s objects: no smaller loose object, skipping packing.\n" = "打包 %s 对象：无较小松散对象，跳过打包。\n"
@@ -216,7 +217,7 @@
 "completed" = "完成"
 "Removed duplicate packages: %d, duplicate objects: %d empty dirs: %d\n" = "已删除重复的包：%d 重复对象：%d 空目录：%d\n"
 "Pruning objects older than specified date (default is 2 weeks ago, configurable with gc.pruneExpire)" = "清理早于指定日期的孤立对象（默认为 2 周前，可通过 gc.pruneExpire 配置）"
-# Restore
+# restore
 "Restore files" = "恢复文件"
 "Restore files completed" = "恢复文件完成"
 "Which tree-ish to checkout from" = "要检出哪一个树"
@@ -227,7 +228,7 @@
 "SYNOPSIS" = "概要"
 "Specify restore location. By default, restores working tree. Use --staged for index only, or both for both." = "指定恢复位置。默认情况下，恢复工作树。使用 --staged 仅恢复索引，或同时指定两者以恢复两者。"
 "you must specify path(s) to restore" = "您必须指定要恢复的路径"
-# Reset
+# reset
 "Reset current HEAD to the specified state" = "将当前 HEAD 重置为指定状态"
 "Reset HEAD and index" = "重置 HEAD 和索引"
 "Reset only HEAD" = "仅重置 HEAD"
@@ -238,7 +239,7 @@
 "Unstaged changes after reset:" = "重置后取消暂存的变更："
 "Fetch missing objects" = "获取丢失的对象"
 "is now at" = "现在位于"
-# Clean
+# clean
 "Remove untracked files from the working tree" = "从工作树中移除未跟踪的文件"
 "Remove whole directories" = "删除整个目录"
 "Remove ignored files, too" = "也删除忽略的文件"
@@ -247,7 +248,7 @@
 "Would remove" = "将删除"
 "Removing" = "正删除"
 "refusing to clean, please specify at least -f or -n" = "拒绝 clean，请至少指定 -f 或者 -n"
-# LS-Tree
+# ls-tree
 "List the contents of a tree object" = "列出树对象的内容"
 "Only show trees" = "只显示树"
 "Recurse into subtrees" = "递归到子树"
@@ -258,7 +259,7 @@
 "Use <n> digits to display object names" = "用 <n> 位数字显示对象名"
 "ID of a tree-ish" = "ID 或者 tree 对象哈希"
 "Given paths, show as match patterns; else, use root as sole argument" = "有路径时，显示为匹配模式；否则，使用根目录作为唯一路径参数"
-# Diff
+# diff
 "Show changes between commits, commit and working tree, etc" = "显示提交之间的更改、提交和工作树等"
 "Compares two given paths on the filesystem" = "比较文件系统上给定的两个路径"
 "Show only names of changed files" = "仅显示已更改文件的名称"
@@ -269,7 +270,6 @@
 "Output diff-raw with lines terminated with NUL" = "输出 diff-raw，行以 NUL 结尾"
 "Compare the differences between the staging area and <revision>" = "比较暂存区和 <revision> 之间的差异"
 "If --merge-base is given, use the common ancestor of <commit> and HEAD instead" = "如果给定 --merge-base，则使用 <commit> 与 HEAD 的共同祖先"
-"Convert text to Unicode and compare differences" = "将文本转变为 Unicode 然后再比较差异"
 "Output to a specific file instead of stdout" = "输出到特定文件而不是 stdout"
 "Generate a diff using the \"Histogram diff\" algorithm" = "使用 \"Histogram diff\" 算法生成差异"
 "Generate a diff using the \"O(NP) diff\" algorithm" = "使用 \"O(NP) diff\" 算法生成差异"
@@ -277,13 +277,13 @@
 "Generate a diff using the \"Patience diff\" algorithm" = "使用 \"Patience diff\" 算法生成差异"
 "Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" = "选择一个 diff 算法，支持：histogram|onp|myers|patience|minimal"
 "Spend extra time to make sure the smallest possible diff is produced" = "花费额外的时间来确保产生尽可能最小的差异"
-# RM
+# rm
 "Remove files from the working tree and from the index" = "从工作树和索引中删除文件"
 "Override the up-to-date check" = "忽略文件更新状态检查"
 "Do not list removed files" = "不列出删除的文件"
 "Only remove from the index" = "只从索引区删除"
 "Allow recursive removal" = "允许递归删除"
-# Merge
+# merge
 "Join two development histories together" = "将两段发展史连在一起"
 "Merge specific revision into HEAD" = "将特定的版本合并到 HEAD"
 "Create a single commit instead of doing a merge" = "创建一个单独的提交而不是做一次合并"
@@ -299,19 +299,18 @@
 "Updating" = "更新"
 "refusing to merge unrelated histories" = "拒绝合并无关的历史"
 "No merge message -- not updating HEAD" = "无合并信息 -- 未更新 HEAD"
-# Rebase
+# rebase
 "Reapply commits on top of another base tip" = "在另一个 base 之上重新应用提交"
 "Rebase onto given branch" = "变基到给定的分支"
 "Abort and checkout the original branch" = "终止并检出原有分支"
 "Continue" = "继续"
 "Successfully rebased and updated %s.\n" = "成功变基并更新 %s。\n"
 "cannot rebase: You have unstaged changes." = "不能变基：您有未暂存的变更。"
-# Merge-tree
+# merge-tree
 "Perform merge without touching index or working tree" = "执行合并而不触及索引和工作区"
 "Specify a merge-base for the merge" = "指定用于合并的合并基线"
 "If branches lack common history, merge-tree errors. Use this flag to force merge" = "如果分支无共同历史，合并会失败，这个标志用来绕过这个限制"
 "Only output conflict-related file names" = "仅输出冲突相关的文件名"
-"Convert text to Unicode before merging" = "将文本转变为 Unicode 然后再执行合并"
 "Convert conflict results to JSON" = "将冲突结果转换为 JSON"
 "Auto-merging %s" = "自动合并 %s"
 "warning: Cannot merge binary files: %s (%s vs. %s)" = "警告: 无法合并二进制文件: %s (%s vs. %s)"
@@ -322,7 +321,7 @@
 "CONFLICT (modify/delete): %s deleted in %s and modified in %s." = "冲突（修改/删除）：%s 在 %s 中被删除，在 %s 中被修改。"
 "content" = "内容"
 "add/add" = "添加/添加"
-# Stash
+# stash
 "Stash the changes in a dirty working directory away" = "将脏工作目录中的更改暂存起来"
 "Stash local changes and revert to HEAD" = "暂存本地更改并恢复到 HEAD"
 "List the stash entries that you currently have" = "列出您当前拥有的暂存条目"
@@ -388,6 +387,8 @@
 "Use a diff3 based merge" = "使用基于 diff3 的合并"
 "Use a zealous diff3 based merge" = "使用基于狂热 diff3（zealous diff3）的合并"
 "Set labels for file1/orig-file/file2" = "为 文件1/初始文件/文件2 设置标签"
+# show
+"Show various types of objects" = "显示各种类型的对象"
 # Others
 "WARNING" = "警告"
 "not zeta repository" = "不是 zeta 存储库"

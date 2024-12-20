@@ -17,9 +17,9 @@ type MergeFile struct {
 	ZDiff3        bool     `name:"zdiff3" negatable:"" help:"Use a zealous diff3 based merge"`
 	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal"`
 	L             []string `name:":L" short:"L" help:"Set labels for file1/orig-file/file2"`
-	F1            string   `arg:"" name:"0" help:"file1"`
-	O             string   `arg:"" name:"1" help:"orig-file"`
-	F2            string   `arg:"" name:"2" help:"file2"`
+	F1            string   `arg:"" name:"file1" help:""`
+	O             string   `arg:"" name:"orig-file" help:""`
+	F2            string   `arg:"" name:"file2" help:""`
 }
 
 const (

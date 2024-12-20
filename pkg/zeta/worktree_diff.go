@@ -18,27 +18,27 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
-func (w *Worktree) openText(p string, size int64, textConv bool) (string, error) {
+func (w *Worktree) openText(p string, size int64, textconv bool) (string, error) {
 	fd, err := w.fs.Open(p)
 	if err != nil {
 		return "", err
 	}
 	defer fd.Close()
-	content, _, err := diferenco.ReadUnifiedText(fd, size, textConv)
+	content, _, err := diferenco.ReadUnifiedText(fd, size, textconv)
 	return content, err
 }
 
-func (w *Worktree) openBlobText(ctx context.Context, oid plumbing.Hash, textConv bool) (string, error) {
+func (w *Worktree) openBlobText(ctx context.Context, oid plumbing.Hash, textconv bool) (string, error) {
 	br, err := w.odb.Blob(ctx, oid)
 	if err != nil {
 		return "", err
 	}
 	defer br.Close()
-	content, _, err := diferenco.ReadUnifiedText(br.Contents, br.Size, textConv)
+	content, _, err := diferenco.ReadUnifiedText(br.Contents, br.Size, textconv)
 	return content, err
 }
 
-func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool) (f *diferenco.File, content string, fragments bool, bin bool, err error) {
+func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool) (f *diferenco.File, content string, fragments bool, bin bool, err error) {
 	if p == nil {
 		return nil, "", false, false, nil
 	}
@@ -49,7 +49,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool)
 		if a.Size() > diferenco.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
-		content, err = w.openText(name, a.Size(), textConv)
+		content, err = w.openText(name, a.Size(), textconv)
 		if err == diferenco.ErrNonTextContent {
 			return f, "", false, true, nil
 		}
@@ -62,7 +62,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool)
 		if a.Size() > diferenco.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
-		content, err = w.openBlobText(ctx, a.HashRaw(), textConv)
+		content, err = w.openBlobText(ctx, a.HashRaw(), textconv)
 		// When the current repository uses an incomplete checkout mechanism, we treat these files as binary files, i.e. no differences can be calculated.
 		if err == diferenco.ErrNonTextContent || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
@@ -76,7 +76,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textConv bool)
 		if a.Size() > diferenco.MAX_DIFF_SIZE {
 			return f, "", false, true, nil
 		}
-		content, err = w.openBlobText(ctx, a.HashRaw(), textConv)
+		content, err = w.openBlobText(ctx, a.HashRaw(), textconv)
 		if err == diferenco.ErrNonTextContent || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
@@ -108,7 +108,7 @@ func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Chang
 }
 
 // getPatchContext: In the object package, there is no patch implementation for worktree diff, so we need
-func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textConv bool) ([]*diferenco.Unified, error) {
+func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool) ([]*diferenco.Unified, error) {
 	var filePatches []*diferenco.Unified
 	for _, c := range changes {
 		select {
@@ -120,7 +120,7 @@ func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Chang
 		if !m.Match(name) {
 			continue
 		}
-		p, err := w.filePatchWithContext(ctx, &c, textConv)
+		p, err := w.filePatchWithContext(ctx, &c, textconv)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func (w *Worktree) fileStatWithContext(ctx context.Context, c *merkletrie.Change
 	return s, nil
 }
 
-func (w *Worktree) getStatsContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textConv bool) (object.FileStats, error) {
+func (w *Worktree) getStatsContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool) (object.FileStats, error) {
 	var fileStats []object.FileStat
 	for _, c := range changes {
 		select {
@@ -186,7 +186,7 @@ func (w *Worktree) getStatsContext(ctx context.Context, changes merkletrie.Chang
 		if !m.Match(name) {
 			continue
 		}
-		s, err := w.fileStatWithContext(ctx, &c, textConv)
+		s, err := w.fileStatWithContext(ctx, &c, textconv)
 		if err != nil {
 			return nil, err
 		}
@@ -202,14 +202,14 @@ func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes m
 	}
 	m := NewMatcher(opts.PathSpec)
 	if opts.showStatOnly() {
-		fileStats, err := w.getStatsContext(ctx, changes, m, opts.TextConv)
+		fileStats, err := w.getStatsContext(ctx, changes, m, opts.Textconv)
 		if err != nil {
 			return err
 		}
 		return opts.ShowStats(ctx, fileStats)
 	}
 
-	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.TextConv)
+	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
 	if err != nil {
 		return err
 	}

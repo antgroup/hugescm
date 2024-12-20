@@ -221,6 +221,9 @@ func (r *Repository) readTree(ctx context.Context, oid plumbing.Hash, p string) 
 		if err != nil {
 			return nil, err
 		}
+		if len(p) == 0 {
+			return root, nil
+		}
 		e, err := root.FindEntry(ctx, p)
 		if err != nil {
 			return nil, err

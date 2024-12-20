@@ -171,10 +171,14 @@ func die(m string) {
 	_, _ = os.Stderr.Write(b.Bytes())
 }
 
+func cleanPath(p string) string {
+	return filepath.ToSlash(filepath.Clean(p))
+}
+
 func slashPaths(paths []string) []string {
 	newPaths := make([]string, 0, len(paths))
 	for _, p := range paths {
-		newPaths = append(newPaths, filepath.ToSlash(p))
+		newPaths = append(newPaths, cleanPath(p))
 	}
 	return newPaths
 }

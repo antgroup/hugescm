@@ -57,7 +57,7 @@ type MergeFileOptions struct {
 	Style                  int
 	DiffAlgorithm          string
 	Stdout                 bool
-	TextConv               bool
+	Textconv               bool
 }
 
 func (opts *MergeFileOptions) diffAlgorithmFromName(defaultDiffAlgorithm string) diferenco.Algorithm {

@@ -114,7 +114,7 @@ type DoFetchOptions struct {
 }
 
 func (opts *DoFetchOptions) ReferenceName() plumbing.ReferenceName {
-	if len(opts.Name) == 0 {
+	if len(opts.Name) == 0 || opts.Name == string(plumbing.HEAD) {
 		return plumbing.HEAD
 	}
 	if strings.HasPrefix(opts.Name, plumbing.ReferencePrefix) {

@@ -33,7 +33,7 @@ func (r *Repository) readMissingText(ctx context.Context, oid plumbing.Hash, tex
 	case err == nil:
 		// nothing
 	case plumbing.IsNoSuchObject(err):
-		if err = r.promiseMissingFetch(ctx, oid); err != nil {
+		if err = r.promiseMissingFetch(ctx, &promiseObject{oid: oid}); err != nil {
 			return "", "", err
 		}
 		if br, err = r.odb.Blob(ctx, oid); err != nil {

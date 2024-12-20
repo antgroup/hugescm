@@ -140,8 +140,9 @@ func (h *HTTP) Overwrite(o *HTTP) {
 }
 
 type Transport struct {
-	MaxEntries   int  `toml:"maxEntries,omitempty"`
-	LargeSizeRaw Size `toml:"largeSize,omitempty"`
+	MaxEntries    int    `toml:"maxEntries,omitempty"`
+	LargeSizeRaw  Size   `toml:"largeSize,omitempty"`
+	ExternalProxy string `toml:"externalProxy,omitempty"` // externalProxy
 }
 
 const (
@@ -163,6 +164,7 @@ func (t *Transport) Overwrite(o *Transport) {
 	if o.MaxEntries > 0 {
 		t.MaxEntries = o.MaxEntries
 	}
+	t.ExternalProxy = overwrite(t.ExternalProxy, o.ExternalProxy)
 }
 
 type Diff struct {

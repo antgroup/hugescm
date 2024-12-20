@@ -148,7 +148,16 @@ func (r *Repository) promiseFetch(ctx context.Context, rev string, fetchMissing 
 	return oid, nil
 }
 
-func (r *Repository) promiseMissingFetch(ctx context.Context, oid plumbing.Hash) (err error) {
+type promiseObject struct {
+	oid  plumbing.Hash
+	size int64
+}
+
+func (o *promiseObject) entry() *odb.Entry {
+	return &odb.Entry{Hash: o.oid, Size: o.size}
+}
+
+func (r *Repository) promiseMissingFetch(ctx context.Context, o *promiseObject) (err error) {
 	t, err := r.newTransport(ctx, transport.DOWNLOAD)
 	if err != nil {
 		return err
@@ -157,8 +166,11 @@ func (r *Repository) promiseMissingFetch(ctx context.Context, oid plumbing.Hash)
 	if r.quiet {
 		mode = odb.NO_BAR
 	}
+	if o.size >= r.largeSize() {
+		return r.transfer(ctx, t, []*odb.Entry{o.entry()})
+	}
 	// Fetch missing object
-	return r.odb.DoTransfer(ctx, oid, func(offset int64) (transport.SizeReader, error) {
-		return t.GetObject(ctx, oid, offset)
+	return r.odb.DoTransfer(ctx, o.oid, func(offset int64) (transport.SizeReader, error) {
+		return t.GetObject(ctx, o.oid, offset)
 	}, odb.NewSingleBar, mode)
 }

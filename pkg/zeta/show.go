@@ -30,38 +30,38 @@ type showObject struct {
 	oid  plumbing.Hash
 }
 
-func (r *Repository) parseObject(ctx context.Context, name string) (plumbing.Hash, error) {
+func (r *Repository) parseObject(ctx context.Context, name string) (plumbing.Hash, int64, error) {
 	prefix, p, ok := strings.Cut(name, ":")
 	oid, err := r.Revision(ctx, prefix)
 	if !ok || err != nil {
-		return oid, err
+		return oid, 0, err
 	}
 	e, err := r.parseEntry(ctx, oid, p)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return plumbing.ZeroHash, 0, err
 	}
-	return e.Hash, nil
+	return e.Hash, e.Size, nil
 }
 
-func (r *Repository) showFetch(ctx context.Context, oid plumbing.Hash) error {
-	if r.odb.Exists(oid, false) || r.odb.Exists(oid, true) {
+func (r *Repository) showFetch(ctx context.Context, o *promiseObject) error {
+	if r.odb.Exists(o.oid, false) || r.odb.Exists(o.oid, true) {
 		return nil
 	}
 	if !r.promisorEnabled() {
-		return plumbing.NoSuchObject(oid)
+		return plumbing.NoSuchObject(o.oid)
 	}
-	return r.promiseMissingFetch(ctx, oid)
+	return r.promiseMissingFetch(ctx, o)
 }
 
 func (r *Repository) Show(ctx context.Context, opts *ShowOptions) error {
 	objects := make([]*showObject, 0, len(opts.Objects))
 	for _, o := range opts.Objects {
-		oid, err := r.parseObject(ctx, o)
+		oid, size, err := r.parseObject(ctx, o)
 		if err != nil {
 			die_error("parse object %s error: %v", o, err)
 			return err
 		}
-		if err := r.showFetch(ctx, oid); err != nil {
+		if err := r.showFetch(ctx, &promiseObject{oid: oid, size: size}); err != nil {
 			die_error("search object %s error: %v", oid, err)
 			return err
 		}
@@ -102,7 +102,7 @@ func (r *Repository) showOne(ctx context.Context, opts *ShowOptions, so *showObj
 }
 
 func (r *Repository) showBlob(ctx context.Context, opts *ShowOptions, so *showObject) error {
-	b, err := r.catMissingObject(ctx, so.oid)
+	b, err := r.catMissingObject(ctx, &promiseObject{oid: so.oid})
 	if err != nil {
 		return err
 	}

@@ -113,16 +113,35 @@ type Downloader interface {
 type downloader struct {
 	*http.Client
 	userAgent string
+	proxyURL  string
 	language  string
 	termEnv   string
 	verbose   bool
 }
 
-func NewDownloader(verbose bool, insecure bool) Downloader {
+func proxyFromURL(externalProxyURL string) func(req *http.Request) (*url.URL, error) {
+	if len(externalProxyURL) != 0 {
+		// cfg := &httpproxy.Config{
+		// 	HTTPProxy:  externalProxyURL,
+		// 	HTTPSProxy: externalProxyURL,
+		// }
+		// proxyFuncValue := cfg.ProxyFunc()
+		// return func(req *http.Request) (*url.URL, error) {
+		// 	fmt.Fprintf(os.Stderr, "proxy: %s\n", req.URL)
+		// 	return proxyFuncValue(req.URL)
+		// }
+		if proxyURL, err := url.Parse(externalProxyURL); err == nil {
+			return http.ProxyURL(proxyURL)
+		}
+	}
+	return proxy.ProxyFromEnvironment
+}
+
+func NewDownloader(verbose bool, insecure bool, proxyURL string) Downloader {
 	return &downloader{
 		Client: &http.Client{
 			Transport: &http.Transport{
-				Proxy:                 proxy.ProxyFromEnvironment,
+				Proxy:                 proxyFromURL(proxyURL),
 				DialContext:           dialer.DialContext,
 				ForceAttemptHTTP2:     true,
 				MaxIdleConns:          100,
@@ -136,6 +155,7 @@ func NewDownloader(verbose bool, insecure bool) Downloader {
 		},
 		userAgent: "Zeta/" + version.GetVersion(),
 		language:  tr.Language(),
+		proxyURL:  proxyURL,
 		termEnv:   os.Getenv("TERM"),
 		verbose:   verbose,
 	}

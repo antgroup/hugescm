@@ -64,21 +64,21 @@ func catShowError(oid string, err error) error {
 	return err
 }
 
-func (r *Repository) fetchMissingBlob(ctx context.Context, oid plumbing.Hash) error {
-	if r.odb.Exists(oid, false) {
+func (r *Repository) fetchMissingBlob(ctx context.Context, o *promiseObject) error {
+	if r.odb.Exists(o.oid, false) {
 		return nil
 	}
 	if !r.promisorEnabled() {
-		return plumbing.NoSuchObject(oid)
+		return plumbing.NoSuchObject(o.oid)
 	}
-	return r.promiseMissingFetch(ctx, oid)
+	return r.promiseMissingFetch(ctx, o)
 }
 
-func (r *Repository) catMissingObject(ctx context.Context, oid plumbing.Hash) (*object.Blob, error) {
-	if err := r.fetchMissingBlob(ctx, oid); err != nil {
+func (r *Repository) catMissingObject(ctx context.Context, o *promiseObject) (*object.Blob, error) {
+	if err := r.fetchMissingBlob(ctx, o); err != nil {
 		return nil, err
 	}
-	return r.odb.Blob(ctx, oid)
+	return r.odb.Blob(ctx, o.oid)
 }
 
 func objectSize(a object.Encoder) int {
@@ -87,10 +87,10 @@ func objectSize(a object.Encoder) int {
 	return b.Len()
 }
 
-func (r *Repository) printSize(ctx context.Context, opts *CatOptions, oid plumbing.Hash) error {
+func (r *Repository) printSize(ctx context.Context, opts *CatOptions, o *promiseObject) error {
 	var a any
 	var err error
-	if a, err = r.odb.Object(ctx, oid); err == nil {
+	if a, err = r.odb.Object(ctx, o.oid); err == nil {
 		if v, ok := a.(object.Encoder); !ok {
 			return opts.Println(objectSize(v))
 		}
@@ -98,26 +98,26 @@ func (r *Repository) printSize(ctx context.Context, opts *CatOptions, oid plumbi
 		return nil
 	}
 	if !plumbing.IsNoSuchObject(err) {
-		fmt.Fprintf(os.Stderr, "cat-file: resolve object '%s' error: %v\n", oid, err)
+		fmt.Fprintf(os.Stderr, "cat-file: resolve object '%s' error: %v\n", o.oid, err)
 		return err
 	}
 	var b *object.Blob
-	if b, err = r.catMissingObject(ctx, oid); err != nil {
-		return catShowError(oid.String(), err)
+	if b, err = r.catMissingObject(ctx, o); err != nil {
+		return catShowError(o.oid.String(), err)
 	}
 	defer b.Close()
 	return opts.Println(b.Size)
 }
 
-func (r *Repository) printType(ctx context.Context, opts *CatOptions, oid plumbing.Hash) error {
-	a, err := r.odb.Object(ctx, oid)
+func (r *Repository) printType(ctx context.Context, opts *CatOptions, o *promiseObject) error {
+	a, err := r.odb.Object(ctx, o.oid)
 	if plumbing.IsNoSuchObject(err) {
-		if err := r.fetchMissingBlob(ctx, oid); err == nil {
+		if err := r.fetchMissingBlob(ctx, o); err == nil {
 			return opts.Println("blob")
 		}
 	}
 	if err != nil {
-		return catShowError(oid.String(), err)
+		return catShowError(o.oid.String(), err)
 	}
 	switch a.(type) {
 	case *object.Commit:
@@ -136,11 +136,11 @@ const (
 	binaryTruncated = "*** Binary truncated ***"
 )
 
-func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, oid plumbing.Hash) error {
-	if oid == backend.BLANK_BLOB_HASH {
+func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseObject) error {
+	if o.oid == backend.BLANK_BLOB_HASH {
 		return nil // empty blob, skip
 	}
-	b, err := r.catMissingObject(ctx, oid)
+	b, err := r.catMissingObject(ctx, o)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 	}()
 	readers := make([]io.Reader, 0, len(ff.Entries))
 	for _, e := range ff.Entries {
-		o, err := r.catMissingObject(ctx, e.Hash)
+		o, err := r.catMissingObject(ctx, &promiseObject{oid: e.Hash, size: int64(e.Size)})
 		if err != nil {
 			return err
 		}
@@ -216,19 +216,19 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 	return nil
 }
 
-func (r *Repository) catObject(ctx context.Context, opts *CatOptions, oid plumbing.Hash) error {
+func (r *Repository) catObject(ctx context.Context, opts *CatOptions, o *promiseObject) error {
 	if opts.PrintSize {
-		return r.printSize(ctx, opts, oid)
+		return r.printSize(ctx, opts, o)
 	}
 	if opts.Type {
-		return r.printType(ctx, opts, oid)
+		return r.printType(ctx, opts, o)
 	}
-	a, err := r.odb.Object(ctx, oid)
+	a, err := r.odb.Object(ctx, o.oid)
 	if plumbing.IsNoSuchObject(err) {
-		return catShowError(oid.String(), r.catBlob(ctx, opts, oid))
+		return catShowError(o.oid.String(), r.catBlob(ctx, opts, o))
 	}
 	if err != nil {
-		return catShowError(oid.String(), err)
+		return catShowError(o.oid.String(), err)
 	}
 	if opts.Verify {
 		if w, ok := a.(object.Encoder); ok {
@@ -269,7 +269,7 @@ func (r *Repository) catBranchOrTag(ctx context.Context, opts *CatOptions, branc
 		return catShowError(branchOrTag, err)
 	}
 	r.DbgPrint("resolve object '%s'", oid)
-	return r.catObject(ctx, opts, oid)
+	return r.catObject(ctx, opts, &promiseObject{oid: oid})
 }
 
 func (r *Repository) Cat(ctx context.Context, opts *CatOptions) error {
@@ -292,17 +292,17 @@ func (r *Repository) Cat(ctx context.Context, opts *CatOptions) error {
 	case *object.Tree:
 		if len(v) == 0 {
 			// self
-			return r.catObject(ctx, opts, a.Hash)
+			return r.catObject(ctx, opts, &promiseObject{oid: a.Hash})
 		}
 		e, err := a.FindEntry(ctx, v)
 		if err != nil {
 			return catShowError(v, err)
 		}
-		return r.catObject(ctx, opts, e.Hash)
+		return r.catObject(ctx, opts, &promiseObject{oid: e.Hash, size: e.Size})
 	case *object.Commit:
 		if len(v) == 0 {
 			// root tree
-			return r.catObject(ctx, opts, a.Tree)
+			return r.catObject(ctx, opts, &promiseObject{oid: a.Tree})
 		}
 		root, err := r.odb.Tree(ctx, a.Tree)
 		if err != nil {
@@ -312,7 +312,7 @@ func (r *Repository) Cat(ctx context.Context, opts *CatOptions) error {
 		if err != nil {
 			return catShowError(v, err)
 		}
-		return r.catObject(ctx, opts, e.Hash)
+		return r.catObject(ctx, opts, &promiseObject{oid: e.Hash, size: e.Size})
 	case *object.Tag:
 		cc, err := r.odb.ParseRevExhaustive(ctx, a.Hash)
 		if err != nil {
@@ -320,7 +320,7 @@ func (r *Repository) Cat(ctx context.Context, opts *CatOptions) error {
 		}
 		if len(v) == 0 {
 			// root tree
-			return r.catObject(ctx, opts, cc.Tree)
+			return r.catObject(ctx, opts, &promiseObject{oid: cc.Tree})
 		}
 		root, err := r.odb.Tree(ctx, cc.Tree)
 		if err != nil {
@@ -330,8 +330,8 @@ func (r *Repository) Cat(ctx context.Context, opts *CatOptions) error {
 		if err != nil {
 			return catShowError(v, err)
 		}
-		return r.catObject(ctx, opts, e.Hash)
+		return r.catObject(ctx, opts, &promiseObject{oid: e.Hash, size: e.Size})
 	default:
 	}
-	return r.catObject(ctx, opts, oid)
+	return r.catObject(ctx, opts, &promiseObject{oid: oid})
 }

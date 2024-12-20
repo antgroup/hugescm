@@ -157,7 +157,7 @@ func (r *Repository) directMultiTransfer(ctx context.Context, t http.Downloader,
 }
 
 func (r *Repository) directGet(ctx context.Context, objects []*transport.Representation) error {
-	t := http.NewDownloader(r.verbose, parseInsecureSkipTLS(r.Config, r.values))
+	t := http.NewDownloader(r.verbose, parseInsecureSkipTLS(r.Config, r.values), r.externalProxy())
 	concurrent := r.ConcurrentTransfers()
 	r.DbgPrint("concurrent transfers %d", concurrent)
 	if concurrent <= 1 || len(objects) == 1 {

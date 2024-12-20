@@ -627,6 +627,13 @@ func (r *Repository) largeSize() int64 {
 	return r.Transport.LargeSize()
 }
 
+func (r *Repository) externalProxy() string {
+	if externalProxy, ok := r.getFromValueOrEnv("transport.externalProxy", ENV_ZETA_TRANSPORT_EXTERNAL_PROXY); ok && len(externalProxy) > 0 {
+		return externalProxy
+	}
+	return r.Transport.ExternalProxy
+}
+
 func (r *Repository) NewCommitter() *object.Signature {
 	return &object.Signature{
 		Name:  r.committerName(),

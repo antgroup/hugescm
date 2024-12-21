@@ -18,7 +18,6 @@ import (
 // Show various types of objects
 type Show struct {
 	Textconv      bool     `name:"textconv" help:"Converting text to Unicode"`
-	Output        string   `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
 	Histogram     bool     `name:"histogram" help:"Generate a diff using the \"Histogram diff\" algorithm"`
 	ONP           bool     `name:"onp" help:"Generate a diff using the \"O(NP) diff\" algorithm"`
 	Myers         bool     `name:"myers" help:"Generate a diff using the \"Myers diff\" algorithm"`

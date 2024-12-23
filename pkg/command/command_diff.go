@@ -152,7 +152,7 @@ func (c *Diff) render(u *diferenco.Unified) error {
 		if c.From != c.To {
 			name = object.PathRenameCombine(c.From, c.To)
 		}
-		opts.ShowStats(context.Background(), object.FileStats{
+		return opts.ShowStats(context.Background(), object.FileStats{
 			object.FileStat{
 				Name:     name,
 				Addition: s.Addition,
@@ -160,9 +160,8 @@ func (c *Diff) render(u *diferenco.Unified) error {
 			},
 		})
 	default:
-		opts.ShowPatch(context.Background(), []*diferenco.Unified{u})
+		return opts.ShowPatch(context.Background(), []*diferenco.Unified{u})
 	}
-	return nil
 }
 
 func (c *Diff) nameStatus() error {

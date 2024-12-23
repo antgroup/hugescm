@@ -393,11 +393,12 @@ func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
 }
 
 func (w *Worktree) DiffContext(ctx context.Context, opts *DiffOptions) error {
-	if opts.Algorithm == diferenco.Unspecified && len(w.Diff.Algorithm) != 0 {
-		if a, err := diferenco.AlgorithmFromName(w.Diff.Algorithm); err != nil {
-			warn("diff: bad config, key: diff.algorithm value: %s", w.Diff.Algorithm)
-		} else {
-			opts.Algorithm = a
+	if opts.Algorithm == diferenco.Unspecified {
+		if algorithmName := w.diffAlgorithm(); len(algorithmName) != 0 {
+			var err error
+			if opts.Algorithm, err = diferenco.AlgorithmFromName(algorithmName); err != nil {
+				warn("diff: bad config: diff.algorithm value: %s", algorithmName)
+			}
 		}
 	}
 	if len(opts.From) != 0 && len(opts.To) != 0 {

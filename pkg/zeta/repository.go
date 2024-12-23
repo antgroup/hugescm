@@ -649,6 +649,20 @@ func (r *Repository) coreEditor() string {
 	return r.Core.Editor
 }
 
+func (r *Repository) diffAlgorithm() string {
+	if a, ok := getStringFromValues("diff.algorithm", r.values); ok && len(a) > 0 {
+		return a
+	}
+	return r.Diff.Algorithm
+}
+
+func (r *Repository) mergeConflictStyle() string {
+	if conflictStyle, ok := getStringFromValues("merge.conflictStyle", r.values); ok && len(conflictStyle) > 0 {
+		return conflictStyle
+	}
+	return r.Merge.ConflictStyle
+}
+
 func (r *Repository) Postflight(ctx context.Context) error {
 	if !r.IsExtreme() {
 		return nil

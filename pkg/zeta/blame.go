@@ -251,7 +251,7 @@ func (b *blame) addBlames(ctx context.Context, curItems []*queueItem) (bool, err
 		curItem.NeedsMap = newNeedsMap
 		curItem.IdenticalToChild = false
 		curItem.Child = nil
-		curItems = nil // free the memory
+		//curItems = nil // free the memory
 	}
 
 	parents, err := parentsContainingPath(ctx, curItem.path, curItem.Commit)

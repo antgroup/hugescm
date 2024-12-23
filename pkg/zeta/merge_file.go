@@ -31,12 +31,12 @@ func (r *Repository) resolveMergeDriver() odb.MergeDriver {
 	}
 	var diffAlgorithm diferenco.Algorithm
 	var err error
-	if len(r.Diff.Algorithm) != 0 {
-		if diffAlgorithm, err = diferenco.AlgorithmFromName(r.Diff.Algorithm); err != nil {
-			warn("diff: bad config: diff.algorithm value: %s", r.Diff.Algorithm)
+	if algorithmName := r.diffAlgorithm(); len(algorithmName) != 0 {
+		if diffAlgorithm, err = diferenco.AlgorithmFromName(algorithmName); err != nil {
+			warn("diff: bad config: diff.algorithm value: %s", algorithmName)
 		}
 	}
-	mergeConflictStyle := diferenco.ParseConflictStyle(r.Merge.ConflictStyle)
+	mergeConflictStyle := diferenco.ParseConflictStyle(r.mergeConflictStyle())
 	return func(ctx context.Context, o, a, b, labelO, labelA, labelB string) (string, bool, error) {
 		return diferenco.Merge(ctx, &diferenco.MergeOptions{
 			TextO:  o,
@@ -77,7 +77,7 @@ func (opts *MergeFileOptions) diffAlgorithmFromName(defaultDiffAlgorithm string)
 }
 
 func (r *Repository) MergeFile(ctx context.Context, opts *MergeFileOptions) error {
-	diffAlgorithm := opts.diffAlgorithmFromName(r.Diff.Algorithm)
+	diffAlgorithm := opts.diffAlgorithmFromName(r.diffAlgorithm())
 	r.DbgPrint("algorithm: %s conflict style: %v", diffAlgorithm, opts.Style)
 	o, err := r.Revision(ctx, opts.O)
 	if err != nil {

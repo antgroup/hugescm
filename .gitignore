@@ -15,6 +15,7 @@ local/*
 *.gop1
 *.tomlp1
 *.rej
+*.mdp1
 /out/
 /.vscode/
 .idea/*

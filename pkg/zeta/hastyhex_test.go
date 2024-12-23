@@ -13,7 +13,7 @@ func TestProcessColor(t *testing.T) {
 	if err != nil {
 		return
 	}
-	processColor(bytes.NewReader(b), os.Stdout, int64(len(b)))
+	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)))
 }
 
 func TestBorder(t *testing.T) {

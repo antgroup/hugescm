@@ -159,16 +159,13 @@ type Options struct {
 	A        Algorithm // algorithm
 }
 
-func diffInternal[E comparable](ctx context.Context, L1, L2 []E, a Algorithm) ([]Change, error) {
-	if a == Unspecified {
-		switch {
-		case len(L1) < 5000 && len(L2) < 5000:
-			a = Histogram
-		default:
-			a = ONP
+func diffInternal[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm) ([]Change, error) {
+	switch algo {
+	case Unspecified:
+		if len(L1) < 5000 && len(L2) < 5000 {
+			return HistogramDiff(ctx, L1, L2)
 		}
-	}
-	switch a {
+		return OnpDiff(ctx, L1, L2)
 	case Histogram:
 		return HistogramDiff(ctx, L1, L2)
 	case ONP:
@@ -208,4 +205,61 @@ func Stat(ctx context.Context, opts *Options) (*FileStat, error) {
 		stats.Deletion += ch.Del
 	}
 	return stats, nil
+}
+
+func DiffRunes(ctx context.Context, a, b string, algo Algorithm) ([]StringDiff, error) {
+	runesA := []rune(a)
+	runesB := []rune(b)
+	changes, err := diffInternal(ctx, runesA, runesB, algo)
+	if err != nil {
+		return nil, err
+	}
+	diffs := make([]StringDiff, 0, 10)
+	i := 0
+	for _, c := range changes {
+		if i < c.P1 {
+			diffs = append(diffs, StringDiff{Type: Equal, Text: string(runesA[i:c.P1])})
+		}
+		if c.Del != 0 {
+			diffs = append(diffs, StringDiff{Type: Delete, Text: string(runesA[c.P1 : c.P1+c.Del])})
+		}
+		if c.Ins != 0 {
+			diffs = append(diffs, StringDiff{Type: Insert, Text: string(runesB[c.P2 : c.P2+c.Ins])})
+		}
+		i = c.P1 + c.Del
+	}
+	if i < len(runesA) {
+		diffs = append(diffs, StringDiff{Type: Equal, Text: string(runesA[i:])})
+	}
+	return diffs, nil
+}
+
+func DiffWords(ctx context.Context, a, b string, algo Algorithm, splitFunc func(string) []string) ([]StringDiff, error) {
+	if splitFunc == nil {
+		splitFunc = SplitWords
+	}
+	wordsA := splitFunc(a)
+	wordsB := splitFunc(b)
+	changes, err := diffInternal(ctx, wordsA, wordsB, algo)
+	if err != nil {
+		return nil, err
+	}
+	diffs := make([]StringDiff, 0, 10)
+	i := 0
+	for _, c := range changes {
+		if i < c.P1 {
+			diffs = append(diffs, StringDiff{Type: Equal, Text: strings.Join(wordsA[i:c.P1], "")})
+		}
+		if c.Del != 0 {
+			diffs = append(diffs, StringDiff{Type: Delete, Text: strings.Join(wordsA[c.P1:c.P1+c.Del], "")})
+		}
+		if c.Ins != 0 {
+			diffs = append(diffs, StringDiff{Type: Insert, Text: strings.Join(wordsB[c.P2:c.P2+c.Ins], "")})
+		}
+		i = c.P1 + c.Del
+	}
+	if i < len(wordsA) {
+		diffs = append(diffs, StringDiff{Type: Equal, Text: strings.Join(wordsA[i:], "")})
+	}
+	return diffs, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -216,4 +217,34 @@ func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int,
 		u.Hunks = append(u.Hunks, h)
 	}
 	return u
+}
+
+// Split string by non-letternumeric characters keeping delimiters
+func SplitWords(text string) []string {
+	words := make([]string, 0, 10)
+	var hit bool
+	var offset int
+	for i, c := range text {
+		if unicode.IsLetter(c) || unicode.IsDigit(c) {
+			if !hit {
+				if i > offset {
+					words = append(words, text[offset:i])
+				}
+				offset = i
+				hit = true
+			}
+			continue
+		}
+		if hit {
+			if i > offset {
+				words = append(words, text[offset:i])
+			}
+			offset = i
+			hit = false
+		}
+	}
+	if offset < len(text) {
+		words = append(words, text[offset:])
+	}
+	return words
 }

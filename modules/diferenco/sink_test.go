@@ -124,3 +124,24 @@ D
 		fmt.Fprintf(os.Stderr, "%d [%s]\n", line, s.Lines[line])
 	}
 }
+
+func TestSplitWord(t *testing.T) {
+	sss := []string{
+		"  blah test2 test3  ",
+		"\tblah test2 test3  ",
+		"\tblah test2 test3  t",
+		"\tblah test2 test3  tt",
+		"The quick brown fox jumps over the lazy dog",
+		"The quick brown dog leaps over the lazy cat",
+		"Hello😋World",
+		"😋  Hello😋World",
+	}
+	for _, s := range sss {
+		w := SplitWords(s)
+		fmt.Fprintf(os.Stderr, "[%s] -->\n", s)
+		for _, e := range w {
+			fmt.Fprintf(os.Stderr, "[%s] ", e)
+		}
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+}

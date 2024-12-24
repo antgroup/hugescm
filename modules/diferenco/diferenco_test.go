@@ -302,3 +302,67 @@ func TestShowPatch(t *testing.T) {
 	e.SetColor(color.NewColorConfig())
 	_ = e.Encode(patch)
 }
+
+func TestDiffRunes(t *testing.T) {
+	a := "The quick brown fox jumps over the lazy dog"
+	b := "The quick brown dog leaps over the lazy cat"
+	sd, err := DiffRunes(context.Background(), a, b, ONP)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "diff error: %v\n", err)
+		return
+	}
+	for _, d := range sd {
+		switch d.Type {
+		case Equal:
+			fmt.Fprintf(os.Stderr, "%s", d.Text)
+		case Insert:
+			fmt.Fprintf(os.Stderr, "\x1b[32m%s\x1b[0m", d.Text)
+		case Delete:
+			fmt.Fprintf(os.Stderr, "\x1b[31m%s\x1b[0m", d.Text)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "\n")
+}
+
+func TestDiffWords(t *testing.T) {
+	a := "The quick brown fox jumps over the lazy dog"
+	b := "The quick brown dog leaps over the lazy cat"
+	sd, err := DiffWords(context.Background(), a, b, Histogram, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "diff error: %v\n", err)
+		return
+	}
+	for _, d := range sd {
+		switch d.Type {
+		case Equal:
+			fmt.Fprintf(os.Stderr, "%s", d.Text)
+		case Insert:
+			fmt.Fprintf(os.Stderr, "\x1b[32m%s\x1b[0m", d.Text)
+		case Delete:
+			fmt.Fprintf(os.Stderr, "\x1b[31m%s\x1b[0m", d.Text)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "\n")
+
+}
+
+func TestDiffWords2(t *testing.T) {
+	a := "The quick 你好brown fox jumps over the lazy dog"
+	b := "The quick 你好 brown dog  leaps over the lazy cat"
+	sd, err := DiffWords(context.Background(), a, b, Histogram, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "diff error: %v\n", err)
+		return
+	}
+	for _, d := range sd {
+		switch d.Type {
+		case Equal:
+			fmt.Fprintf(os.Stderr, "%s", d.Text)
+		case Insert:
+			fmt.Fprintf(os.Stderr, "\x1b[32m%s\x1b[0m", d.Text)
+		case Delete:
+			fmt.Fprintf(os.Stderr, "\x1b[31m%s\x1b[0m", d.Text)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "\n")
+}

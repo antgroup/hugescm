@@ -3,10 +3,10 @@ package ignore
 import (
 	"bufio"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/vfs"
 )
 
@@ -18,31 +18,9 @@ const (
 	infoExcludeFile = zetaDir + "/info/exclude"
 )
 
-func ReplaceTildeWithHome(path string) (string, error) {
-	if strings.HasPrefix(path, "~") {
-		firstSlash := strings.Index(path, "/")
-		if firstSlash == 1 {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return path, err
-			}
-			return strings.Replace(path, "~", home, 1), nil
-		} else if firstSlash > 1 {
-			username := path[1:firstSlash]
-			userAccount, err := user.Lookup(username)
-			if err != nil {
-				return path, err
-			}
-			return strings.Replace(path, path[:firstSlash], userAccount.HomeDir, 1), nil
-		}
-	}
-
-	return path, nil
-}
-
 // readIgnoreFile reads a specific git ignore file.
 func readIgnoreFile(fs vfs.VFS, path []string, ignoreFile string) (ps []Pattern, err error) {
-	ignoreFile, _ = ReplaceTildeWithHome(ignoreFile)
+	ignoreFile = strengthen.ExpandPath(ignoreFile)
 	f, err := os.Open(fs.Join(append(path, ignoreFile)...))
 	if err == nil {
 		defer f.Close()
@@ -61,7 +39,7 @@ func readIgnoreFile(fs vfs.VFS, path []string, ignoreFile string) (ps []Pattern,
 	return
 }
 
-// ReadPatterns reads the .git/info/exclude and then the gitignore patterns
+// ReadPatterns reads the .zeta/info/exclude and then the zetaignore patterns
 // recursively traversing through the directory structure. The result is in
 // the ascending order of priority (last higher).
 func ReadPatterns(fs vfs.VFS, path []string) (ps []Pattern, err error) {

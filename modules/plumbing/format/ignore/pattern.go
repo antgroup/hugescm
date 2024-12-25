@@ -76,24 +76,28 @@ func (p *pattern) Match(path []string, isDir bool) MatchResult {
 	}
 
 	path = path[len(p.domain):]
-	if p.isGlob && !p.globMatch(path, isDir) {
-		return NoMatch
-	} else if !p.isGlob && !p.simpleNameMatch(path, isDir) {
-		return NoMatch
+	if p.isGlob {
+		if !p.globMatch(path, isDir) {
+			return NoMatch
+		}
+	} else {
+		if !p.simpleNameMatch(path, isDir) {
+			return NoMatch
+		}
 	}
-
 	if p.inclusion {
 		return Include
-	} else {
-		return Exclude
 	}
+	return Exclude
 }
 
 func (p *pattern) simpleNameMatch(path []string, isDir bool) bool {
 	for i, name := range path {
-		if match, err := filepath.Match(p.pattern[0], name); err != nil {
+		match, err := filepath.Match(p.pattern[0], name)
+		if err != nil {
 			return false
-		} else if !match {
+		}
+		if !match {
 			continue
 		}
 		if p.dirOnly && !isDir && i == len(path)-1 {
@@ -130,23 +134,26 @@ func (p *pattern) globMatch(path []string, isDir bool) bool {
 			for len(path) > 0 {
 				e := path[0]
 				path = path[1:]
-				if match, err := filepath.Match(pattern, e); err != nil {
+				match, err := filepath.Match(pattern, e)
+				if err != nil {
 					return false
-				} else if match {
+				}
+				if match {
 					matched = true
 					break
-				} else if len(path) == 0 {
+				}
+				if len(path) == 0 {
 					// if nothing left then fail
 					matched = false
 				}
 			}
-		} else {
-			if match, err := filepath.Match(pattern, path[0]); err != nil || !match {
-				return false
-			}
-			matched = true
-			path = path[1:]
+			continue
 		}
+		if match, err := filepath.Match(pattern, path[0]); err != nil || !match {
+			return false
+		}
+		matched = true
+		path = path[1:]
 	}
 	if matched && p.dirOnly && !isDir && len(path) == 0 {
 		matched = false

@@ -2,6 +2,7 @@ package strengthen
 
 import (
 	"errors"
+	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -13,17 +14,31 @@ var (
 
 // ExpandPath is a helper function to expand a relative or home-relative path to an absolute path.
 //
-// eg. ~/.someconf -> /home/alec/.someconf
+// eg.
+//
+//	~/.someconf -> /home/alec/.someconf
+//	~alec/.someconf -> /home/alec/.someconf
 func ExpandPath(path string) string {
 	if filepath.IsAbs(path) {
 		return path
 	}
-	if strings.HasPrefix(path, "~/") {
-		user, err := user.Current()
-		if err != nil {
-			return path
+	if strings.HasPrefix(path, "~") {
+		// For Windows systems, please replace the path separator first
+		pos := strings.IndexByte(path, '/')
+		switch {
+		case pos == 1:
+			if homeDir, err := os.UserHomeDir(); err == nil {
+				return filepath.Join(homeDir, path[2:])
+			}
+		case pos > 1:
+			// https://github.com/golang/go/issues/24383
+			// macOS may not produce correct results
+			username := path[1:pos]
+			if userAccount, err := user.Lookup(username); err == nil {
+				return filepath.Join(userAccount.HomeDir, path[pos+1:])
+			}
+		default:
 		}
-		return filepath.Join(user.HomeDir, path[2:])
 	}
 	abspath, err := filepath.Abs(path)
 	if err != nil {

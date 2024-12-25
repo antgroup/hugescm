@@ -15,6 +15,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/shlex"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -150,11 +151,16 @@ func NewPrinter(ctx context.Context) *Printer {
 	if len(pager) == 0 {
 		pager = "less"
 	}
+	pagerArgs := make([]string, 0, 4)
+	if cmdArgs, _ := shlex.Split(pager, true); len(cmdArgs) > 0 {
+		pager = cmdArgs[0]
+		pagerArgs = append(pagerArgs, cmdArgs[1:]...)
+	}
 	pagerExe, err := exec.LookPath(pager)
 	if err != nil {
 		return &Printer{useColor: isTrueColorTerminal, w: os.Stdout}
 	}
-	cmd := exec.CommandContext(ctx, pagerExe)
+	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
 
 	cmd.Env = env.SanitizerEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV
 	// PAGER_ENV: LESS=FRX LV=-c

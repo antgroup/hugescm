@@ -22,7 +22,7 @@ type App struct {
 	Globals
 	From        string   `arg:"" name:"from" help:"Original repository remote URL (or filesystem path)" type:"string"`
 	Destination string   `arg:"" optional:"" name:"destination" help:"Destination where the repository is migrated" type:"path"`
-	Values      []string `short:"X" name:":config" help:"Override default configuration, format: <key>=<value>"`
+	Values      []string `short:"X" shortonly:"" help:"Override default configuration, format: <key>=<value>"`
 	Squeeze     bool     `name:"squeeze" short:"s" help:"Squeeze mode, compressed metadata"`
 	LFS         bool     `name:"lfs" help:"Migrate all LFS objects to zeta"`
 	Quiet       bool     `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`

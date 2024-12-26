@@ -14,7 +14,7 @@ type Remove struct {
 	Quiet    bool     `name:"quiet" short:"q" help:"Do not list removed files"`
 	Cached   bool     `name:"cached" help:"Only remove from the index"`
 	Force    bool     `name:"force" short:"f" help:"Override the up-to-date check"`
-	Recurse  bool     `name:":recurse" short:"r" help:"Allow recursive removal"`
+	Recurse  bool     `short:"r" shortonly:"" help:"Allow recursive removal"`
 	PathSpec []string `arg:"" optional:"" name:"pathspec" help:"Path specification, similar to Git path matching mode"`
 }
 

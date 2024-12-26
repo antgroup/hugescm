@@ -15,13 +15,13 @@ type Branch struct {
 	ShowCurrent bool     `name:"show-current" help:"Show current branch name"`
 	List        bool     `name:"list" short:"l" help:"List branches. With optional <pattern>..."`
 	Copy        bool     `name:"copy" short:"c" help:"Copy a branch and its reflog"`
-	ForceCopy   bool     `name:":force-copy" short:"C" help:"Copy a branch, even if target exists"`
+	ForceCopy   bool     `short:"C" shortonly:"" help:"Copy a branch, even if target exists"`
 	Delete      bool     `name:"delete" short:"d" help:"Delete fully merged branch"`
-	ForceDelete bool     `name:":force-delete" short:"D" help:"Delete branch (even if not merged)"`
+	ForceDelete bool     `short:"D" shortonly:"" help:"Delete branch (even if not merged)"`
 	Move        bool     `name:"move" short:"m" help:"Move/rename a branch and its reflog"`
-	ForceMove   bool     `name:":force-move" short:"M" help:"Move/rename a branch, even if target exists"`
+	ForceMove   bool     `short:"M" shortonly:"" help:"Move/rename a branch, even if target exists"`
 	Force       bool     `name:"force" short:"f" help:"Force creation, move/rename, deletion"`
-	Args        []string `arg:"" optional:"" name:"args" help:"Branch args: <branchname>, <pattern>, <start-point>"`
+	Args        []string `arg:"" optional:"" name:"args" help:""`
 }
 
 const (

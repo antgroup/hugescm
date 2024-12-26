@@ -1,7 +1,6 @@
 package kong
 
 import (
-	"bytes"
 	"fmt"
 	"go/doc"
 	"go/doc/comment"
@@ -182,7 +181,7 @@ func printNodeDetail(w *helpWriter, node *Node, hide bool) {
 		w.Print("")
 		w.Wrap(node.Detail)
 	}
-	if node.hasArgs() {
+	if len(node.Positional) > 0 {
 		w.Print("")
 		w.Print(W("Arguments:"))
 		writePositionals(w.Indent(), node.Positional)
@@ -426,10 +425,19 @@ func (h *helpWriter) Write(w io.Writer) error {
 	return nil
 }
 
+func toText(text string, prefix, codePrefix string, width int) string {
+	d := new(doc.Package).Parser().Parse(text)
+	pr := &comment.Printer{
+		TextPrefix:     prefix,
+		TextCodePrefix: codePrefix,
+		TextWidth:      width,
+	}
+	return string(pr.Text(d))
+}
+
 func (h *helpWriter) Wrap(text string) {
-	w := bytes.NewBuffer(nil)
-	ToText(w, strings.TrimSpace(text), "", "    ", h.width)
-	for _, line := range strings.Split(strings.TrimSpace(w.String()), "\n") {
+	newText := toText(strings.TrimSpace(text), "", "    ", h.width)
+	for _, line := range strings.Split(strings.TrimSpace(newText), "\n") {
 		h.Print(line)
 	}
 }
@@ -437,9 +445,6 @@ func (h *helpWriter) Wrap(text string) {
 func writePositionals(w *helpWriter, args []*Positional) {
 	rows := [][2]string{}
 	for _, arg := range args {
-		if arg.Hidden {
-			continue
-		}
 		rows = append(rows, [2]string{arg.Summary(), w.helpFormatter(arg)})
 	}
 	writeTwoColumns(w, rows)
@@ -469,16 +474,6 @@ func writeFlags(w *helpWriter, groups [][]*Flag) {
 	writeTwoColumns(w, rows)
 }
 
-func ToText(w io.Writer, text string, prefix, codePrefix string, width int) {
-	d := new(doc.Package).Parser().Parse(text)
-	pr := &comment.Printer{
-		TextPrefix:     prefix,
-		TextCodePrefix: codePrefix,
-		TextWidth:      width,
-	}
-	_, _ = w.Write(pr.Text(d))
-}
-
 func writeTwoColumns(w *helpWriter, rows [][2]string) {
 	maxLeft := 375 * w.width / 1000
 	if maxLeft < 30 {
@@ -495,9 +490,8 @@ func writeTwoColumns(w *helpWriter, rows [][2]string) {
 	offsetStr := strings.Repeat(" ", leftSize+defaultColumnPadding)
 
 	for _, row := range rows {
-		buf := bytes.NewBuffer(nil)
-		ToText(buf, row[1], "", strings.Repeat(" ", defaultIndent), w.width-leftSize-defaultColumnPadding)
-		lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+		newText := toText(row[1], "", strings.Repeat(" ", defaultIndent), w.width-leftSize-defaultColumnPadding)
+		lines := strings.Split(strings.TrimRight(newText, "\n"), "\n")
 
 		line := fmt.Sprintf("%-*s", leftSize, row[0])
 		if len(row[0]) < maxLeft {
@@ -517,30 +511,24 @@ func formatFlag(haveShort bool, flag *Flag) string {
 	name := flag.Name
 	isBool := flag.IsBool()
 	isCounter := flag.IsCounter()
-	if strings.HasPrefix(name, ":") {
+	if flag.ShortOnly {
 		return fmt.Sprintf("-%c", flag.Short)
 	}
+	short := ""
 	if flag.Short != 0 {
-		if isBool && flag.Tag.Negatable {
-			flagString += fmt.Sprintf("-%c, --[no-]%s", flag.Short, name)
-		} else {
-			flagString += fmt.Sprintf("-%c, --%s", flag.Short, name)
-		}
-	} else {
-		if isBool && flag.Tag.Negatable {
-			if haveShort {
-				flagString = fmt.Sprintf("    --[no-]%s", name)
-			} else {
-				flagString = fmt.Sprintf("--[no-]%s", name)
-			}
-		} else {
-			if haveShort {
-				flagString += fmt.Sprintf("    --%s", name)
-			} else {
-				flagString += fmt.Sprintf("--%s", name)
-			}
-		}
+		short = "-" + string(flag.Short) + ", "
+	} else if haveShort {
+		short = "    "
 	}
+
+	if isBool && flag.Tag.Negatable == negatableDefault {
+		name = "[no-]" + name
+	} else if isBool && flag.Tag.Negatable != "" {
+		name += "/" + flag.Tag.Negatable
+	}
+
+	flagString += fmt.Sprintf("%s--%s", short, name)
+
 	if !isBool && !isCounter {
 		flagString += fmt.Sprintf("=%s", flag.FormatPlaceHolder())
 	}

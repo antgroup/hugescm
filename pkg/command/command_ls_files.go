@@ -15,7 +15,7 @@ type LsFiles struct {
 	Modified bool     `name:"modified" short:"m" help:"Show modified files in the output"`
 	Others   bool     `name:"others" short:"o" help:"Show other files in the output"`
 	Stage    bool     `name:"stage" short:"s" help:"Show staged contents' object name in the output"`
-	Z        bool     `name:":z" short:"z" help:"Terminate entries with NUL byte"`
+	Z        bool     `short:"z" shortonly:"" help:"Terminate entries with NUL byte"`
 	JSON     bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Paths    []string `arg:"" name:"path" optional:"" help:"Given paths, show as match patterns; else, use root as sole argument"`
 }

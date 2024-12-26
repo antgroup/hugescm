@@ -22,7 +22,7 @@ type Decryptor struct {
 
 // parseRsaKey returns pub or pri key through parsing the fname
 // Use type assert to get the specific rsa privatekey or publickey
-func parseRsaKey(key []byte) (interface{}, error) {
+func parseRsaKey(key []byte) (any, error) {
 	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, errors.New("malformed Key")

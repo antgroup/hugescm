@@ -23,17 +23,17 @@ type Diff struct {
 	Numstat         bool     `name:"numstat" help:"Show numeric diffstat instead of patch"`
 	Stat            bool     `name:"stat" help:"Show diffstat instead of patch"`
 	Shortstat       bool     `name:"shortstat" help:"Output only the last line of --stat format"`
-	Z               bool     `name:":z" short:"z" help:"Output diff-raw with lines terminated with NUL"`
+	Z               bool     `short:"z" shortonly:"" help:"Output diff-raw with lines terminated with NUL"`
 	Staged          bool     `name:"staged" help:"Compare the differences between the staging area and <revision>"`
 	Cached          bool     `name:"cached" help:"Compare the differences between the staging area and <revision>"`
 	Textconv        bool     `name:"textconv" help:"Converting text to Unicode"`
-	MergeBase       string   `name:"merge-base" help:"If --merge-base is given, use the common ancestor of <commit> and HEAD instead"`
+	MergeBase       string   `name:"merge-base" help:"If --merge-base is given, use the common ancestor of <commit> and HEAD instead" placeholder:"<merge-base>"`
 	Histogram       bool     `name:"histogram" help:"Generate a diff using the \"Histogram diff\" algorithm"`
 	ONP             bool     `name:"onp" help:"Generate a diff using the \"O(NP) diff\" algorithm"`
 	Myers           bool     `name:"myers" help:"Generate a diff using the \"Myers diff\" algorithm"`
 	Patience        bool     `name:"patience" help:"Generate a diff using the \"Patience diff\" algorithm"`
 	Minimal         bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
-	DiffAlgorithm   string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal"`
+	DiffAlgorithm   string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
 	Output          string   `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
 	From            string   `arg:"" optional:"" name:"from" help:""`
 	To              string   `arg:"" optional:"" name:"to" help:""`

@@ -15,7 +15,7 @@ import (
 // Restore working tree files
 
 type Restore struct {
-	Source   string   `name:"source" short:"s" help:"Which tree-ish to checkout from"`
+	Source   string   `name:"source" short:"s" help:"Which tree-ish to checkout from" placeholder:"<revision>"`
 	Staged   bool     `name:"staged" short:"S" negatable:"" help:"Restore the index"`
 	Worktree bool     `name:"worktree" short:"W" negatable:"" help:"Restore the working tree (default)"`
 	Paths    []string `arg:"" optional:"" name:"pathspec" help:"Limits the paths affected by the operation"`

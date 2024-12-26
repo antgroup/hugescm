@@ -12,11 +12,11 @@ import (
 type MergeTree struct {
 	Branch1                 string `arg:"" name:"branch1" help:"branch1"`
 	Branch2                 string `arg:"" name:"branch2" help:"branch2"`
-	MergeBase               string `name:"merge-base" help:"Specify a merge-base for the merge"`
+	MergeBase               string `name:"merge-base" help:"Specify a merge-base for the merge" placeholder:"<merge-base>"`
 	AllowUnrelatedHistories bool   `name:"allow-unrelated-histories" help:"If branches lack common history, merge-tree errors. Use this flag to force merge"`
 	NameOnly                bool   `name:"name-only" help:"Only output conflict-related file names"`
 	Textconv                bool   `name:"textconv" help:"Converting text to Unicode"`
-	Z                       bool   `name:":z" short:"z" help:"Terminate entries with NUL byte"`
+	Z                       bool   `short:"z" shortonly:"" help:"Terminate entries with NUL byte"`
 	JSON                    bool   `name:"json" help:"Convert conflict results to JSON"`
 }
 

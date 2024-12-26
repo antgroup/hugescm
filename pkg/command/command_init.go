@@ -15,8 +15,8 @@ import (
 )
 
 type Init struct {
-	Branch    string `name:"branch" short:"b" help:"Override the name of the initial branch" default:"mainline"`
-	Remote    string `name:"remote" help:"Initialize and start tracking a new repository"`
+	Branch    string `name:"branch" short:"b" help:"Override the name of the initial branch" default:"mainline" placeholder:"<branch>"`
+	Remote    string `name:"remote" help:"Initialize and start tracking a new repository" placeholder:"<remote>"`
 	Directory string `arg:"" name:"directory" help:"Repository directory"`
 }
 

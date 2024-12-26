@@ -12,7 +12,7 @@ import (
 
 type Push struct {
 	Refspec     string   `arg:"" optional:"" name:"refspec" default:"" help:"Specify what destination ref to update with what source object"`
-	PushOptions []string `name:"push-option" short:"o" help:"Option to transmit"`
+	PushOptions []string `name:"push-option" short:"o" help:"Option to transmit" placeholder:"<option>"`
 	Tag         bool     `name:"tag" short:"t" help:"Update remote tag reference"`
 	Force       bool     `name:"force" short:"f" help:"force updates"`
 }

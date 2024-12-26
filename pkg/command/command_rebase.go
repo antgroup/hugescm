@@ -10,7 +10,7 @@ import (
 )
 
 type Rebase struct {
-	Onto     string `name:"onto" help:"Rebase onto given branch"`
+	Onto     string `name:"onto" help:"Rebase onto given branch" placeholder:"<revision>"`
 	Abort    bool   `name:"abort" help:"Abort and checkout the original branch"`
 	Continue bool   `name:"continue" help:"Continue"`
 }

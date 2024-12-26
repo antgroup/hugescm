@@ -10,12 +10,6 @@ import (
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
-const (
-	mergeSummaryFormat = `%szeta merge [<options>] [<revision>]
-%szeta merge --abort
-%szeta merge --continue`
-)
-
 // Join two or more development histories together
 type Merge struct {
 	Revision                string   `arg:"" optional:"" name:"revision" help:"Merge specific revision into HEAD"`
@@ -24,12 +18,18 @@ type Merge struct {
 	Squash                  bool     `name:"squash" help:"Create a single commit instead of doing a merge"`
 	AllowUnrelatedHistories bool     `name:"allow-unrelated-histories" help:"Allow merging unrelated histories"`
 	Textconv                bool     `name:"textconv" help:"Converting text to Unicode"`
-	Message                 []string `name:"message" short:"m" help:"Merge commit message (for a non-fast-forward merge)"`
-	File                    string   `name:"file" short:"F" help:"Read message from file"`
+	Message                 []string `name:"message" short:"m" help:"Merge commit message (for a non-fast-forward merge)" placeholder:"<message>"`
+	File                    string   `name:"file" short:"F" help:"Read message from file" placeholder:"<file>"`
 	Signoff                 bool     `name:"signoff" negatable:"" help:"Add a Signed-off-by trailer" default:"false"`
 	Abort                   bool     `name:"abort" help:"Abort a conflicting merge"`
 	Continue                bool     `name:"continue" help:"Continue a merge with resolved conflicts"`
 }
+
+const (
+	mergeSummaryFormat = `%szeta merge [<options>] [<revision>]
+%szeta merge --abort
+%szeta merge --continue`
+)
 
 func (c *Merge) Summary() string {
 	or := W("   or: ")

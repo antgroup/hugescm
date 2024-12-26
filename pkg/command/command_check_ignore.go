@@ -15,7 +15,7 @@ import (
 
 type CheckIgnore struct {
 	Stdin bool     `name:"stdin" help:"Read file names from stdin"`
-	Z     bool     `name:":z" short:"z" help:"Terminate input and output records by a NUL character"`
+	Z     bool     `short:"z" shortonly:"" help:"Terminate input and output records by a NUL character"`
 	JSON  bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Paths []string `arg:"" name:"pathname" optional:"" help:"Pathname given via the command-line"`
 }

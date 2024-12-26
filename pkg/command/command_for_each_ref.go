@@ -13,7 +13,7 @@ import (
 
 type ForEachRef struct {
 	JSON    bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
-	Sort    string   `name:"sort" help:"Field name to sort on"`
+	Sort    string   `name:"sort" help:"Field name to sort on" placeholder:"<order>"`
 	Pattern []string `arg:"" optional:"" name:"pattern" help:"If given, only refs matching at least one pattern are shown"`
 }
 

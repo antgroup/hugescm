@@ -15,8 +15,8 @@ import (
 type Clean struct {
 	DryRun bool `name:"dry-run" short:"n" help:"dry run"`
 	Force  bool `name:"force" short:"f" help:"force"`
-	Dir    bool `name:":dir" short:"d" help:"Remove whole directories"`
-	ALL    bool `name:":all" short:"x" help:"Remove ignored files, too"`
+	Dir    bool `short:"d" shortonly:"" help:"Remove whole directories"`
+	ALL    bool `short:"x" shortonly:"" help:"Remove ignored files, too"`
 }
 
 func (c *Clean) Run(g *Globals) error {

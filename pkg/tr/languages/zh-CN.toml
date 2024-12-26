@@ -326,6 +326,7 @@
 "Stash local changes and revert to HEAD" = "暂存本地更改并恢复到 HEAD"
 "List the stash entries that you currently have" = "列出您当前拥有的暂存条目"
 "Displays the diff of changes in a stash entry against the commit where it was created" = "显示暂存条目中的更改与创建它的提交的差异"
+"Stashed untracked files with push/save, then cleaned with zeta clean" = "使用 push/save 存储未跟踪的文件，然后使用 zeta clean 清理"
 "Remove all the stash entries" = "清除所有暂存条目"
 "Remove a single stash entry from the list of stash entries" = "从存储条目列表中删除单个暂存条目"
 "Apply and remove one stash" = "应用和删除一个暂存项"

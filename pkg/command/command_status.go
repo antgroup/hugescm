@@ -13,7 +13,7 @@ import (
 
 type Status struct {
 	Short bool `name:"short" short:"s" help:"Give the output in the short-format"`
-	Z     bool `name:":z" short:"z" help:"Terminate entries with NUL byte"`
+	Z     bool `short:"z" shortonly:"" help:"Terminate entries with NUL byte"`
 }
 
 func (s *Status) NewLine() byte {

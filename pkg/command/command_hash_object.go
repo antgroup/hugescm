@@ -14,9 +14,9 @@ import (
 )
 
 type HashObject struct {
-	W     bool   `name:":w" short:"w" help:"Write the object into the object database"`
+	W     bool   `short:"w" shortonly:"" help:"Write the object into the object database"`
 	Stdin bool   `name:"stdin" help:"Read the object from stdin"`
-	Path  string `name:"path" help:"Process file as it were from this path"`
+	Path  string `name:"path" help:"Process file as it were from this path" placeholder:"<file>"`
 }
 
 func (c *HashObject) Run(g *Globals) error {

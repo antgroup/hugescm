@@ -17,3 +17,21 @@ type AfterApply interface {
 	// This is not the correct signature - see README for details.
 	AfterApply(args ...any) error
 }
+
+// AfterRun is a documentation-only interface describing hooks that run after Run() returns.
+type AfterRun interface {
+	// This is not the correct signature - see README for details.
+	// AfterRun is called after Run() returns.
+	AfterRun(args ...any) error
+}
+
+var (
+	W = func(s string) string {
+		return s
+	}
+)
+
+// Registering localization functions
+func BindW(w func(s string) string) {
+	W = w
+}

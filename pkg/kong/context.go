@@ -161,7 +161,7 @@ func (c *Context) Empty() bool {
 }
 
 // Validate the current context.
-func (c *Context) Validate() error { // nolint: gocyclo
+func (c *Context) Validate() error { //nolint: gocyclo
 	err := Visit(c.Model, func(node Visitable, next Next) error {
 		switch node := node.(type) {
 		case *Value:
@@ -208,7 +208,7 @@ func (c *Context) Validate() error { // nolint: gocyclo
 			desc = node.Path()
 		}
 		if validate := isValidatable(value); validate != nil {
-			if err := validate.Validate(); err != nil {
+			if err := validate.Validate(c); err != nil {
 				if desc != "" {
 					return fmt.Errorf("%s: %w", desc, err)
 				}
@@ -355,6 +355,7 @@ type PassthroughProvider interface {
 
 func (c *Context) endPassthroughParsing(n *Node) {
 	if provider, ok := n.Target.Addr().Interface().(PassthroughProvider); ok {
+		c.scan.Pop() //pop --
 		args := []string{}
 		for {
 			token := c.scan.Pop()
@@ -369,7 +370,8 @@ func (c *Context) endPassthroughParsing(n *Node) {
 	c.endParsing()
 }
 
-func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
+//nolint:maintidx
+func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 	positional := 0
 	node.Active = true
 
@@ -399,14 +401,18 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 				switch {
 				case v == "-":
 					fallthrough
-				default: // nolint
+				default: //nolint
 					c.scan.Pop()
 					c.scan.PushTyped(token.Value, PositionalArgumentToken)
 
 				// Indicates end of parsing. All remaining arguments are treated as positional arguments only.
 				case v == "--":
-					c.scan.Pop()
 					c.endPassthroughParsing(node)
+
+					// Pop the -- token unless the next positional argument accepts passthrough arguments.
+					if !(positional < len(node.Positional) && node.Positional[positional].Passthrough) {
+						c.scan.Pop()
+					}
 
 				// Long flag.
 				case strings.HasPrefix(v, "--"):
@@ -442,7 +448,7 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 
 		case FlagToken:
 			if err := c.parseFlag(flags, token.String()); err != nil {
-				if isUnknownFlagError(err) && positional < len(node.Positional) && node.Positional[positional].Passthrough {
+				if isUnknownFlagError(err) && positional < len(node.Positional) && node.Positional[positional].PassthroughMode == PassThroughModeAll {
 					c.scan.Pop()
 					c.scan.PushTyped(token.String(), PositionalArgumentToken)
 				} else {
@@ -452,7 +458,7 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 
 		case ShortFlagToken:
 			if err := c.parseFlag(flags, token.String()); err != nil {
-				if isUnknownFlagError(err) && positional < len(node.Positional) && node.Positional[positional].Passthrough {
+				if isUnknownFlagError(err) && positional < len(node.Positional) && node.Positional[positional].PassthroughMode == PassThroughModeAll {
 					c.scan.Pop()
 					c.scan.PushTyped(token.String(), PositionalArgumentToken)
 				} else {
@@ -483,10 +489,7 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 					Parent:     node,
 					Positional: arg,
 				})
-				// Avoid unsupported unresolved args
-				if !arg.IsCumulative() {
-					positional++
-				}
+				positional++
 				break
 			}
 
@@ -735,13 +738,13 @@ func (c *Context) parseFlag(flags []*Flag, match string) (err error) {
 			candidates = append(candidates, alias)
 		}
 
-		neg := "--no-" + flag.Name
-		if !matched && !(match == neg && flag.Tag.Negatable) {
+		neg := negatableFlagName(flag.Name, flag.Tag.Negatable)
+		if !matched && match != neg {
 			continue
 		}
 		// Found a matching flag.
 		c.scan.Pop()
-		if match == neg && flag.Tag.Negatable {
+		if match == neg && flag.Tag.Negatable != "" {
 			flag.Negated = true
 		}
 		err := flag.Parse(c.scan, c.getValue(flag.Value))
@@ -779,7 +782,7 @@ func (e *unknownFlagError) Error() string { return e.Cause.Error() }
 // Call an arbitrary function filling arguments with bound values.
 func (c *Context) Call(fn any, binds ...any) (out []any, err error) {
 	fv := reflect.ValueOf(fn)
-	bindings := c.Kong.bindings.clone().add(binds...).add(c).merge(c.bindings) //nolint:govet
+	bindings := c.Kong.bindings.clone().add(binds...).add(c).merge(c.bindings)
 	return callAnyFunction(fv, bindings)
 }
 
@@ -802,6 +805,19 @@ func (c *Context) RunNode(node *Node, binds ...any) (err error) {
 		methodBinds = methodBinds.clone()
 		for p := node; p != nil; p = p.Parent {
 			methodBinds = methodBinds.add(p.Target.Addr().Interface())
+			// Try value and pointer to value.
+			for _, p := range []reflect.Value{p.Target, p.Target.Addr()} {
+				t := p.Type()
+				for i := 0; i < p.NumMethod(); i++ {
+					methodt := t.Method(i)
+					if strings.HasPrefix(methodt.Name, "Provide") {
+						method := p.Method(i)
+						if err := methodBinds.addProvider(method.Interface()); err != nil {
+							return fmt.Errorf("%s.%s: %w", t.Name(), methodt.Name, err)
+						}
+					}
+				}
+			}
 		}
 		if method.IsValid() {
 			methods = append(methods, targetMethod{node, method, methodBinds})
@@ -830,18 +846,22 @@ func (c *Context) RunNode(node *Node, binds ...any) (err error) {
 func (c *Context) Run(binds ...any) (err error) {
 	node := c.Selected()
 	if node == nil {
-		if len(c.Path) > 0 {
-			selected := c.Path[0].Node()
-			if selected.Type == ApplicationNode {
-				method := getMethod(selected.Target, "Run")
-				if method.IsValid() {
-					return c.RunNode(selected, binds...)
-				}
-			}
+		if len(c.Path) == 0 {
+			return fmt.Errorf("no command selected")
 		}
-		return fmt.Errorf("no command selected")
+		selected := c.Path[0].Node()
+		if selected.Type == ApplicationNode {
+			method := getMethod(selected.Target, "Run")
+			if method.IsValid() {
+				node = selected
+			}
+		} else {
+			return fmt.Errorf("no command selected")
+		}
 	}
-	return c.RunNode(node, binds...)
+	runErr := c.RunNode(node, binds...)
+	err = c.Kong.applyHook(c, "AfterRun")
+	return errors.Join(runErr, err)
 }
 
 // PrintUsage to Kong's stdout.
@@ -894,7 +914,6 @@ func checkMissingFlags(flags []*Flag) error {
 			missing = append(missing, strings.Join(flags, " or "))
 		}
 	}
-
 	for _, flags := range andGroup {
 		if len(flags) > 1 {
 			missing = append(missing, strings.Join(flags, " and "))
@@ -1018,7 +1037,7 @@ func checkEnum(value *Value, target reflect.Value) error {
 			}
 			enums = append(enums, fmt.Sprintf("%q", enum))
 		}
-		return fmt.Errorf("%s must be one of %s but got %q", value.ShortSummary(), strings.Join(enums, ","), target.Interface())
+		return fmt.Errorf("%s must be one of %s but got %q", value.ShortSummary(), strings.Join(enums, ","), fmt.Sprintf("%v", target.Interface()))
 	}
 }
 
@@ -1116,12 +1135,23 @@ func findPotentialCandidates(needle string, haystack []string, format string, ar
 }
 
 type validatable interface{ Validate() error }
+type extendedValidatable interface {
+	Validate(kctx *Context) error
+}
 
-func isValidatable(v reflect.Value) validatable {
+// Proxy a validatable function to the extendedValidatable interface
+type validatableFunc func() error
+
+func (f validatableFunc) Validate(kctx *Context) error { return f() }
+
+func isValidatable(v reflect.Value) extendedValidatable {
 	if !v.IsValid() || (v.Kind() == reflect.Ptr || v.Kind() == reflect.Slice || v.Kind() == reflect.Map) && v.IsNil() {
 		return nil
 	}
 	if validate, ok := v.Interface().(validatable); ok {
+		return validatableFunc(validate.Validate)
+	}
+	if validate, ok := v.Interface().(extendedValidatable); ok {
 		return validate
 	}
 	if v.CanAddr() {

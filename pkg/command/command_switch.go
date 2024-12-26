@@ -11,14 +11,6 @@ import (
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
-const (
-	switchSummaryFormat = `%szeta switch [<options>] <branch> [--remote]
-%szeta switch [<options>] --detach [<start-point>]
-%szeta switch [<options>] (-c|-C) <new-branch> [<start-point>]
-%szeta switch [<options>] --orphan <new-branch>
-%szeta switch [<options>] --remote <new-branch> <start-point>`
-)
-
 type Switch struct {
 	Args           []string `arg:"" optional:"" help:"Branch to switch to and start-point"`
 	Create         bool     `name:"create" short:"c" help:"Create a new branch named <branch> starting at <start-point> before switching to the branch"`
@@ -32,6 +24,14 @@ type Switch struct {
 	Limit          int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
 	Quiet          bool     `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`
 }
+
+const (
+	switchSummaryFormat = `%szeta switch [<options>] <branch> [--remote]
+%szeta switch [<options>] --detach [<start-point>]
+%szeta switch [<options>] (-c|-C) <new-branch> [<start-point>]
+%szeta switch [<options>] --orphan <new-branch>
+%szeta switch [<options>] --remote <new-branch> <start-point>`
+)
 
 func (s *Switch) Summary() string {
 	or := W("   or: ")

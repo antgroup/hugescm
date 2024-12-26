@@ -17,8 +17,8 @@ import (
 type Globals struct {
 	Verbose bool        `short:"V" name:"verbose" help:"Make the operation more talkative"`
 	Version VersionFlag `short:"v" name:"version" help:"Show version number and quit"`
-	Values  []string    `short:"X" name:":config" help:"Override default configuration, format: <key>=<value>"`
-	CWD     string      `name:"cwd" help:"Set the path to the repository worktree"`
+	Values  []string    `short:"X" shortonly:"" help:"Override default configuration, format: <key>=<value>"`
+	CWD     string      `name:"cwd" help:"Set the path to the repository worktree" placeholder:"<worktree>"`
 }
 
 func (g *Globals) DbgPrint(format string, args ...any) {

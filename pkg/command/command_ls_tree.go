@@ -12,13 +12,13 @@ import (
 )
 
 type LsTree struct {
-	OnlyTrees bool     `name:":only-trees" short:"d" help:"Only show trees"`
-	Recurse   bool     `name:":recurse" short:"r" help:"Recurse into subtrees"`
-	Tree      bool     `name:":tree" short:"t" help:"Show trees when recursing"`
-	Z         bool     `name:":z" short:"z" help:"Terminate entries with NUL byte"`
+	OnlyTrees bool     `short:"d" shortonly:"" help:"Only show trees"`
+	Recurse   bool     `short:"r" shortonly:"" help:"Recurse into subtrees"`
+	Tree      bool     `short:"t" shortonly:"" help:"Show trees when recursing"`
+	Z         bool     `short:"z" shortonly:"" help:"Terminate entries with NUL byte"`
 	Long      bool     `name:"long" short:"l" help:"Include object size"`
 	NameOnly  bool     `name:"name-only" alias:"name-status" help:"List only filenames"`
-	Abbrev    int      `name:"abbrev" help:"Use <n> digits to display object names"`
+	Abbrev    int      `name:"abbrev" help:"Use <n> digits to display object names" placeholder:"<n>"`
 	JSON      bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Revision  string   `arg:"" name:"tree-ish" help:"ID of a tree-ish"`
 	Paths     []string `arg:"" name:"path" optional:"" help:"Given paths, show as match patterns; else, use root as sole argument"`

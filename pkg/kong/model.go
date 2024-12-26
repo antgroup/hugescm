@@ -61,16 +61,6 @@ type Node struct {
 
 func (*Node) node() {}
 
-func (n *Node) hasArgs() bool {
-	var i int
-	for _, p := range n.Positional {
-		if !p.Hidden {
-			i++
-		}
-	}
-	return i != 0
-}
-
 // Leaf returns true if this Node is a leaf node.
 func (n *Node) Leaf() bool {
 	return len(n.Children) == 0
@@ -256,24 +246,25 @@ func (n *Node) ClosestGroup() *Group {
 
 // A Value is either a flag or a variable positional argument.
 type Value struct {
-	Flag         *Flag // Nil if positional argument.
-	Name         string
-	Help         string
-	OrigHelp     string // Original help string, without interpolated variables.
-	HasDefault   bool
-	Default      string
-	DefaultValue reflect.Value
-	Enum         string
-	Mapper       Mapper
-	Tag          *Tag
-	Target       reflect.Value
-	Required     bool
-	Set          bool   // Set to true when this value is set through some mechanism.
-	Format       string // Formatting directive, if applicable.
-	Position     int    // Position (for positional arguments).
-	Passthrough  bool   // Set to true to stop flag parsing when encountered.
-	Active       bool   // Denotes the value is part of an active branch in the CLI.
-	Hidden       bool   // Hidden help
+	Flag            *Flag // Nil if positional argument.
+	Name            string
+	Help            string
+	OrigHelp        string // Original help string, without interpolated variables.
+	HasDefault      bool
+	Default         string
+	DefaultValue    reflect.Value
+	Enum            string
+	Mapper          Mapper
+	Tag             *Tag
+	Target          reflect.Value
+	Required        bool
+	Set             bool            // Set to true when this value is set through some mechanism.
+	Format          string          // Formatting directive, if applicable.
+	Position        int             // Position (for positional arguments).
+	Passthrough     bool            // Deprecated: Use PassthroughMode instead. Set to true to stop flag parsing when encountered.
+	PassthroughMode PassthroughMode //
+	Active          bool            // Denotes the value is part of an active branch in the CLI.
+	ShortOnly       bool            // short-only
 }
 
 // EnumMap returns a map of the enums in this value.
@@ -520,6 +511,9 @@ func reflectValueIsZero(v reflect.Value) bool {
 	default:
 		// This should never happens, but will act as a safeguard for
 		// later, as a default value doesn't makes sense here.
-		panic(&reflect.ValueError{Method: "reflect.Value.IsZero", Kind: v.Kind()})
+		panic(&reflect.ValueError{
+			Method: "reflect.Value.IsZero",
+			Kind:   v.Kind(),
+		})
 	}
 }

@@ -5,6 +5,6 @@ package kong
 
 import "io"
 
-func guessWidth(w io.Writer) int {
+func guessWidth(_ io.Writer) int {
 	return 80
 }

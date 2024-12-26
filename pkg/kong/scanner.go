@@ -82,7 +82,7 @@ func (t Token) InferredType() TokenType {
 		return t.Type
 	}
 	if v, ok := t.Value.(string); ok {
-		if strings.HasPrefix(v, "--") { // nolint: gocritic
+		if strings.HasPrefix(v, "--") { //nolint: gocritic
 			return FlagToken
 		} else if v == "-" {
 			return PositionalArgumentToken

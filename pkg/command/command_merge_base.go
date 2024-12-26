@@ -10,6 +10,13 @@ import (
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
+type MergeBase struct {
+	// --is-ancestor
+	All        bool     `name:"all" short:"a" negatable:"" default:"false" help:"Output all common ancestors"`
+	IsAncestor bool     `name:"is-ancestor" help:"Is the first one ancestor of the other?"`
+	Args       []string `arg:"" name:"commit"`
+}
+
 // usage: zeta merge-base [-a | --all] <commit> <commit>...
 //    or: zeta merge-base [-a | --all] --octopus <commit>...
 //    or: zeta merge-base --is-ancestor <commit> <commit>
@@ -18,13 +25,6 @@ const (
 	mergeBaseSummaryFormat = `%szeta merge-base [-a | --all] <commit> <commit>...
 %szeta merge-base --is-ancestor <commit> <commit>`
 )
-
-type MergeBase struct {
-	// --is-ancestor
-	All        bool     `name:"all" short:"a" negatable:"" default:"false" help:"Output all common ancestors"`
-	IsAncestor bool     `name:"is-ancestor" help:"Is the first one ancestor of the other?"`
-	Args       []string `arg:"" name:"commit"`
-}
 
 func (c *MergeBase) Summary() string {
 	or := W("   or: ")

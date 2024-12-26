@@ -23,7 +23,7 @@ type Show struct {
 	Myers         bool     `name:"myers" help:"Generate a diff using the \"Myers diff\" algorithm"`
 	Patience      bool     `name:"patience" help:"Generate a diff using the \"Patience diff\" algorithm"`
 	Minimal       bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
-	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal"`
+	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
 	Limit         int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
 	Objects       []string `arg:"" optional:"" name:"object" help:""`
 }

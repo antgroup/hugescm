@@ -22,8 +22,8 @@ type Config struct {
 	Get    bool     `name:"get" help:"Get the value for a given Key"`
 	GetALL bool     `name:"get-all" help:"Get all values for a given Key"`
 	Add    bool     `name:"add" help:"Add a new variable: name value"`
-	Z      bool     `name:":z" short:"z" help:"Terminate values with NUL byte"`
-	Type   string   `name:"type" short:"T" help:"zeta config will ensure that any input or output is valid under the given type constraint(s), support: bool, int, float, date"`
+	Z      bool     `short:"z" shortonly:"" help:"Terminate values with NUL byte"`
+	Type   string   `name:"type" short:"T" help:"zeta config will ensure that any input or output is valid under the given type constraint(s), support: bool, int, float, date" placeholder:"<type>"`
 }
 
 func (c *Config) Run(g *Globals) error {

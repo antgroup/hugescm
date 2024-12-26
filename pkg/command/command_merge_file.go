@@ -15,8 +15,8 @@ type MergeFile struct {
 	ObjectID      bool     `name:"object-id" negatable:"" help:"Use object IDs instead of filenames"`
 	Diff3         bool     `name:"diff3" negatable:"" help:"Use a diff3 based merge"`
 	ZDiff3        bool     `name:"zdiff3" negatable:"" help:"Use a zealous diff3 based merge"`
-	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal"`
-	L             []string `name:":L" short:"L" help:"Set labels for file1/orig-file/file2"`
+	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
+	L             []string `short:"L" shortonly:"" help:"Set labels for file1/orig-file/file2"`
 	F1            string   `arg:"" name:"file1" help:""`
 	O             string   `arg:"" name:"orig-file" help:""`
 	F2            string   `arg:"" name:"file2" help:""`

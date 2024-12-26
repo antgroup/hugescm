@@ -14,12 +14,12 @@ import (
 
 type Tag struct {
 	Annotate bool     `name:"annotate" short:"a" help:"Annotated tag, needs a message"`
-	File     string   `name:"file" short:"F" help:"Take the tag message from the given file. Use - to read the message from the standard input"`
-	Message  []string `name:"message" short:"m" help:"Use the given tag message (instead of prompting)"`
+	File     string   `name:"file" short:"F" help:"Take the tag message from the given file. Use - to read the message from the standard input" placeholder:"<file>"`
+	Message  []string `name:"message" short:"m" help:"Use the given tag message (instead of prompting)" placeholder:"<message>"`
 	List     bool     `name:"list" short:"l" help:"List tags. With optional <pattern>..."`
 	Delete   bool     `name:"delete" short:"d" help:"Delete tags"`
 	Force    bool     `name:"force" short:"f" help:"Replace the tag if exists"`
-	Args     []string `arg:"" optional:"" name:"args" help:"Tag args: <tagname>, <pattern>, <start-point>"`
+	Args     []string `arg:"" optional:"" name:"args" help:""`
 }
 
 const (

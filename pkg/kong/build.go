@@ -173,6 +173,9 @@ MAIN:
 		if flag.Short != 0 {
 			delete(seenFlags, "-"+string(flag.Short))
 		}
+		if negFlag := negatableFlagName(flag.Name, flag.Tag.Negatable); negFlag != "" {
+			delete(seenFlags, negFlag)
+		}
 		for _, aflag := range flag.Aliases {
 			delete(seenFlags, "--"+aflag)
 		}
@@ -223,6 +226,7 @@ func buildChild(k *Kong, node *Node, typ NodeType, v reflect.Value, ft reflect.S
 	if provider, ok := fv.Addr().Interface().(HelpProvider); ok {
 		child.Detail = provider.Help()
 	}
+
 	// A branching argument. This is a bit hairy, as we let buildNode() do the parsing, then check that
 	// a positional argument is provided to the child, and move it to the branching argument field.
 	if tag.Arg {
@@ -277,18 +281,19 @@ func buildField(k *Kong, node *Node, v reflect.Value, ft reflect.StructField, fv
 	}
 
 	value := &Value{
-		Name:         name,
-		Help:         tag.Help,
-		OrigHelp:     tag.Help,
-		HasDefault:   tag.HasDefault,
-		Default:      tag.Default,
-		DefaultValue: reflect.New(fv.Type()).Elem(),
-		Mapper:       mapper,
-		Tag:          tag,
-		Target:       fv,
-		Enum:         tag.Enum,
-		Passthrough:  tag.Passthrough,
-		Hidden:       tag.Hidden,
+		Name:            name,
+		Help:            tag.Help,
+		OrigHelp:        tag.Help,
+		HasDefault:      tag.HasDefault,
+		Default:         tag.Default,
+		DefaultValue:    reflect.New(fv.Type()).Elem(),
+		Mapper:          mapper,
+		Tag:             tag,
+		Target:          fv,
+		Enum:            tag.Enum,
+		Passthrough:     tag.Passthrough,
+		PassthroughMode: tag.PassthroughMode,
+		ShortOnly:       tag.ShortOnly,
 
 		// Flags are optional by default, and args are required by default.
 		Required: (!tag.Arg && tag.Required) || (tag.Arg && !tag.Optional),
@@ -314,6 +319,13 @@ func buildField(k *Kong, node *Node, v reflect.Value, ft reflect.StructField, fv
 				return failField(v, ft, "duplicate short flag -%c", tag.Short)
 			}
 			seenFlags["-"+string(tag.Short)] = true
+		}
+		if tag.Negatable != "" {
+			negFlag := negatableFlagName(value.Name, tag.Negatable)
+			if seenFlags[negFlag] {
+				return failField(v, ft, "duplicate negation flag %s", negFlag)
+			}
+			seenFlags[negFlag] = true
 		}
 		flag := &Flag{
 			Value:       value,

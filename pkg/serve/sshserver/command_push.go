@@ -196,7 +196,7 @@ func (s *Server) TagPush(e *Session, tagName string, oldRev, newRev plumbing.Has
 		Language:      e.Getenv("LANG"),
 	}
 	if tag != nil && tag.Hash != command.OldRev {
-		return e.ExitFormat(409, e.W("tag is updated, please update and try again")) //nolint:govet
+		return e.ExitFormat(409, "%s", e.W("tag is updated, please update and try again")) //nolint:govet
 	}
 	command.UpdateStats(e.Getenv("ZETA_OBJECTS_STATS"))
 	rr, err := s.open(e)
@@ -228,7 +228,7 @@ func (s *Server) BranchPush(e *Session, branchName string, oldRev, newRev plumbi
 		Language:      e.Getenv("LANG"),
 	}
 	if oldBranch != nil && oldBranch.Hash != command.OldRev {
-		return e.ExitFormat(409, e.W("branch is updated, please update and try again")) //nolint:govet
+		return e.ExitFormat(409, "%s", e.W("branch is updated, please update and try again")) //nolint:govet
 	}
 	command.UpdateStats(e.Getenv("ZETA_OBJECTS_STATS"))
 	rr, err := s.open(e)

@@ -178,7 +178,7 @@ func (e *Session) ExitError(err error) int {
 		return 409
 	default:
 		logrus.Errorf("access %s/%s internal server error: %v", e.NamespacePath, e.RepoPath, err)
-		e.WriteError(e.W("internal server error")) //nolint:govet
+		e.WriteError("%s", e.W("internal server error")) //nolint:govet
 	}
 	return 500
 }

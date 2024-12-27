@@ -77,6 +77,9 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if opts.Depth != 0 {
 		psArgs = append(psArgs, "--depth="+strconv.Itoa(opts.Depth))
 	}
+	if len(opts.Sparses) != 0 {
+		psArgs = append(psArgs, "--sparse")
+	}
 	commandArgs := strings.Join(psArgs, " ")
 	cmd, err := c.NewBaseCommand(ctx)
 	if err != nil {

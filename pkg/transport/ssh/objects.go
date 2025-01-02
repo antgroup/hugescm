@@ -131,7 +131,6 @@ func (c *client) Shared(ctx context.Context, wantObjects []*transport.WantObject
 		return nil, cmd.lastError
 	}
 	if err := cmd.Close(); err != nil {
-		_ = cmd.Close()
 		return nil, cmd.lastError
 	}
 	return r.Objects, nil

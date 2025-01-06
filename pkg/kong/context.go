@@ -826,11 +826,6 @@ func (c *Context) RunNode(node *Node, binds ...any) (err error) {
 	if len(methods) == 0 {
 		return fmt.Errorf("no Run() method found in hierarchy of %s", c.Selected().Summary())
 	}
-	_, err = c.Apply()
-	if err != nil {
-		return err
-	}
-
 	for _, method := range methods {
 		if err = callFunction(method.method, method.binds); err != nil {
 			return err
@@ -855,7 +850,9 @@ func (c *Context) Run(binds ...any) (err error) {
 			if method.IsValid() {
 				node = selected
 			}
-		} else {
+		}
+
+		if node == nil {
 			return fmt.Errorf("no command selected")
 		}
 	}

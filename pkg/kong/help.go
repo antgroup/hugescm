@@ -70,6 +70,7 @@ type HelpProvider interface {
 	Help() string
 }
 
+// SummaryProvider can be implemented by mappers to provide custom summary text.
 type SummaryProvider interface {
 	Summary() string
 }

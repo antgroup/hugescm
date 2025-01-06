@@ -48,13 +48,13 @@ type Tag struct {
 	Vars            Vars
 	Prefix          string // Optional prefix on anonymous structs. All sub-flags will have this prefix.
 	EnvPrefix       string
+	XorPrefix       string // Optional prefix on XOR/AND groups.
 	Embed           bool
 	Aliases         []string
 	Negatable       string
 	Passthrough     bool // Deprecated: use PassthroughMode instead.
 	PassthroughMode PassthroughMode
 	ShortOnly       bool
-
 	// Storage for all tag keys for arbitrary lookups.
 	items map[string][]string
 }
@@ -269,6 +269,7 @@ func hydrateTag(t *Tag, typ reflect.Type) error { //nolint: gocyclo
 	}
 	t.Prefix = t.Get("prefix")
 	t.EnvPrefix = t.Get("envprefix")
+	t.XorPrefix = t.Get("xorprefix")
 	t.Embed = t.Has("embed")
 	if t.Has("negatable") {
 		if !isBool && !isBoolPtr {

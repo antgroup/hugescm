@@ -63,7 +63,7 @@ func (c *Diff) Passthrough(paths []string) {
 }
 
 func (c *Diff) Run() error {
-	fmt.Fprintf(os.Stderr, "from %s to %s args: %v\n", c.From, c.To, c.passthroughArgs)
+	fmt.Fprintf(os.Stderr, "from {%s} to {%s} args: %v\n", c.From, c.To, c.passthroughArgs)
 	return nil
 }
 

@@ -60,7 +60,7 @@ type client struct {
 	*http.Client
 	baseURL      *url.URL
 	extraHeader  map[string]string
-	credentials  string // User Credentials
+	credentials  *Credentials // User Credentials
 	tokenPayload *transport.SASPayload
 	userAgent    string
 	language     string
@@ -139,9 +139,10 @@ func (c *client) authGuard(req *http.Request) {
 	if c.hasAuth() {
 		return
 	}
+	// If the repository allows anonymous access, the SAS interface can return an empty response and function normally regardless of which branch is hit.
 	if c.tokenPayload == nil || c.tokenPayload.IsExpired() {
-		if len(c.credentials) != 0 {
-			req.Header.Set(AUTHORIZATION, c.credentials)
+		if c.credentials != nil {
+			req.Header.Set(AUTHORIZATION, c.credentials.BasicAuth())
 		}
 		return
 	}

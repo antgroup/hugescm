@@ -135,7 +135,7 @@ func (c *client) authorize(ctx context.Context, operation transport.Operation) e
 	if err == nil {
 		ok, err := c.checkAuth(ctx, cred, operation)
 		if ok {
-			c.credentials = cred.BasicAuth()
+			c.credentials = cred
 			return nil
 		}
 		showErr := cred != nil
@@ -151,7 +151,7 @@ func (c *client) authorize(ctx context.Context, operation transport.Operation) e
 		ok, err := c.checkAuth(ctx, cred, operation)
 		if ok {
 			_ = c.storeCredentials(ctx, cred)
-			c.credentials = cred.BasicAuth()
+			c.credentials = cred
 			return nil
 		}
 		if !checkUnauthorized(err, true) {

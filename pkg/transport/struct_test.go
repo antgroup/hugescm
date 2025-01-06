@@ -10,17 +10,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsExpired(t *testing.T) {
+func TestRepresentationExpired(t *testing.T) {
 	r := &Representation{
 		ExpiresAt: time.Now().Add(-time.Hour),
 	}
 	fmt.Fprintf(os.Stderr, "IsExpired: %v\n", r.IsExpired())
 }
 
-func TestIsExpired2(t *testing.T) {
+func TestRepresentationExpired2(t *testing.T) {
 	r := &Representation{
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
+	fmt.Fprintf(os.Stderr, "IsExpired: %v\n", r.IsExpired())
+}
+
+func TestTokenExpired(t *testing.T) {
+	r := &SASPayload{}
 	fmt.Fprintf(os.Stderr, "IsExpired: %v\n", r.IsExpired())
 }
 

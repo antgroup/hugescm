@@ -17,6 +17,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/antgroup/hugescm/modules/streamio"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -30,7 +31,6 @@ const (
 	// Zeta HTTP Header
 	AUTHORIZATION           = "Authorization"
 	ZETA_PROTOCOL           = "Zeta-Protocol"
-	ZETA_AUTHORIZATION      = "X-Zeta-Authorization"
 	ZETA_COMMAND_OLDREV     = "X-Zeta-Command-OldRev"
 	ZETA_COMMAND_NEWREV     = "X-Zeta-Command-NewRev"
 	ZETA_TERMINAL           = "X-Zeta-Terminal"
@@ -69,9 +69,6 @@ type client struct {
 }
 
 func (c *client) hasAuth() bool {
-	if _, ok := c.extraHeader["x-zeta-authorization"]; ok {
-		return true
-	}
 	if _, ok := c.extraHeader["authorization"]; ok {
 		return true
 	}
@@ -143,20 +140,14 @@ func (c *client) authGuard(req *http.Request) {
 		return
 	}
 	if c.tokenPayload == nil || c.tokenPayload.IsExpired() {
-		req.Header.Set(AUTHORIZATION, c.credentials)
+		if len(c.credentials) != 0 {
+			req.Header.Set(AUTHORIZATION, c.credentials)
+		}
 		return
 	}
 	for k, v := range c.tokenPayload.Header {
 		req.Header.Set(k, v)
 	}
-	// if len(c.tokenPayload.Header.Authorization) != 0 {
-	// 	req.Header.Set(AUTHORIZATION, c.tokenPayload.Header.Authorization)
-	// 	return
-	// }
-	// // FIXME: Bypass spanner login interception
-	// if len(c.tokenPayload.Header.XZetaAuthorization) != 0 {
-	// 	req.Header.Set(AUTHORIZATION, c.tokenPayload.Header.XZetaAuthorization)
-	// }
 }
 
 func (c *client) newRequest(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
@@ -195,7 +186,7 @@ func (e *ErrorCode) Status() int {
 	return e.status
 }
 
-func checkUnauthorized(err error) bool {
+func checkUnauthorized(err error, showErr bool) bool {
 	if err == nil {
 		return false
 	}
@@ -204,7 +195,9 @@ func checkUnauthorized(err error) bool {
 		return false
 	}
 	if ec.status == http.StatusUnauthorized {
-		fmt.Fprintf(os.Stderr, "auth: \x1b[31m%s\x1b[0m\n", ec.Message)
+		if showErr {
+			fmt.Fprintf(os.Stderr, "auth: \x1b[31m%s\x1b[0m\n", ec.Message)
+		}
 		return true
 	}
 	return false
@@ -221,13 +214,15 @@ func parseError(resp *http.Response) error {
 		if err := json.NewDecoder(resp.Body).Decode(ec); err != nil {
 			return fmt.Errorf("decode json error: %w", err)
 		}
+		ec.Message = strings.TrimRightFunc(ec.Message, unicode.IsSpace)
 		return ec
 	}
 	b, err := streamio.ReadMax(resp.Body, 1024)
 	if err != nil {
-		return &ErrorCode{status: resp.StatusCode, Message: fmt.Sprintf("StatusCode: %d Status: %s read body error: %v", resp.StatusCode, resp.Status, err)}
+		return &ErrorCode{status: resp.StatusCode, Message: fmt.Sprintf("%d %s\nError: %v", resp.StatusCode, resp.Status, err)}
 	}
-	return &ErrorCode{status: resp.StatusCode, Message: fmt.Sprintf("StatusCode: %d Status: %s \n%s\n", resp.StatusCode, resp.Status, string(b))}
+	body := strings.TrimRightFunc(string(b), unicode.IsSpace)
+	return &ErrorCode{status: resp.StatusCode, Message: fmt.Sprintf("%s\n%s", resp.Status, body)}
 }
 
 type sessionReader struct {

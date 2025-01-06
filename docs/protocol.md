@@ -47,7 +47,7 @@ HugeSCM 的传输协议支持用户名和密码（Token）的验证方式，支�
 }
 ```
 
-客户端可以检测 `expires_at`确认 token 是否过期，可以使用我们提供的 `authorization（x-zeta-authorization 用于绕过内部系统拦截）`设置到 HTTP 请求头，当然用户可以不使用该机制，使用标准的 Basic 验证也是支持的。该接口返回的 `notice`，客户端可以将该通知/提示输出到终端。
+客户端可以检测 `expires_at`确认 token 是否过期，可以使用我们提供的 `authorization`设置到 HTTP 请求头，当然用户可以不使用该机制，使用标准的 Basic 验证也是支持的。该接口返回的 `notice`，客户端可以将该通知/提示输出到终端。
 
 #### 1.2.2 SSH 验证
 SSH 传输协议可以使用 SSH 公钥进行验证，与 SSH 相同，这里不做赘述。

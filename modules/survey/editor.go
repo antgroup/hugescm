@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/antgroup/hugescm/modules/shlex"
 	"github.com/antgroup/hugescm/modules/survey/terminal"
-	shellquote "github.com/kballard/go-shellquote"
 )
 
 /*
@@ -181,7 +181,7 @@ func (e *Editor) prompt(initialValue string, config *PromptConfig) (any, error) 
 
 	stdio := e.Stdio()
 
-	args, err := shellquote.Split(editor)
+	args, err := shlex.Split(editor, true)
 	if err != nil {
 		return "", err
 	}

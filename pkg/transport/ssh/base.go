@@ -32,8 +32,9 @@ const DefaultUsername = "zeta"
 
 type client struct {
 	*transport.Endpoint
-	proxyConfig *proxy.ProxyConfig
-	verbose     bool
+	proxyConfig     *proxy.ProxyConfig
+	hostKeyCallback ssh.HostKeyCallback
+	verbose         bool
 }
 
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
@@ -80,16 +81,6 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 		User:            c.User,
 		Auth:            auth,
 		HostKeyCallback: c.HostKeyCallback,
-		HostKeyAlgorithms: []string{
-			ssh.KeyAlgoECDSA256,
-			ssh.KeyAlgoSKECDSA256,
-			ssh.KeyAlgoECDSA384,
-			ssh.KeyAlgoECDSA521,
-			ssh.KeyAlgoED25519,
-			ssh.KeyAlgoSKED25519,
-			ssh.KeyAlgoRSASHA256,
-			ssh.KeyAlgoRSASHA512,
-		},
 	})
 	if err != nil {
 		return nil, err

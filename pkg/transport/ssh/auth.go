@@ -10,48 +10,121 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/survey"
+	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
-	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-func keyTypeName(key ssh.PublicKey) string {
-	kt := key.Type()
-	switch kt {
-	case "ssh-rsa":
-		return "RSA"
-	case "ssh-dss":
-		return "DSA"
-	case "ssh-ed25519":
-		return "ED25519"
-	default:
-		if strings.HasPrefix(kt, "ecdsa-sha2-") {
-			return "ECDSA"
-		}
-	}
-	return kt
-}
-
-// DefaultKnownHostsPath returns default user knows hosts file.
-func DefaultKnownHostsPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".ssh", "known_hosts"), nil
-}
-
-// DefaultKnownHosts returns host key callback from default known hosts path, and error if any.
-func DefaultKnownHosts() (ssh.HostKeyCallback, error) {
-	p, err := DefaultKnownHostsPath()
+// NewKnownHostsCallback returns ssh.HostKeyCallback based on a file based on a
+// known_hosts file. http://man.openbsd.org/sshd#SSH_KNOWN_HOSTS_FILE_FORMAT
+//
+// If list of files is empty, then it will be read from the SSH_KNOWN_HOSTS
+// environment variable, example:
+//
+//	/home/foo/custom_known_hosts_file:/etc/custom_known/hosts_file
+//
+// If SSH_KNOWN_HOSTS is not set the following file locations will be used:
+//
+//	~/.ssh/known_hosts
+//	/etc/ssh/ssh_known_hosts
+func NewKnownHostsCallback(files ...string) (ssh.HostKeyCallback, error) {
+	db, err := newKnownHostsDb(files...)
 	if err != nil {
 		return nil, err
 	}
-	return knownhosts.New(p)
+	return db.HostKeyCallback(), err
+}
+
+func newKnownHostsDb(files ...string) (*knownhosts.HostKeyDB, error) {
+	var err error
+	if len(files) == 0 {
+		if files, err = getDefaultKnownHostsFiles(); err != nil {
+			return nil, err
+		}
+	}
+
+	if files, err = filterKnownHostsFiles(files...); err != nil {
+		return nil, err
+	}
+	return knownhosts.NewDB(files...)
+}
+
+func getDefaultKnownHostsFiles() ([]string, error) {
+	files := filepath.SplitList(os.Getenv("SSH_KNOWN_HOSTS"))
+	if len(files) != 0 {
+		return files, nil
+	}
+
+	homeDirPath, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{
+		filepath.Join(homeDirPath, ".ssh/known_hosts"),
+		"/etc/ssh/ssh_known_hosts",
+	}, nil
+}
+
+func (c *client) initializeHostKeyCallback() error {
+	var err error
+	if c.hostKeyCallback, err = NewKnownHostsCallback(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	if c.hostKeyCallback == nil {
+		if err := c.initializeHostKeyCallback(); err != nil {
+			return err
+		}
+	}
+	err := c.hostKeyCallback(hostname, remote, key)
+	if !knownhosts.IsHostUnknown(err) {
+		return err
+	}
+	homeDir, ferr := os.UserHomeDir()
+	if ferr != nil {
+		fmt.Fprintf(os.Stderr, "error: unable search user homeDir: %v", err)
+		return err
+	}
+	fd, ferr := os.OpenFile(filepath.Join(homeDir, ".ssh/known_hosts"), os.O_APPEND|os.O_WRONLY, 0600)
+	if ferr != nil {
+		fmt.Fprintf(os.Stderr, "error: unable open ~/.ssh/known_hosts: %v", ferr)
+		return err
+	}
+	defer fd.Close()
+	if ferr = knownhosts.WriteKnownHost(fd, hostname, remote, key); ferr != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to add host %s to known_hosts: %v\n", hostname, err)
+		return nil
+	}
+	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m* Added host %s to known_hosts\x1b[0m\n", hostname)
+	c.hostKeyCallback = nil // reinit
+	return nil
+}
+
+func filterKnownHostsFiles(files ...string) ([]string, error) {
+	var out []string
+	for _, file := range files {
+		_, err := os.Stat(file)
+		if err == nil {
+			out = append(out, file)
+			continue
+		}
+
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
+	if len(out) == 0 {
+		return nil, errors.New("unable to find any valid known_hosts file, set SSH_KNOWN_HOSTS env variable")
+	}
+	return out, nil
 }
 
 func (c *client) readPassword() (string, error) {
@@ -66,83 +139,6 @@ func (c *client) readPassword() (string, error) {
 		return "", err
 	}
 	return "", nil
-}
-
-func addForKnownHost(host string, remote net.Addr, key ssh.PublicKey, knownHostsFile string) error {
-	fd, err := os.OpenFile(knownHostsFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
-	remoteNormalized := knownhosts.Normalize(remote.String())
-	hostNormalized := knownhosts.Normalize(host)
-	addresses := []string{remoteNormalized}
-
-	if hostNormalized != remoteNormalized {
-		addresses = append(addresses, hostNormalized)
-	}
-	// default:
-	// "The authenticity of host '%s (%s)' can't be established.\n%s key fingerprint is %s\nAre you sure you want to continue connecting (yes/no)? "
-	_, err = fd.WriteString(knownhosts.Line(addresses, key) + "\n")
-
-	return err
-}
-
-func unfoldKeyError(hostname string, key ssh.PublicKey, ke *knownhosts.KeyError) {
-	k0 := ke.Want[0]
-	hostKeyType := keyTypeName(key)
-	localKeyType := keyTypeName(k0.Key)
-	fmt.Fprintf(os.Stderr, `@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
-Someone could be eavesdropping on you right now (man-in-the-middle attack)!
-It is also possible that the %s host key has just been changed.
-The fingerprint for the %s key sent by the remote host is
-%s.
-Please contact your system administrator.
-Add correct host key in %s to get rid of this message.
-Offending key in %s:%d. The fingerprint is
-%s.
-%s host key for %s has changed and you have requested strict checking.
-Host key verification failed.
-`, "\x1b[33m"+localKeyType+"\x1b[0m",
-		"\x1b[33m"+hostKeyType+"\x1b[0m",
-		"\x1b[33m"+ssh.FingerprintSHA256(key)+"\x1b[0m",
-		k0.Filename,
-		k0.Filename,
-		k0.Line,
-		"\x1b[33m"+ssh.FingerprintSHA256(k0.Key)+"\x1b[0m",
-		hostname, hostKeyType)
-}
-
-func checkForKnownHosts(host string, remote net.Addr, key ssh.PublicKey, knownHostsFile string) (bool, error) {
-	callback, err := knownhosts.New(knownHostsFile)
-	if err != nil {
-		return false, err
-	}
-	if err = callback(host, remote, key); err == nil {
-		return true, nil
-	}
-	var keyErr *knownhosts.KeyError
-	if errors.As(err, &keyErr) && len(keyErr.Want) > 0 {
-		unfoldKeyError(host, key, keyErr)
-		return true, keyErr
-	}
-	return false, err
-}
-
-func (c *client) HostKeyCallback(host string, remote net.Addr, key ssh.PublicKey) error {
-	knownHostsFile, err := DefaultKnownHostsPath()
-	if err != nil {
-		return err
-	}
-	found, err := checkForKnownHosts(host, remote, key, knownHostsFile)
-	if found {
-		return err
-	}
-	return addForKnownHost(host, remote, key, knownHostsFile)
 }
 
 func (c *client) openPrivateKey(name string) (ssh.Signer, error) {
@@ -189,8 +185,8 @@ func (c *client) PublicKeys() ([]ssh.Signer, error) {
 	}
 	signers := make([]ssh.Signer, 0, 5)
 	// TODO: support id_ed25519_sk id_ecdsa_sk ??
-	for _, n := range []string{"id_ed25519", "id_ecdsa", "id_rsa"} {
-		keyPath := filepath.Join(homePath, ".ssh", n)
+	for _, supportKey := range []string{"id_ed25519", "id_ecdsa", "id_rsa"} {
+		keyPath := filepath.Join(homePath, ".ssh", supportKey)
 		signer, err := c.openPrivateKey(keyPath)
 		if err != nil {
 			continue

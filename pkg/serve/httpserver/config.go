@@ -27,7 +27,7 @@ type ServerConfig struct {
 	DecryptedKey  string          `toml:"decrypted_key,omitempty"`
 	Cache         *serve.Cache    `toml:"cache,omitempty"`
 	DB            *serve.Database `toml:"database,omitempty"`
-	ZetaOSS       *serve.OSS      `toml:"oss,omitempty"`
+	PersistentOSS *serve.OSS      `toml:"oss,omitempty"` // Persistent storage
 }
 
 func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
@@ -47,13 +47,13 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 		WriteTimeout: serve.Duration{
 			Duration: DefaultWriteTimeout,
 		},
-		BannerVersion: "HugeSCM-" + version.GetVersion(),
+		BannerVersion: "HugeSCM/" + version.GetVersion(),
 	}
 	if _, err = toml.NewDecoder(r).Decode(sc); err != nil {
 		return nil, err
 	}
 	sc.DB.Decrypt(sc.DecryptedKey)
-	sc.ZetaOSS.Decrypt(sc.DecryptedKey)
+	sc.PersistentOSS.Decrypt(sc.DecryptedKey)
 	if sc.Cache == nil {
 		sc.Cache = &serve.Cache{
 			NumCounters: 1000000000,

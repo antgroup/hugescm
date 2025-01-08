@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/survey"
@@ -73,6 +74,13 @@ func (c *client) readHostKeyDB() (err error) {
 	return
 }
 
+func keyAlgoName(s string) string {
+	if suffix, ok := strings.CutPrefix(s, "ssh-"); ok {
+		return strings.ToUpper(suffix)
+	}
+	return s
+}
+
 // https://github.com/golang/go/issues/28870
 func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	innerCallback := c.hostKeyDB.HostKeyCallback()
@@ -96,7 +104,11 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 		fmt.Fprintf(os.Stderr, "error: failed to add host %s to known_hosts: %v\n", hostname, err)
 		return nil
 	}
-	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m* Added host %s to known_hosts\x1b[0m\n", hostname)
+	serverName := hostname
+	if domain, port, err := net.SplitHostPort(serverName); err == nil && port == "22" {
+		serverName = domain
+	}
+	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m* Permanently added '%s' (%s) to the list of known hosts\x1b[0m\n", serverName, keyAlgoName(key.Type()))
 	c.hostKeyDB = nil
 	return nil
 }
@@ -121,18 +133,43 @@ func filterKnownHostsFiles(files ...string) ([]string, error) {
 	return out, nil
 }
 
-func (c *client) readPassword() (string, error) {
+func (c *client) makeAuth() ([]ssh.AuthMethod, error) {
+	auth := make([]ssh.AuthMethod, 0, 4)
+	auth = append(auth, ssh.PublicKeysCallback(c.PublicKeys))
+	if len(c.Password) != 0 {
+		auth = append(auth, ssh.Password(c.Password)) // static password
+		return auth, nil
+	}
 	if !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
-		return "", errors.New("terminal prompts disabled")
+		return auth, nil
 	}
-	var password string
-	prompt := &survey.Password{
-		Message: fmt.Sprintf("Password for '%s@%s':", c.User, c.Endpoint),
+	auth = append(auth, ssh.PasswordCallback(func() (secret string, err error) {
+		prompt := &survey.Password{
+			Message: fmt.Sprintf("Password for '%s@%s':", c.User, c.Endpoint),
+		}
+		if err = survey.AskOne(prompt, &secret); err != nil {
+			return
+		}
+		return
+	}))
+	return auth, nil
+}
+
+var supportedHostKeyAlgos = []string{
+	ssh.CertAlgoRSASHA256v01, ssh.CertAlgoRSASHA512v01,
+	ssh.CertAlgoRSAv01, ssh.CertAlgoDSAv01, ssh.CertAlgoECDSA256v01,
+	ssh.CertAlgoECDSA384v01, ssh.CertAlgoECDSA521v01, ssh.CertAlgoED25519v01,
+
+	ssh.KeyAlgoED25519,
+	ssh.KeyAlgoECDSA256, ssh.KeyAlgoECDSA384, ssh.KeyAlgoECDSA521,
+	ssh.KeyAlgoRSASHA256, ssh.KeyAlgoRSASHA512,
+}
+
+func (c *client) supportedHostKeyAlgos() []string {
+	if hostKeyAlgorithms := c.hostKeyDB.HostKeyAlgorithms(c.hostWithPort); len(hostKeyAlgorithms) != 0 {
+		return hostKeyAlgorithms
 	}
-	if err := survey.AskOne(prompt, &password); err != nil {
-		return "", err
-	}
-	return "", nil
+	return supportedHostKeyAlgos
 }
 
 func (c *client) openPrivateKey(name string) (ssh.Signer, error) {

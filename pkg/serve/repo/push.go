@@ -57,7 +57,7 @@ type Command struct {
 }
 
 func (c *Command) W(message string) string {
-	return serve.T(c.Language, message)
+	return serve.Translate(c.Language, message)
 }
 
 func (c *Command) UpdateStats(s string) {

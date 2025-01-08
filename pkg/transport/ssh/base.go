@@ -66,7 +66,8 @@ func (c *client) traceConn(conn net.Conn) {
 	if !c.verbose {
 		return
 	}
-	addr, port, err := net.SplitHostPort(conn.RemoteAddr().String())
+	remoteAddr := conn.RemoteAddr()
+	addr, port, err := net.SplitHostPort(remoteAddr.String())
 	if err != nil {
 		return
 	}
@@ -113,20 +114,16 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 			return nil, err
 		}
 	}
-	auth := []ssh.AuthMethod{
-		ssh.PublicKeysCallback(c.PublicKeys),
-	}
-	if len(c.Password) != 0 {
-		auth = append(auth, ssh.Password(c.Password)) // no retry
-	} else {
-		auth = append(auth, ssh.RetryableAuthMethod(ssh.PasswordCallback(c.readPassword), 3))
+	auth, err := c.makeAuth()
+	if err != nil {
+		return nil, err
 	}
 	cc, chans, reqs, err := ssh.NewClientConn(conn, addr, &ssh.ClientConfig{
 		User:              c.User,
 		Auth:              auth,
 		HostKeyCallback:   c.HostKeyCallback,
 		BannerCallback:    ssh.BannerDisplayStderr(),
-		HostKeyAlgorithms: c.hostKeyDB.HostKeyAlgorithms(c.hostWithPort),
+		HostKeyAlgorithms: c.supportedHostKeyAlgos(),
 	})
 	if err != nil {
 		return nil, err
@@ -139,7 +136,7 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 		return nil, err
 	}
 	cmd := &Command{client: client, Session: session, Reader: bytes.NewReader(nil), DbgPrint: c.DbgPrint}
-	session.Stderr = &cmd.stderr // bind stderr
+	session.Stderr = os.Stderr // bind stderr
 	_ = cmd.Setenv("LANG", os.Getenv("LANG"))
 	_ = cmd.Setenv("TERM", os.Getenv("TERM"))
 	_ = cmd.Setenv("SERVER_NAME", c.Host)

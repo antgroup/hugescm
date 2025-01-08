@@ -61,7 +61,7 @@ func (s *Server) initialize() error {
 }
 
 func NewServer(sc *ServerConfig) (*Server, error) {
-	if sc.DB == nil || sc.ZetaOSS == nil {
+	if sc.DB == nil || sc.PersistentOSS == nil {
 		fmt.Fprintf(os.Stderr, "DB or OSS not configured\n")
 		return nil, errors.New("missing config")
 	}
@@ -85,7 +85,7 @@ func NewServer(sc *ServerConfig) (*Server, error) {
 	if srv.db, err = database.NewDB(cfg); err != nil {
 		return nil, err
 	}
-	if srv.hub, err = repo.NewRepositories(sc.Repositories, sc.ZetaOSS, sc.Cache, srv.db); err != nil {
+	if srv.hub, err = repo.NewRepositories(sc.Repositories, sc.PersistentOSS, sc.Cache, srv.db); err != nil {
 		_ = srv.db.Close()
 		return nil, err
 	}
@@ -132,7 +132,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Server", s.serverName)
-	w.Header().Set("X-Zeta-Server", s.serverName)
 	tr := newTrackedReader(r.Body)
 	r.Body = tr
 	now := time.Now()

@@ -64,7 +64,7 @@ func (s *Server) LsBranchReference(e *Session, branchName string) int {
 	b, err := s.db.FindBranch(e.Context(), e.RID, branchName)
 	if err != nil {
 		if database.IsErrRevisionNotFound(err) {
-			e.WriteError(e.W("branch '%s' not exist"), err)
+			e.WriteError(e.W("branch '%s' not exist"), branchName)
 			return 404
 		}
 		e.WriteError("find branch error: %v", err)

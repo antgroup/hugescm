@@ -71,11 +71,29 @@ func registerLanguages() error {
 	return nil
 }
 
-func T(lang, text string) string {
-	if d, ok := languagesDicts[lang]; ok {
+func Translate(langKey, text string) string {
+	if d, ok := languagesDicts[langKey]; ok {
 		return d.translateTo(text)
 	}
 	return text
+}
+
+func parseEnvLc(s string) string {
+	x := strings.Split(s, ".")
+	// "C" means "ANSI-C" and "POSIX", if locale set to C, we can simple
+	// set returned language to "en_US"
+	if x[0] == "C" {
+		return "en_US"
+	}
+	return x[0]
+}
+
+func ParseLangEnv(langEnv string) string {
+	if len(langEnv) == 0 {
+		return "en-US"
+	}
+	tag := language.Make(parseEnvLc(langEnv))
+	return tag.String()
 }
 
 func RegisterLanguageMatcher() error {
@@ -112,5 +130,5 @@ func W(r *http.Request, message string) string {
 	lang, _ := r.Cookie("lang")
 	accept := r.Header.Get("Accept-Language")
 	tag, _ := language.MatchStrings(languageMatcher, lang.String(), accept)
-	return T(tag.String(), message)
+	return Translate(tag.String(), message)
 }

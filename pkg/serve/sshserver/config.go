@@ -27,7 +27,7 @@ type ServerConfig struct {
 	DecryptedKey    string          `toml:"decrypted_key,omitempty"`
 	Cache           *serve.Cache    `toml:"cache,omitempty"`
 	DB              *serve.Database `toml:"database,omitempty"`
-	ZetaOSS         *serve.OSS      `toml:"oss,omitempty"`
+	PersistentOSS   *serve.OSS      `toml:"oss,omitempty"`
 }
 
 func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
@@ -50,7 +50,7 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 		return nil, err
 	}
 	sc.DB.Decrypt(sc.DecryptedKey)
-	sc.ZetaOSS.Decrypt(sc.DecryptedKey)
+	sc.PersistentOSS.Decrypt(sc.DecryptedKey)
 	if sc.Cache == nil {
 		sc.Cache = &serve.Cache{
 			NumCounters: 1000000000,

@@ -193,7 +193,7 @@ func (s *Server) TagPush(e *Session, tagName string, oldRev, newRev plumbing.Has
 		OldRev:        oldRev.String(),
 		NewRev:        newRev.String(),
 		Terminal:      e.Getenv("TERM"),
-		Language:      e.Getenv("LANG"),
+		Language:      e.language,
 	}
 	if tag != nil && tag.Hash != command.OldRev {
 		return e.ExitFormat(409, "%s", e.W("tag is updated, please update and try again")) //nolint:govet
@@ -225,7 +225,7 @@ func (s *Server) BranchPush(e *Session, branchName string, oldRev, newRev plumbi
 		OldRev:        oldRev.String(),
 		NewRev:        newRev.String(),
 		Terminal:      e.Getenv("TERM"),
-		Language:      e.Getenv("LANG"),
+		Language:      e.language,
 	}
 	if oldBranch != nil && oldBranch.Hash != command.OldRev {
 		return e.ExitFormat(409, "%s", e.W("branch is updated, please update and try again")) //nolint:govet

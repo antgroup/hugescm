@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
@@ -80,6 +81,7 @@ type Session struct {
 	*SessionCtx
 	*request
 	env      map[string]string
+	language string
 	written  int64
 	received int64
 	start    time.Time
@@ -102,6 +104,7 @@ func (s *Server) NewSession(se ssh.Session) (*Session, error) {
 		start:      time.Now(),
 	}
 	e.initializeEnv()
+	e.language = serve.ParseLangEnv(e.Getenv("LANG"))
 	return e, nil
 }
 
@@ -150,7 +153,7 @@ func (e *Session) Write(data []byte) (int, error) {
 // WriteError: format error after write to session.Stderr
 func (e *Session) WriteError(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	_, _ = io.WriteString(e.Stderr(), message)
+	fmt.Fprintln(e.Stderr(), strings.TrimRightFunc(message, unicode.IsSpace))
 }
 
 func (e *Session) makeRemoteURL(endpoint string) string {
@@ -158,10 +161,7 @@ func (e *Session) makeRemoteURL(endpoint string) string {
 }
 
 func (e *Session) W(message string) string {
-	if lang, ok := e.env["LANG"]; ok {
-		return serve.T(lang, message)
-	}
-	return message
+	return serve.Translate(e.language, message)
 }
 
 func (e *Session) ExitError(err error) int {

@@ -4,7 +4,6 @@
 package ssh
 
 import (
-	"bytes"
 	"io"
 	"sync"
 
@@ -16,7 +15,6 @@ type Command struct {
 	client *ssh.Client
 	*ssh.Session
 	io.Reader
-	stderr    bytes.Buffer
 	DbgPrint  func(format string, args ...any)
 	once      sync.Once
 	lastError *zeta.ErrStatusCode
@@ -24,13 +22,6 @@ type Command struct {
 
 func (c *Command) LastError() error {
 	return c.lastError
-}
-
-func fallbackString(s, d string) string {
-	if len(s) != 0 {
-		return s
-	}
-	return d
 }
 
 func (c *Command) Setenv(name string, value string) error {
@@ -57,12 +48,12 @@ func (c *Command) Close() error {
 		case *ssh.ExitError:
 			c.lastError = &zeta.ErrStatusCode{
 				Code:    a.ExitStatus(),
-				Message: fallbackString(c.stderr.String(), a.String()),
+				Message: a.String(),
 			}
 		case *ssh.ExitMissingError:
 			c.lastError = &zeta.ErrStatusCode{
 				Code:    500,
-				Message: fallbackString(c.stderr.String(), a.Error()),
+				Message: a.Error(),
 			}
 		}
 		_ = c.client.Close()

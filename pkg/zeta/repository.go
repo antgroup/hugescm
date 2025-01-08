@@ -267,7 +267,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	}
 	ref, err := tr.FetchReference(ctx, refname)
 	if err != nil {
-		die_error("fetch reference '%s': %v", refname, err)
+		die_error("Fetch reference '%s': %v", refname, err)
 		return nil, err
 	}
 	if target.IsZero() {

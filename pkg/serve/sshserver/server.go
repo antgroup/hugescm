@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/antgroup/hugescm/pkg/serve"
 	"github.com/antgroup/hugescm/pkg/serve/database"
 	"github.com/antgroup/hugescm/pkg/serve/repo"
 	"github.com/antgroup/hugescm/pkg/serve/sshserver/rainbow"
@@ -51,7 +52,7 @@ func NewServer(sc *ServerConfig) (*Server, error) {
 	if s.db, err = database.NewDB(cfg); err != nil {
 		return nil, err
 	}
-	if s.hub, err = repo.NewRepositories(sc.Repositories, sc.ZetaOSS, sc.Cache, s.db); err != nil {
+	if s.hub, err = repo.NewRepositories(sc.Repositories, sc.PersistentOSS, sc.Cache, s.db); err != nil {
 		_ = s.db.Close()
 		return nil, err
 	}
@@ -81,6 +82,9 @@ func addHostKeyInternal(srv *ssh.Server, pemBytes []byte) {
 }
 
 func (s *Server) ListenAndServe() error {
+	if err := serve.RegisterLanguageMatcher(); err != nil {
+		logrus.Errorf("register languages matcher error: %v", err)
+	}
 	logrus.Infof("Zeta SSH Server listen: %v", s.Listen)
 	return s.srv.ListenAndServe()
 }

@@ -47,7 +47,7 @@ const version = "1.2"
 
 var _ = version
 
-type configFinder func() string
+type ConfigFinder func() string
 
 // UserSettings checks ~/.ssh and /etc/ssh for configuration files. The config
 // files are parsed and cached the first time Get() or GetStrict() is called.
@@ -55,11 +55,11 @@ type UserSettings struct {
 	IgnoreErrors         bool
 	IgnoreMatchDirective bool
 	customConfig         *Config
-	customConfigFinder   configFinder
+	CustomConfigFinder   ConfigFinder
 	systemConfig         *Config
-	systemConfigFinder   configFinder
+	SystemConfigFinder   ConfigFinder
 	userConfig           *Config
-	userConfigFinder     configFinder
+	UserConfigFinder     ConfigFinder
 	loadConfigs          sync.Once
 	onceErr              error
 }
@@ -73,7 +73,7 @@ func homedir() string {
 	}
 }
 
-func userConfigFinder() string {
+func UserConfigFinder() string {
 	return filepath.Join(homedir(), ".ssh", "config")
 }
 
@@ -83,8 +83,8 @@ func userConfigFinder() string {
 var DefaultUserSettings = &UserSettings{
 	IgnoreErrors:         false,
 	IgnoreMatchDirective: false,
-	systemConfigFinder:   systemConfigFinder,
-	userConfigFinder:     userConfigFinder,
+	SystemConfigFinder:   SystemConfigFinder,
+	UserConfigFinder:     UserConfigFinder,
 }
 
 func findVal(c *Config, alias, key string) (string, error) {
@@ -264,15 +264,15 @@ func (u *UserSettings) ConfigFinder(f func() string) {
 	if f == nil {
 		panic("cannot call ConfigFinder with nil function")
 	}
-	u.customConfigFinder = f
+	u.CustomConfigFinder = f
 }
 
 func (u *UserSettings) doLoadConfigs() {
 	u.loadConfigs.Do(func() {
 		var filename string
 		var err error
-		if u.customConfigFinder != nil {
-			filename = u.customConfigFinder()
+		if u.CustomConfigFinder != nil {
+			filename = u.CustomConfigFinder()
 			u.customConfig, err = parseFile(filename, u.IgnoreMatchDirective)
 			// IsNotExist should be returned because a user specified this
 			// function - not existing likely means they made an error
@@ -282,20 +282,20 @@ func (u *UserSettings) doLoadConfigs() {
 			}
 			return
 		}
-		if u.userConfigFinder == nil {
-			filename = userConfigFinder()
+		if u.UserConfigFinder == nil {
+			filename = UserConfigFinder()
 		} else {
-			filename = u.userConfigFinder()
+			filename = u.UserConfigFinder()
 		}
 		u.userConfig, err = parseFile(filename, u.IgnoreMatchDirective)
 		if err != nil && !os.IsNotExist(err) {
 			u.onceErr = err
 			return
 		}
-		if u.systemConfigFinder == nil {
-			filename = systemConfigFinder()
+		if u.SystemConfigFinder == nil {
+			filename = SystemConfigFinder()
 		} else {
-			filename = u.systemConfigFinder()
+			filename = u.SystemConfigFinder()
 		}
 		u.systemConfig, err = parseFile(filename, u.IgnoreMatchDirective)
 		if err != nil && !os.IsNotExist(err) {

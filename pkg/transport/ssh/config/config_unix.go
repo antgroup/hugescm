@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// systemConfigFinder return ~/etc/ssh/ssh_config on unix,
-func systemConfigFinder() string {
+// SystemConfigFinder return ~/etc/ssh/ssh_config on unix,
+func SystemConfigFinder() string {
 	return filepath.Join("/", "etc", "ssh", "ssh_config")
 }
 

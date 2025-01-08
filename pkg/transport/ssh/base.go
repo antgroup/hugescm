@@ -42,6 +42,13 @@ type client struct {
 	verbose      bool
 }
 
+var DefaultUserSettings = &config.UserSettings{
+	IgnoreErrors:         false,
+	IgnoreMatchDirective: true,
+	SystemConfigFinder:   config.SystemConfigFinder,
+	UserConfigFinder:     config.UserConfigFinder,
+}
+
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
 	cc := &client{
 		Endpoint:    endpoint,
@@ -49,13 +56,13 @@ func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation t
 		verbose:     verbose,
 	}
 	var err error
-	if cc.Hostname, err = config.DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err != nil || len(cc.Hostname) == 0 {
+	if cc.Hostname, err = DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err != nil || len(cc.Hostname) == 0 {
 		cc.Hostname = endpoint.Host
 	}
-	if cc.Port, err = config.DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err != nil || len(cc.Port) == 0 {
+	if cc.Port, err = DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err != nil || len(cc.Port) == 0 {
 		cc.Port = strconv.Itoa(endpoint.Port)
 	}
-	cc.IdentityFile = config.DefaultUserSettings.Get(endpoint.Host, "IdentityFile")
+	cc.IdentityFile = DefaultUserSettings.Get(endpoint.Host, "IdentityFile")
 	return cc, nil
 }
 

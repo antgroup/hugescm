@@ -9,7 +9,7 @@ import (
 )
 
 // systemConfigFinder return C:\ProgramData\ssh\ssh_config on windows
-func systemConfigFinder() string {
+func SystemConfigFinder() string {
 	return os.ExpandEnv("${ProgramData}\\ssh\\ssh_config")
 }
 

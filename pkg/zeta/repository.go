@@ -182,6 +182,15 @@ func parseExtraHeader(cfg *config.Config, values map[string]StringArray) []strin
 	return extraHeader
 }
 
+func parseExtraEnv(cfg *config.Config, values map[string]StringArray) []string {
+	extraEnv := make([]string, 0, len(cfg.SSH.ExtraEnv))
+	if sa, ok := getStringsFromValues("ssh.extraEnv", values); ok {
+		extraEnv = append(extraEnv, sa...)
+	}
+	extraEnv = append(extraEnv, cfg.SSH.ExtraEnv...)
+	return extraEnv
+}
+
 func parseSharingRoot(cfg *config.Config, values map[string]StringArray) (string, bool) {
 	if sharingRoot, ok := getStringFromValues("core.sharingRoot", values); ok && len(sharingRoot) > 0 && filepath.IsAbs(sharingRoot) {
 		return sharingRoot, true
@@ -212,6 +221,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	endpoint, err := transport.NewEndpoint(opts.Remote, &transport.Options{
 		InsecureSkipTLS: parseInsecureSkipTLS(cfg, values),
 		ExtraHeader:     parseExtraHeader(cfg, values),
+		ExtraEnv:        parseExtraEnv(cfg, values),
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bad remote: %v\n", err)
@@ -725,6 +735,7 @@ func (r *Repository) newTransport(ctx context.Context, operation transport.Opera
 	endpoint, err := transport.NewEndpoint(r.Core.Remote, &transport.Options{
 		InsecureSkipTLS: parseInsecureSkipTLS(r.Config, r.values),
 		ExtraHeader:     parseExtraHeader(r.Config, r.values),
+		ExtraEnv:        parseExtraEnv(r.Config, r.values),
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bad remote: %v\n", err)

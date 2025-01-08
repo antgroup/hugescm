@@ -108,21 +108,36 @@ type Endpoint struct {
 	InsecureSkipTLS bool
 	// ExtraHeader extra header
 	ExtraHeader map[string]string
+	// ExtraEnv extra env
+	ExtraEnv map[string]string
 }
 
 type Options struct {
 	InsecureSkipTLS bool
 	ExtraHeader     []string
+	ExtraEnv        []string
 }
 
 func (opts *Options) parseExtraHeader() map[string]string {
 	m := make(map[string]string)
 	for _, h := range opts.ExtraHeader {
-		i := strings.IndexByte(h, ':')
-		if i == -1 {
+		k, v, ok := strings.Cut(h, ":")
+		if !ok {
 			continue
 		}
-		m[strings.ToLower(h[:i])] = strings.TrimLeftFunc(h[i+1:], unicode.IsSpace)
+		m[strings.ToLower(k)] = strings.TrimLeftFunc(v, unicode.IsSpace)
+	}
+	return m
+}
+
+func (opts *Options) parseExtraEnv() map[string]string {
+	m := make(map[string]string)
+	for _, e := range opts.ExtraEnv {
+		k, v, ok := strings.Cut(e, "=")
+		if !ok {
+			continue
+		}
+		m[k] = v
 	}
 	return m
 }
@@ -200,6 +215,7 @@ func parseURL(endpoint string, opts *Options) (*Endpoint, error) {
 	if opts != nil {
 		e.InsecureSkipTLS = opts.InsecureSkipTLS
 		e.ExtraHeader = opts.parseExtraHeader()
+		e.ExtraEnv = opts.parseExtraEnv()
 	}
 	return e, nil
 }

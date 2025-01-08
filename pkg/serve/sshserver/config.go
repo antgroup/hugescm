@@ -44,7 +44,7 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 		MaxTimeout: serve.Duration{
 			Duration: DefaultMaxTimeout,
 		},
-		BannerVersion: "ZetaServe-" + version.GetVersion(),
+		BannerVersion: "HugeSCM-" + version.GetVersion(),
 	}
 	if _, err = toml.NewDecoder(r).Decode(sc); err != nil {
 		return nil, err

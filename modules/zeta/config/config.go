@@ -139,6 +139,16 @@ func (h *HTTP) Overwrite(o *HTTP) {
 	h.SSLVerify.Merge(&o.SSLVerify)
 }
 
+type SSH struct {
+	ExtraEnv StringArray `toml:"extraEnv,omitempty"`
+}
+
+func (u *SSH) Overwrite(o *SSH) {
+	if len(o.ExtraEnv) > 0 {
+		u.ExtraEnv = append(u.ExtraEnv, o.ExtraEnv...)
+	}
+}
+
 type Transport struct {
 	MaxEntries    int    `toml:"maxEntries,omitempty"`
 	LargeSizeRaw  Size   `toml:"largeSize,omitempty"`
@@ -188,6 +198,7 @@ type Config struct {
 	User      User      `toml:"user,omitempty"`
 	Fragment  Fragment  `toml:"fragment,omitempty"`
 	HTTP      HTTP      `toml:"http,omitempty"`
+	SSH       SSH       `toml:"ssh,omitempty"`
 	Transport Transport `toml:"transport,omitempty"`
 	Diff      Diff      `toml:"diff,omitempty"`
 	Merge     Merge     `toml:"merge,omitempty"`
@@ -199,6 +210,7 @@ func (c *Config) Overwrite(co *Config) {
 	c.User.Overwrite(&co.User)
 	c.Fragment.Overwrite(&co.Fragment)
 	c.HTTP.Overwrite(&co.HTTP)
+	c.SSH.Overwrite(&co.SSH)
 	c.Transport.Overwrite(&co.Transport)
 	c.Diff.Overwrite(&co.Diff)
 	c.Merge.Overwrite(&co.Merge)

@@ -6,7 +6,6 @@ package ssh
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -69,21 +68,16 @@ func getDefaultKnownHostsFiles() ([]string, error) {
 	}, nil
 }
 
-func (c *client) initializeHostKeyCallback() error {
-	var err error
-	if c.hostKeyCallback, err = NewKnownHostsCallback(); err != nil {
-		return err
-	}
-	return nil
+func (c *client) readHostKeyDB() (err error) {
+	c.hostKeyDB, err = newKnownHostsDb()
+	return
 }
 
+// https://github.com/golang/go/issues/28870
 func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
-	if c.hostKeyCallback == nil {
-		if err := c.initializeHostKeyCallback(); err != nil {
-			return err
-		}
-	}
-	err := c.hostKeyCallback(hostname, remote, key)
+	innerCallback := c.hostKeyDB.HostKeyCallback()
+	c.DbgPrint("Server host key: %s %s", key.Type(), ssh.FingerprintSHA256(key))
+	err := innerCallback(hostname, remote, key)
 	if !knownhosts.IsHostUnknown(err) {
 		return err
 	}
@@ -103,7 +97,7 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 		return nil
 	}
 	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m* Added host %s to known_hosts\x1b[0m\n", hostname)
-	c.hostKeyCallback = nil // reinit
+	c.hostKeyDB = nil
 	return nil
 }
 
@@ -142,14 +136,9 @@ func (c *client) readPassword() (string, error) {
 }
 
 func (c *client) openPrivateKey(name string) (ssh.Signer, error) {
-	fd, err := os.Open(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		c.DbgPrint("read private key %s error: %v", name, err)
-		return nil, err
-	}
-	defer fd.Close()
-	buf, err := io.ReadAll(fd)
-	if err != nil {
 		return nil, err
 	}
 	signer, err := ssh.ParsePrivateKey(buf)
@@ -196,5 +185,6 @@ func (c *client) PublicKeys() ([]ssh.Signer, error) {
 	if agnetSigners, err := c.sshAuthSigners(); err == nil && len(agnetSigners) > 0 {
 		signers = append(signers, agnetSigners...)
 	}
+	// TODO: Server accepts key:
 	return signers, nil
 }

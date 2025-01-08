@@ -17,6 +17,7 @@ import (
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/transport/proxy"
+	"github.com/antgroup/hugescm/pkg/transport/ssh/config"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
 	"golang.org/x/crypto/ssh"
 )
@@ -35,17 +36,27 @@ type client struct {
 	*transport.Endpoint
 	proxyConfig  *proxy.ProxyConfig
 	hostKeyDB    *knownhosts.HostKeyDB
-	hostWithPort string
+	Hostname     string
+	Port         string
+	IdentityFile string
 	verbose      bool
 }
 
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
-	return &client{
-		Endpoint:     endpoint,
-		proxyConfig:  proxy.ProxyFromEnv(),
-		hostWithPort: net.JoinHostPort(endpoint.Host, strconv.Itoa(endpoint.Port)),
-		verbose:      verbose,
-	}, nil
+	cc := &client{
+		Endpoint:    endpoint,
+		proxyConfig: proxy.ProxyFromEnv(),
+		verbose:     verbose,
+	}
+	var err error
+	if cc.Hostname, err = config.DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err != nil || len(cc.Hostname) == 0 {
+		cc.Hostname = endpoint.Host
+	}
+	if cc.Port, err = config.DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err != nil || len(cc.Port) == 0 {
+		cc.Port = strconv.Itoa(endpoint.Port)
+	}
+	cc.IdentityFile = config.DefaultUserSettings.Get(endpoint.Host, "IdentityFile")
+	return cc, nil
 }
 
 func (c *client) DialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
@@ -75,7 +86,7 @@ func (c *client) traceConn(conn net.Conn) {
 }
 
 func (c *client) NewBaseCommand(ctx context.Context) (*Command, error) {
-	addr := net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
+	addr := net.JoinHostPort(c.Hostname, c.Port)
 	conn, err := c.DialContext(ctx, "tcp", addr)
 	if err != nil {
 		return nil, err

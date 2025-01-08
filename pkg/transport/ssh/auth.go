@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/env"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/survey"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
 	"golang.org/x/crypto/ssh"
@@ -166,7 +167,7 @@ var supportedHostKeyAlgos = []string{
 }
 
 func (c *client) supportedHostKeyAlgos() []string {
-	if hostKeyAlgorithms := c.hostKeyDB.HostKeyAlgorithms(c.hostWithPort); len(hostKeyAlgorithms) != 0 {
+	if hostKeyAlgorithms := c.hostKeyDB.HostKeyAlgorithms(net.JoinHostPort(c.Hostname, c.Port)); len(hostKeyAlgorithms) != 0 {
 		return hostKeyAlgorithms
 	}
 	return supportedHostKeyAlgos
@@ -205,14 +206,23 @@ func (c *client) sshAuthSigners() ([]ssh.Signer, error) {
 }
 
 func (c *client) PublicKeys() ([]ssh.Signer, error) {
-	homePath, err := os.UserHomeDir()
+	if len(c.IdentityFile) != 0 {
+		signer, err := c.openPrivateKey(strengthen.ExpandPath(c.IdentityFile))
+		if err == nil {
+			return []ssh.Signer{signer}, nil
+		}
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
 	signers := make([]ssh.Signer, 0, 5)
 	// TODO: support id_ed25519_sk id_ecdsa_sk ??
 	for _, supportKey := range []string{"id_ed25519", "id_ecdsa", "id_rsa"} {
-		keyPath := filepath.Join(homePath, ".ssh", supportKey)
+		keyPath := filepath.Join(userHomeDir, ".ssh", supportKey)
 		signer, err := c.openPrivateKey(keyPath)
 		if err != nil {
 			continue
@@ -222,6 +232,5 @@ func (c *client) PublicKeys() ([]ssh.Signer, error) {
 	if agnetSigners, err := c.sshAuthSigners(); err == nil && len(agnetSigners) > 0 {
 		signers = append(signers, agnetSigners...)
 	}
-	// TODO: Server accepts key:
 	return signers, nil
 }

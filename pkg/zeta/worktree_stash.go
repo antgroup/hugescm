@@ -228,7 +228,7 @@ func (w *Worktree) StashShow(ctx context.Context, stashRev string) error {
 	}
 	p := NewPrinter(ctx)
 	defer p.Close()
-	object.StatsWriteTo(p, stats, p.UseColor())
+	object.StatsWriteTo(p, stats, p.Is256ColorSupported())
 	fmt.Fprintf(p, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
 	return nil
 }

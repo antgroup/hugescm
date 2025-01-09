@@ -225,7 +225,7 @@ func statusShow(status Status, root string, z bool) {
 		changes = append(changes, change{path: p, FileStatus: s})
 	}
 	sort.Sort(changeOrder(changes))
-	if isTrueColorTerminal && !z {
+	if is256ColorSupported && !z {
 		for _, c := range changes {
 			fmt.Fprintf(os.Stdout, "\x1b[32m%c\x1b[31m%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
 		}

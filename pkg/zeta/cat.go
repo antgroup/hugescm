@@ -46,7 +46,7 @@ func (opts *CatOptions) Println(a ...any) error {
 
 func (opts *CatOptions) NewFD() (io.WriteCloser, bool, error) {
 	if len(opts.Output) == 0 {
-		return &NopWriteCloser{Writer: os.Stdout}, IsTerminal(os.Stdout.Fd()), nil
+		return &NopWriteCloser{Writer: os.Stdout}, is256ColorSupported, nil
 	}
 	fd, err := os.Create(opts.Output)
 	return fd, false, err
@@ -145,7 +145,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 		return err
 	}
 	defer b.Close()
-	fd, outTerm, err := opts.NewFD()
+	fd, isColorSupported, err := opts.NewFD()
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}
-	if outTerm && charset == diferenco.BINARY {
+	if isColorSupported && charset == diferenco.BINARY {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
@@ -178,7 +178,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 }
 
 func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *object.Fragments) error {
-	fd, outTerm, err := opts.NewFD()
+	fd, isColorSupported, err := opts.NewFD()
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 	}
 	// fragments ignore --textconv
 	reader := io.MultiReader(readers...)
-	if outTerm {
+	if isColorSupported {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))

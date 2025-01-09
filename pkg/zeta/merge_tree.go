@@ -189,7 +189,6 @@ func (r *Repository) resolveAncestorTree(ctx context.Context, into, from, base *
 	if err != nil {
 		return plumbing.ZeroHash, nil, err
 	}
-
 	return bases[0].Hash, o, nil
 }
 

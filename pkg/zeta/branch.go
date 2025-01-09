@@ -146,8 +146,12 @@ func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
 			continue
 		}
 		if target == r.Name() {
-			if isTrueColorTerminal {
+			if isTrueColorSupported {
 				fmt.Fprintf(w, "\x1b[38;2;67;233;123m* %s\x1b[0m\n", branchName)
+				continue
+			}
+			if is256ColorSupported {
+				fmt.Fprintf(w, "\x1b[32m* %s\x1b[0m\n", branchName)
 				continue
 			}
 			fmt.Fprintf(w, " %s\n", branchName)

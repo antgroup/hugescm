@@ -3,7 +3,6 @@ package zeta
 import (
 	"context"
 	"fmt"
-	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -22,7 +21,7 @@ type DiffOptions struct {
 	Shortstat  bool
 	Staged     bool
 	NewLine    byte
-	NewOutput  func(context.Context) (io.WriteCloser, bool, error) // new writer func
+	NewOutput  func(context.Context) (Printer, error) // new writer func
 	NoRename   bool
 	// index value
 	MergeBase string
@@ -62,7 +61,7 @@ func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes
 }
 
 func (opts *DiffOptions) showNameOnly(ctx context.Context, changes object.Changes) error {
-	w, _, err := opts.NewOutput(ctx)
+	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,7 @@ func changeStat(c *object.Change) (string, byte) {
 }
 
 func (opts *DiffOptions) showNameStatus(ctx context.Context, changes object.Changes) error {
-	w, _, err := opts.NewOutput(ctx)
+	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
 	}
@@ -141,7 +140,7 @@ func numPaddingLeft(i int, padding int) string {
 // <pad><filename><pad>|<pad><changeNumber><pad><+++/---><newline>
 // example: " main.go | 10 +++++++--- "
 func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileStats) error {
-	w, useColor, err := opts.NewOutput(ctx)
+	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
 	}
@@ -191,7 +190,7 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 		}
 		adds := strings.Repeat("+", addc)
 		dels := strings.Repeat("-", delc)
-		if useColor {
+		if w.Is256ColorSupported() {
 			_, _ = fmt.Fprintf(w, " %s%s | %s \x1b[32m%s\x1b[31m%s\x1b[0m\n", fs.Name, strings.Repeat(" ", nameLen-len(fs.Name)), numPaddingLeft(fs.Addition+fs.Deletion, sizePadding), adds, dels)
 			continue
 		}
@@ -202,13 +201,13 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 }
 
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unified) error {
-	w, useColor, err := opts.NewOutput(ctx)
+	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
 	e := diferenco.NewUnifiedEncoder(w)
-	if useColor {
+	if w.Is256ColorSupported() {
 		e.SetColor(color.NewColorConfig())
 	}
 	if opts.NoRename {
@@ -219,7 +218,7 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unifi
 }
 
 func (opts *DiffOptions) showChangesStatus(ctx context.Context, changes merkletrie.Changes) error {
-	w, _, err := opts.NewOutput(ctx)
+	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err
 	}

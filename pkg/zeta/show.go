@@ -17,12 +17,12 @@ import (
 )
 
 type ShowOptions struct {
-	Objects   []string
-	Textconv  bool
-	Algorithm diferenco.Algorithm
-	Limit     int64
-	w         *Printer
-	useColor  bool
+	Objects          []string
+	Textconv         bool
+	Algorithm        diferenco.Algorithm
+	Limit            int64
+	w                *printer
+	isColorSupported bool
 }
 
 type showObject struct {
@@ -70,7 +70,8 @@ func (r *Repository) Show(ctx context.Context, opts *ShowOptions) error {
 	p := NewPrinter(ctx)
 	defer p.Close()
 	opts.w = p
-	opts.useColor = p.useColor
+	fmt.Fprintf(os.Stderr, "%v %v\n", p.is256ColorSupported, p.isTrueColorSupported)
+	opts.isColorSupported = p.is256ColorSupported
 	for _, o := range objects {
 		if err := r.showOne(ctx, opts, o); err != nil {
 			return err
@@ -114,7 +115,7 @@ func (r *Repository) showBlob(ctx context.Context, opts *ShowOptions, so *showOb
 	if err != nil {
 		return err
 	}
-	if opts.useColor && charset == diferenco.BINARY {
+	if opts.isColorSupported && charset == diferenco.BINARY {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
@@ -176,7 +177,7 @@ func (r *Repository) showCommit(ctx context.Context, opts *ShowOptions, cc *obje
 		return err
 	}
 	e := diferenco.NewUnifiedEncoder(opts.w)
-	if opts.useColor {
+	if opts.isColorSupported {
 		e.SetColor(color.NewColorConfig())
 	}
 	_ = e.Encode(patch)
@@ -189,7 +190,7 @@ func (r *Repository) showTag(ctx context.Context, opts *ShowOptions, tag *object
 		return ctx.Err()
 	default:
 	}
-	if opts.useColor {
+	if opts.isColorSupported {
 		fmt.Fprintf(opts.w, "\x1b[33mtag %s\x1b[0m\n", tag.Name)
 	} else {
 		fmt.Fprintf(opts.w, "tag %s\n", tag.Name)
@@ -217,7 +218,7 @@ func (r *Repository) showTree(ctx context.Context, opts *ShowOptions, so *showOb
 		return ctx.Err()
 	default:
 	}
-	if opts.useColor {
+	if opts.isColorSupported {
 		fmt.Fprintf(opts.w, "\x1b[33mtree %s\x1b[0m\n\n", so.name)
 	} else {
 		fmt.Fprintf(opts.w, "tree %s\n\n", so.name)
@@ -228,7 +229,7 @@ func (r *Repository) showTree(ctx context.Context, opts *ShowOptions, so *showOb
 			fmt.Fprintf(opts.w, "%s/\n", e.Name)
 			continue
 		}
-		if t == object.FragmentsObject && opts.useColor {
+		if t == object.FragmentsObject && opts.isColorSupported {
 			fmt.Fprintf(opts.w, "\x1b[36m%s\x1b[0m\n", e.Name)
 		}
 		fmt.Fprintln(opts.w, e.Name)
@@ -242,7 +243,7 @@ func (r *Repository) showFragments(ctx context.Context, opts *ShowOptions, so *s
 		return ctx.Err()
 	default:
 	}
-	if opts.useColor {
+	if opts.isColorSupported {
 		fmt.Fprintf(opts.w, "\x1b[33mfragments %s\x1b[0m\nraw:  %s\nsize: %d\n\n", so.oid, ff.Origin, ff.Size)
 	} else {
 		fmt.Fprintf(opts.w, "fragments %s\nraw:  %s\nsize: %d\n", so.oid, ff.Origin, ff.Size)

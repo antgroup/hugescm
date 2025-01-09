@@ -200,7 +200,7 @@ func (fileStats FileStats) String() string {
 // Parts of the output:
 // <pad><filename><pad>|<pad><changeNumber><pad><+++/---><newline>
 // example: " main.go | 10 +++++++--- "
-func StatsWriteTo(w io.Writer, fileStats []FileStat, color bool) {
+func StatsWriteTo(w io.Writer, fileStats []FileStat, isColorSupported bool) {
 	maxGraphWidth := uint(53)
 	maxNameLen := 0
 	maxChangeLen := 0
@@ -239,7 +239,7 @@ func StatsWriteTo(w io.Writer, fileStats []FileStat, color bool) {
 		dels := strings.Repeat("-", int(del))
 		namePad := strings.Repeat(" ", np)
 		changePad := strings.Repeat(" ", cp)
-		if color {
+		if isColorSupported {
 			_, _ = fmt.Fprintf(w, " %s%s | %s%d \x1b[32m%s\x1b[31m%s\x1b[0m\n", fs.Name, namePad, changePad, total, adds, dels)
 			continue
 		}

@@ -6,7 +6,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -122,16 +121,18 @@ func (c *Diff) NewOptions() (*zeta.DiffOptions, error) {
 	return opts, nil
 }
 
-func (c *Diff) NewOutput(ctx context.Context) (io.WriteCloser, bool, error) {
+func (c *Diff) NewOutput(ctx context.Context) (zeta.Printer, error) {
 	if len(c.Output) != 0 {
 		if err := os.MkdirAll(filepath.Dir(c.Output), 0755); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		fd, err := os.Create(c.Output)
-		return fd, false, err
+		if err != nil {
+			return nil, err
+		}
+		return &zeta.WrapPrinter{WriteCloser: fd}, nil
 	}
-	printer := zeta.NewPrinter(ctx)
-	return printer, printer.UseColor(), nil
+	return zeta.NewPrinter(ctx), nil
 }
 
 func (c *Diff) render(u *diferenco.Unified) error {
@@ -165,7 +166,7 @@ func (c *Diff) render(u *diferenco.Unified) error {
 }
 
 func (c *Diff) nameStatus() error {
-	w, _, err := c.NewOutput(context.Background())
+	w, err := c.NewOutput(context.Background())
 	if err != nil {
 		return err
 	}

@@ -44,34 +44,32 @@ const (
 )
 
 var (
-	isTrueColorTerminal bool
-	W                   = tr.W // translate func wrap
+	is256ColorSupported  bool
+	isTrueColorSupported bool
+	W                    = tr.W // translate func wrap
 )
 
 func IsTerminal(fd uintptr) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func checkIsTrueColorTerminal() bool {
-	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
-		return false
-	}
-	colorTerm := os.Getenv("COLORTERM")
-	if strings.EqualFold(colorTerm, "truecolor") || strings.EqualFold(colorTerm, "24bit") {
-		return true
+func init() {
+	stdout := os.Stdout.Fd()
+	if !isatty.IsTerminal(stdout) && !isatty.IsCygwinTerminal(stdout) {
+		return
 	}
 	if _, ok := os.LookupEnv("WT_SESSION"); ok {
-		return true
+		is256ColorSupported = true
+		isTrueColorSupported = true
+		return
 	}
-	term := os.Getenv("TERM")
-	if strings.HasSuffix(term, "-256color") || strings.HasSuffix(term, "256") {
-		return true
-	}
-	return false
-}
-
-func init() {
-	isTrueColorTerminal = checkIsTrueColorTerminal()
+	colorTermEnv := os.Getenv("COLORTERM")
+	termEnv := os.Getenv("TERM")
+	isTrueColorSupported = strings.Contains(termEnv, "24bit") ||
+		strings.Contains(termEnv, "truecolor") ||
+		strings.Contains(colorTermEnv, "24bit") ||
+		strings.Contains(colorTermEnv, "truecolor")
+	is256ColorSupported = isTrueColorSupported || strings.Contains(termEnv, "256") || strings.Contains(colorTermEnv, "256")
 }
 
 // ErrNotExist commit not exist error
@@ -273,11 +271,27 @@ func error_red(format string, args ...any) {
 	prefix := W("error: ")
 	message := strings.TrimSuffix(fmt.Sprintf(W(format), args...), "\n")
 	var b bytes.Buffer
-	for _, s := range strings.Split(message, "\n") {
-		_, _ = b.WriteString("\x1b[31m")
-		_, _ = b.WriteString(prefix)
-		_, _ = b.WriteString(s)
-		_, _ = b.WriteString("\x1b[0m\n")
+	switch {
+	case is256ColorSupported:
+		for _, s := range strings.Split(message, "\n") {
+			_, _ = b.WriteString("\x1b[31m")
+			_, _ = b.WriteString(prefix)
+			_, _ = b.WriteString(s)
+			_, _ = b.WriteString("\x1b[0m\n")
+		}
+	case isTrueColorSupported:
+		for _, s := range strings.Split(message, "\n") {
+			_, _ = b.WriteString("\x1b[31m")
+			_, _ = b.WriteString(prefix)
+			_, _ = b.WriteString(s)
+			_, _ = b.WriteString("\x1b[0m\n")
+		}
+	default:
+		for _, s := range strings.Split(message, "\n") {
+			_, _ = b.WriteString(prefix)
+			_, _ = b.WriteString(s)
+			_ = b.WriteByte('\n')
+		}
 	}
 	_, _ = os.Stderr.Write(b.Bytes())
 }

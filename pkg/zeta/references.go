@@ -45,8 +45,6 @@ func (r *Reference) taggerdataLess(o *Reference) bool {
 	return r.Tag.Tagger.When.Before(o.Tag.Tagger.When)
 }
 
-// sort
-
 type References []*Reference
 
 // objectsize authordate committerdate creatordate taggerdate
@@ -183,11 +181,4 @@ func (r *Repository) ForEachReference(ctx context.Context, opts *ForEachReferenc
 		fmt.Fprintf(os.Stdout, "%s %s%s %s\n", ref.Hash, ref.Type, strings.Repeat(" ", max(0, len("commit")-len(ref.Type))), ref.Name)
 	}
 	return nil
-}
-
-// TODO: support show-ref ???
-type ShowReferenceOptions struct {
-	T           bool // tags default: true
-	H           bool // heads default: true
-	Dereference bool
 }

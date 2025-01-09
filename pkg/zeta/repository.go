@@ -727,7 +727,12 @@ func (r *Repository) cleanedRemote() string {
 	if err != nil {
 		return r.Core.Remote
 	}
-	u.User = nil
+	switch {
+	case u.Scheme == "ssh" && u.User != nil:
+		u.User = url.User(u.User.Username()) // hide ssh password
+	default:
+		u.User = nil
+	}
 	return u.String()
 }
 

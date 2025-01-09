@@ -47,7 +47,7 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 		WriteTimeout: serve.Duration{
 			Duration: DefaultWriteTimeout,
 		},
-		BannerVersion: "HugeSCM/" + version.GetVersion(),
+		BannerVersion: version.GetUserAgent(),
 	}
 	if _, err = toml.NewDecoder(r).Decode(sc); err != nil {
 		return nil, err

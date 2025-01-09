@@ -29,6 +29,14 @@ func GetVersion() string {
 	return version
 }
 
+func GetUserAgent() string {
+	return "Zeta/" + version
+}
+
+func GetBannerVersion() string {
+	return "Zeta-" + version
+}
+
 // GetBuildTime returns the time at which the build took place
 func GetBuildTime() string {
 	return buildTime

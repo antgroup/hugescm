@@ -134,7 +134,7 @@ func filterKnownHostsFiles(files ...string) ([]string, error) {
 	return out, nil
 }
 
-func (c *client) makeAuth() ([]ssh.AuthMethod, error) {
+func (c *client) prepareAuthMethod() ([]ssh.AuthMethod, error) {
 	auth := make([]ssh.AuthMethod, 0, 4)
 	auth = append(auth, ssh.PublicKeysCallback(c.PublicKeys))
 	if len(c.Password) != 0 {

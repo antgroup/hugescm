@@ -19,7 +19,12 @@ import (
 	"github.com/antgroup/hugescm/pkg/transport/proxy"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/config"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
+	"github.com/antgroup/hugescm/pkg/version"
 	"golang.org/x/crypto/ssh"
+)
+
+const (
+	protocolVersionPrefix = "SSH-2.0-"
 )
 
 var (
@@ -132,13 +137,14 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 			return nil, err
 		}
 	}
-	auth, err := c.makeAuth()
+	auth, err := c.prepareAuthMethod()
 	if err != nil {
 		return nil, err
 	}
 	cc, chans, reqs, err := ssh.NewClientConn(conn, addr, &ssh.ClientConfig{
 		User:              c.User,
 		Auth:              auth,
+		ClientVersion:     protocolVersionPrefix + version.GetBannerVersion(),
 		HostKeyCallback:   c.HostKeyCallback,
 		BannerCallback:    ssh.BannerDisplayStderr(),
 		HostKeyAlgorithms: c.supportedHostKeyAlgos(),

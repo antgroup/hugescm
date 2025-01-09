@@ -153,7 +153,7 @@ func NewDownloader(verbose bool, insecure bool, proxyURL string) Downloader {
 				},
 			},
 		},
-		userAgent: "Zeta/" + version.GetVersion(),
+		userAgent: version.GetUserAgent(),
 		language:  tr.Language(),
 		proxyURL:  proxyURL,
 		termEnv:   os.Getenv("TERM"),

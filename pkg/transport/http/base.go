@@ -113,7 +113,7 @@ func newClient(ctx context.Context, endpoint *transport.Endpoint, operation tran
 		},
 		baseURL:     base,
 		extraHeader: endpoint.ExtraHeader,
-		userAgent:   "Zeta/" + version.GetVersion(),
+		userAgent:   version.GetUserAgent(),
 		language:    tr.Language(),
 		termEnv:     os.Getenv("TERM"),
 		verbose:     verbose,

@@ -84,6 +84,7 @@ func parseSCPLike(endpoint string) (*Endpoint, bool) {
 		Host:     host,
 		Port:     port,
 		Path:     path,
+		raw:      endpoint,
 	}, true
 }
 
@@ -110,6 +111,8 @@ type Endpoint struct {
 	ExtraHeader map[string]string
 	// ExtraEnv extra env
 	ExtraEnv map[string]string
+	// raw endpoint: only scp like url --> zeta@domain.com:namespace/repo
+	raw string
 }
 
 type Options struct {
@@ -226,8 +229,11 @@ var defaultPorts = map[string]int{
 	"ssh":   22,
 }
 
-// String returns a string representation of the Git URL.
+// String returns a string representation of the zeta URL.
 func (u *Endpoint) String() string {
+	if len(u.raw) != 0 {
+		return u.raw
+	}
 	var buf bytes.Buffer
 	if u.Protocol != "" {
 		buf.WriteString(u.Protocol)

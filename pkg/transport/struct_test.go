@@ -44,6 +44,7 @@ func TestEndpointIsURL(t *testing.T) {
 		"http://xxxx",
 		"git@xxxx",
 		"zeta@zzzz",
+		"zeta@zeta.io:jack/zeta-demo",
 	}
 	for _, s := range sss {
 		fmt.Fprintf(os.Stderr, "%s %v\n", s, hasScheme(s))
@@ -63,6 +64,16 @@ func TestParseEndpoint(t *testing.T) {
 			fmt.Fprintf(os.Stderr, "Parse: %v\n", err)
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s\n", e, e.Protocol)
+		fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s raw: %s\n", e, e.Protocol, s)
 	}
+}
+
+func TestEndpoint(t *testing.T) {
+	raw := "zeta@zeta.io:jack/zeta-demo"
+	e, err := NewEndpoint(raw, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Parse: %v\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s raw: %s\n", e, e.Protocol, raw)
 }

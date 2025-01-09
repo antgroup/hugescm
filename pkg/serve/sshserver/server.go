@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"github.com/antgroup/hugescm/pkg/serve"
@@ -176,7 +177,7 @@ func (s *Server) handleSession(e *Session) int {
 		e.WriteError("unsupport command '\x1b[31m%s\x1b[0m'", args[0])
 		return 1
 	}
-	logrus.Infof("new command: %s", e.RawCommand())
+	logrus.Infof("new command: %s user-agent: %s", e.RawCommand(), strings.TrimPrefix(e.ClientVersion, "SSH-2.0-"))
 	cmd, err := NewCommand(args[1:])
 	if err != nil {
 		e.WriteError("fatal: \x1b[31m%v\x1b[0m", err)

@@ -80,7 +80,7 @@ func GetSystemInfo() (*SystemInfo, error) {
 	computerName, _ := GetComputerName()
 	major, minor, build := windows.RtlGetNtVersionNumbers()
 	return &SystemInfo{
-		Name:      "WindowsNT",
+		Name:      "Windows",
 		Node:      computerName,
 		Release:   strconv.FormatUint(uint64(major), 10),
 		Version:   fmt.Sprintf("%d.%d.%d", major, minor, build),

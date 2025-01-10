@@ -6,14 +6,16 @@ import (
 	"io"
 	"math"
 	"strings"
+
+	"github.com/antgroup/hugescm/modules/term"
 )
 
 const (
-	CN byte = 90 /* null    */
-	CS byte = 92 /* space   */
-	CP byte = 96 /* print   */
-	CC byte = 95 /* control */
-	CH byte = 93 /* high    */
+	CN byte = 0 /* null    */
+	CS byte = 1 /* space   */
+	CP byte = 2 /* print   */
+	CC byte = 3 /* control */
+	CH byte = 4 /* high    */
 )
 
 var (
@@ -45,17 +47,24 @@ var (
 		0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e,
 		0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e,
 	}
+	color256Index = []string{"\x1b[90m", "\x1b[92m", "\x1b[96m", "\x1b[95m", "\x1b[93m"}
+	color24Index  = []string{"\x1b[90m", "\x1b[38;2;67;233;123m", "\x1b[38;2;0;201;255m", "\x1b[38;2;255;0;255m", "\x1b[38;2;254;225;64m"}
 )
 
 type binaryPrinter struct {
 	*bytes.Buffer
-	w io.Writer
+	w          io.Writer
+	colorIndex []string
 }
 
-func newBinaryPrinter(w io.Writer) *binaryPrinter {
+func newBinaryPrinter(w io.Writer, colorMode term.ColorMode) *binaryPrinter {
 	byteBuffer := &bytes.Buffer{}
 	byteBuffer.Grow(400)
-	return &binaryPrinter{Buffer: byteBuffer, w: w}
+	colorTable := color256Index
+	if colorMode == term.HAS_TRUECOLOR {
+		colorTable = color24Index
+	}
+	return &binaryPrinter{Buffer: byteBuffer, w: w, colorIndex: colorTable}
 }
 
 // left_corner: '┌',
@@ -95,12 +104,12 @@ func (b *binaryPrinter) writeFooter() error {
 
 func (b *binaryPrinter) formatByte(v byte) {
 	c := colorTable[v]
-	fmt.Fprintf(b.Buffer, "\x1b[%dm%02x\x1b[0m ", c, v)
+	fmt.Fprintf(b.Buffer, "%s%02x\x1b[0m ", b.colorIndex[c], v)
 }
 
 func (b *binaryPrinter) displayByte(v byte) {
 	c := colorTable[v]
-	fmt.Fprintf(b.Buffer, "\x1b[%dm%c\x1b[0m", c, displayTable[v])
+	fmt.Fprintf(b.Buffer, "%s%c\x1b[0m", b.colorIndex[c], displayTable[v])
 }
 
 func (b *binaryPrinter) writeLine(offset int64, input []byte) error {
@@ -144,12 +153,12 @@ func (b *binaryPrinter) flush() error {
 	return err
 }
 
-func processColor(r io.Reader, w io.Writer, size int64) error {
+func processColor(r io.Reader, w io.Writer, size int64, colorMode term.ColorMode) error {
 	if size < 0 {
 		size = math.MaxInt64
 	}
 	var input [16]byte
-	b := newBinaryPrinter(w)
+	b := newBinaryPrinter(w, colorMode)
 	if err := b.writeBorder(); err != nil {
 		return err
 	}

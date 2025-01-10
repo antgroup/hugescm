@@ -14,6 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/trace"
 )
 
 func dbgPrint(format string, args ...any) {
@@ -72,7 +73,7 @@ func (opts *DisplayOptions) DbgPrint(format string, args ...any) {
 	if !opts.Verbose {
 		return
 	}
-	dbgPrint(format, args...)
+	trace.DbgPrint(format, args...)
 }
 
 func displayTo(d Display, zfg string) error {
@@ -139,7 +140,7 @@ func (opts *GetOptions) DbgPrint(format string, args ...any) {
 	if !opts.Verbose {
 		return
 	}
-	dbgPrint(format, args...)
+	trace.DbgPrint(format, args...)
 }
 
 func getFromFile(opts *GetOptions, zfg string) error {

@@ -16,9 +16,9 @@ import (
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/tr"
-	"github.com/mattn/go-isatty"
 )
 
 var (
@@ -121,7 +121,7 @@ func (w *Worktree) genMessageTemplate(ctx context.Context, opts *CommitOptions, 
 }
 
 func (w *Worktree) messageFromPrompt(ctx context.Context, opts *CommitOptions, branchName string, status Status) (string, error) {
-	if !isatty.IsTerminal(os.Stdin.Fd()) && !isatty.IsCygwinTerminal(os.Stdin.Fd()) && !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
+	if !term.IsTerminal(os.Stdin.Fd()) || !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
 		return "", nil
 	}
 	p := filepath.Join(w.odb.Root(), COMMIT_EDITMSG)

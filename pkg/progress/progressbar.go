@@ -5,49 +5,128 @@ package progress
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"time"
 
 	"github.com/antgroup/hugescm/modules/progressbar"
+	"github.com/antgroup/hugescm/modules/term"
 )
 
-type ProgressBar struct {
+var (
+	blueColorMap = map[term.ColorMode]string{
+		term.HAS_256COLOR:  "\x1b[36m",
+		term.HAS_TRUECOLOR: "\x1b[38;2;72;198;239m",
+	}
+	endColorMap = map[term.ColorMode]string{
+		term.HAS_256COLOR:  "\x1b[0m",
+		term.HAS_TRUECOLOR: "\x1b[0m",
+	}
+)
+
+type Bar struct {
 	bar   *progressbar.ProgressBar
 	total int
 }
 
-func NewBar(description string, total int, quiet bool) *ProgressBar {
-	if quiet {
-		return &ProgressBar{}
-	}
-	bar := progressbar.NewOptions(total,
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetDescription(fmt.Sprintf("\x1b[0m%s...", description)),
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetTheme(progressbar.Theme{
+func MakeTheme() progressbar.Theme {
+	switch term.StderrMode {
+	case term.HAS_256COLOR:
+		return progressbar.Theme{
+			Saucer:        "\x1b[36m#\x1b[0m",
+			SaucerHead:    "\x1b[36m>\x1b[0m",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}
+	case term.HAS_TRUECOLOR:
+		return progressbar.Theme{
 			Saucer:        "\x1b[38;2;72;198;239m#\x1b[0m",
 			SaucerHead:    "\x1b[38;2;72;198;239m>\x1b[0m",
 			SaucerPadding: " ",
 			BarStart:      "[",
 			BarEnd:        "]",
-		}))
-
-	return &ProgressBar{bar: bar, total: total}
+		}
+	default:
+	}
+	return progressbar.Theme{
+		Saucer:        "#",
+		SaucerHead:    ">",
+		SaucerPadding: " ",
+		BarStart:      "[",
+		BarEnd:        "]",
+	}
 }
 
-func (b *ProgressBar) Add(n int) {
+func wrapDescription(description string) string {
+	if term.StderrMode != term.NO_COLOR {
+		return fmt.Sprintf("\x1b[0m%s...", description)
+	}
+	return description + "..."
+}
+
+func NewBar(description string, total int, quiet bool) *Bar {
+	if quiet {
+		return &Bar{}
+	}
+	bar := progressbar.NewOptions(total,
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionUseANSICodes(true),
+		progressbar.OptionSetDescription(wrapDescription(description)),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprintf(os.Stderr, "%s\n", endColorMap[term.StderrMode])
+		}),
+		progressbar.OptionSetTheme(MakeTheme()))
+	return &Bar{bar: bar, total: total}
+}
+
+func NewUnknownBar(description string, quiet bool) *Bar {
+	if quiet {
+		return &Bar{}
+	}
+	bar := progressbar.NewOptions64(
+		-1,
+		progressbar.OptionSetDescription(description),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionUseANSICodes(true),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionShowTotalBytes(true),
+		progressbar.OptionSetWidth(10),
+		progressbar.OptionThrottle(65*time.Millisecond),
+		progressbar.OptionShowCount(),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetRenderBlankState(true),
+	)
+	return &Bar{bar: bar}
+}
+
+func (b *Bar) NewTeeReader(r io.Reader) io.Reader {
+	if b.bar == nil {
+		return r
+	}
+	return io.TeeReader(r, b.bar)
+}
+
+func (b *Bar) Add(n int) {
 	if b.bar != nil {
 		_ = b.bar.Add(n)
 	}
 }
 
-func (b *ProgressBar) Done() int {
-	if b.bar == nil {
-		return 0
+func (b *Bar) Finish() {
+	if b.bar != nil {
+		_ = b.bar.Finish()
 	}
-	_ = b.bar.Finish()
-	fmt.Fprintln(os.Stderr, "\x1b[0m")
-	if b.total <= 0 {
-		return 0
+}
+
+func (b *Bar) Exit() {
+	if b.bar != nil {
+		_ = b.bar.Exit()
 	}
-	return b.total
 }

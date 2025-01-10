@@ -11,6 +11,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/modules/zeta/reflog"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -228,7 +229,7 @@ func (w *Worktree) StashShow(ctx context.Context, stashRev string) error {
 	}
 	p := NewPrinter(ctx)
 	defer p.Close()
-	object.StatsWriteTo(p, stats, p.Is256ColorSupported())
+	object.StatsWriteTo(p, stats, p.ColorMode() != term.NO_COLOR)
 	fmt.Fprintf(p, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
 	return nil
 }

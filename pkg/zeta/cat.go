@@ -14,6 +14,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -44,12 +45,12 @@ func (opts *CatOptions) Println(a ...any) error {
 	return err
 }
 
-func (opts *CatOptions) NewFD() (io.WriteCloser, bool, error) {
+func (opts *CatOptions) NewFD() (io.WriteCloser, term.ColorMode, error) {
 	if len(opts.Output) == 0 {
-		return &NopWriteCloser{Writer: os.Stdout}, is256ColorSupported, nil
+		return &NopWriteCloser{Writer: os.Stdout}, term.StdoutMode, nil
 	}
 	fd, err := os.Create(opts.Output)
-	return fd, false, err
+	return fd, term.NO_COLOR, err
 }
 
 func catShowError(oid string, err error) error {
@@ -145,7 +146,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 		return err
 	}
 	defer b.Close()
-	fd, isColorSupported, err := opts.NewFD()
+	fd, colorMode, err := opts.NewFD()
 	if err != nil {
 		return err
 	}
@@ -164,12 +165,12 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}
-	if isColorSupported && charset == diferenco.BINARY {
+	if colorMode != term.NO_COLOR && charset == diferenco.BINARY {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return processColor(reader, fd, opts.Limit)
+		return processColor(reader, fd, opts.Limit, colorMode)
 	}
 	if _, err = io.Copy(fd, io.LimitReader(reader, opts.Limit)); err != nil {
 		return err
@@ -178,7 +179,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 }
 
 func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *object.Fragments) error {
-	fd, isColorSupported, err := opts.NewFD()
+	fd, colorMode, err := opts.NewFD()
 	if err != nil {
 		return err
 	}
@@ -203,12 +204,12 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 	}
 	// fragments ignore --textconv
 	reader := io.MultiReader(readers...)
-	if isColorSupported {
+	if colorMode != term.NO_COLOR {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return processColor(reader, fd, opts.Limit)
+		return processColor(reader, fd, opts.Limit, colorMode)
 	}
 	if _, err = io.Copy(fd, io.LimitReader(reader, opts.Limit)); err != nil {
 		return err

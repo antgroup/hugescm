@@ -4,12 +4,10 @@
 package command
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"os"
-	"strings"
 
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/version"
 )
@@ -25,14 +23,7 @@ func (g *Globals) DbgPrint(format string, args ...any) {
 	if !g.Verbose {
 		return
 	}
-	message := strings.TrimSuffix(fmt.Sprintf(format, args...), "\n")
-	var buffer bytes.Buffer
-	for _, s := range strings.Split(message, "\n") {
-		_, _ = buffer.WriteString("\x1b[33m* ")
-		_, _ = buffer.WriteString(s)
-		_, _ = buffer.WriteString("\x1b[0m\n")
-	}
-	_, _ = os.Stderr.Write(buffer.Bytes())
+	trace.DbgPrint(format, args...)
 }
 
 type VersionFlag bool
@@ -43,10 +34,6 @@ func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 	fmt.Println(version.GetVersionString())
 	app.Exit(0)
 	return nil
-}
-
-type Debuger interface {
-	DbgPrint(format string, args ...any)
 }
 
 var (

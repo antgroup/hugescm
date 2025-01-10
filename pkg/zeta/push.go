@@ -14,6 +14,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/progressbar"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -61,24 +62,19 @@ func (r *Repository) putObject(ctx context.Context, t transport.Transport, refna
 		return err
 	}
 	defer sr.Close()
-	var bar *progressbar.ProgressBar
 	var reader io.Reader = sr
+	var b *progressbar.ProgressBar
 	if !r.quiet {
-		bar = progressbar.NewOptions64(
+		b = progressbar.NewOptions64(
 			sr.Size(),
 			progressbar.OptionShowBytes(true),
 			progressbar.OptionEnableColorCodes(true),
+			progressbar.OptionUseANSICodes(true),
 			progressbar.OptionSetDescription(title),
 			progressbar.OptionFullWidth(),
-			progressbar.OptionSetTheme(progressbar.Theme{
-				Saucer:        "\x1b[38;2;72;198;239m#\x1b[0m",
-				SaucerHead:    "\x1b[38;2;72;198;239m>\x1b[0m",
-				SaucerPadding: " ",
-				BarStart:      "[",
-				BarEnd:        "]",
-			}))
-		reader = io.TeeReader(sr, bar)
-		defer bar.Close()
+			progressbar.OptionSetTheme(progress.MakeTheme()))
+		reader = io.TeeReader(sr, b)
+		defer b.Close()
 	}
 	if err = t.PutObject(ctx, refname, oid, reader, sr.Size()); err != nil {
 		return err

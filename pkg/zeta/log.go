@@ -301,12 +301,12 @@ func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, p
 
 func (r *Repository) Log(ctx context.Context, revRange string, paths []string, formatJSON bool) error {
 	if aRev, bRev, ok := strings.Cut(revRange, "..."); ok {
-		a, err := r.resolveRevision(ctx, aRev)
+		a, err := r.Revision(ctx, aRev)
 		if err != nil {
 			dieln(err)
 			return err
 		}
-		b, err := r.resolveRevision(ctx, bRev)
+		b, err := r.Revision(ctx, bRev)
 		if err != nil {
 			dieln(err)
 			return err
@@ -314,12 +314,12 @@ func (r *Repository) Log(ctx context.Context, revRange string, paths []string, f
 		return r.logFromMergeBase(ctx, a, b, paths, formatJSON)
 	}
 	if fromRev, toRev, ok := strings.Cut(revRange, ".."); ok {
-		from, err := r.resolveRevision(ctx, fromRev)
+		from, err := r.Revision(ctx, fromRev)
 		if err != nil {
 			dieln(err)
 			return err
 		}
-		to, err := r.resolveRevision(ctx, toRev)
+		to, err := r.Revision(ctx, toRev)
 		if err != nil {
 			dieln(err)
 			return err
@@ -329,7 +329,7 @@ func (r *Repository) Log(ctx context.Context, revRange string, paths []string, f
 	if revRange == "" {
 		revRange = "HEAD"
 	}
-	rev, err := r.resolveRevision(ctx, revRange)
+	rev, err := r.Revision(ctx, revRange)
 	if err != nil {
 		dieln(err)
 		return err

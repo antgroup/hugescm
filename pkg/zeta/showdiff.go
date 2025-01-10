@@ -10,6 +10,7 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/diferenco/color"
 	"github.com/antgroup/hugescm/modules/merkletrie"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -190,7 +191,7 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 		}
 		adds := strings.Repeat("+", addc)
 		dels := strings.Repeat("-", delc)
-		if w.Is256ColorSupported() {
+		if w.ColorMode() != term.NO_COLOR {
 			_, _ = fmt.Fprintf(w, " %s%s | %s \x1b[32m%s\x1b[31m%s\x1b[0m\n", fs.Name, strings.Repeat(" ", nameLen-len(fs.Name)), numPaddingLeft(fs.Addition+fs.Deletion, sizePadding), adds, dels)
 			continue
 		}
@@ -207,7 +208,7 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unifi
 	}
 	defer w.Close()
 	e := diferenco.NewUnifiedEncoder(w)
-	if w.Is256ColorSupported() {
+	if w.ColorMode() != term.NO_COLOR {
 		e.SetColor(color.NewColorConfig())
 	}
 	if opts.NoRename {

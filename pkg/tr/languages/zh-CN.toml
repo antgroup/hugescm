@@ -60,6 +60,7 @@
 "Get complete history" = "获取完整的历史"
 "Download tags instead of branches only when refname is incomplete" = "仅当引用名不完全时，下载标签而不是分支"
 "Override reference update check" = "覆盖引用检查"
+"Metadata downloading" = "下载元数据"
 "Metadata download completed, total" = "元数据下载完成，总计"
 "Files download completed, total" = "文件下载完成，总计"
 "time spent" = "耗时"

@@ -17,10 +17,10 @@ import (
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
-	"github.com/mattn/go-isatty"
 )
 
 // MergeOptions describes how a merge should be erformed
@@ -48,7 +48,7 @@ Merge branch 'dev-1' into dev-2
 # 以 '#' 开始的行将被忽略，而空的提交说明将终止提交。
 */
 func (w *Worktree) mergeMessageFromPrompt(ctx context.Context, messagePrefix string) (string, error) {
-	if !isatty.IsTerminal(os.Stdin.Fd()) && !isatty.IsCygwinTerminal(os.Stdin.Fd()) && !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
+	if !term.IsTerminal(os.Stdin.Fd()) || !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
 		return "", nil
 	}
 	p := filepath.Join(w.odb.Root(), MERGE_MSG)
@@ -494,7 +494,7 @@ func (w *Worktree) mergeStat(ctx context.Context, oldRev, newRev plumbing.Hash) 
 		added += s.Addition
 		deleted += s.Deletion
 	}
-	object.StatsWriteTo(os.Stderr, stats, is256ColorSupported)
+	object.StatsWriteTo(os.Stderr, stats, term.StdoutMode != term.NO_COLOR)
 	fmt.Fprintf(os.Stdout, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
 	return nil
 }

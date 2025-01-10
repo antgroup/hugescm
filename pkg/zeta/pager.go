@@ -16,24 +16,24 @@ import (
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/shlex"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
 type Printer interface {
 	io.WriteCloser
-	Is256ColorSupported() bool
-	IsTrueColorSupported() bool
+	ColorMode() term.ColorMode
 }
 
 type WrapPrinter struct {
 	io.WriteCloser
 }
 
-func (WrapPrinter) Is256ColorSupported() bool {
-	return false
+func (WrapPrinter) ColorMode() term.ColorMode {
+	return term.NO_COLOR
 }
 
-func (WrapPrinter) IsTrueColorSupported() bool {
+func (WrapPrinter) EnableColor() bool {
 	return false
 }
 
@@ -52,10 +52,21 @@ func lookupPager() (string, bool) {
 }
 
 type printer struct {
-	w                    io.Writer
-	is256ColorSupported  bool
-	isTrueColorSupported bool
-	closeFn              func() error
+	w         io.Writer
+	colorMode term.ColorMode
+	closeFn   func() error
+}
+
+func (p *printer) EnableColor() bool {
+	return p.colorMode != term.NO_COLOR
+}
+
+func (p *printer) ColorMode() term.ColorMode {
+	return p.colorMode
+}
+
+func (p *printer) Write(b []byte) (n int, err error) {
+	return p.w.Write(b)
 }
 
 func (p *printer) Close() error {
@@ -65,33 +76,20 @@ func (p *printer) Close() error {
 	return p.closeFn()
 }
 
-func (p *printer) Is256ColorSupported() bool {
-	return p.is256ColorSupported
-}
-
-func (p *printer) IsTrueColorSupported() bool {
-	return p.isTrueColorSupported
-}
-
-func (p *printer) Write(b []byte) (n int, err error) {
-	return p.w.Write(b)
-}
-
 func indent(t string) string {
 	var output []string
-	for _, line := range strings.Split(t, "\n") {
-		if len(line) != 0 {
-			line = "    " + line
-		}
-
-		output = append(output, line)
+	lines := strings.Split(t, "\n")
+	for _, line := range lines {
+		output = append(output, "    "+line)
 	}
-
+	if len(lines) > 0 && len(lines[len(lines)-1]) != 0 {
+		output = append(output, "")
+	}
 	return strings.Join(output, "\n")
 }
 
 func (p *printer) logOne(c *object.Commit) (err error) {
-	if p.is256ColorSupported {
+	if p.colorMode != term.NO_COLOR {
 		_, err = fmt.Fprintf(p.w, "\x1b[33mcommit %s\x1b[0m\nAuthor: %s <%s>\nDate:   %s\n\n%s\n",
 			c.Hash, c.Author.Name, c.Author.Email, c.Author.When.Format(time.RFC3339), indent(c.Message))
 		return
@@ -135,7 +133,7 @@ func (p *printer) LogOne(c *object.Commit, refs []*ReferenceLite) (err error) {
 	if len(refs) == 0 {
 		return p.logOne(c)
 	}
-	if !p.is256ColorSupported {
+	if p.colorMode == term.NO_COLOR {
 		return p.logOneNoColor(c, refs)
 	}
 	var w bytes.Buffer
@@ -168,12 +166,12 @@ func (p *printer) LogOne(c *object.Commit, refs []*ReferenceLite) (err error) {
 }
 
 func NewPrinter(ctx context.Context) *printer {
-	if !is256ColorSupported {
-		return &printer{w: os.Stdout, is256ColorSupported: false, isTrueColorSupported: false}
+	if term.StdoutMode == term.NO_COLOR {
+		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
 	}
 	pager, ok := lookupPager()
 	if ok && len(pager) == 0 {
-		return &printer{w: os.Stdout, is256ColorSupported: is256ColorSupported, isTrueColorSupported: isTrueColorSupported}
+		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
 	}
 	if len(pager) == 0 {
 		pager = "less"
@@ -185,7 +183,7 @@ func NewPrinter(ctx context.Context) *printer {
 	}
 	pagerExe, err := exec.LookPath(pager)
 	if err != nil {
-		return &printer{w: os.Stdout, is256ColorSupported: is256ColorSupported, isTrueColorSupported: isTrueColorSupported}
+		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
 
@@ -194,15 +192,15 @@ func NewPrinter(ctx context.Context) *printer {
 	cmd.Env = append(cmd.Env, "LESS=FRX", "LV=-c")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return &printer{w: os.Stdout, is256ColorSupported: is256ColorSupported, isTrueColorSupported: isTrueColorSupported}
+		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		_ = stdin.Close()
-		return &printer{w: os.Stdout, is256ColorSupported: is256ColorSupported, isTrueColorSupported: isTrueColorSupported}
+		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
 	}
-	return &printer{w: stdin, is256ColorSupported: is256ColorSupported, isTrueColorSupported: isTrueColorSupported, closeFn: func() error {
+	return &printer{w: stdin, colorMode: term.StdoutMode, closeFn: func() error {
 		_ = stdin.Close()
 		if err := cmd.Wait(); err != nil {
 			return err

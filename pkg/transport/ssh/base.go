@@ -6,7 +6,6 @@ package ssh
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"slices"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/transport/proxy"
@@ -181,12 +181,5 @@ func (c *client) DbgPrint(format string, args ...any) {
 	if !c.verbose {
 		return
 	}
-	message := fmt.Sprintf(format, args...)
-	var buffer bytes.Buffer
-	for _, s := range strings.Split(message, "\n") {
-		_, _ = buffer.WriteString("\x1b[38;2;254;225;64m* ")
-		_, _ = buffer.WriteString(s)
-		_, _ = buffer.WriteString("\x1b[0m\n")
-	}
-	_, _ = os.Stderr.Write(buffer.Bytes())
+	trace.DbgPrint(format, args...)
 }

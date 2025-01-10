@@ -13,7 +13,6 @@ import (
 
 	"github.com/antgroup/hugescm/modules/crc"
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/progressbar"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -31,30 +30,27 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 		return err
 	}
 	defer ur.Close()
-	var bar *progressbar.ProgressBar
-	if !quiet {
-		bar = progressbar.DefaultBytes(
-			-1,
-			"Metadata downloading",
-		)
-		r = io.TeeReader(r, bar)
-	}
-	cr := crc.NewCrc64Reader(r)
+	b := progress.NewUnknownBar(tr.W("Metadata downloading"), quiet)
+	cr := crc.NewCrc64Reader(b.NewTeeReader(r))
 	var magic, version [4]byte
 	var reserved [16]byte
 	if _, err := io.ReadFull(cr, magic[:]); err != nil {
+		b.Exit()
 		return err
 	}
 	if !bytes.Equal(magic[:], metadataStreamMagic[:]) {
+		b.Exit()
 		err = fmt.Errorf("unexpected metadata '%c' '%c' '%c' '%c'", magic[0], magic[1], magic[2], magic[3])
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 	if _, err := io.ReadFull(cr, version[:]); err != nil {
+		b.Exit()
 		fmt.Fprintf(os.Stderr, "unexpected metadata version error: %v\n", err)
 		return err
 	}
 	if _, err := io.ReadFull(cr, reserved[:]); err != nil {
+		b.Exit()
 		fmt.Fprintf(os.Stderr, "unexpected reserved, error: %v\n", err)
 		return err
 	}
@@ -64,6 +60,7 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 	for {
 		var length uint32
 		if err := binary.Read(cr, binary.BigEndian, &length); err != nil {
+			b.Exit()
 			fmt.Fprintf(os.Stderr, "unexpected metadata length, error: %v\n", err)
 			return err
 		}
@@ -72,6 +69,7 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 		}
 		count++
 		if _, err = io.ReadFull(cr, oidBytes[:]); err != nil {
+			b.Exit()
 			err := fmt.Errorf("unexpected metadata hash, err: %v", err)
 			fmt.Fprint(os.Stderr, err)
 			return err
@@ -79,15 +77,14 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 		objectSize := length - plumbing.HASH_HEX_SIZE
 		readBytes += int64(objectSize)
 		if err := ur.Write(plumbing.NewHash(string(oidBytes[:])), objectSize, io.LimitReader(cr, int64(objectSize)), 0); err != nil {
+			b.Exit()
 			return err
 		}
 	}
+	b.Finish()
 	if err := cr.Verify(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
-	}
-	if !quiet {
-		fmt.Fprintln(os.Stderr, "\x1b[0m")
 	}
 	if err := ur.Preserve(); err != nil {
 		return err
@@ -126,10 +123,11 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 	var oidBytes [64]byte
 	var count int
 	var readBytes int64
-	bar := progress.NewBar(tr.W("Batch download files"), expected, quiet)
+	b := progress.NewBar(tr.W("Batch download files"), expected, quiet)
 	for {
 		var length uint32
 		if err := binary.Read(cr, binary.BigEndian, &length); err != nil {
+			b.Exit()
 			fmt.Fprintf(os.Stderr, "unexpected metadata length, error: %v\n", err)
 			return err
 		}
@@ -138,24 +136,28 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 		}
 		count++
 		if _, err := io.ReadFull(cr, oidBytes[:]); err != nil {
+			b.Exit()
 			fmt.Fprintf(os.Stderr, "fail to read blob hash, err: %v\n", err)
 			return err
 		}
 		objectSize := length - plumbing.HASH_HEX_SIZE
 		readBytes += int64(objectSize)
 		if err := ur.Write(plumbing.NewHash(string(oidBytes[:])), objectSize, io.LimitReader(cr, int64(objectSize)), 0); err != nil {
+			b.Exit()
 			return err
 		}
-		bar.Add(1)
+		b.Add(1)
 	}
 	if err := cr.Verify(); err != nil {
+		b.Exit()
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 	if err := ur.Preserve(); err != nil {
+		b.Exit()
 		return err
 	}
-	_ = bar.Done()
+	b.Finish()
 	fmt.Fprintf(os.Stderr, "%s: %d <%s>, %s: %v\n", tr.W("Files download completed, total"), count, strengthen.HumanateSize(readBytes), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
 	return nil
 }

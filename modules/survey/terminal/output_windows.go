@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/mattn/go-isatty"
+	"github.com/antgroup/hugescm/modules/term"
 )
 
 const (
@@ -33,7 +33,7 @@ type Writer struct {
 
 func NewAnsiStdout(out FileWriter) io.Writer {
 	var csbi consoleScreenBufferInfo
-	if !isatty.IsTerminal(out.Fd()) {
+	if !term.IsNativeTerminal(out.Fd()) {
 		return out
 	}
 	handle := syscall.Handle(out.Fd())
@@ -43,7 +43,7 @@ func NewAnsiStdout(out FileWriter) io.Writer {
 
 func NewAnsiStderr(out FileWriter) io.Writer {
 	var csbi consoleScreenBufferInfo
-	if !isatty.IsTerminal(out.Fd()) {
+	if !term.IsNativeTerminal(out.Fd()) {
 		return out
 	}
 	handle := syscall.Handle(out.Fd())

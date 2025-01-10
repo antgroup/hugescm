@@ -58,12 +58,12 @@ type App struct {
 	Debug       bool                `name:"debug" help:"Enable debug mode; analyze timing"`
 }
 
-type Debuger struct {
+type Tracer struct {
 	closeFn func()
 }
 
-func NewDebuger(debugMode bool) *Debuger {
-	d := &Debuger{}
+func NewTracer(debugMode bool) *Tracer {
+	d := &Tracer{}
 	if !debugMode {
 		return d
 	}
@@ -84,7 +84,7 @@ func NewDebuger(debugMode bool) *Debuger {
 	return d
 }
 
-func (d *Debuger) Close() {
+func (d *Tracer) Close() {
 	if d.closeFn != nil {
 		d.closeFn()
 	}
@@ -111,9 +111,9 @@ func main() {
 		},
 	)
 	now := time.Now()
-	d := NewDebuger(app.Debug)
+	t := NewTracer(app.Debug)
 	err := ctx.Run(&app.Globals)
-	d.Close()
+	t.Close()
 	if app.Verbose {
 		app.DbgPrint("time spent: %v", time.Since(now))
 	}

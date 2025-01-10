@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/refs"
 )
 
@@ -146,15 +147,14 @@ func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
 			continue
 		}
 		if target == r.Name() {
-			if isTrueColorSupported {
+			switch w.ColorMode() {
+			case term.HAS_TRUECOLOR:
 				fmt.Fprintf(w, "\x1b[38;2;67;233;123m* %s\x1b[0m\n", branchName)
-				continue
-			}
-			if is256ColorSupported {
+			case term.HAS_256COLOR:
 				fmt.Fprintf(w, "\x1b[32m* %s\x1b[0m\n", branchName)
-				continue
+			default:
+				fmt.Fprintf(w, " %s\n", branchName)
 			}
-			fmt.Fprintf(w, " %s\n", branchName)
 			continue
 		}
 		fmt.Fprintf(w, "  %s\n", branchName)

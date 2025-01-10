@@ -14,10 +14,10 @@ import (
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/modules/zeta/refs"
 	"github.com/antgroup/hugescm/pkg/tr"
-	"github.com/mattn/go-isatty"
 )
 
 func (r *Repository) RemoveTag(tags []string) error {
@@ -72,7 +72,7 @@ type NewTagOptions struct {
 }
 
 func (r *Repository) tagMessageFromPrompt(ctx context.Context, opts *NewTagOptions, oldRef *plumbing.Reference) (string, error) {
-	if !isatty.IsTerminal(os.Stdin.Fd()) && !isatty.IsCygwinTerminal(os.Stdin.Fd()) && !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
+	if !term.IsTerminal(os.Stdin.Fd()) || !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
 		return "", nil
 	}
 	p := filepath.Join(r.odb.Root(), TAG_EDITMSG)

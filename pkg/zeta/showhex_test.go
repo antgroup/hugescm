@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"os"
 	"testing"
+
+	"github.com/antgroup/hugescm/modules/term"
 )
 
 func TestProcessColor(t *testing.T) {
@@ -13,7 +15,7 @@ func TestProcessColor(t *testing.T) {
 	if err != nil {
 		return
 	}
-	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)))
+	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)), term.HAS_TRUECOLOR)
 }
 
 func TestBorder(t *testing.T) {
@@ -22,7 +24,7 @@ func TestBorder(t *testing.T) {
 	if err != nil {
 		return
 	}
-	b := newBinaryPrinter(os.Stderr)
+	b := newBinaryPrinter(os.Stderr, term.HAS_TRUECOLOR)
 	_ = b.writeBorder()
 	_ = b.writeLine(0, input)
 	_ = b.writeLine(16, []byte("world"))

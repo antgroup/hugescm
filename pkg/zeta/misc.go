@@ -15,11 +15,12 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
+	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/wildmatch"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
-	"github.com/mattn/go-isatty"
 )
 
 const (
@@ -44,33 +45,8 @@ const (
 )
 
 var (
-	is256ColorSupported  bool
-	isTrueColorSupported bool
-	W                    = tr.W // translate func wrap
+	W = tr.W // translate func wrap
 )
-
-func IsTerminal(fd uintptr) bool {
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
-}
-
-func init() {
-	stdout := os.Stdout.Fd()
-	if !isatty.IsTerminal(stdout) && !isatty.IsCygwinTerminal(stdout) {
-		return
-	}
-	if _, ok := os.LookupEnv("WT_SESSION"); ok {
-		is256ColorSupported = true
-		isTrueColorSupported = true
-		return
-	}
-	colorTermEnv := os.Getenv("COLORTERM")
-	termEnv := os.Getenv("TERM")
-	isTrueColorSupported = strings.Contains(termEnv, "24bit") ||
-		strings.Contains(termEnv, "truecolor") ||
-		strings.Contains(colorTermEnv, "24bit") ||
-		strings.Contains(colorTermEnv, "truecolor")
-	is256ColorSupported = isTrueColorSupported || strings.Contains(termEnv, "256") || strings.Contains(colorTermEnv, "256")
-}
 
 // ErrNotExist commit not exist error
 type ErrNotZetaDir struct {
@@ -148,14 +124,7 @@ func (r *Repository) DbgPrint(format string, args ...any) {
 	if !r.verbose {
 		return
 	}
-	message := fmt.Sprintf(format, args...)
-	var buffer bytes.Buffer
-	for _, s := range strings.Split(message, "\n") {
-		_, _ = buffer.WriteString("\x1b[33m* ")
-		_, _ = buffer.WriteString(s)
-		_, _ = buffer.WriteString("\x1b[0m\n")
-	}
-	_, _ = os.Stderr.Write(buffer.Bytes())
+	trace.DbgPrint(format, args...)
 }
 
 func (r *Repository) Debug(format string, args ...any) {
@@ -271,22 +240,14 @@ func error_red(format string, args ...any) {
 	prefix := W("error: ")
 	message := strings.TrimSuffix(fmt.Sprintf(W(format), args...), "\n")
 	var b bytes.Buffer
-	switch {
-	case is256ColorSupported:
+	if term.StderrMode != term.NO_COLOR {
 		for _, s := range strings.Split(message, "\n") {
 			_, _ = b.WriteString("\x1b[31m")
 			_, _ = b.WriteString(prefix)
 			_, _ = b.WriteString(s)
 			_, _ = b.WriteString("\x1b[0m\n")
 		}
-	case isTrueColorSupported:
-		for _, s := range strings.Split(message, "\n") {
-			_, _ = b.WriteString("\x1b[31m")
-			_, _ = b.WriteString(prefix)
-			_, _ = b.WriteString(s)
-			_, _ = b.WriteString("\x1b[0m\n")
-		}
-	default:
+	} else {
 		for _, s := range strings.Split(message, "\n") {
 			_, _ = b.WriteString(prefix)
 			_, _ = b.WriteString(s)

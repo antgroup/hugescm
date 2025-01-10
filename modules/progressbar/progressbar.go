@@ -445,7 +445,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		b.config.useIECUnits)
 
 	if b.config.renderWithBlankState {
-		b.RenderBlank()
+		_ = b.RenderBlank()
 	}
 
 	// if the render time interval attribute is set
@@ -453,17 +453,14 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		go func() {
 			ticker := time.NewTicker(b.config.spinnerChangeInterval)
 			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					if b.IsFinished() {
-						return
-					}
-					if b.IsStarted() {
-						b.lock.Lock()
-						b.render()
-						b.lock.Unlock()
-					}
+			for range ticker.C {
+				if b.IsFinished() {
+					return
+				}
+				if b.IsStarted() {
+					b.lock.Lock()
+					b.render()
+					b.lock.Unlock()
 				}
 			}
 		}()
@@ -791,7 +788,7 @@ func (p *ProgressBar) renderDetails() error {
 	// move the cursor up to the start of the details row
 	b.WriteString(fmt.Sprintf("\u001B[%dF", p.config.maxDetailRow+1))
 
-	writeString(p.config, b.String())
+	_ = writeString(p.config, b.String())
 
 	return nil
 }
@@ -810,7 +807,7 @@ func (p *ProgressBar) Describe(description string) {
 	if p.config.invisible {
 		return
 	}
-	p.render()
+	_ = p.render()
 }
 
 // New64 returns a new ProgressBar
@@ -863,7 +860,7 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 	}
 	p.lock.Unlock() // so p.Add can lock
 
-	p.Add(0) // re-render
+	_ = p.Add(0) // re-render
 }
 
 // AddMax takes in a int
@@ -894,7 +891,7 @@ func (p *ProgressBar) AddMax64(added int64) {
 	}
 	p.lock.Unlock() // so p.Add can lock
 
-	p.Add(0) // re-render
+	_ = p.Add(0) // re-render
 }
 
 // IsFinished returns true if progress bar is completed
@@ -937,13 +934,13 @@ func (p *ProgressBar) render() error {
 	if !p.state.finished && p.state.currentNum >= p.config.max {
 		p.state.finished = true
 		if !p.config.clearOnFinish {
-			io.Copy(p.config.writer, &p.config.stdBuffer)
-			renderProgressBar(p.config, &p.state)
+			_, _ = io.Copy(p.config.writer, &p.config.stdBuffer)
+			_, _ = renderProgressBar(p.config, &p.state)
 		}
 		if p.config.maxDetailRow > 0 {
-			p.renderDetails()
+			_ = p.renderDetails()
 			// put the cursor back to the last line of the details
-			writeString(p.config, fmt.Sprintf("\u001B[%dB\r\u001B[%dC", p.config.maxDetailRow, len(p.state.details[len(p.state.details)-1])))
+			_ = writeString(p.config, fmt.Sprintf("\u001B[%dB\r\u001B[%dC", p.config.maxDetailRow, len(p.state.details[len(p.state.details)-1])))
 		}
 		if p.config.onCompletion != nil {
 			p.config.onCompletion()
@@ -961,7 +958,7 @@ func (p *ProgressBar) render() error {
 	}
 
 	// then, re-render the current progress bar
-	io.Copy(p.config.writer, &p.config.stdBuffer)
+	_, _ = io.Copy(p.config.writer, &p.config.stdBuffer)
 	w, err := renderProgressBar(p.config, &p.state)
 	if err != nil {
 		return err
@@ -1347,7 +1344,7 @@ func writeString(c config, str string) error {
 		// ignore any errors in Sync(), as stdout
 		// can't be synced on some operating systems
 		// like Debian 9 (Stretch)
-		f.Sync()
+		_ = f.Sync()
 	}
 
 	return nil
@@ -1370,7 +1367,7 @@ func NewReader(r io.Reader, bar *ProgressBar) Reader {
 // Read will read the data and add the number of bytes to the progressbar
 func (r *Reader) Read(p []byte) (n int, err error) {
 	n, err = r.Reader.Read(p)
-	r.bar.Add(n)
+	_ = r.bar.Add(n)
 	return
 }
 
@@ -1379,7 +1376,7 @@ func (r *Reader) Close() (err error) {
 	if closer, ok := r.Reader.(io.Closer); ok {
 		return closer.Close()
 	}
-	r.bar.Finish()
+	_ = r.bar.Finish()
 	return
 }
 

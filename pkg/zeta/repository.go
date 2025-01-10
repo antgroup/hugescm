@@ -17,6 +17,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/config"
@@ -125,7 +126,7 @@ func (opts *NewOptions) tidySparse() {
 	sparseDirs := make([]string, 0, len(opts.SparseDirs))
 	for _, s := range opts.SparseDirs {
 		if filepath.IsAbs(s) {
-			fmt.Fprintf(os.Stderr, "\x1b[01;33m%s: \x1b[0;33m'%s' %s\x1b[0m\n", W("WARNING"), s, W("is an absolute path and cannot be set as a sparse dir."))
+			term.Fprintf(os.Stderr, "\x1b[01;33m%s: \x1b[0;33m'%s' %s\x1b[0m\n", W("WARNING"), s, W("is an absolute path and cannot be set as a sparse dir."))
 			continue
 		}
 		p := path.Clean(s)
@@ -343,7 +344,11 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		return nil, err
 	}
 	if warningFs[strings.ToLower(ds.FS)] {
-		warn("The repository filesystem is '%s', which may affect zeta's operation.", "\x1b[01;33m"+ds.FS+"\x1b[0m")
+		fsName := ds.FS
+		if term.StderrMode != term.NO_COLOR {
+			fsName = "\x1b[01;33m" + ds.FS + "\x1b[0m"
+		}
+		warn("The repository filesystem is '%s', which may affect zeta's operation.", fsName)
 	}
 	fmt.Fprintf(os.Stderr, "Checkout from '%s' to %s... sparse-checkout: %v, snapshot: %v\n", r.cleanedRemote(), target.String()[0:8], len(r.Core.SparseDirs) != 0, opts.Snapshot)
 	if len(r.Core.SparseDirs) != 0 {

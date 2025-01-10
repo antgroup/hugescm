@@ -174,14 +174,8 @@ func (cs *changes) show() {
 	if len(cs.Staging) != 0 {
 		fmt.Fprintf(os.Stdout, "%s\n", W("Changes to be committed:"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore --staged <file>...\" to unstage)"))
-		if term.StdoutMode != term.NO_COLOR {
-			for _, c := range cs.Staging {
-				fmt.Fprintf(os.Stdout, "      \x1b[32m%s\t%s\x1b[0m\n", W(StatusName(c.Staging)), cs.makePath(c.path))
-			}
-		} else {
-			for _, c := range cs.Staging {
-				fmt.Fprintf(os.Stdout, "      %s\t%s\n", W(StatusName(c.Staging)), cs.makePath(c.path))
-			}
+		for _, c := range cs.Staging {
+			term.Fprintf(os.Stdout, "      \x1b[32m%s\t%s\x1b[0m\n", W(StatusName(c.Staging)), cs.makePath(c.path))
 		}
 
 	}
@@ -189,28 +183,16 @@ func (cs *changes) show() {
 		fmt.Fprintf(os.Stdout, "%s:\n", W("Changes not staged for commit"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to update what will be committed)"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore <file>...\" to discard changes in working directory)"))
-		if term.StdoutMode != term.NO_COLOR {
-			for _, c := range cs.Unstaging {
-				fmt.Fprintf(os.Stdout, "      \x1b[31m%s\t%s\x1b[0m\n", W(StatusName(c.Worktree)), cs.makePath(c.path))
-			}
-		} else {
-			for _, c := range cs.Unstaging {
-				fmt.Fprintf(os.Stdout, "      %s\t%s\n", W(StatusName(c.Worktree)), cs.makePath(c.path))
-			}
+		for _, c := range cs.Unstaging {
+			term.Fprintf(os.Stdout, "      \x1b[31m%s\t%s\x1b[0m\n", W(StatusName(c.Worktree)), cs.makePath(c.path))
 		}
 
 	}
 	if len(cs.Untracked) != 0 {
 		fmt.Fprintf(os.Stdout, "%s:\n", W("Untracked files"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to include in what will be committed)"))
-		if term.StdoutMode != term.NO_COLOR {
-			for _, c := range cs.Untracked {
-				fmt.Fprintf(os.Stdout, "      \x1b[31m%s\x1b[0m\n", cs.makePath(c.path))
-			}
-		} else {
-			for _, c := range cs.Untracked {
-				fmt.Fprintf(os.Stdout, "      %sn", cs.makePath(c.path))
-			}
+		for _, c := range cs.Untracked {
+			term.Fprintf(os.Stdout, "      \x1b[31m%s\x1b[0m\n", cs.makePath(c.path))
 		}
 	}
 	if len(cs.Staging) == 0 && len(cs.Unstaging) == 0 {
@@ -247,13 +229,13 @@ func statusShow(status Status, root string, z bool) {
 		changes = append(changes, change{path: p, FileStatus: s})
 	}
 	sort.Sort(changeOrder(changes))
-	if term.StdoutMode != term.NO_COLOR && !z {
+	if !z {
 		for _, c := range changes {
-			fmt.Fprintf(os.Stdout, "\x1b[32m%c\x1b[31m%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
+			term.Fprintf(os.Stdout, "\x1b[32m%c\x1b[31m%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
 		}
 		sort.Sort(changeOrder(untracked))
 		for _, c := range untracked {
-			fmt.Fprintf(os.Stdout, "\x1b[31m%c%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
+			term.Fprintf(os.Stdout, "\x1b[31m%c%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
 		}
 		return
 	}

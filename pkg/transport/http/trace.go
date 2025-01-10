@@ -5,13 +5,13 @@ package http
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptrace"
 	"os"
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
 )
 
@@ -65,26 +65,26 @@ func flatAddress(addrs []net.IPAddr) string {
 func wrapRequest(req *http.Request) *http.Request {
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(di httptrace.DNSStartInfo) {
-			fmt.Fprintf(os.Stderr, "\x1b[33mResolve %s\x1b[0m", di.Host)
+			term.Fprintf(os.Stderr, "\x1b[33mResolve %s\x1b[0m", di.Host)
 		},
 		DNSDone: func(dnsinfo httptrace.DNSDoneInfo) {
 			if dnsinfo.Err == nil {
-				fmt.Fprintf(os.Stderr, "\x1b[33m to %s\x1b[0m\n", flatAddress(dnsinfo.Addrs))
+				term.Fprintf(os.Stderr, "\x1b[33m to %s\x1b[0m\n", flatAddress(dnsinfo.Addrs))
 			}
 		},
 		ConnectDone: func(network, addr string, err error) {
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "\x1b[33mConnecting to %s connected\x1b[0m\n", addr)
+				term.Fprintf(os.Stderr, "\x1b[33mConnecting to %s connected\x1b[0m\n", addr)
 			}
 		},
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "\x1b[33mSSL connection using %s/%s\x1b[0m\n", tlsVersionName(state.Version), tls.CipherSuiteName(state.CipherSuite))
+				term.Fprintf(os.Stderr, "\x1b[33mSSL connection using %s/%s\x1b[0m\n", tlsVersionName(state.Version), tls.CipherSuiteName(state.CipherSuite))
 			}
 		},
 		WroteHeaderField: func(key string, value []string) {
 			for _, v := range value {
-				fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+				term.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
 			}
 		},
 	}
@@ -97,10 +97,10 @@ func (c *client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if c.verbose {
-		fmt.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
+		term.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
 		for key, value := range resp.Header {
 			for _, v := range value {
-				fmt.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+				term.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
 			}
 		}
 	}
@@ -113,10 +113,10 @@ func (c *downloader) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if c.verbose {
-		fmt.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
+		term.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
 		for key, value := range resp.Header {
 			for _, v := range value {
-				fmt.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+				term.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
 			}
 		}
 	}

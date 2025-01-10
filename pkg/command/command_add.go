@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
@@ -59,7 +60,7 @@ func (a *Add) Run(g *Globals) error {
 		return nil
 	}
 	if len(a.PathSpec) == 0 {
-		fmt.Fprintf(os.Stderr, "%s\n\x1b[33m%s\x1b[0m\n",
+		term.Fprintf(os.Stderr, "%s\n\x1b[33m%s\x1b[0m\n",
 			W("Nothing specified, nothing added."),
 			W("hint: Maybe you wanted to say 'zeta add .'?"))
 		return errors.New("nothing specified, nothing added")

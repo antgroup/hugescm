@@ -247,12 +247,13 @@ func error_red(format string, args ...any) {
 			_, _ = b.WriteString(s)
 			_, _ = b.WriteString("\x1b[0m\n")
 		}
-	} else {
-		for _, s := range strings.Split(message, "\n") {
-			_, _ = b.WriteString(prefix)
-			_, _ = b.WriteString(s)
-			_ = b.WriteByte('\n')
-		}
+		_, _ = os.Stderr.Write(b.Bytes())
+		return
+	}
+	for _, s := range strings.Split(message, "\n") {
+		_, _ = b.WriteString(prefix)
+		_, _ = b.WriteString(s)
+		_ = b.WriteByte('\n')
 	}
 	_, _ = os.Stderr.Write(b.Bytes())
 }

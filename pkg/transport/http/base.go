@@ -20,6 +20,7 @@ import (
 	"unicode"
 
 	"github.com/antgroup/hugescm/modules/streamio"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/transport/proxy"
@@ -197,7 +198,7 @@ func checkUnauthorized(err error, showErr bool) bool {
 	}
 	if ec.status == http.StatusUnauthorized {
 		if showErr {
-			fmt.Fprintf(os.Stderr, "auth: \x1b[31m%s\x1b[0m\n", ec.Message)
+			term.Fprintf(os.Stderr, "auth: \x1b[31m%s\x1b[0m\n", ec.Message)
 		}
 		return true
 	}

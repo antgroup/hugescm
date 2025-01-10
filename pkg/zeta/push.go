@@ -14,6 +14,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/progressbar"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -221,7 +222,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		}
 		cleanedRemote := r.cleanedRemote()
 		if !fasfForward && !o.Force {
-			fmt.Fprintf(os.Stderr, rejectFormat, cleanedRemote, ourName.Short(), ref.Name.Short(), cleanedRemote)
+			term.Fprintf(os.Stderr, rejectFormat, cleanedRemote, ourName.Short(), ref.Name.Short(), cleanedRemote)
 			return ErrPushRejected
 		}
 		theirs = ref.Target()
@@ -283,7 +284,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		for _, s := range sv {
 			fmt.Fprintf(os.Stderr, "remote: %s\n", s)
 		}
-		fmt.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s\n", cleanedRemote, target.Short())
+		term.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s\n", cleanedRemote, target.Short())
 		error_red("failed to push some refs to '%s'", cleanedRemote)
 		return errors.New(result.Reason)
 	}

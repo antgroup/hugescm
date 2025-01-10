@@ -4,17 +4,16 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/command"
 	"github.com/antgroup/hugescm/modules/git"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/version"
 )
@@ -24,18 +23,11 @@ type Globals struct {
 	Version VersionFlag `short:"v" name:"version" help:"Show version number and quit"`
 }
 
-func (g *Globals) DbgPrint(format string, args ...any) {
+func (g *Globals) DbgPrint(format string, a ...any) {
 	if !g.Verbose {
 		return
 	}
-	message := fmt.Sprintf(format, args...)
-	var buffer bytes.Buffer
-	for _, s := range strings.Split(message, "\n") {
-		_, _ = buffer.WriteString("\x1b[33m* ")
-		_, _ = buffer.WriteString(s)
-		_, _ = buffer.WriteString("\x1b[0m\n")
-	}
-	_, _ = os.Stderr.Write(buffer.Bytes())
+	trace.DbgPrint(format, a...)
 }
 
 type VersionFlag bool

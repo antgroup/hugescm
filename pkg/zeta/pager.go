@@ -23,6 +23,7 @@ import (
 type Printer interface {
 	io.WriteCloser
 	ColorMode() term.ColorMode
+	EnableColor() bool
 }
 
 type WrapPrinter struct {

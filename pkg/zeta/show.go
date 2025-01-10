@@ -21,7 +21,6 @@ type ShowOptions struct {
 	Textconv  bool
 	Algorithm diferenco.Algorithm
 	Limit     int64
-	*printer
 }
 
 type showObject struct {
@@ -68,38 +67,37 @@ func (r *Repository) Show(ctx context.Context, opts *ShowOptions) error {
 	}
 	p := NewPrinter(ctx)
 	defer p.Close()
-	opts.w = p
 	for _, o := range objects {
-		if err := r.showOne(ctx, opts, o); err != nil {
+		if err := r.showOne(ctx, p, opts, o); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *Repository) showOne(ctx context.Context, opts *ShowOptions, so *showObject) error {
+func (r *Repository) showOne(ctx context.Context, w *printer, opts *ShowOptions, so *showObject) error {
 	var o any
 	var err error
 	if o, err = r.odb.Object(ctx, so.oid); err != nil {
 		if plumbing.IsNoSuchObject(err) {
-			return r.showBlob(ctx, opts, so)
+			return r.showBlob(ctx, w, opts, so)
 		}
 		return catShowError(so.oid.String(), err)
 	}
 	switch a := o.(type) {
 	case *object.Tree:
-		return r.showTree(ctx, opts, so, a)
+		return r.showTree(ctx, w, so, a)
 	case *object.Commit:
-		return r.showCommit(ctx, opts, a)
+		return r.showCommit(ctx, w, opts, a)
 	case *object.Tag:
-		return r.showTag(ctx, opts, a)
+		return r.showTag(ctx, w, opts, a)
 	case *object.Fragments:
-		return r.showFragments(ctx, opts, so, a)
+		return r.showFragments(ctx, w, so, a)
 	}
 	return nil
 }
 
-func (r *Repository) showBlob(ctx context.Context, opts *ShowOptions, so *showObject) error {
+func (r *Repository) showBlob(ctx context.Context, w Printer, opts *ShowOptions, so *showObject) error {
 	b, err := r.catMissingObject(ctx, &promiseObject{oid: so.oid})
 	if err != nil {
 		return err
@@ -112,18 +110,18 @@ func (r *Repository) showBlob(ctx context.Context, opts *ShowOptions, so *showOb
 	if err != nil {
 		return err
 	}
-	if opts.EnableColor() && charset == diferenco.BINARY {
+	if w.EnableColor() && charset == diferenco.BINARY {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return processColor(reader, opts.w, opts.Limit, opts.colorMode)
+		return processColor(reader, w, opts.Limit, w.ColorMode())
 	}
-	_, err = io.Copy(opts.w, io.LimitReader(reader, opts.Limit))
+	_, err = io.Copy(w, io.LimitReader(reader, opts.Limit))
 	return err
 }
 
-func (r *Repository) showCommit(ctx context.Context, opts *ShowOptions, cc *object.Commit) error {
+func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptions, cc *object.Commit) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -134,7 +132,7 @@ func (r *Repository) showCommit(ctx context.Context, opts *ShowOptions, cc *obje
 		fmt.Fprintf(os.Stderr, "resolve references error: %v\n", err)
 		return err
 	}
-	if err := opts.LogOne(cc, rdb.M[cc.Hash]); err != nil {
+	if err := w.LogOne(cc, rdb.M[cc.Hash]); err != nil {
 		return err
 	}
 	if len(cc.Parents) == 2 {
@@ -173,26 +171,26 @@ func (r *Repository) showCommit(ctx context.Context, opts *ShowOptions, cc *obje
 	if err != nil {
 		return err
 	}
-	e := diferenco.NewUnifiedEncoder(opts.w)
-	if opts.EnableColor() {
+	e := diferenco.NewUnifiedEncoder(w)
+	if w.EnableColor() {
 		e.SetColor(color.NewColorConfig())
 	}
 	_ = e.Encode(patch)
 	return nil
 }
 
-func (r *Repository) showTag(ctx context.Context, opts *ShowOptions, tag *object.Tag) error {
+func (r *Repository) showTag(ctx context.Context, w *printer, opts *ShowOptions, tag *object.Tag) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
 	}
-	if opts.EnableColor() {
-		fmt.Fprintf(opts.w, "\x1b[33mtag %s\x1b[0m\n", tag.Name)
+	if w.EnableColor() {
+		fmt.Fprintf(w, "\x1b[33mtag %s\x1b[0m\n", tag.Name)
 	} else {
-		fmt.Fprintf(opts.w, "tag %s\n", tag.Name)
+		fmt.Fprintf(w, "tag %s\n", tag.Name)
 	}
-	fmt.Fprintf(opts.w, "Tagger: %s <%s>\nDate:   %s\n\n%s\n", tag.Tagger.Name, tag.Tagger.Email, tag.Tagger.When.Format(time.RFC3339), tag.Content)
+	fmt.Fprintf(w, "Tagger: %s <%s>\nDate:   %s\n\n%s\n", tag.Tagger.Name, tag.Tagger.Email, tag.Tagger.When.Format(time.RFC3339), tag.Content)
 	var cc *object.Commit
 	var err error
 	switch tag.ObjectType {
@@ -206,47 +204,47 @@ func (r *Repository) showTag(ctx context.Context, opts *ShowOptions, tag *object
 	if err != nil {
 		return err
 	}
-	return r.showCommit(ctx, opts, cc)
+	return r.showCommit(ctx, w, opts, cc)
 }
 
-func (r *Repository) showTree(ctx context.Context, opts *ShowOptions, so *showObject, tree *object.Tree) error {
+func (r *Repository) showTree(ctx context.Context, w Printer, so *showObject, tree *object.Tree) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
 	}
-	if opts.EnableColor() {
-		fmt.Fprintf(opts.w, "\x1b[33mtree %s\x1b[0m\n\n", so.name)
+	if w.EnableColor() {
+		fmt.Fprintf(w, "\x1b[33mtree %s\x1b[0m\n\n", so.name)
 	} else {
-		fmt.Fprintf(opts.w, "tree %s\n\n", so.name)
+		fmt.Fprintf(w, "tree %s\n\n", so.name)
 	}
 	for _, e := range tree.Entries {
 		t := e.Type()
 		if t == object.TreeObject {
-			fmt.Fprintf(opts.w, "%s/\n", e.Name)
+			fmt.Fprintf(w, "%s/\n", e.Name)
 			continue
 		}
-		if t == object.FragmentsObject && opts.EnableColor() {
-			fmt.Fprintf(opts.w, "\x1b[36m%s\x1b[0m\n", e.Name)
+		if t == object.FragmentsObject && w.EnableColor() {
+			fmt.Fprintf(w, "\x1b[36m%s\x1b[0m\n", e.Name)
 		}
-		fmt.Fprintln(opts.w, e.Name)
+		fmt.Fprintln(w, e.Name)
 	}
 	return nil
 }
 
-func (r *Repository) showFragments(ctx context.Context, opts *ShowOptions, so *showObject, ff *object.Fragments) error {
+func (r *Repository) showFragments(ctx context.Context, w Printer, so *showObject, ff *object.Fragments) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
 	}
-	if opts.EnableColor() {
-		fmt.Fprintf(opts.w, "\x1b[33mfragments %s\x1b[0m\nraw:  %s\nsize: %d\n\n", so.oid, ff.Origin, ff.Size)
+	if w.EnableColor() {
+		fmt.Fprintf(w, "\x1b[33mfragments %s\x1b[0m\nraw:  %s\nsize: %d\n\n", so.oid, ff.Origin, ff.Size)
 	} else {
-		fmt.Fprintf(opts.w, "fragments %s\nraw:  %s\nsize: %d\n", so.oid, ff.Origin, ff.Size)
+		fmt.Fprintf(w, "fragments %s\nraw:  %s\nsize: %d\n", so.oid, ff.Origin, ff.Size)
 	}
 	for _, e := range ff.Entries {
-		fmt.Fprintf(opts.w, "%d\t%s %d\n", e.Index, e.Hash, e.Size)
+		fmt.Fprintf(w, "%d\t%s %d\n", e.Index, e.Hash, e.Size)
 	}
 	return nil
 }

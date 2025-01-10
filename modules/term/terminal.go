@@ -42,6 +42,9 @@ func detectForceColor() (Level, bool) {
 
 // https://github.com/gui-cs/Terminal.Gui/issues/48
 // https://github.com/termstandard/colors
+// https://github.com/microsoft/terminal/issues/11057
+// https://marvinh.dev/blog/terminal-colors/
+// https://github.com/microsoft/terminal/issues/13006
 
 var (
 	termSupports = map[string]Level{
@@ -81,7 +84,7 @@ func detectColorLevel() Level {
 	if strings.Contains(termEnv, "256") || strings.Contains(colorTermEnv, "256") {
 		return Level256
 	}
-	return LevelNone
+	return detectColorLevelHijack()
 }
 
 func init() {

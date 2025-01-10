@@ -11,8 +11,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-// initializeGW: detect git for windows installation
-func initializeGW() (string, error) {
+func searchGitForWindows() (string, error) {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\GitForWindows`, registry.QUERY_VALUE)
 	if err != nil {
 		return "", nil
@@ -22,24 +21,55 @@ func initializeGW() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	gitForWindowsBinDir := filepath.Clean(filepath.Join(installPath, "cmd"))
-	if _, err := os.Stat(filepath.Join(gitForWindowsBinDir, "git.exe")); err != nil {
-		return "", err
+	return installPath, nil
+}
+
+func hasGitExe(installDir string) bool {
+	gitExe := filepath.Join(installDir, "cmd", "git.exe")
+	if _, err := os.Stat(gitExe); err != nil {
+		return false
 	}
-	return gitForWindowsBinDir, nil
+	return true
+}
+
+func checkLessExe(installDir string) {
+	lessExe := filepath.Join(installDir, "usr", "bin", "less.exe")
+	if _, err := os.Stat(lessExe); err == nil {
+		os.Setenv(ZETA_LESS_EXE_HIJACK, lessExe)
+	}
+}
+
+func cleanupEnv(pathList []string) {
+	pathNewList := make([]string, 0, len(pathList)+2)
+	seen := make(map[string]bool)
+	for _, p := range pathList {
+		cleanedPath := filepath.Clean(p)
+		if cleanedPath == "." {
+			continue
+		}
+		u := strings.ToLower(cleanedPath)
+		if seen[u] {
+			continue
+		}
+		seen[u] = true
+		pathNewList = append(pathNewList, cleanedPath)
+	}
+	_ = os.Setenv("PATH", strings.Join(pathNewList, string(os.PathListSeparator)))
 }
 
 // InitializeEnv: initialize path env
 func InitializeEnv() error {
+	gitInstallDir, err := searchGitForWindows()
+	if err != nil {
+		cleanupEnv(strings.Split(os.Getenv("PATH"), string(os.PathListSeparator)))
+		return nil
+	}
+	checkLessExe(gitInstallDir)
 	pathEnv := os.Getenv("PATH")
 	pathList := strings.Split(pathEnv, string(os.PathListSeparator))
 	pathNewList := make([]string, 0, len(pathList)+2)
-	if _, err := exec.LookPath("git"); err != nil {
-		gitForWindowsBinDir, err := initializeGW()
-		if err != nil {
-			return err
-		}
-		pathNewList = append(pathNewList, filepath.Clean(gitForWindowsBinDir))
+	if _, err := exec.LookPath("git"); err != nil && hasGitExe(gitInstallDir) {
+		pathNewList = append(pathNewList, filepath.Join(gitInstallDir, "cmd"))
 	}
 	seen := make(map[string]bool)
 	for _, p := range pathList {

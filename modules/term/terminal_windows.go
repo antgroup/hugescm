@@ -1,6 +1,7 @@
 package term
 
 import (
+	"os"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -86,4 +87,32 @@ func IsCygwinTerminal(fd uintptr) bool {
 	}
 	fileName := windows.UTF16ToString(fi.FileName[:fi.FileNameLength/2])
 	return isCygwinPipeName(fileName)
+}
+
+// https://github.com/microsoft/terminal/issues/11057#issuecomment-1493118152
+// https://github.com/microsoft/terminal/issues/13006
+func detectColorLevelHijack() Level {
+	var mode uint32
+	handle := windows.Handle(os.Stderr.Fd())
+	if err := windows.GetConsoleMode(handle, &mode); err != nil {
+		handle = windows.Handle(os.Stdout.Fd())
+		if err := windows.GetConsoleMode(windows.Handle(os.Stdout.Fd()), &mode); err != nil {
+			return LevelNone
+		}
+	}
+	// VT detect and vt enabled
+	if mode&windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING != windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING {
+		mode = mode | windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
+		if err := windows.SetConsoleMode(handle, mode); err != nil {
+			return LevelNone
+		}
+	}
+	major, minor, build := windows.RtlGetNtVersionNumbers()
+	if major > 10 || (major == 10 && minor >= 1) || (major == 10 && minor == 0 && build > 14931) {
+		return Level16M
+	}
+	if major == 10 && build > 10586 {
+		return Level256
+	}
+	return LevelNone
 }

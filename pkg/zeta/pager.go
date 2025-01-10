@@ -45,10 +45,6 @@ func lookupPager() (string, bool) {
 	if ok {
 		return pager, ok
 	}
-	// pager, ok = os.LookupEnv("GIT_PAGER")
-	// if ok {
-	// 	return pager, ok
-	// }
 	return os.LookupEnv("PAGER")
 }
 
@@ -184,10 +180,14 @@ func NewPrinter(ctx context.Context) *printer {
 	}
 	pagerExe, err := exec.LookPath(pager)
 	if err != nil {
-		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
+		if pagerExe, ok = os.LookupEnv(env.ZETA_LESS_EXE_HIJACK); !ok {
+			return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
+		}
+		if _, err := os.Stat(pagerExe); err != nil {
+			return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
+		}
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
-
 	cmd.Env = env.SanitizerEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV
 	// PAGER_ENV: LESS=FRX LV=-c
 	cmd.Env = append(cmd.Env, "LESS=FRX", "LV=-c")

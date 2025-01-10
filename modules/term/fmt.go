@@ -21,10 +21,10 @@ func StripANSI(s string) string {
 
 func Fprintf(w io.Writer, format string, a ...any) (int, error) {
 	switch {
-	case w == os.Stderr && StderrMode == NO_COLOR:
+	case w == os.Stderr && StderrLevel == LevelNone:
 		out := fmt.Sprintf(format, a...)
 		return os.Stderr.WriteString(StripANSI(out))
-	case w == os.Stdout && StdoutMode == NO_COLOR:
+	case w == os.Stdout && StdoutLevel == LevelNone:
 		out := fmt.Sprintf(format, a...)
 		return os.Stdout.WriteString(StripANSI(out))
 	default:

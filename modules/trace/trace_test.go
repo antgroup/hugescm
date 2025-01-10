@@ -7,7 +7,7 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	term.StderrMode = term.HAS_256COLOR
+	term.StderrLevel = term.Level256
 	d := NewDebuger(true)
 	d.DbgPrint("jack")
 }

@@ -24,14 +24,14 @@ type debuger struct {
 func DbgPrint(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	var buffer bytes.Buffer
-	switch term.StderrMode {
-	case term.HAS_TRUECOLOR:
+	switch term.StderrLevel {
+	case term.Level16M:
 		for _, s := range strings.Split(message, "\n") {
 			_, _ = buffer.WriteString("\x1b[38;2;254;225;64m* ")
 			_, _ = buffer.WriteString(s)
 			_, _ = buffer.WriteString("\x1b[0m\n")
 		}
-	case term.HAS_256COLOR:
+	case term.Level256:
 		for _, s := range strings.Split(message, "\n") {
 			_, _ = buffer.WriteString("\x1b[33m* ")
 			_, _ = buffer.WriteString(s)

@@ -11,3 +11,7 @@ func TestStripAnsi(t *testing.T) {
 	as := StripANSI(ss)
 	fmt.Fprintf(os.Stderr, "%s\n", as)
 }
+
+func TestCygwinTerminal(t *testing.T) {
+	fmt.Fprintf(os.Stderr, "IsCygwinTerminal: %v\n", IsCygwinTerminal(os.Stderr.Fd()))
+}

@@ -345,7 +345,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	}
 	if warningFs[strings.ToLower(ds.FS)] {
 		fsName := ds.FS
-		if term.StderrMode != term.NO_COLOR {
+		if term.StderrLevel != term.LevelNone {
 			fsName = "\x1b[01;33m" + ds.FS + "\x1b[0m"
 		}
 		warn("The repository filesystem is '%s', which may affect zeta's operation.", fsName)

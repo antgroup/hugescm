@@ -148,9 +148,9 @@ func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
 		}
 		if target == r.Name() {
 			switch w.ColorMode() {
-			case term.HAS_TRUECOLOR:
+			case term.Level16M:
 				fmt.Fprintf(w, "\x1b[38;2;67;233;123m* %s\x1b[0m\n", branchName)
-			case term.HAS_256COLOR:
+			case term.Level256:
 				fmt.Fprintf(w, "\x1b[32m* %s\x1b[0m\n", branchName)
 			default:
 				fmt.Fprintf(w, " %s\n", branchName)

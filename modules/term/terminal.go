@@ -4,32 +4,71 @@ import (
 	"os"
 	"strings"
 
-	"github.com/antgroup/hugescm/modules/strengthen"
 	"golang.org/x/term"
 )
 
-type ColorMode int
+// Level color level
+type Level int
 
 const (
-	NO_COLOR ColorMode = iota
-	HAS_256COLOR
-	HAS_TRUECOLOR
+	LevelNone Level = iota
+	Level256
+	Level16M
 )
 
 var (
-	StderrMode ColorMode
-	StdoutMode ColorMode
+	StderrLevel Level
+	StdoutLevel Level
 )
 
-func detectTermColorMode() ColorMode {
-	if strengthen.SimpleAtob(os.Getenv("ZETA_FORCE_TRUECOLOR"), false) {
-		return HAS_TRUECOLOR
+func isFalse(s string) bool {
+	s = strings.ToLower(s)
+	return s == "false" || s == "on" || s == "off" || s == "0"
+}
+
+func detectForceColor() (Level, bool) {
+	forceColorEnv, ok := os.LookupEnv("FORCE_COLOR")
+	if !ok {
+		return LevelNone, false
 	}
-	if strengthen.SimpleAtob(os.Getenv("NO_COLOR"), false) {
-		return NO_COLOR
+	if isFalse(forceColorEnv) {
+		return LevelNone, false
 	}
+	if forceColorEnv == "3" {
+		return Level16M, true
+	}
+	return Level256, true
+}
+
+// https://github.com/gui-cs/Terminal.Gui/issues/48
+// https://github.com/termstandard/colors
+
+var (
+	termSupports = map[string]Level{
+		"mintty":         Level16M,
+		"iTerm.app":      Level16M,
+		"WezTerm":        Level16M,
+		"Apple_Terminal": Level256,
+	}
+)
+
+func detectColorLevel() Level {
+	// detect FORCE_COLOR and level
+	if level, ok := detectForceColor(); ok {
+		return level
+	}
+	// detect NO_COLOR
+	if noColor, ok := os.LookupEnv("NO_COLOR"); ok && !isFalse(noColor) {
+		return LevelNone
+	}
+	// detect Windows Terminal
 	if _, ok := os.LookupEnv("WT_SESSION"); ok {
-		return HAS_TRUECOLOR
+		return Level16M
+	}
+	if termApp, ok := os.LookupEnv("TERM_PROGRAM"); ok {
+		if level, ok := termSupports[termApp]; ok {
+			return level
+		}
 	}
 	colorTermEnv := os.Getenv("COLORTERM")
 	termEnv := os.Getenv("TERM")
@@ -37,21 +76,21 @@ func detectTermColorMode() ColorMode {
 		strings.Contains(termEnv, "truecolor") ||
 		strings.Contains(colorTermEnv, "24bit") ||
 		strings.Contains(colorTermEnv, "truecolor") {
-		return HAS_TRUECOLOR
+		return Level16M
 	}
 	if strings.Contains(termEnv, "256") || strings.Contains(colorTermEnv, "256") {
-		return HAS_256COLOR
+		return Level256
 	}
-	return NO_COLOR
+	return LevelNone
 }
 
 func init() {
-	colorMode := detectTermColorMode()
+	colorLevel := detectColorLevel()
 	if IsTerminal(os.Stderr.Fd()) {
-		StderrMode = colorMode
+		StderrLevel = colorLevel
 	}
 	if IsTerminal(os.Stdout.Fd()) {
-		StdoutMode = colorMode
+		StdoutLevel = colorLevel
 	}
 }
 

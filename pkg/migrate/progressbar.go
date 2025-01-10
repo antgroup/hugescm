@@ -20,8 +20,8 @@ type ProgressBar struct {
 }
 
 func makeProgressBarTheme() progressbar.Theme {
-	switch term.StdoutMode {
-	case term.HAS_256COLOR:
+	switch term.StdoutLevel {
+	case term.Level256:
 		return progressbar.Theme{
 			Saucer:        "\x1b[36m#\x1b[0m",
 			SaucerHead:    "\x1b[36m>\x1b[0m",
@@ -29,7 +29,7 @@ func makeProgressBarTheme() progressbar.Theme {
 			BarStart:      "[",
 			BarEnd:        "]",
 		}
-	case term.HAS_TRUECOLOR:
+	case term.Level16M:
 		return progressbar.Theme{
 			Saucer:        "\x1b[38;2;72;198;239m#\x1b[0m",
 			SaucerHead:    "\x1b[38;2;72;198;239m>\x1b[0m",
@@ -49,10 +49,10 @@ func makeProgressBarTheme() progressbar.Theme {
 }
 
 func makeDescription(description string, stepCurrent, stepEnd int) string {
-	switch term.StdoutMode {
-	case term.HAS_256COLOR:
+	switch term.StdoutLevel {
+	case term.Level256:
 		return fmt.Sprintf("\x1b[36m[%d/%d]\x1b[0m %s...", stepCurrent, stepEnd, description)
-	case term.HAS_TRUECOLOR:
+	case term.Level16M:
 		return fmt.Sprintf("\x1b[38;2;72;198;239m[%d/%d]\x1b[0m %s...", stepCurrent, stepEnd, description)
 	default:
 	}
@@ -79,13 +79,13 @@ func (b *ProgressBar) Add(n int) {
 }
 
 var (
-	startColor = map[term.ColorMode]string{
-		term.HAS_256COLOR:  "\x1b[36m",
-		term.HAS_TRUECOLOR: "\x1b[38;2;72;198;239m",
+	startColor = map[term.Level]string{
+		term.Level256: "\x1b[36m",
+		term.Level16M: "\x1b[38;2;72;198;239m",
 	}
-	endColor = map[term.ColorMode]string{
-		term.HAS_256COLOR:  "\x1b[0m",
-		term.HAS_TRUECOLOR: "\x1b[0m",
+	endColor = map[term.Level]string{
+		term.Level256: "\x1b[0m",
+		term.Level16M: "\x1b[0m",
 	}
 )
 
@@ -95,8 +95,8 @@ func (b *ProgressBar) Done() {
 	}
 	_ = b.bar.Finish()
 	if b.total <= 0 {
-		fmt.Fprintf(os.Stderr, "\n%s[%d/%d]%s %s.\n", startColor[term.StderrMode], b.stepCurrent, b.stepEnd, endColor[term.StdoutMode], tr.W("processing completed"))
+		fmt.Fprintf(os.Stderr, "\n%s[%d/%d]%s %s.\n", startColor[term.StderrLevel], b.stepCurrent, b.stepEnd, endColor[term.StdoutLevel], tr.W("processing completed"))
 		return
 	}
-	fmt.Fprintf(os.Stderr, "\n\x1b%s[%d/%d]%s %s, %s: %d\n", startColor[term.StderrMode], b.stepCurrent, b.stepEnd, endColor[term.StdoutMode], tr.W("processing completed"), tr.W("total"), b.total)
+	fmt.Fprintf(os.Stderr, "\n\x1b%s[%d/%d]%s %s, %s: %d\n", startColor[term.StderrLevel], b.stepCurrent, b.stepEnd, endColor[term.StdoutLevel], tr.W("processing completed"), tr.W("total"), b.total)
 }

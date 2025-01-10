@@ -22,7 +22,7 @@ import (
 
 type Printer interface {
 	io.WriteCloser
-	ColorMode() term.ColorMode
+	ColorMode() term.Level
 	EnableColor() bool
 }
 
@@ -30,8 +30,8 @@ type WrapPrinter struct {
 	io.WriteCloser
 }
 
-func (WrapPrinter) ColorMode() term.ColorMode {
-	return term.NO_COLOR
+func (WrapPrinter) ColorMode() term.Level {
+	return term.LevelNone
 }
 
 func (WrapPrinter) EnableColor() bool {
@@ -54,15 +54,15 @@ func lookupPager() (string, bool) {
 
 type printer struct {
 	w         io.Writer
-	colorMode term.ColorMode
+	colorMode term.Level
 	closeFn   func() error
 }
 
 func (p *printer) EnableColor() bool {
-	return p.colorMode != term.NO_COLOR
+	return p.colorMode != term.LevelNone
 }
 
-func (p *printer) ColorMode() term.ColorMode {
+func (p *printer) ColorMode() term.Level {
 	return p.colorMode
 }
 
@@ -90,7 +90,7 @@ func indent(t string) string {
 }
 
 func (p *printer) logOne(c *object.Commit) (err error) {
-	if p.colorMode != term.NO_COLOR {
+	if p.colorMode != term.LevelNone {
 		_, err = fmt.Fprintf(p.w, "\x1b[33mcommit %s\x1b[0m\nAuthor: %s <%s>\nDate:   %s\n\n%s\n",
 			c.Hash, c.Author.Name, c.Author.Email, c.Author.When.Format(time.RFC3339), indent(c.Message))
 		return
@@ -134,7 +134,7 @@ func (p *printer) LogOne(c *object.Commit, refs []*ReferenceLite) (err error) {
 	if len(refs) == 0 {
 		return p.logOne(c)
 	}
-	if p.colorMode == term.NO_COLOR {
+	if p.colorMode == term.LevelNone {
 		return p.logOneNoColor(c, refs)
 	}
 	var w bytes.Buffer
@@ -167,12 +167,12 @@ func (p *printer) LogOne(c *object.Commit, refs []*ReferenceLite) (err error) {
 }
 
 func NewPrinter(ctx context.Context) *printer {
-	if term.StdoutMode == term.NO_COLOR {
-		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
+	if term.StdoutLevel == term.LevelNone {
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	pager, ok := lookupPager()
 	if ok && len(pager) == 0 {
-		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	if len(pager) == 0 {
 		pager = "less"
@@ -184,7 +184,7 @@ func NewPrinter(ctx context.Context) *printer {
 	}
 	pagerExe, err := exec.LookPath(pager)
 	if err != nil {
-		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
 
@@ -193,15 +193,15 @@ func NewPrinter(ctx context.Context) *printer {
 	cmd.Env = append(cmd.Env, "LESS=FRX", "LV=-c")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		_ = stdin.Close()
-		return &printer{w: os.Stdout, colorMode: term.StdoutMode}
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
-	return &printer{w: stdin, colorMode: term.StdoutMode, closeFn: func() error {
+	return &printer{w: stdin, colorMode: term.StdoutLevel, closeFn: func() error {
 		_ = stdin.Close()
 		if err := cmd.Wait(); err != nil {
 			return err

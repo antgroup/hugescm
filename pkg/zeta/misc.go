@@ -240,7 +240,7 @@ func error_red(format string, args ...any) {
 	prefix := W("error: ")
 	message := strings.TrimSuffix(fmt.Sprintf(W(format), args...), "\n")
 	var b bytes.Buffer
-	if term.StderrMode != term.NO_COLOR {
+	if term.StderrLevel != term.LevelNone {
 		for _, s := range strings.Split(message, "\n") {
 			_, _ = b.WriteString("\x1b[31m")
 			_, _ = b.WriteString(prefix)

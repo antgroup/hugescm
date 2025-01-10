@@ -14,13 +14,13 @@ import (
 )
 
 var (
-	blueColorMap = map[term.ColorMode]string{
-		term.HAS_256COLOR:  "\x1b[36m",
-		term.HAS_TRUECOLOR: "\x1b[38;2;72;198;239m",
+	blueColorMap = map[term.Level]string{
+		term.Level256: "\x1b[36m",
+		term.Level16M: "\x1b[38;2;72;198;239m",
 	}
-	endColorMap = map[term.ColorMode]string{
-		term.HAS_256COLOR:  "\x1b[0m",
-		term.HAS_TRUECOLOR: "\x1b[0m",
+	endColorMap = map[term.Level]string{
+		term.Level256: "\x1b[0m",
+		term.Level16M: "\x1b[0m",
 	}
 )
 
@@ -30,8 +30,8 @@ type Bar struct {
 }
 
 func MakeTheme() progressbar.Theme {
-	switch term.StderrMode {
-	case term.HAS_256COLOR:
+	switch term.StderrLevel {
+	case term.Level256:
 		return progressbar.Theme{
 			Saucer:        "\x1b[36m#\x1b[0m",
 			SaucerHead:    "\x1b[36m>\x1b[0m",
@@ -39,7 +39,7 @@ func MakeTheme() progressbar.Theme {
 			BarStart:      "[",
 			BarEnd:        "]",
 		}
-	case term.HAS_TRUECOLOR:
+	case term.Level16M:
 		return progressbar.Theme{
 			Saucer:        "\x1b[38;2;72;198;239m#\x1b[0m",
 			SaucerHead:    "\x1b[38;2;72;198;239m>\x1b[0m",
@@ -59,7 +59,7 @@ func MakeTheme() progressbar.Theme {
 }
 
 func wrapDescription(description string) string {
-	if term.StderrMode != term.NO_COLOR {
+	if term.StderrLevel != term.LevelNone {
 		return fmt.Sprintf("\x1b[0m%s...", description)
 	}
 	return description + "..."
@@ -76,7 +76,7 @@ func NewBar(description string, total int, quiet bool) *Bar {
 		progressbar.OptionSetDescription(wrapDescription(description)),
 		progressbar.OptionFullWidth(),
 		progressbar.OptionOnCompletion(func() {
-			fmt.Fprintf(os.Stderr, "%s\n", endColorMap[term.StderrMode])
+			fmt.Fprintf(os.Stderr, "%s\n", endColorMap[term.StderrLevel])
 		}),
 		progressbar.OptionSetTheme(MakeTheme()))
 	return &Bar{bar: bar, total: total}

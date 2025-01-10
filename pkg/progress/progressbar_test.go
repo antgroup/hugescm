@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewBar(t *testing.T) {
-	term.StderrMode = term.HAS_TRUECOLOR
+	term.StderrLevel = term.Level16M
 	b := NewBar("init", 100, false)
 	for i := 0; i < 100; i++ {
 		time.Sleep(time.Millisecond * 100)

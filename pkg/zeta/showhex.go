@@ -57,11 +57,11 @@ type binaryPrinter struct {
 	colorIndex []string
 }
 
-func newBinaryPrinter(w io.Writer, colorMode term.ColorMode) *binaryPrinter {
+func newBinaryPrinter(w io.Writer, colorMode term.Level) *binaryPrinter {
 	byteBuffer := &bytes.Buffer{}
 	byteBuffer.Grow(400)
 	colorTable := color256Index
-	if colorMode == term.HAS_TRUECOLOR {
+	if colorMode == term.Level16M {
 		colorTable = color24Index
 	}
 	return &binaryPrinter{Buffer: byteBuffer, w: w, colorIndex: colorTable}
@@ -153,7 +153,7 @@ func (b *binaryPrinter) flush() error {
 	return err
 }
 
-func processColor(r io.Reader, w io.Writer, size int64, colorMode term.ColorMode) error {
+func processColor(r io.Reader, w io.Writer, size int64, colorMode term.Level) error {
 	if size < 0 {
 		size = math.MaxInt64
 	}

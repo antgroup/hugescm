@@ -15,7 +15,7 @@ func TestProcessColor(t *testing.T) {
 	if err != nil {
 		return
 	}
-	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)), term.HAS_TRUECOLOR)
+	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)), term.Level16M)
 }
 
 func TestBorder(t *testing.T) {
@@ -24,7 +24,7 @@ func TestBorder(t *testing.T) {
 	if err != nil {
 		return
 	}
-	b := newBinaryPrinter(os.Stderr, term.HAS_TRUECOLOR)
+	b := newBinaryPrinter(os.Stderr, term.Level16M)
 	_ = b.writeBorder()
 	_ = b.writeLine(0, input)
 	_ = b.writeLine(16, []byte("world"))

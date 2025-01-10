@@ -49,8 +49,8 @@ func (i *Indicators) Run(ctx context.Context) {
 	i.wg.Add(1)
 	go func() {
 		defer i.wg.Done()
-		blue := blueColorMap[term.StderrMode]
-		end := endColorMap[term.StderrMode]
+		blue := blueColorMap[term.StderrLevel]
+		end := endColorMap[term.StderrLevel]
 		startTime := time.Now()
 		tick := time.NewTicker(time.Millisecond * 100)
 		for {

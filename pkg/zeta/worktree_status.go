@@ -69,7 +69,11 @@ func (w *Worktree) ShowFs(verbose bool) {
 	}
 	gb := float64(1024 * 1024 * 1024)
 	if warningFs[strings.ToLower(ds.FS)] {
-		warn("The repository filesystem is '%s', which may affect zeta's operation.", "\x1b[01;33m"+ds.FS+"\x1b[0m")
+		fsName := ds.FS
+		if term.StderrLevel != term.LevelNone {
+			fsName = "\x1b[01;33m" + ds.FS + "\x1b[0m"
+		}
+		warn("The repository filesystem is '%s', which may affect zeta's operation.", fsName)
 	}
 	term.Fprintf(os.Stderr, "\x1b[33m* Worktree filesystem: \x1b[38;2;0;191;255m%s\x1b[0m \x1b[33mused: \x1b[38;2;255;215;0m%0.2f GB\x1b[0m \x1b[33mavail: \x1b[38;2;63;247;166m%0.2f GB\x1b[0m \x1b[33mtotal: \x1b[38;02;39;199;173m%0.2f GB\x1b[0m \n",
 		ds.FS, float64(ds.Used)/gb, float64(ds.Avail)/gb, float64(ds.Total)/gb)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
+	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -172,5 +173,5 @@ func (r *Repository) promiseMissingFetch(ctx context.Context, o *promiseObject) 
 	// Fetch missing object
 	return r.odb.DoTransfer(ctx, o.oid, func(offset int64) (transport.SizeReader, error) {
 		return t.GetObject(ctx, o.oid, offset)
-	}, odb.NewSingleBar, mode)
+	}, progress.NewSingleBar, mode)
 }

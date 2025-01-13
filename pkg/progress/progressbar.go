@@ -9,8 +9,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/progressbar"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/pkg/tr"
 )
 
 var (
@@ -41,8 +43,8 @@ func MakeTheme() progressbar.Theme {
 		}
 	case term.Level16M:
 		return progressbar.Theme{
-			Saucer:        "\x1b[38;2;72;198;239m#\x1b[0m",
-			SaucerHead:    "\x1b[38;2;72;198;239m>\x1b[0m",
+			Saucer:        "\x1b[38;2;45;203;254m#\x1b[0m",
+			SaucerHead:    "\x1b[38;2;45;203;254m>\x1b[0m",
 			SaucerPadding: " ",
 			BarStart:      "[",
 			BarEnd:        "]",
@@ -129,4 +131,39 @@ func (b *Bar) Exit() {
 	if b.bar != nil {
 		_ = b.bar.Exit()
 	}
+}
+
+func makeSingleBarDesc(oid plumbing.Hash, round int) string {
+	if round == 0 {
+		return fmt.Sprintf("%s %s ...", tr.W("Downloading"), oid.String()[:8])
+	}
+	if term.StderrLevel == term.LevelNone {
+		return fmt.Sprintf("%s %s %s ...", tr.W("Downloading"), oid.String()[:8], tr.W("retrying"))
+	}
+	return fmt.Sprintf("%s %s [\x1b[33m%s\x1b[0m] ...", tr.W("Downloading"), oid.String()[:8], tr.W("retrying"))
+}
+
+func NewSingleBar(r io.Reader, total int64, current int64, oid plumbing.Hash, round int) (io.Reader, io.Closer) {
+	bar := progressbar.NewOptions64(
+		total,
+		progressbar.OptionSetDescription(makeSingleBarDesc(oid, round)),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionUseANSICodes(true),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetTheme(MakeTheme()),
+		progressbar.OptionSeekTo(current))
+	return io.TeeReader(r, bar), bar
+}
+
+func NewFiller() string {
+	switch term.StderrLevel {
+	case term.Level256:
+		return "\x1b[36m#\x1b[0m"
+	case term.Level16M:
+		return "\x1b[38;2;45;203;254m#\x1b[0m"
+	default:
+	}
+	return "#"
 }

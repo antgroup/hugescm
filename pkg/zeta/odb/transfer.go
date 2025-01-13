@@ -12,9 +12,7 @@ import (
 	"time"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/progressbar"
 	"github.com/antgroup/hugescm/modules/strengthen"
-	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 )
@@ -28,25 +26,6 @@ const (
 )
 
 type MakeBar func(r io.Reader, total int64, current int64, oid plumbing.Hash, round int) (io.Reader, io.Closer)
-
-func NewSingleBar(r io.Reader, total int64, current int64, oid plumbing.Hash, round int) (io.Reader, io.Closer) {
-	var desc string
-	if round == 0 {
-		desc = fmt.Sprintf("%s %s ...", tr.W("Downloading"), oid.String()[:8])
-	} else {
-		desc = fmt.Sprintf("%s %s [\x1b[33m%s\x1b[0m] ...", tr.W("Downloading"), oid.String()[:8], tr.W("retrying"))
-	}
-	bar := progressbar.NewOptions64(
-		total,
-		progressbar.OptionSeekTo(current),
-		progressbar.OptionShowBytes(true),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionUseANSICodes(true),
-		progressbar.OptionSetDescription(desc),
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetTheme(progress.MakeTheme()))
-	return io.TeeReader(r, bar), bar
-}
 
 type Transfer func(offset int64) (transport.SizeReader, error)
 

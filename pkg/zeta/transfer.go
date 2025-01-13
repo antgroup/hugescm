@@ -13,6 +13,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/config"
+	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/transport/http"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -101,7 +102,7 @@ func (r *Repository) directMultiTransfer(ctx context.Context, t http.Downloader,
 		mpb.WithWidth(width),
 	)
 	style := mpb.BarStyle()
-	style.Filler("\x1b[38;2;72;198;239m#\x1b[0m")
+	style.Filler(progress.NewFiller())
 	errs := make(chan error, len(objects))
 	for _, e := range objects {
 		oid := plumbing.NewHash(e.OID)
@@ -175,7 +176,7 @@ func (r *Repository) directGet(ctx context.Context, objects []*transport.Represe
 				func(fromBytes int64) (transport.SizeReader, error) {
 					return t.Download(ctx, e, fromBytes)
 				},
-				odb.NewSingleBar, mode); err != nil {
+				progress.NewSingleBar, mode); err != nil {
 				return err
 			}
 		}
@@ -236,7 +237,7 @@ func (r *Repository) multiTransfer(ctx context.Context, t transport.Transport, l
 		mpb.WithWidth(width),
 	)
 	style := mpb.BarStyle()
-	style.Filler("\x1b[38;2;72;198;239m#\x1b[0m")
+	style.Filler(progress.NewFiller())
 	errs := make(chan error, len(larges))
 	for _, o := range larges {
 		task := fmt.Sprintf("%s %s", W("Downloading"), shortHash(o.Hash))
@@ -320,7 +321,7 @@ func (r *Repository) transfer(ctx context.Context, t transport.Transport, larges
 				func(offset int64) (transport.SizeReader, error) {
 					return t.GetObject(ctx, e.Hash, offset)
 				},
-				odb.NewSingleBar, mode); err != nil {
+				progress.NewSingleBar, mode); err != nil {
 				return err
 			}
 		}

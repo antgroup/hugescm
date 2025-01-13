@@ -16,6 +16,10 @@ const (
 	Level16M
 )
 
+func (level Level) SupportColor() bool {
+	return level > LevelNone
+}
+
 var (
 	StderrLevel Level
 	StdoutLevel Level

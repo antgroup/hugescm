@@ -14,6 +14,7 @@ import (
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/survey"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -109,7 +110,7 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 	if domain, port, err := net.SplitHostPort(serverName); err == nil && port == "22" {
 		serverName = domain
 	}
-	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m* Permanently added '%s' (%s) to the list of known hosts\x1b[0m\n", serverName, keyAlgoName(key.Type()))
+	trace.DbgPrint("Permanently added '%s' (%s) to the list of known hosts", serverName, keyAlgoName(key.Type()))
 	c.hostKeyDB = nil
 	return nil
 }

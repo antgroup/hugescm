@@ -459,7 +459,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 				}
 				if b.IsStarted() {
 					b.lock.Lock()
-					b.render()
+					_ = b.render()
 					b.lock.Unlock()
 				}
 			}

@@ -4,7 +4,6 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -16,17 +15,6 @@ import (
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/trace"
 )
-
-func dbgPrint(format string, args ...any) {
-	message := strings.TrimSuffix(fmt.Sprintf(format, args...), "\n")
-	var buffer bytes.Buffer
-	for _, s := range strings.Split(message, "\n") {
-		_, _ = buffer.WriteString("\x1b[33m* ")
-		_, _ = buffer.WriteString(s)
-		_, _ = buffer.WriteString("\x1b[0m\n")
-	}
-	_, _ = os.Stderr.Write(buffer.Bytes())
-}
 
 type DisplayOptions struct {
 	io.Writer

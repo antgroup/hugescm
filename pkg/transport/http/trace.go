@@ -5,6 +5,7 @@ package http
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -62,6 +63,23 @@ func flatAddress(addrs []net.IPAddr) string {
 	return strings.Join(ss, "|")
 }
 
+func wroteHeaderField(key string, value []string) {
+	switch term.StderrLevel {
+	case term.Level256:
+		for _, v := range value {
+			fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[33m%s\x1b[0m\n", key, redactedHeader(key, v))
+		}
+	case term.Level16M:
+		for _, v := range value {
+			fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+		}
+	default:
+		for _, v := range value {
+			fmt.Fprintf(os.Stderr, "< %s: %s\n", key, redactedHeader(key, v))
+		}
+	}
+}
+
 func wrapRequest(req *http.Request) *http.Request {
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(di httptrace.DNSStartInfo) {
@@ -82,13 +100,35 @@ func wrapRequest(req *http.Request) *http.Request {
 				term.Fprintf(os.Stderr, "\x1b[33mSSL connection using %s/%s\x1b[0m\n", tlsVersionName(state.Version), tls.CipherSuiteName(state.CipherSuite))
 			}
 		},
-		WroteHeaderField: func(key string, value []string) {
-			for _, v := range value {
-				term.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
-			}
-		},
+		WroteHeaderField: wroteHeaderField,
 	}
 	return req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+}
+
+func traceResponse(resp *http.Response) {
+	switch term.StderrLevel {
+	case term.Level256:
+		fmt.Fprintf(os.Stderr, "\x1b[33m%s %s\x1b[0m\n", resp.Proto, resp.Status)
+		for key, value := range resp.Header {
+			for _, v := range value {
+				fmt.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[33m%s\x1b[0m\n", key, redactedHeader(key, v))
+			}
+		}
+	case term.Level16M:
+		fmt.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
+		for key, value := range resp.Header {
+			for _, v := range value {
+				fmt.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+			}
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "%s %s\n", resp.Proto, resp.Status)
+		for key, value := range resp.Header {
+			for _, v := range value {
+				fmt.Fprintf(os.Stderr, "> %s: %s\n", key, redactedHeader(key, v))
+			}
+		}
+	}
 }
 
 func (c *client) Do(req *http.Request) (*http.Response, error) {
@@ -97,12 +137,7 @@ func (c *client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if c.verbose {
-		term.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
-		for key, value := range resp.Header {
-			for _, v := range value {
-				term.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
-			}
-		}
+		traceResponse(resp)
 	}
 	return resp, nil
 }
@@ -113,12 +148,7 @@ func (c *downloader) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if c.verbose {
-		term.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
-		for key, value := range resp.Header {
-			for _, v := range value {
-				term.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
-			}
-		}
+		traceResponse(resp)
 	}
 	return resp, nil
 }

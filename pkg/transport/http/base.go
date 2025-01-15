@@ -216,14 +216,14 @@ func parseError(resp *http.Response) error {
 		if err := json.NewDecoder(resp.Body).Decode(ec); err != nil {
 			return fmt.Errorf("decode json error: %w", err)
 		}
-		ec.Message = strings.TrimRightFunc(ec.Message, unicode.IsSpace)
+		ec.Message = term.SanitizeANSI(strings.TrimRightFunc(ec.Message, unicode.IsSpace), true)
 		return ec
 	}
 	b, err := streamio.ReadMax(resp.Body, 1024)
 	if err != nil {
 		return &ErrorCode{status: resp.StatusCode, Message: fmt.Sprintf("%d %s\nError: %v", resp.StatusCode, resp.Status, err)}
 	}
-	body := strings.TrimRightFunc(string(b), unicode.IsSpace)
+	body := term.SanitizeANSI(strings.TrimRightFunc(string(b), unicode.IsSpace), true)
 	return &ErrorCode{status: resp.StatusCode, Message: fmt.Sprintf("%s\n%s", resp.Status, body)}
 }
 

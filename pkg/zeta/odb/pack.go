@@ -14,6 +14,7 @@ import (
 	"github.com/antgroup/hugescm/modules/crc"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/format/pktline"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/pkg/progress"
 )
@@ -136,6 +137,14 @@ type Report struct {
 	Reason        string
 }
 
+func sanitizeLine(s string) string {
+	p := strings.IndexByte(s, '\n')
+	if p != -1 {
+		s = s[:p]
+	}
+	return term.SanitizeANSI(strings.TrimSpace(s), term.StderrLevel != term.LevelNone)
+}
+
 func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, reader io.Reader) (result *Report, err error) {
 	var b strings.Builder
 	r := pktline.NewScanner(io.TeeReader(reader, &b))
@@ -149,12 +158,12 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 		line := string(r.Bytes())
 		pos := strings.IndexByte(line, ' ')
 		if pos == -1 {
-			return nil, fmt.Errorf("bad report line: %s", line)
+			return nil, fmt.Errorf("bad report line: %s", sanitizeLine(line))
 		}
 		lab := line[0:pos]
 		substr := line[pos+1:]
 		if lab == "rate" {
-			fmt.Fprintf(os.Stderr, "\x1b[2K\rremote: %s", strings.TrimSpace(substr))
+			fmt.Fprintf(os.Stderr, "\x1b[2K\rremote: %s", sanitizeLine(substr))
 			newLine = true
 			continue
 		}
@@ -165,7 +174,7 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 		}
 		if lab == "unpack" {
 			if substr != "ok" {
-				fmt.Fprintf(os.Stderr, "remote: unpack %s\n", substr)
+				term.SanitizedF("remote: unpack %s\n", substr)
 				result = &Report{ReferenceName: refname, Reason: substr, Rejected: true}
 				break
 			}
@@ -190,7 +199,7 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 			break
 		}
 		if lab == "status" {
-			fmt.Fprintf(os.Stderr, "remote: %s\n", line[pos+1:])
+			term.SanitizedF("remote: %s\n", line[pos+1:])
 			continue
 		}
 	}

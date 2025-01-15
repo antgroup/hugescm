@@ -168,9 +168,9 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 	if result.Rejected {
 		sv := strengthen.StrSplitSkipEmpty(result.Reason, 2, '\n')
 		for _, s := range sv {
-			fmt.Fprintf(os.Stderr, "remote: %s\n", s)
+			term.Fprintf(os.Stderr, "remote: %s\n", s)
 		}
-		fmt.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s (delete)\n", cleanedRemote, target.Short())
+		term.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s (delete)\n", cleanedRemote, target.Short())
 		error_red("failed to push some refs to '%s'", cleanedRemote)
 		return errors.New(result.Reason)
 	}

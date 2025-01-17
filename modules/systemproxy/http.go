@@ -23,7 +23,6 @@ func (d *coordDialer) DialContext(ctx context.Context, network string, address s
 // DialServerViaCONNECT: SSH protocol should use socks5 protocol as much as possible
 func DialServerViaCONNECT(ctx context.Context, addr string, proxy *url.URL, forward *net.Dialer) (net.Conn, error) {
 	proxyAddr := proxy.Host
-	var d net.Dialer
 	var c net.Conn
 	var err error
 	switch proxy.Scheme {
@@ -31,14 +30,15 @@ func DialServerViaCONNECT(ctx context.Context, addr string, proxy *url.URL, forw
 		if proxy.Port() == "" {
 			proxyAddr = net.JoinHostPort(proxyAddr, "80")
 		}
-		if c, err = d.DialContext(ctx, "tcp", proxyAddr); err != nil {
+		if c, err = forward.DialContext(ctx, "tcp", proxyAddr); err != nil {
 			return nil, err
 		}
 	case "https":
 		if proxy.Port() == "" {
 			proxyAddr = net.JoinHostPort(proxyAddr, "443")
 		}
-		if c, err = tls.DialWithDialer(forward, "tcp", proxyAddr, nil); err != nil {
+		d := &tls.Dialer{NetDialer: forward}
+		if c, err = d.DialContext(ctx, "tcp", proxyAddr); err != nil {
 			return nil, err
 		}
 	}

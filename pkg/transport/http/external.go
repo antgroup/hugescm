@@ -19,9 +19,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/systemproxy"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
-	"github.com/antgroup/hugescm/pkg/transport/proxy"
 	"github.com/antgroup/hugescm/pkg/version"
 )
 
@@ -119,29 +119,11 @@ type downloader struct {
 	verbose   bool
 }
 
-func proxyFromURL(externalProxyURL string) func(req *http.Request) (*url.URL, error) {
-	if len(externalProxyURL) != 0 {
-		// cfg := &httpproxy.Config{
-		// 	HTTPProxy:  externalProxyURL,
-		// 	HTTPSProxy: externalProxyURL,
-		// }
-		// proxyFuncValue := cfg.ProxyFunc()
-		// return func(req *http.Request) (*url.URL, error) {
-		// 	fmt.Fprintf(os.Stderr, "proxy: %s\n", req.URL)
-		// 	return proxyFuncValue(req.URL)
-		// }
-		if proxyURL, err := url.Parse(externalProxyURL); err == nil {
-			return http.ProxyURL(proxyURL)
-		}
-	}
-	return proxy.ProxyFromEnvironment
-}
-
 func NewDownloader(verbose bool, insecure bool, proxyURL string) Downloader {
 	return &downloader{
 		Client: &http.Client{
 			Transport: &http.Transport{
-				Proxy:                 proxyFromURL(proxyURL),
+				Proxy:                 systemproxy.NewSystemProxy(proxyURL),
 				DialContext:           dialer.DialContext,
 				ForceAttemptHTTP2:     true,
 				MaxIdleConns:          100,

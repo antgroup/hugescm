@@ -20,10 +20,10 @@ import (
 	"unicode"
 
 	"github.com/antgroup/hugescm/modules/streamio"
+	"github.com/antgroup/hugescm/modules/systemproxy"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
-	"github.com/antgroup/hugescm/pkg/transport/proxy"
 	"github.com/antgroup/hugescm/pkg/version"
 )
 
@@ -97,7 +97,7 @@ func newClient(ctx context.Context, endpoint *transport.Endpoint, operation tran
 	c := &client{
 		Client: &http.Client{
 			Transport: &http.Transport{
-				Proxy:                 proxy.ProxyFromEnvironment,
+				Proxy:                 systemproxy.NewSystemProxy(""),
 				DialContext:           dialer.DialContext,
 				ForceAttemptHTTP2:     true,
 				MaxIdleConns:          100,

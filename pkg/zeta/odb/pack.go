@@ -174,7 +174,7 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 		}
 		if lab == "unpack" {
 			if substr != "ok" {
-				term.SanitizedF("remote: unpack %s\n", substr)
+				_, _ = term.SanitizedF("remote: unpack %s\n", substr)
 				result = &Report{ReferenceName: refname, Reason: substr, Rejected: true}
 				break
 			}
@@ -199,7 +199,7 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 			break
 		}
 		if lab == "status" {
-			term.SanitizedF("remote: %s\n", line[pos+1:])
+			_, _ = term.SanitizedF("remote: %s\n", line[pos+1:])
 			continue
 		}
 	}

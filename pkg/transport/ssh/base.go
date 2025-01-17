@@ -6,17 +6,18 @@ package ssh
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/systemproxy"
 	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
-	"github.com/antgroup/hugescm/pkg/transport/proxy"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/config"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
 	"github.com/antgroup/hugescm/pkg/version"
@@ -29,7 +30,7 @@ const (
 
 var (
 	W      = tr.W
-	dialer = net.Dialer{
+	direct = &net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}
@@ -39,7 +40,7 @@ const DefaultUsername = "zeta"
 
 type client struct {
 	*transport.Endpoint
-	proxyConfig  *proxy.ProxyConfig
+	dialer       systemproxy.Dialer
 	hostKeyDB    *knownhosts.HostKeyDB
 	Hostname     string
 	Port         string
@@ -56,9 +57,9 @@ var DefaultUserSettings = &config.UserSettings{
 
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
 	cc := &client{
-		Endpoint:    endpoint,
-		proxyConfig: proxy.ProxyFromEnv(),
-		verbose:     verbose,
+		Endpoint: endpoint,
+		dialer:   systemproxy.NewSystemDialer(direct),
+		verbose:  verbose,
 	}
 	var err error
 	if cc.Hostname, err = DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err != nil || len(cc.Hostname) == 0 {
@@ -72,17 +73,15 @@ func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation t
 }
 
 func (c *client) DialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
-	pc := c.proxyConfig
-	if pc == nil || slices.Contains(pc.NoProxy, c.Host) {
-		return dialer.DialContext(ctx, network, addr)
+	conn, err := c.dialer.DialContext(ctx, network, addr)
+	if err != nil {
+		if errors.Is(err, syscall.ECONNREFUSED) && direct != c.dialer {
+			c.DbgPrint("Connect proxy server error: %v", err)
+			return direct.DialContext(ctx, network, addr)
+		}
+		return nil, err
 	}
-	switch pc.ProxyURL.Scheme {
-	case "http", "https":
-		return proxy.DialServerViaCONNECT(ctx, addr, pc.ProxyURL)
-	case "socks5", "socks5h":
-		return pc.DialContext(ctx, network, addr)
-	}
-	return dialer.DialContext(ctx, network, addr)
+	return conn, nil
 }
 
 func (c *client) traceConn(conn net.Conn) {

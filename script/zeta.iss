@@ -60,7 +60,7 @@ ArchitecturesInstallIn64BitMode={#ArchitecturesInstallIn64BitMode}
 ; version info
 VersionInfoCompany=HugeSCM contributors
 VersionInfoVersion={#AppVersion}
-VersionInfoCopyright=Copyright © 2024. HugeSCM contributors
+VersionInfoCopyright=Copyright © 2025. HugeSCM contributors
 
 #if "user" == InstallTarget
 AppVerName=Zeta (User)

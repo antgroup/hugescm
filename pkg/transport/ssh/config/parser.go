@@ -22,7 +22,7 @@ type sshParser struct {
 type sshParserStateFn func() sshParserStateFn
 
 // Formats and panics an error message based on a token
-func (p *sshParser) raiseErrorf(tok *token, msg string, args ...interface{}) {
+func (p *sshParser) raiseErrorf(tok *token, msg string, args ...any) {
 	// TODO this format is ugly
 	panic(tok.Position.String() + ": " + fmt.Sprintf(msg, args...))
 }

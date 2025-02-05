@@ -32,7 +32,7 @@ require (
 	golang.org/x/net v0.34.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.30.0
-	golang.org/x/term v0.28.0
+	golang.org/x/term v0.29.0
 	golang.org/x/text v0.22.0
 )
 

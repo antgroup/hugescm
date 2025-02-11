@@ -42,8 +42,8 @@ func (d *MetadataDB) EncodeCommit(ctx context.Context, cc *object.Commit) error 
 	if err != nil {
 		return err
 	}
-	_, err = d.ExecContext(ctx, "insert into commits(rid, hash, author, committer, bindata, created_at, updated_at) values(?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rid = rid",
-		d.rid, cc.Hash.String(), cc.Author.Email, cc.Committer.Email, bindata, cc.Author.When, cc.Committer.When)
+	_, err = d.ExecContext(ctx, "insert into commits(rid, hash, author, committer, bindata) values(?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rid = rid",
+		d.rid, cc.Hash.String(), cc.Author.Email, cc.Committer.Email, bindata)
 	return err
 }
 
@@ -59,11 +59,11 @@ func (d *MetadataDB) BatchEncodeCommit(ctx context.Context, commits []*object.Co
 			if err != nil {
 				return err
 			}
-			args = append(args, d.rid, c.Hash.String(), c.Author.Email, c.Committer.Email, bindata, c.Author.When, c.Committer.When)
+			args = append(args, d.rid, c.Hash.String(), c.Author.Email, c.Committer.Email, bindata)
 		}
 		sb := strings.Builder{}
-		sb.WriteString("insert into commits(rid, hash, author, committer, bindata, created_at, updated_at) values(?, ?, ?, ?, ?, ?, ?)")
-		sb.WriteString(strings.Repeat(", (?, ?, ?, ?, ?, ?, ?)", len(cs)-1))
+		sb.WriteString("insert into commits(rid, hash, author, committer, bindata) values(?, ?, ?, ?, ?)")
+		sb.WriteString(strings.Repeat(", (?, ?, ?, ?, ?)", len(cs)-1))
 		sb.WriteString(" ON DUPLICATE KEY UPDATE rid = rid")
 		_, err := d.ExecContext(ctx, sb.String(), args...)
 		return err

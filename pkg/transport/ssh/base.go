@@ -55,19 +55,31 @@ var DefaultUserSettings = &config.UserSettings{
 	UserConfigFinder:     config.UserConfigFinder,
 }
 
+func resolvePort(endpoint *transport.Endpoint) string {
+	if endpoint.Port != 22 && endpoint.Port != 0 {
+		return strconv.Itoa(endpoint.Port)
+	}
+	if port, err := DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err == nil && len(port) != 0 {
+		return port
+	}
+	return "22"
+}
+
+func resolveHostName(endpoint *transport.Endpoint) string {
+	if hostName, err := DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err == nil && len(hostName) != 0 {
+		return hostName
+	}
+	return endpoint.Host
+}
+
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
 	cc := &client{
 		Endpoint: endpoint,
 		dialer:   systemproxy.NewSystemDialer(direct),
 		verbose:  verbose,
 	}
-	var err error
-	if cc.Hostname, err = DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err != nil || len(cc.Hostname) == 0 {
-		cc.Hostname = endpoint.Host
-	}
-	if cc.Port, err = DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err != nil || len(cc.Port) == 0 {
-		cc.Port = strconv.Itoa(endpoint.Port)
-	}
+	cc.Hostname = resolveHostName(endpoint)
+	cc.Port = resolvePort(endpoint)
 	cc.IdentityFile = DefaultUserSettings.Get(endpoint.Host, "IdentityFile")
 	return cc, nil
 }

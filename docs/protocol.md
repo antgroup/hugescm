@@ -170,6 +170,8 @@ struct metadata {
 + `Accept: application/x-zeta-metadata` 传输流不压缩。
 + `Accept:  application/x-zeta-compress-metadata`，传输流使用 ZSTD 压缩。
 
+SSH 协议可以添加参数 `--zstd` 开启元数据压缩。
+
 #### 2.2.2 基本元数据下载
 在 HugeSCM 系统中，只需要获得最新的 `revision`及其 tree 就行了，这里 `revision`可以是 `commit`也可以是 `tag`，如果是 `tag`对象需进一步解析到 `commit`为止。
 

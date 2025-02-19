@@ -65,9 +65,6 @@ func (d *Database) MakeConfig() (*mysql.Config, error) {
 	// http://iokde.com/post/go-mysql-max_allowed_packet.html
 	// https://wangming1993.github.io/2019/02/25/go-mysql-disable-max-allowed-packet/
 	cfg.MaxAllowedPacket = maxAllowedPacket
-	cfg.Params = map[string]string{
-		"charset": "utf8",
-	}
 
 	return cfg, nil
 }

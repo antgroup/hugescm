@@ -45,7 +45,7 @@ func (r decompressReader) Close() error {
 
 func newDecompressReader(rc io.ReadCloser, h http.Header) (io.ReadCloser, error) {
 	switch conentType := h.Get("Content-Type"); conentType {
-	case "application/x-zeta-metadata":
+	case ZETA_MIME_METADATA:
 		return &decompressReader{
 			Reader: rc,
 			closer: []io.Closer{rc},

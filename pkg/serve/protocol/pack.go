@@ -138,17 +138,33 @@ type Packer struct {
 }
 
 // NewPipePacker: SSH protocol
-func NewPipePacker(o odb.DB, w io.Writer, treeMaxDepth int) (*Packer, error) {
+func NewPipePacker(o odb.DB, w io.Writer, treeMaxDepth int, useZSTD bool) (*Packer, error) {
 	if treeMaxDepth == -1 {
 		treeMaxDepth = math.MaxInt
 	}
-	buffedWriter := streamio.GetBufferWriter(w)
-	closeFn := func() error {
-		err := buffedWriter.Flush()
-		streamio.PutBufferWriter(buffedWriter)
-		return err
+	var bodyWriter io.Writer
+	var closeFn func() error
+	switch {
+	case useZSTD:
+		buffedWriter := streamio.GetBufferWriter(w)
+		zstdWriter := streamio.GetZstdWriter(buffedWriter)
+		closeFn = func() error {
+			streamio.PutZstdWriter(zstdWriter)
+			err := buffedWriter.Flush()
+			streamio.PutBufferWriter(buffedWriter)
+			return err
+		}
+		bodyWriter = zstdWriter
+	default:
+		buffedWriter := streamio.GetBufferWriter(w)
+		closeFn = func() error {
+			err := buffedWriter.Flush()
+			streamio.PutBufferWriter(buffedWriter)
+			return err
+		}
+		bodyWriter = buffedWriter
 	}
-	cw := crc.NewCrc64Writer(buffedWriter)
+	cw := crc.NewCrc64Writer(bodyWriter)
 	p := &Packer{DB: o, w: cw, Finisher: cw, treeMaxDepth: treeMaxDepth, closeFn: closeFn, seen: make(map[plumbing.Hash]bool)}
 	if err := writeMetadataHeader(cw); err != nil {
 		_ = p.Close()

@@ -13,6 +13,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/pkg/transport"
+	"github.com/klauspost/compress/zstd"
 )
 
 // FetchReference: zeta-serve ls-remote "group/mono-zeta" --reference "${REFNAME}"
@@ -59,6 +60,24 @@ func sparsesGenReader(sparses []string) io.Reader {
 	return strings.NewReader(b.String())
 }
 
+type decompressReader struct {
+	decoder *zstd.Decoder
+	cmd     *Command
+}
+
+func (r decompressReader) Read(p []byte) (n int, err error) {
+	return r.decoder.Read(p)
+}
+
+func (r decompressReader) Close() error {
+	r.decoder.Close()
+	return r.cmd.Close()
+}
+
+func (r *decompressReader) LastError() error {
+	return r.cmd.lastError
+}
+
 // FetchMetadata: support base metadata and sparses metadata.
 //
 //	zeta-serve metadata "group/mono-zeta" --revision "${REVISION}" --depth=1 --deepen-from=${from}
@@ -80,6 +99,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if len(opts.Sparses) != 0 {
 		psArgs = append(psArgs, "--sparse")
 	}
+	psArgs = append(psArgs, "--zstd")
 	commandArgs := strings.Join(psArgs, " ")
 	cmd, err := c.NewBaseCommand(ctx)
 	if err != nil {
@@ -94,5 +114,10 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 		_ = cmd.Close()
 		return nil, err
 	}
-	return cmd, nil
+	zr, err := zstd.NewReader(cmd)
+	if err != nil {
+		_ = cmd.Close()
+		return nil, err
+	}
+	return &decompressReader{decoder: zr, cmd: cmd}, nil
 }

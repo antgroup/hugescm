@@ -19,6 +19,10 @@ import (
 
 // zeta-serve metadata "group/mono-zeta" --batch --depth=1
 
+const (
+	UseZSTD rune = 1000
+)
+
 type Metadata struct {
 	Path       string
 	Revision   string
@@ -28,6 +32,7 @@ type Metadata struct {
 	Depth      int
 	Batch      bool
 	Sparse     bool
+	UseZSTD    bool
 }
 
 func (c *Metadata) ParseArgs(args []string) error {
@@ -40,7 +45,8 @@ func (c *Metadata) ParseArgs(args []string) error {
 		Add("deepen-from", REQUIRED, 'F').
 		Add("deepen", REQUIRED, 'D').
 		Add("sparse", NOARG, 'S').
-		Add("batch", NOARG, 'B')
+		Add("batch", NOARG, 'B').
+		Add("zstd", NOARG, UseZSTD)
 	if err := p.Parse(args, func(index rune, nextArg, raw string) error {
 		switch index {
 		case 'R':
@@ -72,6 +78,8 @@ func (c *Metadata) ParseArgs(args []string) error {
 			c.Sparse = true
 		case 'B':
 			c.Batch = true
+		case UseZSTD:
+			c.UseZSTD = true
 		}
 		return nil
 	}); err != nil {
@@ -89,7 +97,7 @@ func (c *Metadata) Exec(ctx *RunCtx) int {
 		return exitCode
 	}
 	if c.Batch {
-		return ctx.S.BatchMetadata(ctx.Session, c.Depth)
+		return ctx.S.BatchMetadata(ctx.Session, c.Depth, c.UseZSTD)
 	}
 	if c.Sparse {
 		return ctx.S.GetSparseMetadata(ctx.Session, c)
@@ -110,7 +118,7 @@ func (s *Server) FetchMetadata(e *Session, c *Metadata) int {
 	if ro.Target == nil {
 		return e.ExitFormat(400, "revision %s target not commit", c.Revision)
 	}
-	p, err := protocol.NewPipePacker(rr.ODB(), e, c.Depth)
+	p, err := protocol.NewPipePacker(rr.ODB(), e, c.Depth, c.UseZSTD)
 	if err != nil {
 		logrus.Errorf("new packer error %v", err)
 		return e.ExitError(err)
@@ -153,7 +161,7 @@ func (s *Server) GetSparseMetadata(e *Session, c *Metadata) int {
 		return e.ExitFormat(400, "revision %s target not commit", c.Revision)
 	}
 	cc := ro.Target
-	p, err := protocol.NewPipePacker(rr.ODB(), e, c.Depth)
+	p, err := protocol.NewPipePacker(rr.ODB(), e, c.Depth, c.UseZSTD)
 	if err != nil {
 		logrus.Errorf("new packer error %v", err)
 		return e.ExitError(err)
@@ -176,7 +184,7 @@ func (s *Server) GetSparseMetadata(e *Session, c *Metadata) int {
 	return 0
 }
 
-func (s *Server) BatchMetadata(e *Session, depth int) int {
+func (s *Server) BatchMetadata(e *Session, depth int, useZSTD bool) int {
 	oids, err := protocol.ReadInputOIDs(e)
 	if err != nil {
 		e.WriteError("batch-oids: %v", err)
@@ -196,7 +204,7 @@ func (s *Server) BatchMetadata(e *Session, depth int) int {
 		}
 		objects = append(objects, a)
 	}
-	p, err := protocol.NewPipePacker(rr.ODB(), e, depth)
+	p, err := protocol.NewPipePacker(rr.ODB(), e, depth, useZSTD)
 	if err != nil {
 		logrus.Errorf("new packer error %v", err)
 		return e.ExitError(err)

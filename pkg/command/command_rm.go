@@ -30,7 +30,7 @@ func (c *Remove) Run(g *Globals) error {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	if err := w.Remove(context.Background(), c.PathSpec, &zeta.RemoteOptions{
+	if err := w.Remove(context.Background(), c.PathSpec, &zeta.RemoveOptions{
 		Recurse: c.Recurse,
 		Cached:  c.Cached,
 		Force:   c.Force,

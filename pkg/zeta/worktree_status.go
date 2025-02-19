@@ -791,7 +791,6 @@ func (w *Worktree) deleteFromFilesystem(path string) error {
 	if os.IsNotExist(err) {
 		return nil
 	}
-
 	return err
 }
 
@@ -828,7 +827,7 @@ func (w *Worktree) RemoveGlob(pattern string) error {
 	return w.odb.SetIndex(idx)
 }
 
-type RemoteOptions struct {
+type RemoveOptions struct {
 	DryRun  bool
 	Cached  bool
 	Force   bool
@@ -864,7 +863,7 @@ func matchEx(idx *index.Index, pattern string, recurse bool) (matches []*index.E
 	return
 }
 
-func (w *Worktree) Remove(ctx context.Context, patterns []string, opts *RemoteOptions) error {
+func (w *Worktree) Remove(ctx context.Context, patterns []string, opts *RemoveOptions) error {
 	if len(patterns) == 0 {
 		return nil
 	}

@@ -166,18 +166,20 @@ func processColor(r io.Reader, w io.Writer, size int64, colorMode term.Level) er
 	for {
 		readBytes := min(size, 16)
 		n, err := io.ReadFull(r, input[:readBytes])
-		if err != nil {
+		if err != nil && err != io.ErrUnexpectedEOF {
 			break
 		}
 		if err := b.writeLine(offset, input[:n]); err != nil {
 			return err
 		}
-		offset += 16
 		size -= int64(n)
-		if n != 16 || size <= 0 {
+		if size <= 0 {
 			break
 		}
+		if n != 16 {
+			break
+		}
+		offset += 16
 	}
-
 	return b.writeFooter()
 }

@@ -18,6 +18,15 @@ func TestProcessColor(t *testing.T) {
 	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)), term.Level16M)
 }
 
+func TestProcessColorOverflow(t *testing.T) {
+	b := make([]byte, 1000)
+	_, err := rand.Read(b[10:])
+	if err != nil {
+		return
+	}
+	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b))+8, term.Level16M)
+}
+
 func TestBorder(t *testing.T) {
 	input := make([]byte, 15)
 	_, err := rand.Read(input)

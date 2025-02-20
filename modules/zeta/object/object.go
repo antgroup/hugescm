@@ -130,12 +130,9 @@ func isZstandardMagic(magic [4]byte) bool {
 
 func Decode(r io.Reader, oid plumbing.Hash, b Backend) (any, error) {
 	var magic [4]byte
-	n, err := io.ReadFull(r, magic[:])
-	if err != nil {
+	var err error
+	if _, err = io.ReadFull(r, magic[:]); err != nil {
 		return nil, err
-	}
-	if n != 4 {
-		return nil, io.EOF
 	}
 	if isZstandardMagic(magic) {
 		zr, err := streamio.GetZstdReader(io.MultiReader(bytes.NewReader(magic[:]), r))
@@ -144,11 +141,8 @@ func Decode(r io.Reader, oid plumbing.Hash, b Backend) (any, error) {
 		}
 		defer streamio.PutZstdReader(zr)
 		r = zr
-		if n, err = io.ReadFull(r, magic[:]); err != nil {
+		if _, err = io.ReadFull(r, magic[:]); err != nil {
 			return nil, err
-		}
-		if n != 4 {
-			return nil, io.EOF
 		}
 	}
 	if bytes.Equal(magic[:], COMMIT_MAGIC[:]) {
@@ -199,12 +193,9 @@ func Base64DecodeAs[T Commit | Tree | Fragments | Tag](input string, oid plumbin
 
 func HashObject(r io.Reader) (plumbing.Hash, ObjectType, error) {
 	var magic [4]byte
-	n, err := io.ReadFull(r, magic[:])
-	if err != nil {
+	var err error
+	if _, err = io.ReadFull(r, magic[:]); err != nil {
 		return plumbing.ZeroHash, InvalidObject, err
-	}
-	if n != 4 {
-		return plumbing.ZeroHash, InvalidObject, io.EOF
 	}
 	if isZstandardMagic(magic) {
 		zr, err := streamio.GetZstdReader(io.MultiReader(bytes.NewReader(magic[:]), r))
@@ -213,11 +204,8 @@ func HashObject(r io.Reader) (plumbing.Hash, ObjectType, error) {
 		}
 		defer streamio.PutZstdReader(zr)
 		r = zr
-		if n, err = io.ReadFull(r, magic[:]); err != nil {
+		if _, err = io.ReadFull(r, magic[:]); err != nil {
 			return plumbing.ZeroHash, InvalidObject, err
-		}
-		if n != 4 {
-			return plumbing.ZeroHash, InvalidObject, io.EOF
 		}
 	}
 	var t ObjectType

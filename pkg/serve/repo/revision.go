@@ -5,7 +5,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -81,7 +80,7 @@ func (r *repository) ParseRev(ctx context.Context, rev string) (*RevObjects, err
 	}
 	current, ok := a.(*object.Tag)
 	if !ok {
-		return nil, fmt.Errorf("unknown object type: %v", rev)
+		return nil, plumbing.NewErrRevNotFound("not a valid object name '%s'", rev)
 	}
 	ro := &RevObjects{Objects: make(map[string]object.Encoder)}
 	for {

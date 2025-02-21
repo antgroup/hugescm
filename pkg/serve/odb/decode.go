@@ -21,17 +21,23 @@ func (o *ODB) ParseRev(ctx context.Context, oid plumbing.Hash) (a any, err error
 		if cc, ok := a.(*object.Commit); ok {
 			return object.NewSnapshotCommit(cc, o), nil
 		}
-		if tree, ok := a.(*object.Tree); ok {
-			return object.NewSnapshotTree(tree, o), nil
+		if t, ok := a.(*object.Tag); ok {
+			return t.Copy(), nil
 		}
-		return a, nil
+		return nil, plumbing.NewErrRevNotFound("not a valid object name %s", oid)
 	}
 	if !plumbing.IsNoSuchObject(err) {
 		return nil, err
 	}
 	if a, err = o.odb.Object(ctx, oid); err == nil {
 		_ = o.cdb.Store(ctx, o.rid, a)
-		return a, nil
+		if cc, ok := a.(*object.Commit); ok {
+			return cc, nil
+		}
+		if t, ok := a.(*object.Tag); ok {
+			return t, nil
+		}
+		return nil, plumbing.NewErrRevNotFound("not a valid object name %s", oid)
 	}
 	if cc, err := o.mdb.DecodeCommit(ctx, oid, o); err == nil {
 		_, _ = o.odb.WriteEncoded(cc)

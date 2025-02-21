@@ -152,3 +152,8 @@ func (t *Tag) Equal(other *Tag) bool {
 
 	return true
 }
+
+func (t *Tag) Copy() *Tag {
+	newTag := *t
+	return &newTag
+}

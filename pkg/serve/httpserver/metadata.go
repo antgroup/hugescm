@@ -115,7 +115,7 @@ func (s *Server) FetchMetadata(w http.ResponseWriter, r *Request) {
 func (s *Server) GetSparseMetadata(w http.ResponseWriter, r *Request) {
 	rev, _ := url.PathUnescape(mux.Vars(r.Request)["revision"])
 	if rev == "batch" {
-		// Z1 Fix
+		// Z1 protocol hijacking: avoiding overwriting of batch metadata API
 		s.BatchMetadata(w, r)
 		return //
 	}

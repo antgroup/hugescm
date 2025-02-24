@@ -53,9 +53,9 @@ func (s *Server) ProtocolZ1Router(r *mux.Router) {
 	r.HandleFunc("/{namespace}/{repo}/authorization", s.ShareAuthorization).Methods("POST").MatcherFunc(Z1Matcher) // AUTH: shard siganture auth
 	// Zeta Protocol: FETCH APIs
 	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}", s.OnFunc(s.LsReference, protocol.DOWNLOAD)).Methods("GET").MatcherFunc(Z1Matcher)        // CHECKOUT: fetch reference
+	r.HandleFunc("/{namespace}/{repo}/metadata/batch", s.OnFunc(s.BatchMetadata, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher)             // CHECKOUT: batch metadata for FUSE
 	r.HandleFunc("/{namespace}/{repo}/metadata/{revision:.*}", s.OnFunc(s.FetchMetadata, protocol.DOWNLOAD)).Methods("GET").MatcherFunc(Z1Matcher)      // CHECKOUT: download commit and tree/subtrees metadata ...
 	r.HandleFunc("/{namespace}/{repo}/metadata/{revision:.*}", s.OnFunc(s.GetSparseMetadata, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher) // CHECKOUT: sparse checkout
-	r.HandleFunc("/{namespace}/{repo}/metadata/batch", s.OnFunc(s.BatchMetadata, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher)             // CHECKOUT: batch metadata for FUSE
 	r.HandleFunc("/{namespace}/{repo}/objects/batch", s.OnFunc(s.BatchObjects, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher)               // ENHANCED: batch objects Required to migrate from zeta to git
 	r.HandleFunc("/{namespace}/{repo}/objects/share", s.OnFunc(s.ShareObjects, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher)               // CHECKOUT: shared signed oss urls
 	r.HandleFunc("/{namespace}/{repo}/objects/{oid}", s.OnFunc(s.GetObject, protocol.DOWNLOAD)).Methods("GET").MatcherFunc(Z1Matcher)                   // ENHANCED: download object Required to migrate from zeta to git

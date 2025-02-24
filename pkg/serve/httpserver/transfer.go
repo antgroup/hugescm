@@ -36,7 +36,6 @@ const (
 	// Zeta HTTP Header
 	AUTHORIZATION        = "Authorization"
 	ZETA_PROTOCOL        = "Zeta-Protocol"
-	ZETA_AUTHORIZATION   = "X-Zeta-Authorization"
 	ZETA_COMMAND_OLDREV  = "X-Zeta-Command-OldRev"
 	ZETA_COMMAND_NEWREV  = "X-Zeta-Command-NewRev"
 	ZETA_TERMINAL        = "X-Zeta-Terminal"

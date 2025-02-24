@@ -113,6 +113,12 @@ func (s *Server) FetchMetadata(w http.ResponseWriter, r *Request) {
 
 // GetSparseMetadata: get commit metadata sparse-tree
 func (s *Server) GetSparseMetadata(w http.ResponseWriter, r *Request) {
+	rev, _ := url.PathUnescape(mux.Vars(r.Request)["revision"])
+	if rev == "batch" {
+		// Z1 Fix
+		s.BatchMetadata(w, r)
+		return //
+	}
 	depth, err := s.checkDepth(w, r)
 	if err != nil {
 		return
@@ -127,14 +133,11 @@ func (s *Server) GetSparseMetadata(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-
 	rr, err := s.open(w, r)
 	if err != nil {
 		return
 	}
 	defer rr.Close()
-
-	rev, _ := url.PathUnescape(mux.Vars(r.Request)["revision"])
 	ro, err := rr.ParseRev(r.Context(), rev)
 	if err != nil {
 		s.renderError(w, r, err)

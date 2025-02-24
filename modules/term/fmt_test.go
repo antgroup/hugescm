@@ -29,10 +29,15 @@ func TestSanitized(t *testing.T) {
 	}
 }
 
+// int iscntrl(int c)
+// {
+// 	return (unsigned)c < 0x20 || c == 0x7f;
+// }
+
 func TestTable(t *testing.T) {
 	table := make([]int, 0, 256)
 	for i := 0; i < 256; i++ {
-		if unicode.IsControl(rune(i)) {
+		if i < 0x20 || i == 0x7f {
 			table = append(table, CHAR_CONTROL)
 			continue
 		}
@@ -48,4 +53,9 @@ func TestTable(t *testing.T) {
 		}
 		fmt.Fprintf(os.Stderr, "%d,", b)
 	}
+}
+
+func TestSanitizedF(t *testing.T) {
+	SanitizedF("remote: %s\n", "objects 已验证")
+	SanitizedF("remote: %s\n", "objects 你好")
 }

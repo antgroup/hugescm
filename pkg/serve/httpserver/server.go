@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/antgroup/hugescm/pkg/serve"
@@ -35,6 +36,19 @@ func Z1Matcher(r *http.Request, m *mux.RouteMatch) bool {
 	return r.Header.Get(ZETA_PROTOCOL) == protocol.PROTOCOL_Z1
 }
 
+// func Z1MetadataMatcher(r *http.Request, m *mux.RouteMatch) bool {
+// 	mediaParts := strings.Split(r.Header.Get("Accept"), ";")
+// 	accept := strings.ToLower(mediaParts[0])
+// 	return (accept == ZETA_MIME_MD || accept == ZETA_MIME_COMPRESS_MD) && r.Header.Get(ZETA_PROTOCOL) == protocol.PROTOCOL_Z1
+// }
+
+func NewZ1AcceptMatcher(accept string) mux.MatcherFunc {
+	return func(r *http.Request, rm *mux.RouteMatch) bool {
+		mediaParts := strings.Split(r.Header.Get("Accept"), ";")
+		return strings.EqualFold(mediaParts[0], accept) && r.Header.Get(ZETA_PROTOCOL) == protocol.PROTOCOL_Z1
+	}
+}
+
 func (s *Server) ProtocolZ1Router(r *mux.Router) {
 	r.HandleFunc("/{namespace}/{repo}/authorization", s.ShareAuthorization).Methods("POST").MatcherFunc(Z1Matcher) // AUTH: shard siganture auth
 	// Zeta Protocol: FETCH APIs
@@ -46,9 +60,9 @@ func (s *Server) ProtocolZ1Router(r *mux.Router) {
 	r.HandleFunc("/{namespace}/{repo}/objects/share", s.OnFunc(s.ShareObjects, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher)               // CHECKOUT: shared signed oss urls
 	r.HandleFunc("/{namespace}/{repo}/objects/{oid}", s.OnFunc(s.GetObject, protocol.DOWNLOAD)).Methods("GET").MatcherFunc(Z1Matcher)                   // ENHANCED: download object Required to migrate from zeta to git
 	// Zeta Protocol: PUSH APIs
-	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}/objects/batch", s.OnFunc(s.BatchCheck, protocol.UPLOAD)).Methods("POST").MatcherFunc(Z1Matcher) // PUSH: batch check large objects
-	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}/objects/{oid}", s.OnFunc(s.PutObject, protocol.UPLOAD)).Methods("PUT").MatcherFunc(Z1Matcher)   // PUSH: PUT one large object
-	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}", s.OnFunc(s.Push, protocol.UPLOAD)).Methods("POST").MatcherFunc(Z1Matcher)                     // PUSH: push local commit to zeta server
+	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}/objects/batch", s.OnFunc(s.BatchCheck, protocol.UPLOAD)).Methods("POST").MatcherFunc(NewZ1AcceptMatcher(ZETA_MIME_VND_JSON)) // PUSH: batch check large objects
+	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}/objects/{oid}", s.OnFunc(s.PutObject, protocol.UPLOAD)).Methods("PUT").MatcherFunc(Z1Matcher)                                // PUSH: PUT one large object
+	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}", s.OnFunc(s.Push, protocol.UPLOAD)).Methods("POST").MatcherFunc(NewZ1AcceptMatcher(ZETA_MIME_REPORT_RESULT))                // PUSH: push local commit to zeta server
 }
 
 func (s *Server) initialize() error {

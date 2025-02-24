@@ -420,6 +420,8 @@ POST https://zeta.io/group/mono-zeta/reference/{refname}/objects/batch
 zeta-serve push "group/mono-zeta" --reference "$REFNAME" --batch-check
 ```
 
+客户端需要设置（HTTP）：`Accept: application/vnd.zeta+json`。
+
 请求体格式如下：
 
 ```json

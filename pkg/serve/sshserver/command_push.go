@@ -155,7 +155,7 @@ func (s *Server) PutObject(e *Session, refname string, oid plumbing.Hash, compre
 
 	size, err := rr.ODB().WriteDirect(e.Context(), oid, e, compressedSize)
 	if err != nil {
-		return e.ExitFormat(409, "upload object '%s' error: %v", err, oid)
+		return e.ExitFormat(409, "upload object '%s' error: %v", oid, err)
 	}
 	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", e.UserName, oid, strengthen.HumanateSize(size), e.makeRemoteURL(s.Endpoint), refname)
 	ZetaEncodeVND(e, &protocol.ErrorCode{Code: 200, Message: "OK"})

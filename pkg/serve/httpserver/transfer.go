@@ -208,7 +208,7 @@ func (s *Server) BatchObjects(w http.ResponseWriter, r *Request) {
 
 // POST /{namespace}/{repo}/objects/share
 func (s *Server) ShareObjects(w http.ResponseWriter, r *Request) {
-	var request protocol.BatchSharedsRequest
+	var request protocol.BatchShareObjectsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		renderFailureFormat(w, r.Request, http.StatusBadRequest, "decode request body error: %v", err)
 		return
@@ -219,7 +219,7 @@ func (s *Server) ShareObjects(w http.ResponseWriter, r *Request) {
 	}
 	defer rr.Close()
 
-	response := &protocol.BatchSharedsResponse{
+	response := &protocol.BatchShareObjectsResponse{
 		Objects: make([]*protocol.Representation, 0, len(request.Objects)),
 	}
 	odb := rr.ODB()
@@ -232,7 +232,7 @@ func (s *Server) ShareObjects(w http.ResponseWriter, r *Request) {
 		}
 		want := plumbing.NewHash(o.OID)
 		// oss shared download link
-		ro, err := odb.Sharing(r.Context(), want, expiresAt)
+		ro, err := odb.Share(r.Context(), want, expiresAt)
 		if err != nil {
 			s.renderError(w, r, err)
 			return

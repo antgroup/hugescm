@@ -102,11 +102,11 @@ func (c *client) GetObject(ctx context.Context, oid plumbing.Hash, fromByte int6
 	}, nil
 }
 
-// Shared: get large objects shared links
-func (c *client) Shared(ctx context.Context, wantObjects []*transport.WantObject) ([]*transport.Representation, error) {
+// Share: get large objects shared links
+func (c *client) Share(ctx context.Context, wantObjects []*transport.WantObject) ([]*transport.Representation, error) {
 	commandArgs := fmt.Sprintf("zeta-serve objects '%s' --share", c.Path)
 	var b bytes.Buffer
-	if err := json.NewEncoder(&b).Encode(&transport.BatchSharedsRequest{
+	if err := json.NewEncoder(&b).Encode(&transport.BatchShareObjectsRequest{
 		Objects: wantObjects,
 	}); err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (c *client) Shared(ctx context.Context, wantObjects []*transport.WantObject
 		_ = cmd.Close()
 		return nil, err
 	}
-	var r transport.BatchSharedsResponse
+	var r transport.BatchShareObjectsResponse
 	if err := json.NewDecoder(stdout).Decode(&r); err != nil {
 		_ = cmd.Close()
 		return nil, cmd.lastError

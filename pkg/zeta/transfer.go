@@ -43,7 +43,7 @@ func (r *Repository) getLinks(ctx context.Context, t transport.Transport, larges
 	if len(wantObjects) == 0 {
 		return nil, nil
 	}
-	objects, err := t.Shared(ctx, wantObjects)
+	objects, err := t.Share(ctx, wantObjects)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "batch shared response error: %v\n", err)
 		return nil, err

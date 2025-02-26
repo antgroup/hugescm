@@ -161,7 +161,7 @@ func (s *Server) GetObject(e *Session, oid plumbing.Hash, offset int64) int {
 }
 
 func (s *Server) ShareObjects(e *Session) int {
-	var request protocol.BatchSharedsRequest
+	var request protocol.BatchShareObjectsRequest
 	if err := json.NewDecoder(e).Decode(&request); err != nil {
 		return e.ExitFormat(400, "decode request body error: %v", err)
 	}
@@ -171,7 +171,7 @@ func (s *Server) ShareObjects(e *Session) int {
 	}
 	defer rr.Close()
 
-	response := &protocol.BatchSharedsResponse{
+	response := &protocol.BatchShareObjectsResponse{
 		Objects: make([]*protocol.Representation, 0, len(request.Objects)),
 	}
 	odb := rr.ODB()
@@ -183,7 +183,7 @@ func (s *Server) ShareObjects(e *Session) int {
 		}
 		want := plumbing.NewHash(o.OID)
 		// oss shared download link
-		ro, err := odb.Sharing(e.Context(), want, expiresAt)
+		ro, err := odb.Share(e.Context(), want, expiresAt)
 		if err != nil {
 			return e.ExitError(err)
 		}

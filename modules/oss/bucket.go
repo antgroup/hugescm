@@ -159,7 +159,7 @@ h = hmac.new(accesskey,
 Signature = base64.encodestring(h.digest()).strip()
 */
 
-func (b *bucket) Sharing(ctx context.Context, resourcePath string, expiresAt int64) string {
+func (b *bucket) Share(ctx context.Context, resourcePath string, expiresAt int64) string {
 	u := &url.URL{
 		Scheme: b.sharedScheme,
 		Host:   b.sharedBucketEndpoint,

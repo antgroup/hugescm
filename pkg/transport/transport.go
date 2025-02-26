@@ -48,8 +48,8 @@ type Transport interface {
 	BatchObjects(ctx context.Context, oids []plumbing.Hash) (SessionReader, error)
 	// GetObject: get large object, support Range feature
 	GetObject(ctx context.Context, oid plumbing.Hash, fromByte int64) (SizeReader, error)
-	// Shared: get large objects shared links
-	Shared(ctx context.Context, wantObjects []*WantObject) ([]*Representation, error)
+	// Share: get large objects shared links
+	Share(ctx context.Context, wantObjects []*WantObject) ([]*Representation, error)
 	// Push: push metadata and blobs to remote and update reference
 	Push(ctx context.Context, r io.Reader, cmd *Command) (rc SessionReader, err error)
 	// BatchCheck: check large objects exists in remote

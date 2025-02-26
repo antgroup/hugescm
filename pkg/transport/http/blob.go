@@ -62,9 +62,9 @@ func (c *client) BatchObjects(ctx context.Context, oids []plumbing.Hash) (transp
 	}, nil
 }
 
-func (c *client) Shared(ctx context.Context, wantObjects []*transport.WantObject) ([]*transport.Representation, error) {
+func (c *client) Share(ctx context.Context, wantObjects []*transport.WantObject) ([]*transport.Representation, error) {
 	var b bytes.Buffer
-	if err := json.NewEncoder(&b).Encode(&transport.BatchSharedsRequest{
+	if err := json.NewEncoder(&b).Encode(&transport.BatchShareObjectsRequest{
 		Objects: wantObjects,
 	}); err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (c *client) Shared(ctx context.Context, wantObjects []*transport.WantObject
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
 		return nil, parseError(resp)
 	}
-	var response transport.BatchSharedsResponse
+	var response transport.BatchShareObjectsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}

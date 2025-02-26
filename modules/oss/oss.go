@@ -35,7 +35,7 @@ type Bucket interface {
 	LinearUpload(ctx context.Context, resourcePath string, r io.Reader, size int64, mime string) error
 	DeleteMultipleObjects(ctx context.Context, objectKeys []string) error
 	ListObjects(ctx context.Context, prefix, continuationToken string) ([]*Object, string, error)
-	Sharing(ctx context.Context, resourcePath string, expiresAt int64) string
+	Share(ctx context.Context, resourcePath string, expiresAt int64) string
 }
 
 var (

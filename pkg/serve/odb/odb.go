@@ -25,7 +25,7 @@ type DB interface {
 	Push(ctx context.Context, oid plumbing.Hash) error // Push object to OSS
 	WriteDirect(ctx context.Context, oid plumbing.Hash, r io.Reader, size int64) (int64, error)
 	Stat(ctx context.Context, oid plumbing.Hash) (*oss.Stat, error)
-	Sharing(ctx context.Context, oid plumbing.Hash, expiresAt int64) (*Representation, error)
+	Share(ctx context.Context, oid plumbing.Hash, expiresAt int64) (*Representation, error)
 }
 
 type ODB struct {

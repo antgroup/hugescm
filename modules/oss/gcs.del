@@ -124,7 +124,7 @@ func (b *gscBucket) ListObjects(ctx context.Context, prefix, continuationToken s
 	return objects, it.PageInfo().Token, nil
 }
 
-func (b *gscBucket) Sharing(ctx context.Context, resourcePath string, expiresAt int64) string {
+func (b *gscBucket) Share(ctx context.Context, resourcePath string, expiresAt int64) string {
 	signedURL, _ := b.bucket.SignedURL(resourcePath, &storage.SignedURLOptions{Method: http.MethodGet, Expires: time.Now().Add(time.Second * time.Duration(expiresAt))})
 	return signedURL
 }

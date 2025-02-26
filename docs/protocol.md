@@ -360,7 +360,7 @@ type WantObject struct {
     OID  string `json:"oid"`
 }
 
-type BatchSharedsRequest struct {
+type BatchShareObjectsRequest struct {
     Objects []*WantObject `json:"objects"`
 }
 ```
@@ -391,7 +391,7 @@ type Representation struct {
     ExpiresAt      time.Time         `json:"expires_at,omitempty"`
 }
 
-type BatchSharedsResponse struct {
+type BatchShareObjectsResponse struct {
     Objects []*Representation `json:"objects"`
 }
 

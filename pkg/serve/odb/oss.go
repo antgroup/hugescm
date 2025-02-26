@@ -48,7 +48,7 @@ type Representation struct {
 	ExpiresAt int64
 }
 
-func (o *ODB) Sharing(ctx context.Context, oid plumbing.Hash, expiresAt int64) (*Representation, error) {
+func (o *ODB) Share(ctx context.Context, oid plumbing.Hash, expiresAt int64) (*Representation, error) {
 	resourcePath := ossJoin(o.rid, oid)
 	si, err := o.bucket.Stat(ctx, resourcePath)
 	if err != nil {
@@ -57,7 +57,7 @@ func (o *ODB) Sharing(ctx context.Context, oid plumbing.Hash, expiresAt int64) (
 		}
 		return nil, err
 	}
-	href := o.bucket.Sharing(ctx, resourcePath, expiresAt)
+	href := o.bucket.Share(ctx, resourcePath, expiresAt)
 	return &Representation{
 		Href:      href,
 		Size:      si.Size,

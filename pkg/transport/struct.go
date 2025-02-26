@@ -65,7 +65,7 @@ type WantObject struct {
 	OID string `json:"oid"`
 }
 
-type BatchSharedsRequest struct {
+type BatchShareObjectsRequest struct {
 	Objects []*WantObject `json:"objects"`
 }
 
@@ -91,7 +91,7 @@ func (r *Representation) Copy() *Representation {
 	return &Representation{OID: r.OID, CompressedSize: r.CompressedSize, Href: r.Href, Header: header, ExpiresAt: r.ExpiresAt}
 }
 
-type BatchSharedsResponse struct {
+type BatchShareObjectsResponse struct {
 	Objects []*Representation `json:"objects"`
 }
 

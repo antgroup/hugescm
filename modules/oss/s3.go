@@ -311,7 +311,7 @@ func (b *s3Bucket) ListObjects(ctx context.Context, prefix, continuationToken st
 	return objects, aws.ToString(out.ContinuationToken), nil
 }
 
-func (b *s3Bucket) Sharing(ctx context.Context, resourcePath string, expiresAt int64) string {
+func (b *s3Bucket) Share(ctx context.Context, resourcePath string, expiresAt int64) string {
 	o, err := b.pc.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(b.bucketName),
 		Key:    aws.String(resourcePath),

@@ -59,7 +59,7 @@ SSH 传输协议可以使用 SSH 公钥进行验证，与 SSH 相同，这里不
 | --- | --- | --- |
 | 引用发现 | `GET /{namespace}/{repo}/reference/{refname}` | `Accept: application/vnd.zeta+json` |
 | 元数据 | `GET /{namespace}/{repo}/metadata/{revision:.*}`<br/>`POST /{namespace}/{repo}/metadata/{revision:.*}`<br/>`POST /{namespace}/{repo}/metadata/batch` | 在这里 `revision`只能是 `commit`或者 `tag`对象，不能是 `tree`或者其他。<br/>可设置 `deepen-from`和 `deepen`，分别表示从那个 commit 开始或者回溯深度，deepen-from 默认没有设置，而 deepen 如果没有设置就使用默认值 1.<br/>其中批量元数据下载不支持 `deepen-from`和 `deepen`。 |
-| blob | `POST /{namespace}/{repo}/objects/batch`<br/>`POST /{namespace}/{repo}/objects/shared`<br/>`GET /{namespace}/{repo}/objects/{oid}` | 在这里我们需要支持批量下载小文件，也需要支持下载大文件，此外还需要支持签名下载对象，支持签名下载的好处是，我们可以减少网络带宽的消耗。 |
+| blob | `POST /{namespace}/{repo}/objects/batch`<br/>`POST /{namespace}/{repo}/objects/share`<br/>`GET /{namespace}/{repo}/objects/{oid}` | 在这里我们需要支持批量下载小文件，也需要支持下载大文件，此外还需要支持签名下载对象，支持签名下载的好处是，我们可以减少网络带宽的消耗。 |
 
 
 ### 2.1 引用发现协议

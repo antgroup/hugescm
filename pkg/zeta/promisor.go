@@ -62,7 +62,7 @@ func (r *Repository) FetchObjects(ctx context.Context, commit plumbing.Hash, ski
 	if err != nil {
 		return err
 	}
-	if err := r.fetchObjects(ctx, t, commit, NoSizeLimit, skipLarges); err == nil {
+	if err := r.fetchObjects(ctx, t, commit, AnySize, skipLarges); err == nil {
 		return nil
 	}
 	if !plumbing.IsNoSuchObject(err) {
@@ -74,7 +74,12 @@ func (r *Repository) FetchObjects(ctx context.Context, commit plumbing.Hash, ski
 		die("resolve shallow: %v", err)
 		return err
 	}
-	return r.fetch(ctx, t, &FetchOptions{Target: commit, DeepenFrom: deepenFrom, SizeLimit: NoSizeLimit})
+	return r.fetch(ctx, t, &FetchOptions{
+		Target:     commit,
+		DeepenFrom: deepenFrom,
+		Deepen:     transport.Shallow,
+		Depth:      transport.AnyDepth,
+		SizeLimit:  AnySize})
 }
 
 type missingFetcher struct {
@@ -138,11 +143,12 @@ func (r *Repository) promiseFetch(ctx context.Context, rev string, fetchMissing 
 	if !fetchMissing {
 		return plumbing.ZeroHash, plumbing.NoSuchObject(oid)
 	}
+
 	if err := r.fetchAny(ctx, &FetchOptions{
 		Target:    oid,
-		SizeLimit: NoSizeLimit,
-		Deepen:    NoDeepen,
-		Depth:     NoDepth,
+		Deepen:    transport.Shallow,
+		Depth:     transport.AnyDepth,
+		SizeLimit: AnySize,
 	}); err != nil {
 		return oid, err
 	}

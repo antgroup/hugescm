@@ -24,6 +24,12 @@ type SizeReader interface {
 	LastError() error
 }
 
+const (
+	Shallow   = 1
+	AnyDepth  = -1
+	AnyDeepen = -1
+)
+
 type MetadataOptions struct {
 	Sparses    []string
 	DeepenFrom plumbing.Hash

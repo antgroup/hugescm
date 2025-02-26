@@ -79,10 +79,8 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if !opts.DeepenFrom.IsZero() {
 		q.Set("deepen-from", opts.DeepenFrom.String())
 	}
-	if opts.Deepen != 0 {
-		q.Set("deepen", strconv.Itoa(opts.Deepen))
-	}
-	if opts.Depth != 0 {
+	q.Set("deepen", strconv.Itoa(opts.Deepen))
+	if opts.Depth >= 0 {
 		q.Set("depth", strconv.Itoa(opts.Depth))
 	}
 	if len(q) > 0 {

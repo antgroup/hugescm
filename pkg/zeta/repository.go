@@ -328,9 +328,9 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	}
 	fetchOpts := &FetchOptions{
 		Target:    target,
+		Deepen:    opts.Depth,         // deepen: commit depth
+		Depth:     transport.AnyDepth, // tree depth = -1: all tree
 		SizeLimit: opts.SizeLimit,
-		Deepen:    opts.Depth,
-		Depth:     NoDepth,
 	}
 	if opts.One {
 		fetchOpts.SkipLarges = true

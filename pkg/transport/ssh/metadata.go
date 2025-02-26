@@ -90,10 +90,8 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if !opts.DeepenFrom.IsZero() {
 		psArgs = append(psArgs, "--deepen-from="+opts.DeepenFrom.String())
 	}
-	if opts.Deepen != 0 {
-		psArgs = append(psArgs, "--deepen="+strconv.Itoa(opts.Deepen))
-	}
-	if opts.Depth != 0 {
+	psArgs = append(psArgs, "--deepen="+strconv.Itoa(opts.Deepen))
+	if opts.Depth >= 0 {
 		psArgs = append(psArgs, "--depth="+strconv.Itoa(opts.Depth))
 	}
 	if len(opts.Sparses) != 0 {

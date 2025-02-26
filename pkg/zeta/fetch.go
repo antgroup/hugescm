@@ -17,10 +17,7 @@ import (
 )
 
 const (
-	NoSizeLimit = -1
-	NoDepth     = 0
-	NoDeepen    = 0
-	AnyDeepen   = -1
+	AnySize = -1
 )
 
 type FetchOptions struct {
@@ -181,6 +178,8 @@ var (
 func (r *Repository) prepareFetch(ctx context.Context, current *plumbing.Reference, want plumbing.Hash, opts *DoFetchOptions) (*FetchOptions, error) {
 	o := &FetchOptions{
 		Target:     want,
+		Deepen:     transport.Shallow,
+		Depth:      transport.AnyDepth,
 		SizeLimit:  opts.Limit,
 		SkipLarges: opts.SkipLarges,
 	}
@@ -204,7 +203,7 @@ func (r *Repository) prepareFetch(ctx context.Context, current *plumbing.Referen
 		if opts.Unshallow || o.DeepenFrom.IsZero() {
 			// unshallow
 			// shallow file not found equal unshallow
-			o.Deepen = -1
+			o.Deepen = transport.AnyDeepen
 			return o, nil
 		}
 		// shallow: say deepen-from

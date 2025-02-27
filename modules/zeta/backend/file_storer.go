@@ -164,7 +164,7 @@ func compress(r io.Reader, w ExtendWriter, method CompressMethod) (written int64
 		defer streamio.PutZlibWriter(zw)
 		return io.Copy(zw, r)
 	default:
-		return 0, fmt.Errorf("unsupport method: %d", method)
+		return 0, fmt.Errorf("unsupported method: %d", method)
 	}
 }
 

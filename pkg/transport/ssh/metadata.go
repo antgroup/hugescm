@@ -46,14 +46,14 @@ func (c *client) FetchReference(ctx context.Context, refname plumbing.ReferenceN
 	return &r, nil
 }
 
-func sparsesGenReader(sparses []string) io.Reader {
+func sparseDirsGenReader(sparseDirs []string) io.Reader {
 	var b strings.Builder
 	var total int
-	for _, s := range sparses {
+	for _, s := range sparseDirs {
 		total += len(s) + 1
 	}
 	b.Grow(total)
-	for _, s := range sparses {
+	for _, s := range sparseDirs {
 		_, _ = b.WriteString(s)
 		_ = b.WriteByte('\n')
 	}
@@ -78,7 +78,7 @@ func (r *decompressReader) LastError() error {
 	return r.cmd.lastError
 }
 
-// FetchMetadata: support base metadata and sparses metadata.
+// FetchMetadata: support base metadata and sparse metadata.
 //
 //	zeta-serve metadata "group/mono-zeta" --revision "${REVISION}" --depth=1 --deepen-from=${from}
 //	zeta-serve metadata "group/mono-zeta" --revision "${REVISION}" --sparse --depth=1 --deepen-from=${from}
@@ -103,7 +103,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if err != nil {
 		return nil, err
 	}
-	cmd.Stdin = sparsesGenReader(opts.SparseDirs)
+	cmd.Stdin = sparseDirsGenReader(opts.SparseDirs)
 	if cmd.Reader, err = cmd.StdoutPipe(); err != nil {
 		_ = cmd.Close()
 		return nil, err

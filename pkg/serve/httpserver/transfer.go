@@ -54,7 +54,7 @@ const (
 
 // ShareAuthorization: POST /{namespace}/{repo}/authorization
 func (s *Server) ShareAuthorization(w http.ResponseWriter, r *http.Request) {
-	var sa protocol.SASHandeshake
+	var sa protocol.SASHandshake
 	if err := json.NewDecoder(r.Body).Decode(&sa); err != nil {
 		renderFailureFormat(w, r, http.StatusBadRequest, "decode handshake error: %v", err)
 		return
@@ -546,7 +546,7 @@ func (s *Server) BranchPush(w http.ResponseWriter, r *Request, branchName string
 		ReferenceName: plumbing.NewBranchReferenceName(branchName),
 		OldRev:        r.Header.Get("X-Zeta-Command-OldRev"),
 		NewRev:        r.Header.Get("X-Zeta-Command-NewRev"),
-		Terminal:      r.Header.Get("X-Zeta-Termainl"),
+		Terminal:      r.Header.Get("X-Zeta-Terminal"),
 		Language:      serve.Language(r.Request),
 	}
 	if !plumbing.ValidateHashHex(command.NewRev) {

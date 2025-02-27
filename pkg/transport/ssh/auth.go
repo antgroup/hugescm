@@ -230,8 +230,8 @@ func (c *client) PublicKeys() ([]ssh.Signer, error) {
 		}
 		signers = append(signers, signer)
 	}
-	if agnetSigners, err := c.sshAuthSigners(); err == nil && len(agnetSigners) > 0 {
-		signers = append(signers, agnetSigners...)
+	if agentSigners, err := c.sshAuthSigners(); err == nil && len(agentSigners) > 0 {
+		signers = append(signers, agentSigners...)
 	}
 	return signers, nil
 }

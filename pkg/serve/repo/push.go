@@ -237,7 +237,7 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 		_ = ro.ok(cmd, newReference.Hash)
 		return nil
 	}
-	recvObjs, err := r.odb.Unpack(ctx, reader, &odb.OStats{M: cmd.M, B: cmd.B}, func(ctx context.Context, quarantineDir string, o *odb.Objects) error {
+	recvObjects, err := r.odb.Unpack(ctx, reader, &odb.OStats{M: cmd.M, B: cmd.B}, func(ctx context.Context, quarantineDir string, o *odb.Objects) error {
 		if err := ro.EncodeString("unpack ok"); err != nil {
 			ro.close()
 			return ErrReportStarted
@@ -261,7 +261,7 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 	if err != nil {
 		return err
 	}
-	logrus.Infof("objects %d", len(recvObjs.Commits))
+	logrus.Infof("objects %d", len(recvObjects.Commits))
 	defer ro.close()
 	if err := r.odb.Reload(); err != nil {
 		_ = ro.ng(cmd, "reload odb error: %v", err)
@@ -269,28 +269,28 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 	}
 	var g errgroup.Group
 	g.Go(func() error {
-		if err := r.odb.Batch(ctx, recvObjs.Blobs, 50); err != nil {
+		if err := r.odb.Batch(ctx, recvObjects.Blobs, 50); err != nil {
 			logrus.Errorf("batch upload blobs error: %v", err)
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		if err := r.odb.BatchObjects(ctx, recvObjs.Objects); err != nil {
+		if err := r.odb.BatchObjects(ctx, recvObjects.Objects); err != nil {
 			logrus.Errorf("batch encode objects error: %v", err)
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		if err := r.odb.BatchTrees(ctx, recvObjs.Trees); err != nil {
+		if err := r.odb.BatchTrees(ctx, recvObjects.Trees); err != nil {
 			logrus.Errorf("batch encode trees error: %v", err)
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		if err := r.odb.BatchCommits(ctx, recvObjs.Commits); err != nil {
+		if err := r.odb.BatchCommits(ctx, recvObjects.Commits); err != nil {
 			logrus.Errorf("batch encode commits error: %v", err)
 			return err
 		}

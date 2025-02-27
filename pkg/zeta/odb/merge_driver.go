@@ -18,7 +18,7 @@ type TextGetter func(ctx context.Context, oid plumbing.Hash, textconv bool) (str
 
 type mergeOptions struct {
 	O, A, B                plumbing.Hash
-	LabelO, LableA, LabelB string
+	LabelO, LabelA, LabelB string
 	Textconv               bool
 	M                      MergeDriver
 	G                      TextGetter
@@ -43,7 +43,7 @@ func (d *ODB) mergeText(ctx context.Context, opts *mergeOptions) (*mergeTextResu
 	if err != nil {
 		return nil, err
 	}
-	mergedText, conflict, err := opts.M(ctx, textO, textA, textB, opts.LabelO, opts.LableA, opts.LabelB)
+	mergedText, conflict, err := opts.M(ctx, textO, textA, textB, opts.LabelO, opts.LabelA, opts.LabelB)
 	if err != nil {
 		return nil, err
 	}

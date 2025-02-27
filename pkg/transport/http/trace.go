@@ -85,9 +85,9 @@ func wrapRequest(req *http.Request) *http.Request {
 		DNSStart: func(di httptrace.DNSStartInfo) {
 			term.Fprintf(os.Stderr, "\x1b[33mResolve %s\x1b[0m", di.Host)
 		},
-		DNSDone: func(dnsinfo httptrace.DNSDoneInfo) {
-			if dnsinfo.Err == nil {
-				term.Fprintf(os.Stderr, "\x1b[33m to %s\x1b[0m\n", flatAddress(dnsinfo.Addrs))
+		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+			if dnsInfo.Err == nil {
+				term.Fprintf(os.Stderr, "\x1b[33m to %s\x1b[0m\n", flatAddress(dnsInfo.Addrs))
 			}
 		},
 		ConnectDone: func(network, addr string, err error) {

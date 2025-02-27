@@ -115,12 +115,12 @@ func (s *Server) OnKey(ctx ssh.Context, key ssh.PublicKey) bool {
 	return true
 }
 
-func (s *Server) OnSession(sess ssh.Session) {
-	se, err := s.NewSession(sess)
+func (s *Server) OnSession(session ssh.Session) {
+	se, err := s.NewSession(session)
 	if err != nil {
-		fmt.Fprintf(sess.Stderr(), "bad ssh session")
+		fmt.Fprintf(session.Stderr(), "bad ssh session")
 		logrus.Errorf("bad ssh session: %v", err)
-		_ = sess.Exit(1)
+		_ = session.Exit(1)
 		return
 	}
 	exitCode := s.handleSession(se)
@@ -174,7 +174,7 @@ func (s *Server) handleSession(e *Session) int {
 		return s.displayUser(e)
 	}
 	if args[0] != ServeCommand {
-		e.WriteError("unsupport command '\x1b[31m%s\x1b[0m'", args[0])
+		e.WriteError("unsupported command '\x1b[31m%s\x1b[0m'", args[0])
 		return 1
 	}
 	logrus.Infof("new command: %s user-agent: %s", e.RawCommand(), strings.TrimPrefix(e.ClientVersion, "SSH-2.0-"))

@@ -42,7 +42,7 @@ func GetServerVersion() string {
 	return "Zeta/" + version
 }
 
-func GetTelemeryUserAgent() string {
+func GetTelemetryUserAgent() string {
 	if u, err := Uname(); err == nil {
 		return fmt.Sprintf("Zeta/%s (%s; %s; %s)", version, u.Name, u.Machine, u.Release)
 	}
@@ -51,7 +51,7 @@ func GetTelemeryUserAgent() string {
 
 func GetUserAgent() string {
 	if telemetryOn() {
-		return GetTelemeryUserAgent()
+		return GetTelemetryUserAgent()
 	}
 	return "Zeta/" + version
 }
@@ -59,7 +59,7 @@ func GetUserAgent() string {
 func GetBannerVersion() string {
 	if telemetryOn() {
 		if u, err := Uname(); err == nil {
-			// SSH-protoversion-softwareversion SP comments CR LF
+			// SSH-protoVersion-softwareVersion SP comments CR LF
 			return fmt.Sprintf("ZETA-%s (%s; %s; %s)", version, u.Name, u.Machine, u.Release)
 		}
 	}

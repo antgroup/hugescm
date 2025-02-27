@@ -12,7 +12,7 @@ import (
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
 )
 
-func (s *Server) checkAccessForDelopyKey(e *Session, repoPath string, operation protocol.Operation) int {
+func (s *Server) checkAccessForDeployKey(e *Session, repoPath string, operation protocol.Operation) int {
 	switch operation {
 	case protocol.DOWNLOAD:
 		ok, err := s.db.IsDeployKeyEnabled(e.Context(), e.RID, e.KID)
@@ -61,7 +61,7 @@ func (s *Server) doPermissionCheck(e *Session, repoPath string, operation protoc
 	e.CompressionAlgo = repo.CompressionAlgo
 	e.HashAlgo = repo.HashAlgo
 	if e.IsDeployKey {
-		return s.checkAccessForDelopyKey(e, repoPath, operation)
+		return s.checkAccessForDeployKey(e, repoPath, operation)
 	}
 	u, err := s.db.FindUser(e.Context(), e.UID)
 	if err != nil {

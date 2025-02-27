@@ -17,14 +17,14 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-func sparsesGenReader(sparses []string) io.Reader {
+func sparseDirsGenReader(sparseDirs []string) io.Reader {
 	var b strings.Builder
 	var total int
-	for _, s := range sparses {
+	for _, s := range sparseDirs {
 		total += len(s) + 1
 	}
 	b.Grow(total)
-	for _, s := range sparses {
+	for _, s := range sparseDirs {
 		_, _ = b.WriteString(s)
 		_ = b.WriteByte('\n')
 	}
@@ -44,7 +44,7 @@ func (r decompressReader) Close() error {
 }
 
 func newDecompressReader(rc io.ReadCloser, h http.Header) (io.ReadCloser, error) {
-	switch conentType := h.Get("Content-Type"); conentType {
+	switch contentType := h.Get("Content-Type"); contentType {
 	case ZETA_MIME_METADATA:
 		return &decompressReader{
 			Reader: rc,
@@ -60,7 +60,7 @@ func newDecompressReader(rc io.ReadCloser, h http.Header) (io.ReadCloser, error)
 			closer: []io.Closer{zr.IOReadCloser(), rc},
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported content-type: '%s'", conentType)
+		return nil, fmt.Errorf("unsupported content-type: '%s'", contentType)
 	}
 }
 
@@ -69,7 +69,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	method := http.MethodGet
 	if len(opts.SparseDirs) != 0 {
 		method = http.MethodPost
-		body = sparsesGenReader(opts.SparseDirs)
+		body = sparseDirsGenReader(opts.SparseDirs)
 	}
 	metadataURL := c.baseURL.JoinPath("metadata", target.String())
 	q := make(url.Values)

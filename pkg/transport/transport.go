@@ -47,7 +47,7 @@ type SessionReader interface {
 type Transport interface {
 	// FetchReference: discover reference and remote repo info and caps
 	FetchReference(ctx context.Context, refname plumbing.ReferenceName) (*Reference, error)
-	// FetchMetadata: support base metadata and sparses metadata.
+	// FetchMetadata: support base metadata and sparse metadata.
 	//  target: commit or tag
 	FetchMetadata(ctx context.Context, target plumbing.Hash, opts *MetadataOptions) (SessionReader, error)
 	// BatchObjects: batch download objects AKA blobs

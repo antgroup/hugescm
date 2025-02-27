@@ -31,7 +31,7 @@ import (
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
-type Debuger interface {
+type Debugger interface {
 	DbgPrint(format string, args ...any)
 }
 
@@ -42,16 +42,16 @@ type blob struct {
 }
 
 type MigrateOptions struct {
-	Environ []string
-	From    string
-	To      string
-	StepEnd int
-	Squeeze bool
-	LFS     bool
-	Quiet   bool
-	Verbose bool
-	Values  []string
-	Debuger Debuger
+	Environ  []string
+	From     string
+	To       string
+	StepEnd  int
+	Squeeze  bool
+	LFS      bool
+	Quiet    bool
+	Verbose  bool
+	Values   []string
+	Debugger Debugger
 }
 
 type Migrator struct {
@@ -71,7 +71,7 @@ type Migrator struct {
 	stepEnd      int
 	stepCurrent  int
 	verbose      bool
-	Debuger
+	Debugger
 }
 
 func NewMigrator(ctx context.Context, opts *MigrateOptions) (*Migrator, error) {
@@ -103,7 +103,7 @@ func NewMigrator(ctx context.Context, opts *MigrateOptions) (*Migrator, error) {
 		gitODB:       odb,
 		r:            repo,
 		modification: time.Now().Unix(),
-		Debuger:      opts.Debuger,
+		Debugger:     opts.Debugger,
 		stepEnd:      opts.StepEnd,
 		stepCurrent:  1,
 		verbose:      opts.Verbose,

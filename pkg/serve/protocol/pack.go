@@ -26,7 +26,7 @@ func writeMetadataHeader(w io.Writer) error {
 	return nil
 }
 
-func writeMetadatItem(w io.Writer, e object.Encoder, oid string) error {
+func writeMetadataItem(w io.Writer, e object.Encoder, oid string) error {
 	if e == nil {
 		return binary.WriteUint32(w, uint32(0))
 	}
@@ -223,7 +223,7 @@ func (p *Packer) Close() error {
 }
 
 func (p *Packer) Done() (err error) {
-	if err = writeMetadatItem(p.w, nil, ""); err != nil {
+	if err = writeMetadataItem(p.w, nil, ""); err != nil {
 		return err
 	}
 	_, err = p.Finish()
@@ -231,7 +231,7 @@ func (p *Packer) Done() (err error) {
 }
 
 func (p *Packer) WriteAny(ctx context.Context, e object.Encoder, oid string) error {
-	return writeMetadatItem(p.w, e, oid)
+	return writeMetadataItem(p.w, e, oid)
 }
 
 func (p *Packer) WriteDeduplication(ctx context.Context, e object.Encoder, oid plumbing.Hash) error {
@@ -239,7 +239,7 @@ func (p *Packer) WriteDeduplication(ctx context.Context, e object.Encoder, oid p
 		return nil
 	}
 	p.seen[oid] = true
-	return writeMetadatItem(p.w, e, oid.String())
+	return writeMetadataItem(p.w, e, oid.String())
 }
 
 func (p *Packer) WriteTree(ctx context.Context, oid plumbing.Hash, depth int) error {
@@ -253,7 +253,7 @@ func (p *Packer) WriteTree(ctx context.Context, oid plumbing.Hash, depth int) er
 	if err != nil {
 		return err
 	}
-	if err := writeMetadatItem(p.w, tree, oid.String()); err != nil {
+	if err := writeMetadataItem(p.w, tree, oid.String()); err != nil {
 		return err
 	}
 	p.count++
@@ -269,7 +269,7 @@ func (p *Packer) WriteTree(ctx context.Context, oid plumbing.Hash, depth int) er
 				if err != nil {
 					return err
 				}
-				if err := writeMetadatItem(p.w, ff, ff.Hash.String()); err != nil {
+				if err := writeMetadataItem(p.w, ff, ff.Hash.String()); err != nil {
 					return err
 				}
 				p.count++
@@ -297,7 +297,7 @@ func (p *Packer) WriteSparseTree(ctx context.Context, oid plumbing.Hash, m Spars
 	if err != nil {
 		return err
 	}
-	if err := writeMetadatItem(p.w, tree, oid.String()); err != nil {
+	if err := writeMetadataItem(p.w, tree, oid.String()); err != nil {
 		return err
 	}
 	p.count++
@@ -315,7 +315,7 @@ func (p *Packer) WriteSparseTree(ctx context.Context, oid plumbing.Hash, m Spars
 				if err != nil {
 					return err
 				}
-				if err := writeMetadatItem(p.w, ff, ff.Hash.String()); err != nil {
+				if err := writeMetadataItem(p.w, ff, ff.Hash.String()); err != nil {
 					return err
 				}
 				p.count++
@@ -335,7 +335,7 @@ func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit
 	}
 	iter := object.NewCommitIterBSF(current, nil, nil)
 	defer iter.Close()
-	for i := 0; i < deepen; i++ {
+	for range deepen {
 		cc, err := iter.Next(ctx)
 		if err == io.EOF {
 			break
@@ -347,7 +347,7 @@ func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit
 		if oid == deepenFrom || oid == have {
 			break
 		}
-		if err := writeMetadatItem(p.w, cc, oid.String()); err != nil {
+		if err := writeMetadataItem(p.w, cc, oid.String()); err != nil {
 			return err
 		}
 		if err := p.WriteTree(ctx, cc.Tree, 0); err != nil {
@@ -364,7 +364,7 @@ func (p *Packer) WriteDeepenSparseMetadata(ctx context.Context, current *object.
 	m := NewSparseTreeMatcher(paths)
 	iter := object.NewCommitIterBSF(current, nil, nil)
 	defer iter.Close()
-	for i := 0; i < deepen; i++ {
+	for range deepen {
 		cc, err := iter.Next(ctx)
 		if err == io.EOF {
 			break
@@ -376,7 +376,7 @@ func (p *Packer) WriteDeepenSparseMetadata(ctx context.Context, current *object.
 		if oid == deepenFrom || oid == have {
 			break
 		}
-		if err := writeMetadatItem(p.w, cc, oid.String()); err != nil {
+		if err := writeMetadataItem(p.w, cc, oid.String()); err != nil {
 			return err
 		}
 

@@ -15,12 +15,12 @@ import (
 	"github.com/antgroup/hugescm/pkg/version"
 )
 
-type Debuger struct {
+type Debugger struct {
 	closeFn func()
 }
 
-func NewDebuger(debugMode bool) *Debuger {
-	d := &Debuger{}
+func NewDebugger(debugMode bool) *Debugger {
+	d := &Debugger{}
 	if !debugMode {
 		return d
 	}
@@ -41,7 +41,7 @@ func NewDebuger(debugMode bool) *Debuger {
 	return d
 }
 
-func (d *Debuger) Close() {
+func (d *Debugger) Close() {
 	if d.closeFn != nil {
 		d.closeFn()
 	}
@@ -49,7 +49,7 @@ func (d *Debuger) Close() {
 
 func main() {
 
-	// delay initilaize git env
+	// delay initialize git env
 	_ = env.InitializeEnv()
 	// initialize locale
 	_ = tr.Initialize()
@@ -66,7 +66,7 @@ func main() {
 			"version": version.GetVersionString(),
 		},
 	)
-	d := NewDebuger(app.Debug)
+	d := NewDebugger(app.Debug)
 	defer d.Close()
 	err := ctx.Run(&app.Globals)
 	if err != nil {

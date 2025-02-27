@@ -14,7 +14,7 @@ func TestNoCommand(t *testing.T) {
 }
 
 func TestLsRemoteCommand(t *testing.T) {
-	args := []string{"ls-remote", "monon/zeta", "--reference", "refs/heads/mainline"}
+	args := []string{"ls-remote", "mono/zeta", "--reference", "refs/heads/mainline"}
 	cmd, err := NewCommand(args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "parse command: %v\n", err)
@@ -24,7 +24,7 @@ func TestLsRemoteCommand(t *testing.T) {
 }
 
 func TestLsRemoteCommand2(t *testing.T) {
-	args := []string{"ls-remote", "monon/zeta", "--reference=refs/heads/mainline"}
+	args := []string{"ls-remote", "mono/zeta", "--reference=refs/heads/mainline"}
 	cmd, err := NewCommand(args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "parse command: %v\n", err)

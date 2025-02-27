@@ -209,12 +209,12 @@ func (sr *sizeReader) Size() int64 {
 }
 
 const (
-	// ZstandardMagic: https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#frames
-	ZstandardMagic = 0xFD2FB528
+	// ZSTD_MAGIC: https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#frames
+	ZSTD_MAGIC = 0xFD2FB528
 )
 
-func isZstandardMagic(magic [4]byte) bool {
-	return binary.LittleEndian.Uint32(magic[:]) == ZstandardMagic
+func isZstdMagic(magic [4]byte) bool {
+	return binary.LittleEndian.Uint32(magic[:]) == ZSTD_MAGIC
 }
 
 func (d *Database) metaSizeReader(oid plumbing.Hash) (SizeReader, error) {
@@ -227,7 +227,7 @@ func (d *Database) metaSizeReader(oid plumbing.Hash) (SizeReader, error) {
 		return nil, err
 	}
 	// TODO: When the server supports compressed metadata, we don't need to decompress it.
-	if isZstandardMagic(magic) {
+	if isZstdMagic(magic) {
 		defer rc.Close()
 		b := &bytes.Buffer{}
 		zr, err := streamio.GetZstdReader(rc)
@@ -321,7 +321,7 @@ func (d *Database) OpenReader(oid plumbing.Hash, meta bool) (io.ReadCloser, erro
 		return nil, err
 	}
 	// TODO: When the server supports compressed metadata, we don't need to decompress it.
-	if isZstandardMagic(magic) {
+	if isZstdMagic(magic) {
 		defer rc.Close()
 		zr, err := streamio.GetZstdReader(rc)
 		if err != nil {

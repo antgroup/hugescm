@@ -47,7 +47,7 @@ func (w *ResponseWriter) Write(data []byte) (int, error) {
 	return written, err
 }
 
-// WriteHeader write header statucode
+// WriteHeader write header statusCode
 func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)

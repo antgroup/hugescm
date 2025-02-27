@@ -47,7 +47,7 @@ func GenerateJWT(u *database.User, rid int64, op protocol.Operation, expiresAt t
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt), // expiresAt
 			IssuedAt:  jwt.NewNumericDate(now),       // issued
-			NotBefore: jwt.NewNumericDate(now),       // not beforce
+			NotBefore: jwt.NewNumericDate(now),       // not before
 		},
 	}
 	// HS256

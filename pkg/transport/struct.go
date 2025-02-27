@@ -17,7 +17,7 @@ const (
 	SUDO     Operation = "sudo"
 )
 
-type SASHandeshake struct {
+type SASHandshake struct {
 	Operation Operation `json:"operation"`
 	Version   string    `json:"version"`
 }

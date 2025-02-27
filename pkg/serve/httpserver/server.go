@@ -50,7 +50,7 @@ func NewZ1AcceptMatcher(accept string) mux.MatcherFunc {
 }
 
 func (s *Server) ProtocolZ1Router(r *mux.Router) {
-	r.HandleFunc("/{namespace}/{repo}/authorization", s.ShareAuthorization).Methods("POST").MatcherFunc(Z1Matcher) // AUTH: shard siganture auth
+	r.HandleFunc("/{namespace}/{repo}/authorization", s.ShareAuthorization).Methods("POST").MatcherFunc(Z1Matcher) // AUTH: shard signature auth
 	// Zeta Protocol: FETCH APIs
 	r.HandleFunc("/{namespace}/{repo}/reference/{refname:.*}", s.OnFunc(s.LsReference, protocol.DOWNLOAD)).Methods("GET").MatcherFunc(Z1Matcher)        // CHECKOUT: fetch reference
 	r.HandleFunc("/{namespace}/{repo}/metadata/batch", s.OnFunc(s.BatchMetadata, protocol.DOWNLOAD)).Methods("POST").MatcherFunc(Z1Matcher)             // CHECKOUT: batch metadata for FUSE
@@ -134,7 +134,7 @@ func logResponse(hw *ResponseWriter, r *http.Request, tr *trackedReader, spent t
 		logrus.Errorf("[%s] %s %s status: %d received: %d written: %d spent: %v message: %s", hw.F1RemoteAddr(), r.Method, r.RequestURI, hw.StatusCode(), tr.received, hw.Written(), spent, message)
 		return
 	case statusCode == http.StatusUnauthorized || statusCode == http.StatusBadRequest || statusCode == http.StatusForbidden:
-		// default behavie
+		// default behavior
 	}
 	logrus.Infof("[%s] %s %s status: %d received: %d written: %d spent: %v", hw.F1RemoteAddr(), r.Method, r.RequestURI, hw.StatusCode(), tr.received, hw.Written(), spent)
 }

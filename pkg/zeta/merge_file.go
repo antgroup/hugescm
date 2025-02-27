@@ -26,7 +26,7 @@ func (r *Repository) resolveMergeDriver() odb.MergeDriver {
 				return r.odb.Diff3Merge
 			}
 		default:
-			r.DbgPrint("Unsupport merge driver '%s'", driverName)
+			r.DbgPrint("unsupported merge driver '%s'", driverName)
 		}
 	}
 	var diffAlgorithm diferenco.Algorithm

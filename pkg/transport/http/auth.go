@@ -75,7 +75,7 @@ func (c *client) readCredentialsFromNetrc() (*Credentials, error) {
 	return nil, os.ErrNotExist
 }
 
-func (c *client) baseCredentailsURL() string {
+func (c *client) baseCredentialsURL() string {
 	u := cloneURL(c.baseURL)
 	u.Path = ""
 	u.User = nil
@@ -83,7 +83,7 @@ func (c *client) baseCredentailsURL() string {
 }
 
 func (c *client) readCredentials0(ctx context.Context) (*Credentials, error) {
-	if cred, err := keyring.Find(ctx, c.baseCredentailsURL()); err == nil {
+	if cred, err := keyring.Find(ctx, c.baseCredentialsURL()); err == nil {
 		c.DbgPrint("Got credentials from keyring, username: %s", cred.UserName)
 		return &Credentials{UserName: cred.UserName, Password: cred.Password}, nil
 	}
@@ -91,7 +91,7 @@ func (c *client) readCredentials0(ctx context.Context) (*Credentials, error) {
 }
 
 func (c *client) storeCredentials(ctx context.Context, cred *Credentials) error {
-	return keyring.Store(ctx, c.baseCredentailsURL(), &keyring.Cred{UserName: cred.UserName, Password: cred.Password})
+	return keyring.Store(ctx, c.baseCredentialsURL(), &keyring.Cred{UserName: cred.UserName, Password: cred.Password})
 }
 
 func (c *client) credentialAskOne() (*Credentials, error) {
@@ -164,7 +164,7 @@ func (c *client) authorize(ctx context.Context, operation transport.Operation) e
 
 func (c *client) checkAuthRedirect(ctx context.Context, cred *Credentials, operation transport.Operation) (*http.Response, error) {
 	var br bytes.Buffer
-	if err := json.NewEncoder(&br).Encode(&transport.SASHandeshake{
+	if err := json.NewEncoder(&br).Encode(&transport.SASHandshake{
 		Operation: operation,
 		Version:   version.GetVersion(),
 	}); err != nil {
@@ -210,8 +210,8 @@ func (c *client) checkAuthRedirect(ctx context.Context, cred *Credentials, opera
 }
 
 func remoteNotify(notice string) {
-	lines := strings.Split(notice, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(notice, "\n")
+	for line := range lines {
 		fmt.Fprintf(os.Stderr, "remote notice: %s\n", line)
 	}
 }
@@ -219,7 +219,7 @@ func remoteNotify(notice string) {
 func (c *client) checkAuth(ctx context.Context, cred *Credentials, operation transport.Operation) (bool, error) {
 	var resp *http.Response
 	var err error
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		resp, err = c.checkAuthRedirect(ctx, cred, operation)
 		if err != ErrRedirect {
 			break

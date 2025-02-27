@@ -14,9 +14,9 @@ func TestW(t *testing.T) {
 	fmt.Fprintf(os.Stderr, Translate(langKey, "branch '%s' not exist"), "dev-99")
 }
 
-func TestAcceptLanguaes(t *testing.T) {
+func TestAcceptLanguages(t *testing.T) {
 	accept := "zh-CN"
 	_ = RegisterLanguageMatcher()
 	tag, _ := language.MatchStrings(languageMatcher, "", accept)
-	fmt.Fprintf(os.Stderr, "accpet-languge: %s\n", tag.String())
+	fmt.Fprintf(os.Stderr, "accept-language: %s\n", tag.String())
 }

@@ -37,7 +37,7 @@ func LookupAria2c() (string, error) {
 // TODO: gen input file
 func (r *Repository) aria2Input(objects []*transport.Representation) (io.Reader, map[plumbing.Hash]string) {
 	var b strings.Builder
-	objs := make(map[plumbing.Hash]string)
+	m := make(map[plumbing.Hash]string)
 	for _, o := range objects {
 		oid := plumbing.NewHash(o.OID)
 		p := r.odb.JoinPart(oid)
@@ -45,10 +45,10 @@ func (r *Repository) aria2Input(objects []*transport.Representation) (io.Reader,
 		for h, v := range o.Header {
 			fmt.Fprintf(&b, " header=%s: %s\n", h, v)
 		}
-		objs[oid] = p
+		m[oid] = p
 	}
 
-	return strings.NewReader(b.String()), objs
+	return strings.NewReader(b.String()), m
 }
 
 func (r *Repository) aria2cGet(ctx context.Context, aria2c string, stdin io.Reader, stdout, stderr io.Writer, concurrent int) error {
@@ -79,11 +79,11 @@ func (r *Repository) aria2Get(ctx context.Context, objects []*transport.Represen
 		fmt.Fprintf(os.Stderr, "lookup aria2c %s\n", err)
 		return err
 	}
-	input, objs := r.aria2Input(objects)
+	input, m := r.aria2Input(objects)
 	if err := r.aria2cGet(ctx, aria2c, input, os.Stdout, os.Stderr, concurrent); err != nil {
 		return err
 	}
-	for oid, saveTo := range objs {
+	for oid, saveTo := range m {
 		if err := r.odb.ValidatePart(saveTo, oid); err != nil {
 			fmt.Fprintf(os.Stderr, "validate %s error: %v\n", saveTo, err)
 			return err

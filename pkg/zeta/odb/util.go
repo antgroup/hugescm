@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	subdirs = []struct {
+	subDirs = []struct {
 		name  string
 		isDir bool
 	}{
@@ -20,7 +20,7 @@ var (
 )
 
 func IsZetaDir(dir string) bool {
-	for _, d := range subdirs {
+	for _, d := range subDirs {
 		si, err := os.Stat(filepath.Join(dir, d.name))
 		if err != nil {
 			return false

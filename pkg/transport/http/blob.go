@@ -14,18 +14,14 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"sync"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/pkg/transport"
 )
 
 func (c *client) BatchObjects(ctx context.Context, oids []plumbing.Hash) (transport.SessionReader, error) {
-	var wg sync.WaitGroup
-	wg.Add(1)
 	pr, pw := io.Pipe()
 	go func() {
-		defer wg.Done()
 		defer pw.Close()
 		buf := bufio.NewWriter(pw)
 		defer buf.Flush()

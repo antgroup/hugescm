@@ -94,7 +94,7 @@ func rename(oldpath, newpath string) error {
 	return err
 }
 
-func removeHideAttrbutes(fd windows.Handle) error {
+func removeHideAttributes(fd windows.Handle) error {
 	var du FILE_BASIC_INFO
 	if err := windows.GetFileInformationByHandleEx(fd, windows.FileBasicInfo, (*byte)(unsafe.Pointer(&du)), uint32(unsafe.Sizeof(du))); err != nil {
 		return err
@@ -112,7 +112,7 @@ func posixSemanticsRemove(fd windows.Handle) error {
 		return nil
 	}
 	if err == windows.ERROR_ACCESS_DENIED {
-		if err := removeHideAttrbutes(fd); err != nil {
+		if err := removeHideAttributes(fd); err != nil {
 			return err
 		}
 		if err = windows.SetFileInformationByHandle(fd, windows.FileDispositionInfoEx, (*byte)(unsafe.Pointer(&infoEx)), uint32(unsafe.Sizeof(infoEx))); err == nil {
@@ -131,13 +131,13 @@ func posixSemanticsRemove(fd windows.Handle) error {
 	if err != windows.ERROR_ACCESS_DENIED {
 		return err
 	}
-	if err := removeHideAttrbutes(fd); err != nil {
+	if err := removeHideAttributes(fd); err != nil {
 		return err
 	}
 	return windows.SetFileInformationByHandle(fd, windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)))
 }
 
-func remove(name string) error {
+func Remove(name string) error {
 	nameUTF16, err := windows.UTF16PtrFromString(name)
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func isRetryErr(err error) bool {
 }
 
 func windowsLink(oldpath, newpath string) (err error) {
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		if err = os.Link(oldpath, newpath); err == nil {
 			_ = os.Remove(oldpath)
 			return nil
@@ -216,7 +216,7 @@ func FinalizeObject(oldpath string, newpath string) (err error) {
 	if !isRetryErr(err) {
 		return
 	}
-	for tries := 0; tries < len(delay); tries++ {
+	for tries := range delay {
 		/*
 		 * We assume that some other process had the source or
 		 * destination file open at the wrong moment and retry.

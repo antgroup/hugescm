@@ -65,7 +65,7 @@ func splitPathInternal(p string) []string {
 	return sv
 }
 
-// SplitPath skip empty string suggestcap is suggest cap
+// SplitPath skip empty string
 func SplitPath(p string) []string {
 	if len(p) == 0 {
 		return nil

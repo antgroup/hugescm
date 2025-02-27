@@ -4,6 +4,7 @@
 package ssh
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -104,6 +105,45 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 		return nil, err
 	}
 	cmd.Stdin = sparseDirsGenReader(opts.SparseDirs)
+	if cmd.Reader, err = cmd.StdoutPipe(); err != nil {
+		_ = cmd.Close()
+		return nil, err
+	}
+	if err := cmd.Start(commandArgs); err != nil {
+		_ = cmd.Close()
+		return nil, err
+	}
+	zr, err := zstd.NewReader(cmd)
+	if err != nil {
+		_ = cmd.Close()
+		return nil, err
+	}
+	return &decompressReader{decoder: zr, cmd: cmd}, nil
+}
+
+func (c *client) BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth int) (transport.SessionReader, error) {
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		buf := bufio.NewWriter(pw)
+		defer buf.Flush()
+		for _, o := range oids {
+			_, _ = buf.WriteString(o.String())
+			_ = buf.WriteByte('\n')
+		}
+		_ = buf.WriteByte('\n')
+	}()
+	psArgs := []string{"zeta-serve", "metadata", fmt.Sprintf("'%s'", c.Path), "--batch"}
+	if depth >= 0 {
+		psArgs = append(psArgs, "--depth="+strconv.Itoa(depth))
+	}
+	psArgs = append(psArgs, "--zstd")
+	commandArgs := strings.Join(psArgs, " ")
+	cmd, err := c.NewBaseCommand(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cmd.Stdin = pr
 	if cmd.Reader, err = cmd.StdoutPipe(); err != nil {
 		_ = cmd.Close()
 		return nil, err

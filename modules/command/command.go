@@ -50,7 +50,7 @@ type Command struct {
 	rawCmd    *exec.Cmd
 	context   context.Context
 	startTime time.Time
-	s         *shepherder
+	s         *shepherd
 	detached  bool
 	once      sync.Once
 	waitError error

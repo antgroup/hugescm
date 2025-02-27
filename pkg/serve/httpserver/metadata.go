@@ -177,7 +177,7 @@ func (s *Server) BatchMetadata(w http.ResponseWriter, r *Request) {
 	}
 	oids, err := protocol.ReadInputOIDs(r.Body)
 	if err != nil {
-		renderFailureFormat(w, r.Request, http.StatusBadRequest, "batch-oids: %v", err)
+		renderFailureFormat(w, r.Request, http.StatusBadRequest, "batch metadata: %v", err)
 		return
 	}
 	rr, err := s.open(w, r)

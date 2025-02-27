@@ -187,7 +187,7 @@ func (s *Server) GetSparseMetadata(e *Session, c *Metadata) int {
 func (s *Server) BatchMetadata(e *Session, depth int, useZSTD bool) int {
 	oids, err := protocol.ReadInputOIDs(e)
 	if err != nil {
-		e.WriteError("batch-oids: %v", err)
+		e.WriteError("batch-metadata: %v", err)
 		return 400
 	}
 	rr, err := s.open(e)

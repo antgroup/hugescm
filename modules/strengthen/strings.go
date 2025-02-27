@@ -12,9 +12,9 @@ var (
 	ErrNotKeyID  = errors.New("not key id")
 )
 
-// StrSplitSkipEmpty skip empty string suggestcap is suggest cap
-func StrSplitSkipEmpty(s string, sep byte, suggestcap int) []string {
-	sv := make([]string, 0, suggestcap)
+// StrSplitSkipEmpty skip empty string
+func StrSplitSkipEmpty(s string, sep byte, cap int) []string {
+	sv := make([]string, 0, cap)
 	var first, i int
 	for ; i < len(s); i++ {
 		if s[i] != sep {
@@ -82,29 +82,6 @@ func ErrorCat(sv ...string) error {
 	return errors.New(StrCat(sv...))
 }
 
-func ParseUID(glid string) (int64, error) {
-	if !strings.HasPrefix(glid, "user-") {
-		return 0, ErrNotUserID
-	}
-	return strconv.ParseInt(glid[5:], 10, 64)
-}
-
-func DecodeUID(glid string) int64 {
-	if !strings.HasPrefix(glid, "user-") {
-		uid, _ := strconv.ParseInt(glid, 10, 64)
-		return uid
-	}
-	uid, _ := strconv.ParseInt(glid[5:], 10, 64)
-	return uid
-}
-
-func ParseKID(glid string) (int64, error) {
-	if !strings.HasPrefix(glid, "key-") {
-		return 0, ErrNotKeyID
-	}
-	return strconv.ParseInt(glid[4:], 10, 64)
-}
-
 func SimpleAtob(s string, dv bool) bool {
 	switch strings.ToLower(s) {
 	case "true", "yes", "on", "1":
@@ -133,7 +110,7 @@ func toLower(c byte) byte {
 }
 
 var (
-	ErrSyntaxSize = errors.New("size synatx error")
+	ErrSyntaxSize = errors.New("size syntax error")
 )
 
 func ParseSize(data string) (int64, error) {

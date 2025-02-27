@@ -21,11 +21,11 @@ var (
 	ZeroToken Token
 )
 
-var rander = rand.Reader // random function
+var rd = rand.Reader // random function
 
 // NewRandom random
 func NewRandom() (RID, error) {
-	return NewRandomFromReader(rander)
+	return NewRandomFromReader(rd)
 }
 
 // NewRandomFromReader returns a UUID based on bytes read from a given io.Reader.
@@ -68,7 +68,7 @@ func NewRID() string {
 
 func NewToken() string {
 	var token Token
-	_, err := io.ReadFull(rander, token[:])
+	_, err := io.ReadFull(rd, token[:])
 	if err != nil {
 		return base58.Encode(ZeroToken[:])
 	}
@@ -77,6 +77,6 @@ func NewToken() string {
 
 func NewRandomString(length int) string {
 	buf := make([]byte, length)
-	_, _ = io.ReadFull(rander, buf[:])
+	_, _ = io.ReadFull(rd, buf[:])
 	return base64.URLEncoding.EncodeToString(buf)[0:length]
 }

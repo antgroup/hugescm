@@ -50,6 +50,8 @@ type Transport interface {
 	// FetchMetadata: support base metadata and sparse metadata.
 	//  target: commit or tag
 	FetchMetadata(ctx context.Context, target plumbing.Hash, opts *MetadataOptions) (SessionReader, error)
+	// BatchMetadata: batch download metadata
+	BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth int) (SessionReader, error)
 	// BatchObjects: batch download objects AKA blobs
 	BatchObjects(ctx context.Context, oids []plumbing.Hash) (SessionReader, error)
 	// GetObject: get large object, support Range feature

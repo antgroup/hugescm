@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/pkg/transport"
@@ -23,16 +22,13 @@ var (
 )
 
 // BatchObjects: zeta-serve objects "group/mono-zeta" --batch
-func (c *client) BatchObjects(ctx context.Context, oids []plumbing.Hash) (transport.SessionReader, error) {
-	var wg sync.WaitGroup
-	wg.Add(1)
+func (c *client) BatchObjects(ctx context.Context, objects []plumbing.Hash) (transport.SessionReader, error) {
 	pr, pw := io.Pipe()
 	go func() {
-		defer wg.Done()
 		defer pw.Close()
 		buf := bufio.NewWriter(pw)
 		defer buf.Flush()
-		for _, o := range oids {
+		for _, o := range objects {
 			_, _ = buf.WriteString(o.String())
 			_ = buf.WriteByte('\n')
 		}

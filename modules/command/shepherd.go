@@ -20,7 +20,7 @@ type RunOpts struct {
 	NoSetpgid bool
 }
 
-type Shepherder interface {
+type Shepherd interface {
 	// NewFromOptions: Create command with options
 	NewFromOptions(ctx context.Context, opt *RunOpts, name string, arg ...string) *Command
 	// New: Create a process with environment variable isolation
@@ -29,33 +29,33 @@ type Shepherder interface {
 	ProcessesCount() int32
 }
 
-type shepherder struct {
+type shepherd struct {
 	env.Builder
 	count int32
 }
 
-func (s *shepherder) inc() int32 {
+func (s *shepherd) inc() int32 {
 	return atomic.AddInt32(&s.count, 1)
 }
 
-func (s *shepherder) dec() int32 {
+func (s *shepherd) dec() int32 {
 	return atomic.AddInt32(&s.count, -1)
 }
 
-func (s *shepherder) ProcessesCount() int32 {
+func (s *shepherd) ProcessesCount() int32 {
 	return atomic.LoadInt32(&s.count)
 }
 
-func NewShepherder(b env.Builder) Shepherder {
-	return &shepherder{Builder: b}
+func NewShepherd(b env.Builder) Shepherd {
+	return &shepherd{Builder: b}
 }
 
 // New new command:
-func (s *shepherder) New(ctx context.Context, repoPath string, name string, arg ...string) *Command {
+func (s *shepherd) New(ctx context.Context, repoPath string, name string, arg ...string) *Command {
 	return s.NewFromOptions(ctx, &RunOpts{RepoPath: repoPath}, name, arg...)
 }
 
-func (s *shepherder) NewFromOptions(ctx context.Context, opt *RunOpts, name string, arg ...string) *Command {
+func (s *shepherd) NewFromOptions(ctx context.Context, opt *RunOpts, name string, arg ...string) *Command {
 	cmd := exec.CommandContext(ctx, name, arg...)
 	cmd.Dir = opt.RepoPath
 	if len(opt.Environ) == 0 {
@@ -77,20 +77,20 @@ func (s *shepherder) NewFromOptions(ctx context.Context, opt *RunOpts, name stri
 }
 
 var (
-	shepherd = NewShepherder(env.NewBuilder())
+	sd = NewShepherd(env.NewBuilder())
 )
 
 // Create an isolated process based on shepherd
 func NewFromOptions(ctx context.Context, opt *RunOpts, name string, arg ...string) *Command {
-	return shepherd.NewFromOptions(ctx, opt, name, arg...)
+	return sd.NewFromOptions(ctx, opt, name, arg...)
 }
 
 // Create an isolated process based on shepherd
 func New(ctx context.Context, repoPath string, name string, arg ...string) *Command {
-	return shepherd.New(ctx, repoPath, name, arg...)
+	return sd.New(ctx, repoPath, name, arg...)
 }
 
 // ProcessesCount: Get the number of child processes of the default shepherd
 func ProcessesCount() int32 {
-	return shepherd.ProcessesCount()
+	return sd.ProcessesCount()
 }

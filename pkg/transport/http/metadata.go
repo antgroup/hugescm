@@ -4,6 +4,7 @@
 package http
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -93,6 +94,50 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if method == http.MethodPost {
 		req.Header.Set("Content-Type", ZETA_MIME_MULTI_OBJECTS)
 	}
+	req.Header.Set("Accept", ZETA_MIME_COMPRESS_METADATA)
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode > 299 || resp.StatusCode < 200 {
+		defer resp.Body.Close()
+		return nil, parseError(resp)
+	}
+	rc, err := newDecompressReader(resp.Body, resp.Header)
+	if err != nil {
+		_ = resp.Body.Close()
+		return nil, err
+	}
+	return &sessionReader{
+		Reader: rc,
+		Closer: rc,
+	}, nil
+}
+
+func (c *client) BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth int) (transport.SessionReader, error) {
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		buf := bufio.NewWriter(pw)
+		defer buf.Flush()
+		for _, o := range oids {
+			_, _ = buf.WriteString(o.String())
+			_ = buf.WriteByte('\n')
+		}
+		_ = buf.WriteByte('\n')
+	}()
+
+	metadataURL := c.baseURL.JoinPath("metadata", "batch")
+	if depth >= 0 {
+		q := make(url.Values)
+		q.Set("depth", strconv.Itoa(depth))
+		metadataURL.RawQuery = q.Encode()
+	}
+	req, err := c.newRequest(ctx, http.MethodPost, metadataURL.String(), pr)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", ZETA_MIME_MULTI_OBJECTS)
 	req.Header.Set("Accept", ZETA_MIME_COMPRESS_METADATA)
 	resp, err := c.Do(req)
 	if err != nil {

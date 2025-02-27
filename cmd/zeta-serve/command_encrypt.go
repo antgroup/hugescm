@@ -56,7 +56,7 @@ func (c *Encrypt) Run(globals *Globals) error {
 				return "", err
 			}
 			if sz := si.Size(); sz > serve.MiByte {
-				return "", fmt.Errorf("file size too large: %s", strengthen.HumanateSize(sz))
+				return "", fmt.Errorf("file size too large: %s", strengthen.FormatSize(sz))
 			}
 			b, err := io.ReadAll(fd)
 			if err != nil {

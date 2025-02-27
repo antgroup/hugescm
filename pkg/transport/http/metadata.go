@@ -67,9 +67,9 @@ func newDecompressReader(rc io.ReadCloser, h http.Header) (io.ReadCloser, error)
 func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *transport.MetadataOptions) (transport.SessionReader, error) {
 	var body io.Reader
 	method := http.MethodGet
-	if len(opts.Sparses) != 0 {
+	if len(opts.SparseDirs) != 0 {
 		method = http.MethodPost
-		body = sparsesGenReader(opts.Sparses)
+		body = sparsesGenReader(opts.SparseDirs)
 	}
 	metadataURL := c.baseURL.JoinPath("metadata", target.String())
 	q := make(url.Values)

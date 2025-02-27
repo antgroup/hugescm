@@ -141,7 +141,7 @@ func (r *Repository) dragonflyGet(ctx context.Context, objects []*transport.Repr
 				fmt.Fprintf(os.Stderr, "dfget download %s %s\n", o.OID, err)
 				return err
 			}
-			term.Fprintf(os.Stderr, "\x1b[2K\r\x1b[38;2;72;198;239m[%d/%d]\x1b[0m Download %s completed, size: %s %s: %v [Dragonfly P2P]\n", i+1, len(objects), o.OID, strengthen.HumanateSize(o.CompressedSize), W("time spent"), time.Since(start).Truncate(time.Millisecond))
+			term.Fprintf(os.Stderr, "\x1b[2K\r\x1b[38;2;72;198;239m[%d/%d]\x1b[0m Download %s completed, size: %s %s: %v [Dragonfly P2P]\n", i+1, len(objects), o.OID, strengthen.FormatSize(o.CompressedSize), W("time spent"), time.Since(start).Truncate(time.Millisecond))
 		}
 		return nil
 	}

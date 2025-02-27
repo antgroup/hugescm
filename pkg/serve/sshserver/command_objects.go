@@ -92,7 +92,7 @@ func (c *Objects) Exec(ctx *RunCtx) int {
 func (s *Server) BatchObjects(e *Session) int {
 	oids, err := protocol.ReadInputOIDs(e)
 	if err != nil {
-		return e.ExitFormat(400, "batch-oids: %v", err)
+		return e.ExitFormat(400, "batch-objects: %v", err)
 	}
 	rr, err := s.open(e)
 	if err != nil {
@@ -127,13 +127,13 @@ func (s *Server) BatchObjects(e *Session) int {
 	}
 	for _, oid := range oids {
 		if err := writeFunc(oid); err != nil {
-			logrus.Errorf("batch-oids write blob %s error: %v", oid, err)
+			logrus.Errorf("batch-objects write blob %s error: %v", oid, err)
 			return e.ExitError(err)
 		}
 	}
 	_ = protocol.WriteObjectsItem(cw, nil, "", 0) // FLUSH
 	if _, err := cw.Finish(); err != nil {
-		logrus.Errorf("batch-oids finish crc64 error: %v", err)
+		logrus.Errorf("batch-objects finish crc64 error: %v", err)
 	}
 	return 0
 }

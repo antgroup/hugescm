@@ -157,7 +157,7 @@ func (s *Server) PutObject(e *Session, refname string, oid plumbing.Hash, compre
 	if err != nil {
 		return e.ExitFormat(409, "upload object '%s' error: %v", oid, err)
 	}
-	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", e.UserName, oid, strengthen.HumanateSize(size), e.makeRemoteURL(s.Endpoint), refname)
+	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", e.UserName, oid, strengthen.FormatSize(size), e.makeRemoteURL(s.Endpoint), refname)
 	ZetaEncodeVND(e, &protocol.ErrorCode{Code: 200, Message: "OK"})
 	return 0
 }

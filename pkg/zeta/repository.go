@@ -688,7 +688,7 @@ func (r *Repository) Postflight(ctx context.Context) error {
 	if len(oids) == 0 {
 		return nil
 	}
-	tr.Fprintf(os.Stderr, "postflight: remove large files in extreme mode: %d, reduce: %s.", len(oids), strengthen.HumanateSize(totalSize))
+	tr.Fprintf(os.Stderr, "postflight: remove large files in extreme mode: %d, reduce: %s.", len(oids), strengthen.FormatSize(totalSize))
 	return nil
 }
 

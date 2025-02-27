@@ -102,7 +102,7 @@ func (d *ODB) doTransferFallback(ctx context.Context, oid plumbing.Hash, transfe
 		return err
 	}
 	if mode == SINGLE_BAR {
-		fmt.Fprintf(os.Stderr, "\x1b[2K\rDownload %s completed, size: %s %s: %v\n", oid, strengthen.HumanateSize(si.Size()), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
+		fmt.Fprintf(os.Stderr, "\x1b[2K\rDownload %s completed, size: %s %s: %v\n", oid, strengthen.FormatSize(si.Size()), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ func (d *ODB) DoTransfer(ctx context.Context, oid plumbing.Hash, transfer Transf
 		return err
 	}
 	if mode == SINGLE_BAR {
-		fmt.Fprintf(os.Stderr, "\x1b[2K\rDownload %s completed, size: %s %s: %v\n", oid, strengthen.HumanateSize(si.Size()), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
+		fmt.Fprintf(os.Stderr, "\x1b[2K\rDownload %s completed, size: %s %s: %v\n", oid, strengthen.FormatSize(si.Size()), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
 	}
 	return nil
 }

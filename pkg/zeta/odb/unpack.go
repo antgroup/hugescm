@@ -6,6 +6,7 @@ package odb
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -89,7 +90,7 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 	if err := ur.Preserve(); err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "%s: %d <%s>, %s: %v\n", tr.W("Metadata download completed, total"), count, strengthen.HumanateSize(readBytes), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "%s: %d <%s>, %s: %v\n", tr.W("Metadata download completed, total"), count, strengthen.FormatSize(readBytes), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
 	return nil
 }
 
@@ -108,11 +109,12 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 		return err
 	}
 	if !bytes.Equal(magic[:], blobStreamMagic[:]) {
-		fmt.Fprintf(os.Stderr, "blob transport magic error: %s\n", magic)
-		return fmt.Errorf("blob transport magic error")
+		message := fmt.Sprintf("unexpected batch objects magic '%c' '%c' '%c' '%c'", magic[0], magic[1], magic[2], magic[3])
+		fmt.Fprintln(os.Stderr, message)
+		return errors.New(message)
 	}
 	if _, err := io.ReadFull(cr, version[:]); err != nil {
-		fmt.Fprintf(os.Stderr, "unexpected metadata version error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unexpected batch objects version error: %v\n", err)
 		return err
 	}
 	if _, err := io.ReadFull(cr, reserved[:]); err != nil {
@@ -128,7 +130,7 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 		var length uint32
 		if err := binary.Read(cr, binary.BigEndian, &length); err != nil {
 			b.Exit()
-			fmt.Fprintf(os.Stderr, "unexpected metadata length, error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "unexpected object length, error: %v\n", err)
 			return err
 		}
 		if length == 0 {
@@ -137,7 +139,7 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 		count++
 		if _, err := io.ReadFull(cr, oidBytes[:]); err != nil {
 			b.Exit()
-			fmt.Fprintf(os.Stderr, "fail to read blob hash, err: %v\n", err)
+			fmt.Fprintf(os.Stderr, "unexpected object hash, error: %v\n", err)
 			return err
 		}
 		objectSize := length - plumbing.HASH_HEX_SIZE
@@ -158,6 +160,6 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 		return err
 	}
 	b.Finish()
-	fmt.Fprintf(os.Stderr, "%s: %d <%s>, %s: %v\n", tr.W("Files download completed, total"), count, strengthen.HumanateSize(readBytes), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "%s: %d <%s>, %s: %v\n", tr.W("Files download completed, total"), count, strengthen.FormatSize(readBytes), tr.W("time spent"), time.Since(start).Truncate(time.Millisecond))
 	return nil
 }

@@ -62,7 +62,7 @@ func (r *Repository) fetch(ctx context.Context, t transport.Transport, opts *Fet
 		Depth:      opts.Depth,
 	}
 	if r.Core.Snapshot {
-		metaOpts.Sparses = r.Core.SparseDirs
+		metaOpts.SparseDirs = r.Core.SparseDirs
 	}
 	rc, err := t.FetchMetadata(ctx, opts.Target, metaOpts)
 	if err != nil {

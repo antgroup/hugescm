@@ -94,7 +94,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if opts.Depth >= 0 {
 		psArgs = append(psArgs, "--depth="+strconv.Itoa(opts.Depth))
 	}
-	if len(opts.Sparses) != 0 {
+	if len(opts.SparseDirs) != 0 {
 		psArgs = append(psArgs, "--sparse")
 	}
 	psArgs = append(psArgs, "--zstd")
@@ -103,7 +103,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	if err != nil {
 		return nil, err
 	}
-	cmd.Stdin = sparsesGenReader(opts.Sparses)
+	cmd.Stdin = sparsesGenReader(opts.SparseDirs)
 	if cmd.Reader, err = cmd.StdoutPipe(); err != nil {
 		_ = cmd.Close()
 		return nil, err

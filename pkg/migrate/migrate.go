@@ -633,7 +633,7 @@ func (m *Migrator) cleanup(ctx context.Context) error {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "\x1b[38;2;72;198;239m[%d/%d]\x1b[0m %s: \x1b[38;2;32;225;215m%s\x1b[0m %s: \x1b[38;2;72;198;239m%s\x1b[0m\n",
-		m.stepCurrent, m.stepEnd, tr.W("Repository"), m.to, tr.W("size"), strengthen.HumanateSize(diskSize))
+		m.stepCurrent, m.stepEnd, tr.W("Repository"), m.to, tr.W("size"), strengthen.FormatSize(diskSize))
 	if err := m.checkout(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta reset error: %s\n", err)
 		return err

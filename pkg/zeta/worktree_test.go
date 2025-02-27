@@ -246,17 +246,17 @@ func TestCalculateChunk(t *testing.T) {
 	chunks := calculateChunk(strengthen.GiByte*10+strengthen.MiByte, strengthen.GiByte)
 	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*10+strengthen.MiByte)
 	for i, c := range chunks {
-		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
+		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
 	chunks = calculateChunk(strengthen.GiByte*1+strengthen.MiByte, config.FragmentSize)
 	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
 	for i, c := range chunks {
-		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
+		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
 	chunks = calculateChunk(3221000000, config.FragmentSize)
 	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
 	for i, c := range chunks {
-		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
+		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
 }
 
@@ -264,12 +264,12 @@ func TestCalculateChunk2(t *testing.T) {
 	chunks := calculateChunk(strengthen.GiByte*10-strengthen.MiByte, strengthen.GiByte)
 	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*10+strengthen.MiByte)
 	for i, c := range chunks {
-		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
+		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
 	chunks = calculateChunk(strengthen.GiByte*1, config.FragmentSize)
 	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
 	for i, c := range chunks {
-		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.HumanateSize(c.size))
+		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
 }
 

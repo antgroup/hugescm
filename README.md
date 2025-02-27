@@ -47,7 +47,7 @@ docker run --rm -i -v "$TOPLEVEL:/work" amake/innosetup xxxxx.iss
 
 Then you can generate the installation package. Before that, we need to run `bali --target=windows --arch=amd64` to build the Windows platform binary.
 
-Note: On a macOS machine with an Apple Silicon chip, you can use Orbstack to open Rosetta and run the image to make a Windows installation package.
+Note: On a macOS machine with an Apple Silicon chip, you can use OrbStack to open Rosetta and run the image to make a Windows installation package.
 
 ## Use
 
@@ -118,7 +118,7 @@ We added a `Size` field to the `TreeEntry` in our object model design, allowing 
 
 ### On-demand Access
 
-Initially, zeya only supported downloading objects related to specific commits and allowed the deletion of related blobs after checkout. However, user scenarios turned out to be complex. We introduced automatic downloading of missing objects for `zeta cat`. If you want to disable this feature, set the environment variable `ZETA_CORE_PROMISOR=0`. Additionally, we've implemented automatic downloading of missing objects for merge scenarios as well.
+Initially, zeta only supported downloading objects related to specific commits and allowed the deletion of related blobs after checkout. However, user scenarios turned out to be complex. We introduced automatic downloading of missing objects for `zeta cat`. If you want to disable this feature, set the environment variable `ZETA_CORE_PROMISOR=0`. Additionally, we've implemented automatic downloading of missing objects for merge scenarios as well.
 
 ### Checkout single file
 

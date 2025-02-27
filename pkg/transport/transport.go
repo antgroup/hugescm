@@ -31,7 +31,7 @@ const (
 )
 
 type MetadataOptions struct {
-	Sparses    []string
+	SparseDirs []string
 	DeepenFrom plumbing.Hash
 	Have       plumbing.Hash
 	Deepen     int

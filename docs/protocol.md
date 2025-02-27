@@ -122,7 +122,7 @@ zeta-serve ls-remote "group/mono-zeta" --reference "${REFNAME}"
 ```json
 {
   "code":404,
-  "message":"repo linkcs not exist"
+  "message":"repo cs not exist"
 }
 ```
 
@@ -530,7 +530,7 @@ struct push_stream {
 
 
 
-推送协议采用 pktline 进行编码，用于展示进度以及结果，如果返回了字符串行 `unpack ok\nok branch`则表示分支更新成功。
+推送协议采用 `pktline` 进行编码，用于展示进度以及结果，如果返回了字符串行 `unpack ok\nok branch`则表示分支更新成功。
 
 服务端更新引用需要进行以下判断：
 
@@ -542,7 +542,7 @@ struct push_stream {
 
 + 更新引用前，元数据/Blob 应当先写入到（如未实现高可用的小文件存储，且以 DB/OSS 为后端） DB/OSS。
 
-在 Push 过程中，服务端会将状态使用 pktline 编码进行返回，使用 pktline 解码后，为状态 + 信息，关键字如下：
+在 Push 过程中，服务端会将状态使用 `pktline` 编码进行返回，使用 `pktline` 解码后，为状态 + 信息，关键字如下：
 
 | 关键字 | 用途 |
 | --- | --- |

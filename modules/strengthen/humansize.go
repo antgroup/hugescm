@@ -28,7 +28,7 @@ var (
 	sizes = []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
 )
 
-func HumanateSize(s int64) string {
+func FormatSize(s int64) string {
 	return humanateBytes(uint64(s), 1024, sizes)
 }
 

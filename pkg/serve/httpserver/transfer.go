@@ -413,7 +413,7 @@ func (s *Server) PutObject(w http.ResponseWriter, r *Request) {
 		renderFailureFormat(w, r.Request, http.StatusConflict, "upload object '%s' error: %v", err, sid)
 		return
 	}
-	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", checkName(r), sid, strengthen.HumanateSize(size), r.makeRemoteURL(), mux.Vars(r.Request)["refname"])
+	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", checkName(r), sid, strengthen.FormatSize(size), r.makeRemoteURL(), mux.Vars(r.Request)["refname"])
 	ZetaEncodeVND(w, &protocol.ErrorCode{Code: 200, Message: "OK"})
 }
 

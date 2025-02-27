@@ -104,10 +104,10 @@ func diff3MergeIndices[E comparable](ctx context.Context, o, a, b []E, algo Algo
 	addHunk := func(h Change, side int) {
 		hunks = append(hunks, &hunk{h.P1, side, h.Del, h.P2, h.Ins})
 	}
-	for i := 0; i < len(m1); i++ {
+	for i := range m1 {
 		addHunk(m1[i], 0)
 	}
-	for i := 0; i < len(m2); i++ {
+	for i := range m2 {
 		addHunk(m2[i], 2)
 	}
 	sort.Sort(hunkList(hunks))
@@ -217,9 +217,7 @@ func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, 
 	}
 
 	pushOk := func(xs []E) {
-		for j := 0; j < len(xs); j++ {
-			okLines = append(okLines, xs[j])
-		}
+		okLines = append(okLines, xs...)
 	}
 
 	isTrueConflict := func(rec []int) bool {
@@ -228,7 +226,7 @@ func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, 
 		}
 		var aoff = rec[1]
 		var boff = rec[5]
-		for j := 0; j < rec[2]; j++ {
+		for j := range rec[2] {
 			if a[j+aoff] != b[j+boff] {
 				return true
 			}

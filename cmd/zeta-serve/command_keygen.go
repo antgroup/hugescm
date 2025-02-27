@@ -85,7 +85,7 @@ func (c *Keygen) Run(g *Globals) error {
 	case "ECDSA":
 		return c.genECDSA()
 	default:
-		fmt.Fprintf(os.Stderr, "unsupport key type: %v\n", c.Type)
-		return errors.New("unsupport key type")
+		fmt.Fprintf(os.Stderr, "unsupported key type: %v\n", c.Type)
+		return errors.New("unsupported key type")
 	}
 }

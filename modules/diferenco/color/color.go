@@ -3,6 +3,8 @@ package color
 // TODO read colors from a github.com/go-git/go-git/plumbing/format/config.Config struct
 // TODO implement color parsing, see https://github.com/git/git/blob/v2.47.1/color.c
 
+import "maps"
+
 // Colors. See https://github.com/git/git/blob/v2.47.1/color.h#L25-L66.
 const (
 	Normal       = ""
@@ -124,9 +126,7 @@ var defaultColorConfig = ColorConfig{
 // NewColorConfig returns a new ColorConfig.
 func NewColorConfig(options ...ColorConfigOption) ColorConfig {
 	cc := make(ColorConfig)
-	for key, value := range defaultColorConfig {
-		cc[key] = value
-	}
+	maps.Copy(cc, defaultColorConfig)
 	for _, option := range options {
 		option(cc)
 	}

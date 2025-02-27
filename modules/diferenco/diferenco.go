@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	ErrUnsupportedAlgorithm = errors.New("unsupport algorithm")
+	ErrUnsupportedAlgorithm = errors.New("unsupported algorithm")
 )
 
 var (

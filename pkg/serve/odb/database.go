@@ -170,7 +170,7 @@ func (d *MetadataDB) Encode(ctx context.Context, oid plumbing.Hash, e object.Enc
 		return err
 	}
 	if _, err := d.ExecContext(ctx, "insert into objects(rid, hash, bindata) values(?, ?, ?) ON DUPLICATE KEY UPDATE rid = rid", d.rid, oid.String(), bindata); err != nil {
-		return fmt.Errorf("enocde object %s error: %w", oid, err)
+		return fmt.Errorf("encode object %s error: %w", oid, err)
 	}
 	return nil
 }

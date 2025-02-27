@@ -24,7 +24,7 @@ type ListObjectsResult struct {
 	CommonPrefixes []string           `xml:"CommonPrefixes>Prefix"` // You can think of commonprefixes as "folders" whose names end with the delimiter
 }
 
-// ObjectProperties defines Objecct properties
+// ObjectProperties defines Object properties
 type ObjectProperties struct {
 	XMLName      xml.Name  `xml:"Contents"`
 	Key          string    `xml:"Key"`                   // Object key

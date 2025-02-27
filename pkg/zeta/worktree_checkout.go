@@ -495,11 +495,11 @@ func (w *Worktree) resetWorktreeFast(ctx context.Context, t *object.Tree, bar Pr
 		b.Add(e)
 	}
 	cg := &checkoutGroup{
-		ch:     make(chan *checkoutEntry, 20), // 4 gorutine
+		ch:     make(chan *checkoutEntry, 20), // 4 goroutine
 		errors: make(chan error, batchLimit),
 		recv:   recv,
 	}
-	for i := 0; i < batchLimit; i++ {
+	for range batchLimit {
 		cg.run(newCtx, w, bar)
 	}
 	for _, e := range idx.Entries {

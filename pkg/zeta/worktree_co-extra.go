@@ -168,7 +168,7 @@ func (w *Worktree) resolveBatchObjects(ctx context.Context, root *object.Tree, r
 		larges: make([]*odb.TreeEntry, 0, 100),
 		small:  make([]*odb.TreeEntry, 0, 100),
 	}
-	largSize := w.largeSize()
+	largeSize := w.largeSize()
 	for br.Scan() {
 		p := path.Clean(strings.TrimSpace(br.Text()))
 		if p == "." || !matcher.Match(p) {
@@ -179,9 +179,9 @@ func (w *Worktree) resolveBatchObjects(ctx context.Context, root *object.Tree, r
 		if err != nil {
 			return nil, nil, err
 		}
-		entries.append(&odb.TreeEntry{Path: p, TreeEntry: e}, largSize)
+		entries.append(&odb.TreeEntry{Path: p, TreeEntry: e}, largeSize)
 		if e.Type() == object.BlobObject {
-			m.store(w.odb, e.Hash, e.Size, largSize)
+			m.store(w.odb, e.Hash, e.Size, largeSize)
 			continue
 		}
 		if e.Type() == object.FragmentsObject {
@@ -190,7 +190,7 @@ func (w *Worktree) resolveBatchObjects(ctx context.Context, root *object.Tree, r
 				return nil, nil, err
 			}
 			for _, ee := range fe.Entries {
-				m.store(w.odb, ee.Hash, int64(ee.Size), largSize)
+				m.store(w.odb, ee.Hash, int64(ee.Size), largeSize)
 			}
 			continue
 		}

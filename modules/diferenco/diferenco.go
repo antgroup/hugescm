@@ -71,7 +71,7 @@ func AlgorithmFromName(s string) (Algorithm, error) {
 	if a, ok := algorithmValueMap[strings.ToLower(s)]; ok {
 		return a, nil
 	}
-	return Unspecified, fmt.Errorf("unsupport algoritm '%s' %w", s, ErrUnsupportedAlgorithm)
+	return Unspecified, fmt.Errorf("unsupported algorithm '%s' %w", s, ErrUnsupportedAlgorithm)
 }
 
 // commonPrefixLength returns the length of the common prefix of two T slices.

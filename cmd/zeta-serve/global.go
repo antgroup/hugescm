@@ -34,6 +34,6 @@ func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 	return nil
 }
 
-type Debuger interface {
+type Debugger interface {
 	DbgPrint(format string, args ...any)
 }

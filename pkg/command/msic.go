@@ -24,7 +24,7 @@ var (
 )
 
 var (
-	ErrSyntaxSize        = errors.New("size synatx error")
+	ErrSyntaxSize        = errors.New("size syntax error")
 	ErrFlagsIncompatible = errors.New("flags incompatible")
 )
 
@@ -90,7 +90,7 @@ func SizeDecoder() kong.MapperFunc {
 }
 
 var (
-	typelen = map[string]int64{
+	typeLen = map[string]int64{
 		"seconds": 1,
 		"minutes": 60,
 		"hours":   60 * 60,
@@ -117,7 +117,7 @@ func parseTime(str string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	l := typelen[vv[1]]
+	l := typeLen[vv[1]]
 	if l == 0 {
 		return 0, fmt.Errorf("bad expiry-date %s", vv[1])
 	}

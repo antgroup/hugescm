@@ -37,7 +37,7 @@ WHERE     id = ?`
           updated_at
 FROM      users
 WHERE     username = ?`
-	sqlSearhUserByEmail = `SELECT    u.id,
+	sqlSearchUserByEmail = `SELECT    u.id,
           u.username,
           u.name,
           u.admin,
@@ -76,7 +76,7 @@ func (d *database) SearchUser(ctx context.Context, emailOrName string) (*User, e
 	var lockedAt sql.NullTime
 	if strings.Contains(emailOrName, "@") {
 		var u User
-		if err := d.QueryRowContext(ctx, sqlSearhUserByEmail, emailOrName).Scan(
+		if err := d.QueryRowContext(ctx, sqlSearchUserByEmail, emailOrName).Scan(
 			&u.ID, &u.UserName, &u.Name, &u.Administrator, &u.Email, &u.Type, &u.Password, &u.SignatureToken, &lockedAt, &u.CreatedAt, &u.UpdatedAt); err != nil {
 			return nil, err
 		}

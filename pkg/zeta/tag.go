@@ -153,12 +153,12 @@ func (r *Repository) NewTag(ctx context.Context, opts *NewTagOptions) error {
 	}
 	newRev := rev.Hash
 	if annotate {
-		singature := r.NewCommitter()
+		signature := r.NewCommitter()
 		tag := &object.Tag{
 			Object:     rev.Hash,
 			ObjectType: object.CommitObject,
 			Name:       opts.Name,
-			Tagger:     *singature,
+			Tagger:     *signature,
 			Content:    message,
 		}
 		if newRev, err = r.odb.WriteEncoded(tag); err != nil {

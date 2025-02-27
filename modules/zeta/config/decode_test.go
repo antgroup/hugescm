@@ -50,7 +50,7 @@ func TestDecode2(t *testing.T) {
 		if s == nil {
 			continue
 		}
-		if err := s.dispayTo(d, k); err != nil {
+		if err := s.displayTo(d, k); err != nil {
 			return
 		}
 	}
@@ -69,7 +69,7 @@ func TestDecodeZ(t *testing.T) {
 		if s == nil {
 			continue
 		}
-		if err := s.dispayTo(d, k); err != nil {
+		if err := s.displayTo(d, k); err != nil {
 			return
 		}
 	}

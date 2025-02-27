@@ -19,5 +19,5 @@ func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation t
 	case "ssh":
 		return ssh.NewTransport(ctx, endpoint, operation, verbose)
 	}
-	return nil, fmt.Errorf("unsupport protocol '%s'", endpoint.Protocol)
+	return nil, fmt.Errorf("unsupported protocol '%s'", endpoint.Protocol)
 }

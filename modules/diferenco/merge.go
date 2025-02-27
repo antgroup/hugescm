@@ -236,7 +236,7 @@ func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, 
 		return false
 	}
 
-	for i := 0; i < len(indices); i++ {
+	for i := range indices {
 		var x = indices[i]
 		var side = x[0]
 		if side == -1 {

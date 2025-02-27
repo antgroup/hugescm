@@ -100,7 +100,7 @@ func ReferencesSort(rs References, order string) error {
 		return nil
 	default:
 	}
-	return fmt.Errorf("unsupport references sort '%s'", order)
+	return fmt.Errorf("unsupported references sort '%s'", order)
 }
 
 func (r *Repository) ReferenceExists(ctx context.Context, refname string) error {

@@ -120,12 +120,12 @@ func (r *reader) Type() ObjectType {
 }
 
 const (
-	// ZstandardMagic: https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#frames
-	ZstandardMagic = 0xFD2FB528
+	// ZSTD_MAGIC: https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#frames
+	ZSTD_MAGIC = 0xFD2FB528
 )
 
-func isZstandardMagic(magic [4]byte) bool {
-	return binary.LittleEndian.Uint32(magic[:]) == ZstandardMagic
+func isZstdMagic(magic [4]byte) bool {
+	return binary.LittleEndian.Uint32(magic[:]) == ZSTD_MAGIC
 }
 
 func Decode(r io.Reader, oid plumbing.Hash, b Backend) (any, error) {
@@ -134,7 +134,7 @@ func Decode(r io.Reader, oid plumbing.Hash, b Backend) (any, error) {
 	if _, err = io.ReadFull(r, magic[:]); err != nil {
 		return nil, err
 	}
-	if isZstandardMagic(magic) {
+	if isZstdMagic(magic) {
 		zr, err := streamio.GetZstdReader(io.MultiReader(bytes.NewReader(magic[:]), r))
 		if err != nil {
 			return nil, err
@@ -197,7 +197,7 @@ func HashObject(r io.Reader) (plumbing.Hash, ObjectType, error) {
 	if _, err = io.ReadFull(r, magic[:]); err != nil {
 		return plumbing.ZeroHash, InvalidObject, err
 	}
-	if isZstandardMagic(magic) {
+	if isZstdMagic(magic) {
 		zr, err := streamio.GetZstdReader(io.MultiReader(bytes.NewReader(magic[:]), r))
 		if err != nil {
 			return plumbing.ZeroHash, InvalidObject, err
@@ -219,7 +219,7 @@ func HashObject(r io.Reader) (plumbing.Hash, ObjectType, error) {
 	case bytes.Equal(magic[:], TAG_MAGIC[:]):
 		t = TagObject
 	default:
-		return plumbing.ZeroHash, InvalidObject, fmt.Errorf("unsupport magic '%08x'", magic[:])
+		return plumbing.ZeroHash, InvalidObject, fmt.Errorf("unsupported magic '%08x'", magic[:])
 	}
 	hasher := plumbing.NewHasher()
 	if _, err := io.Copy(hasher, io.MultiReader(bytes.NewReader(magic[:]), r)); err != nil {

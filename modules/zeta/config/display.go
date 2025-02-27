@@ -73,7 +73,7 @@ func displayTo(d Display, zfg string) error {
 		if s == nil {
 			continue
 		}
-		if err := s.dispayTo(d, sectionKey); err != nil {
+		if err := s.displayTo(d, sectionKey); err != nil {
 			return err
 		}
 	}

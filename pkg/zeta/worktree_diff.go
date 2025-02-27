@@ -130,7 +130,7 @@ func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Chang
 	return filePatches, nil
 }
 
-func nameFromDifeName(from, to *diferenco.File) string {
+func nameFromDiffName(from, to *diferenco.File) string {
 	if from == nil && to == nil {
 		return ""
 	}
@@ -158,7 +158,7 @@ func (w *Worktree) fileStatWithContext(ctx context.Context, c *merkletrie.Change
 	if err != nil {
 		return nil, err
 	}
-	s := &object.FileStat{Name: nameFromDifeName(from, to)}
+	s := &object.FileStat{Name: nameFromDiffName(from, to)}
 	if isFragmentsA || isFragmentsB {
 		return s, nil
 	}

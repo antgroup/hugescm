@@ -9,15 +9,15 @@ import (
 	"github.com/antgroup/hugescm/modules/term"
 )
 
-type Debuger interface {
+type Debugger interface {
 	DbgPrint(format string, args ...any)
 }
 
-func NewDebuger(verbose bool) Debuger {
-	return &debuger{verbose: verbose}
+func NewDebugger(verbose bool) Debugger {
+	return &debugger{verbose: verbose}
 }
 
-type debuger struct {
+type debugger struct {
 	verbose bool
 }
 
@@ -46,7 +46,7 @@ func DbgPrint(format string, args ...any) {
 	_, _ = os.Stderr.Write(buffer.Bytes())
 }
 
-func (d debuger) DbgPrint(format string, args ...any) {
+func (d debugger) DbgPrint(format string, args ...any) {
 	if !d.verbose {
 		return
 	}
@@ -54,5 +54,5 @@ func (d debuger) DbgPrint(format string, args ...any) {
 }
 
 var (
-	_ Debuger = &debuger{}
+	_ Debugger = &debugger{}
 )

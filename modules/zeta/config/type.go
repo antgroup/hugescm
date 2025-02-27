@@ -38,20 +38,20 @@ var (
 
 func (b *Boolean) UnmarshalTOML(a any) error {
 	var s string
-	switch sdata := a.(type) {
+	switch data := a.(type) {
 	case fmt.Stringer:
-		s = sdata.String()
+		s = data.String()
 	case string:
-		s = sdata
+		s = data
 	case bool:
-		if sdata {
+		if data {
 			b.val = BOOLEAN_TRUE
 			return nil
 		}
 		b.val = BOOLEAN_FALSE
 		return nil
 	case int64:
-		if sdata != 0 {
+		if data != 0 {
 			b.val = BOOLEAN_TRUE
 			return nil
 		}
@@ -156,7 +156,7 @@ type Display interface {
 	Show(a any, keys ...string) error
 }
 
-func (s Section) dispayTo(d Display, sectionKey string) error {
+func (s Section) displayTo(d Display, sectionKey string) error {
 	for subKey, v := range s {
 		if err := d.Show(v, sectionKey, subKey); err != nil {
 			return err
@@ -341,7 +341,7 @@ func valuesToFloatArray(o any) []float64 {
 	return nil
 }
 
-func valulesAppend(raw any, val any) any {
+func valuesAppend(raw any, val any) any {
 	switch nv := val.(type) {
 	case string:
 		rv := valuesToStringArray(raw)
@@ -373,7 +373,7 @@ func (ss Sections) updateKey(key string, val any, append bool) (bool, error) {
 		return true, nil
 	}
 	if raw, ok := s[subKey]; ok && append {
-		s[subKey] = valulesAppend(raw, val)
+		s[subKey] = valuesAppend(raw, val)
 		return true, nil
 	}
 	s[subKey] = val

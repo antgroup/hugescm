@@ -88,7 +88,7 @@ func (c *Core) Overwrite(o *Core) {
 	}
 	c.CompressionALGO = overwrite(c.CompressionALGO, o.CompressionALGO)
 	c.Editor = overwrite(c.Editor, o.Editor)
-	// merge sparses dir
+	// merge sparse dirs
 	if len(o.SparseDirs) != 0 {
 		c.SparseDirs = o.SparseDirs
 	}

@@ -42,7 +42,7 @@ const (
 	BgBlue       = "\033[44m"
 	BgMagenta    = "\033[45m"
 	BgCyan       = "\033[46m"
-	BgWhilte     = "\033[47m"
+	BgWhite      = "\033[47m"
 	BgDefault    = "\033[49m"
 	Faint        = "\033[2m"
 	FaintItalic  = "\033[2;3m"

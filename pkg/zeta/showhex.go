@@ -89,16 +89,16 @@ func (b *binaryPrinter) doPrintln(a ...string) {
 	_ = b.WriteByte('\n')
 }
 func (b *binaryPrinter) writeBorder() error {
-	pannelStr := strings.Repeat("─", panelSize)
+	panelStr := strings.Repeat("─", panelSize)
 	h8 := strings.Repeat("─", 8)
-	b.doPrintln("┌", h8, "┬", pannelStr, "┬", pannelStr, "┬", h8, "┬", h8, "┐")
+	b.doPrintln("┌", h8, "┬", panelStr, "┬", panelStr, "┬", h8, "┬", h8, "┐")
 	return b.flush()
 }
 
 func (b *binaryPrinter) writeFooter() error {
-	pannelStr := strings.Repeat("─", panelSize)
+	panelStr := strings.Repeat("─", panelSize)
 	h8 := strings.Repeat("─", 8)
-	b.doPrintln("└", h8, "┴", pannelStr, "┴", pannelStr, "┴", h8, "┴", h8, "┘")
+	b.doPrintln("└", h8, "┴", panelStr, "┴", panelStr, "┴", h8, "┴", h8, "┘")
 	return b.flush()
 }
 

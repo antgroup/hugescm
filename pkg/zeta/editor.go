@@ -32,7 +32,7 @@ var (
 	}
 )
 
-// searchEditor: seach editor
+// searchEditor: search editor
 //
 //	see: https://github.com/microsoft/terminal/discussions/16440
 //	windows fallback: use git-for-windows vim ??

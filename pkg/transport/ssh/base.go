@@ -136,9 +136,9 @@ func (c *client) traceSSH(cc ssh.Conn) {
 	}
 	// Remote protocol version 2.0, remote software version Bassinet-7.9.9
 	// SSH-2.0-HugeSCM-0.16.2
-	protocolVersion, soffwareVersion, ok := strings.Cut(strings.TrimPrefix(string(cc.ServerVersion()), "SSH-"), "-")
+	protocolVersion, softwareVersion, ok := strings.Cut(strings.TrimPrefix(string(cc.ServerVersion()), "SSH-"), "-")
 	if ok {
-		c.DbgPrint("Remote protocol version %s, remote software version %s", protocolVersion, soffwareVersion)
+		c.DbgPrint("Remote protocol version %s, remote software version %s", protocolVersion, softwareVersion)
 	}
 }
 

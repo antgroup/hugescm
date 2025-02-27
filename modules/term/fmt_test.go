@@ -31,7 +31,7 @@ func TestSanitized(t *testing.T) {
 
 func TestTable(t *testing.T) {
 	table := make([]int, 0, 256)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		// iscntrl: i < 0x20 || i == 0x7f
 		if i < 0x20 || i == 0x7f {
 			table = append(table, CHAR_CONTROL)

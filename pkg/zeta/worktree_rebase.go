@@ -270,7 +270,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 	w.DbgPrint("%s", md.REBASE_HEAD)
 	last, err := w.odb.Commit(ctx, md.LAST)
 	if err != nil {
-		die_error("unbale open last tree: %v", err)
+		die_error("unable open last tree: %v", err)
 		return err
 	}
 	resolvedTree, err := w.writeIndexAsTree(ctx, last.Tree, false)
@@ -304,7 +304,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 	}
 	ontoTree, err := w.getTreeFromCommitHash(ctx, md.ONTO)
 	if err != nil {
-		die_error("unabkle resolve onto: %v", err)
+		die_error("unable resolve onto: %v", err)
 		return err
 	}
 	mergeDriver := w.resolveMergeDriver()

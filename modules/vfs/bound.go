@@ -19,7 +19,7 @@ const (
 // a base dir.
 // Prefer this fs implementation over ChrootOS.
 //
-// Behaviours of note:
+// Behaviors of note:
 //  1. Read and write operations can only be directed to files which descends
 //     from the base dir.
 //  2. Symlinks don't have their targets modified, and therefore can point

@@ -23,7 +23,7 @@ import (
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
 
-// MergeOptions describes how a merge should be erformed
+// MergeOptions describes how a merge should be performed
 type MergeOptions struct {
 	From string // From branch
 	// Requires a merge to be fast forward only. If this is true, then a merge will

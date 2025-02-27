@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrUnsupportCompressMethod = errors.New("unsupported compress method")
-	ErrMistakeHashText         = errors.New("mistake hash text")
-	ErrUnsupportedObject       = errors.New("unsupported object type")
-	ErrMismatchedMagic         = errors.New("mismatched magic")
-	ErrMismatchedVersion       = errors.New("mismatched version")
+	ErrUnsupportedCompressMethod = errors.New("unsupported compress method")
+	ErrMistakeHashText           = errors.New("mistake hash text")
+	ErrUnsupportedObject         = errors.New("unsupported object type")
+	ErrMismatchedMagic           = errors.New("mismatched magic")
+	ErrMismatchedVersion         = errors.New("mismatched version")
 )
 
 type ErrMismatchedObject struct {

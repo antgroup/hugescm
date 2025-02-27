@@ -700,8 +700,8 @@ func (w *Worktree) doUpdateFileToIndex(e *index.Entry, filename string, h plumbi
 	return nil
 }
 
-// RemoveLegecy removes files from the working tree and from the index.
-func (w *Worktree) RemoveLegecy(path string) (plumbing.Hash, error) {
+// RemoveLegacy removes files from the working tree and from the index.
+func (w *Worktree) RemoveLegacy(path string) (plumbing.Hash, error) {
 	// TODO(mcuadros): remove plumbing.Hash from signature at v5.
 	idx, err := w.odb.Index()
 	if err != nil {

@@ -156,7 +156,7 @@ func (e *Encoder) WriteIndex(fd *os.File) error {
 		return err
 	}
 	var fanoutStore uint32
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		fanoutStore += fanout[i]
 		if err := binary.WriteUint32(w, fanoutStore); err != nil {
 			return err

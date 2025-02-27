@@ -9,21 +9,21 @@ import "context"
 const MaxChainLen = 63
 
 type histogram[E comparable] struct {
-	tokenOccurances map[E][]int
+	tokenOccurrences map[E][]int
 }
 
 func (h *histogram[E]) populate(a []E) {
 	for i, e := range a {
-		if p, ok := h.tokenOccurances[e]; ok {
-			h.tokenOccurances[e] = append(p, i)
+		if p, ok := h.tokenOccurrences[e]; ok {
+			h.tokenOccurrences[e] = append(p, i)
 			continue
 		}
-		h.tokenOccurances[e] = []int{i}
+		h.tokenOccurrences[e] = []int{i}
 	}
 }
 
-func (h *histogram[E]) numTokenOccurances(e E) int {
-	if p, ok := h.tokenOccurances[e]; ok {
+func (h *histogram[E]) numTokenOccurrences(e E) int {
+	if p, ok := h.tokenOccurrences[e]; ok {
 		return len(p)
 	}
 	return 0
@@ -32,7 +32,7 @@ func (h *histogram[E]) numTokenOccurances(e E) int {
 func (h *histogram[E]) clear() {
 	// runtime: clear() is slow for maps with big capacity and small number of items
 	// https://github.com/golang/go/issues/70617
-	h.tokenOccurances = make(map[E][]int)
+	h.tokenOccurrences = make(map[E][]int)
 }
 
 type Lcs struct {
@@ -51,7 +51,7 @@ func (s *LcsSearch[E]) run(before, after []E, h *histogram[E]) {
 	pos := 0
 	for pos < len(after) {
 		e := after[pos]
-		if num := h.numTokenOccurances(e); num != 0 {
+		if num := h.numTokenOccurrences(e); num != 0 {
 			s.foundCS = true
 			if num <= s.minOccurrences {
 				pos = s.updateLcs(before, after, pos, e, h)
@@ -65,12 +65,12 @@ func (s *LcsSearch[E]) run(before, after []E, h *histogram[E]) {
 
 func (s *LcsSearch[E]) updateLcs(before, after []E, afterPos int, token E, h *histogram[E]) int {
 	nextTokenIndex2 := afterPos + 1
-	tokenOccurances := h.tokenOccurances[token]
-	tokenIndex1 := tokenOccurances[0]
+	tokenOccurrences := h.tokenOccurrences[token]
+	tokenIndex1 := tokenOccurrences[0]
 	pos := 1
-occurancesIter:
+occurrencesIter:
 	for {
-		occurances := h.numTokenOccurances(token)
+		occurrences := h.numTokenOccurrences(token)
 		s1, s2 := tokenIndex1, afterPos
 		for {
 			if s1 == 0 || s2 == 0 {
@@ -82,8 +82,8 @@ occurancesIter:
 			}
 			s1--
 			s2--
-			newOcurances := h.numTokenOccurances(t1)
-			occurances = min(newOcurances, occurances)
+			newOccurrences := h.numTokenOccurrences(t1)
+			occurrences = min(newOccurrences, occurrences)
 		}
 		e1, e2 := tokenIndex1+1, afterPos+1
 		for {
@@ -94,8 +94,8 @@ occurancesIter:
 			if t1 != t2 {
 				break
 			}
-			newOccuraces := h.numTokenOccurances(t1)
-			occurances = min(occurances, newOccuraces)
+			newOccurrences := h.numTokenOccurrences(t1)
+			occurrences = min(occurrences, newOccurrences)
 			e1++
 			e2++
 		}
@@ -103,8 +103,8 @@ occurancesIter:
 			nextTokenIndex2 = e2
 		}
 		length := e2 - s2
-		if s.lcs.length < length || s.minOccurrences > occurances {
-			s.minOccurrences = occurances
+		if s.lcs.length < length || s.minOccurrences > occurrences {
+			s.minOccurrences = occurrences
 			s.lcs = Lcs{
 				beforeStart: s1,
 				afterStart:  s2,
@@ -112,10 +112,10 @@ occurancesIter:
 			}
 		}
 		for {
-			if pos >= len(tokenOccurances) {
-				break occurancesIter
+			if pos >= len(tokenOccurrences) {
+				break occurrencesIter
 			}
-			nextTokenIndex := tokenOccurances[pos]
+			nextTokenIndex := tokenOccurrences[pos]
 			pos++
 			if nextTokenIndex > e2 {
 				tokenIndex1 = nextTokenIndex
@@ -145,27 +145,27 @@ type changesOut struct {
 	changes []Change
 }
 
-func (h *histogram[E]) run(ctx context.Context, beforce []E, beforePos int, after []E, afterPos int, o *changesOut) error {
+func (h *histogram[E]) run(ctx context.Context, before []E, beforePos int, after []E, afterPos int, o *changesOut) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
-		if len(beforce) == 0 {
+		if len(before) == 0 {
 			if len(after) != 0 {
 				o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Ins: len(after)})
 			}
 			return nil
 		}
 		if len(after) == 0 {
-			o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Del: len(beforce)})
+			o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Del: len(before)})
 			return nil
 		}
-		h.populate(beforce)
-		lcs := findLcs(beforce, after, h)
+		h.populate(before)
+		lcs := findLcs(before, after, h)
 		if lcs == nil {
-			changes, err := onpCompute(ctx, beforce, beforePos, after, afterPos)
+			changes, err := onpCompute(ctx, before, beforePos, after, afterPos)
 			if err != nil {
 				return err
 			}
@@ -173,14 +173,14 @@ func (h *histogram[E]) run(ctx context.Context, beforce []E, beforePos int, afte
 			return nil
 		}
 		if lcs.length == 0 {
-			o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Del: len(beforce), Ins: len(after)})
+			o.changes = append(o.changes, Change{P1: beforePos, P2: afterPos, Del: len(before), Ins: len(after)})
 			return nil
 		}
-		if err := h.run(ctx, beforce[:lcs.beforeStart], beforePos, after[:lcs.afterStart], afterPos, o); err != nil {
+		if err := h.run(ctx, before[:lcs.beforeStart], beforePos, after[:lcs.afterStart], afterPos, o); err != nil {
 			return err
 		}
 		e1 := lcs.beforeStart + lcs.length
-		beforce = beforce[e1:]
+		before = before[e1:]
 		beforePos += e1
 		e2 := lcs.afterStart + lcs.length
 		after = after[e2:]
@@ -197,7 +197,7 @@ func HistogramDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, err
 	L1 = L1[:len(L1)-suffix]
 	L2 = L2[:len(L2)-suffix]
 	h := &histogram[E]{
-		tokenOccurances: make(map[E][]int, len(L1)),
+		tokenOccurrences: make(map[E][]int, len(L1)),
 	}
 	o := &changesOut{changes: make([]Change, 0, 100)}
 	if err := h.run(ctx, L1, prefix, L2, prefix, o); err != nil {

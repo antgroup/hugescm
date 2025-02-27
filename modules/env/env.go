@@ -28,7 +28,7 @@ var allowedEnv = []string{
 	// Environment variables to tell git to use custom SSH executable or command
 	"GIT_SSH",
 	"GIT_SSH_COMMAND",
-	// Environment variables neesmd for ssh-agent based authentication
+	// Environment variables need for ssh-agent based authentication
 	"SSH_AUTH_SOCK",
 	"SSH_AGENT_PID",
 

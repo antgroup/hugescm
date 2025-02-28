@@ -54,10 +54,7 @@ func mayStripInput(raw []byte, stripTag bool) (out []byte, stripped bool) {
 		}
 	}
 	if openTags < 5 || openTags/5 < badTags || (len(out) < 100 && len(raw) > 600) {
-		limit := len(raw)
-		if limit > inputBufferSize {
-			limit = inputBufferSize
-		}
+		limit := min(len(raw), inputBufferSize)
 		out = make([]byte, limit)
 		copy(out, raw[:limit])
 		stripped = false

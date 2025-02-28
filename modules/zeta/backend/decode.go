@@ -115,7 +115,7 @@ func (d *Database) Commit(ctx context.Context, oid plumbing.Hash) (*object.Commi
 
 func (d *Database) ParseRevEx(ctx context.Context, oid plumbing.Hash) (*object.Commit, []plumbing.Hash, error) {
 	objects := make([]plumbing.Hash, 0, 2)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		a, err := d.Object(ctx, oid)
 		if err != nil {
 			return nil, nil, err

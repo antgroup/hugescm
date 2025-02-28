@@ -243,7 +243,7 @@ func (c *Commit) Equal(other *Commit) bool {
 		if len(c.ParentIDs) != len(other.ParentIDs) {
 			return false
 		}
-		for i := 0; i < len(c.ParentIDs); i++ {
+		for i := range c.ParentIDs {
 			p1 := c.ParentIDs[i]
 			p2 := other.ParentIDs[i]
 
@@ -255,7 +255,7 @@ func (c *Commit) Equal(other *Commit) bool {
 		if len(c.ExtraHeaders) != len(other.ExtraHeaders) {
 			return false
 		}
-		for i := 0; i < len(c.ExtraHeaders); i++ {
+		for i := range c.ExtraHeaders {
 			e1 := c.ExtraHeaders[i]
 			e2 := other.ExtraHeaders[i]
 

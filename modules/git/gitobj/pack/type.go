@@ -16,7 +16,7 @@ const (
 	TypeCommit
 	// TypeTree is the PackedObjectType for tree objects.
 	TypeTree
-	// Typeblob is the PackedObjectType for blob objects.
+	// TypeBlob is the PackedObjectType for blob objects.
 	TypeBlob
 	// TypeTag is the PackedObjectType for tag objects.
 	TypeTag

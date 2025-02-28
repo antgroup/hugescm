@@ -55,7 +55,7 @@ func (d *Decryptor) Decrypt(data []byte) ([]byte, error) {
 	chunkNum := int(math.Ceil(float64(len(data)) / float64(chunkLen)))
 	var err error
 	var decryptedPart []byte
-	for i := 0; i < chunkNum; i++ {
+	for i := range chunkNum {
 		if i == chunkNum-1 {
 			decryptedPart, err = rsa.DecryptPKCS1v15(rand.Reader, d.PrivateKey, data[chunkLen*i:])
 		} else {
@@ -75,7 +75,7 @@ func (d *Decryptor) Encrypt(data []byte) ([]byte, error) {
 	chunkNum := int(math.Ceil(float64(len(data)) / float64(chunkLen)))
 	var err error
 	var encryptedPart []byte
-	for i := 0; i < chunkNum; i++ {
+	for i := range chunkNum {
 		if i == chunkNum-1 {
 			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PrivateKey.PublicKey, data[chunkLen*i:])
 		} else {

@@ -9,10 +9,10 @@ import "fmt"
 // search.
 //
 // Callers may choose to treat the return values from Left() and Right() as
-// inclusive or exclusive. *bounds makes no assumptions on the inclusivity of
+// inclusive or exclusive. *bounds makes no assumptions on the inclusively of
 // those values.
 //
-// See: *git/object/pack:.Index for more.
+// See: *zeta/object/pack:.Index for more.
 type bounds struct {
 	// left is the left or lower bound of the bounds.
 	left int64

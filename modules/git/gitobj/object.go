@@ -26,7 +26,7 @@ type Object interface {
 	// trying to be decoded) and decodes the encoded object onto itself,
 	// as a mutative transaction.
 	//
-	// It returns the number of uncompressed bytes "n" that an invoication
+	// It returns the number of uncompressed bytes "n" that an invocation
 	// of this function has advanced the io.Reader, "from", as well as any
 	// error that was encountered along the way.
 	//

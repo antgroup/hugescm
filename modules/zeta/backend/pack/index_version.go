@@ -80,7 +80,7 @@ func (v *IndexZ) PackedObjects(idx *Index, recv RecvFunc) error {
 	br := bufio.NewReader(NewSizeReader(idx.r, indexOffsetStart, int64(total*HashDigestSize)))
 	mfd, err := openMtimesFD(idx)
 	if err != nil {
-		for i := 0; i < total; i++ {
+		for range total {
 			var oid plumbing.Hash
 			if _, err := io.ReadFull(br, oid[:]); err != nil {
 				return err
@@ -97,7 +97,7 @@ func (v *IndexZ) PackedObjects(idx *Index, recv RecvFunc) error {
 	}
 	mbr := bufio.NewReader(mfd)
 	var mtimeBytes [8]byte
-	for i := 0; i < total; i++ {
+	for range total {
 		var oid plumbing.Hash
 		if _, err := io.ReadFull(br, oid[:]); err != nil {
 			return err

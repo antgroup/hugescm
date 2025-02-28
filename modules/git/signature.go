@@ -45,7 +45,7 @@ func (s *Signature) String() string {
 
 // Decode decodes a byte array representing a signature to signature
 func (s *Signature) Decode(b []byte) {
-	sig, _ := newSignatureFromCommitline(b)
+	sig, _ := newSignatureFromCommitLine(b)
 	s.Email = sig.Email
 	s.Name = sig.Name
 	s.When = sig.When
@@ -58,7 +58,7 @@ func (s *Signature) Decode(b []byte) {
 //
 // but without the "author " at the beginning (this method should)
 // be used for author and committer.
-func newSignatureFromCommitline(line []byte) (sig *Signature, err error) {
+func newSignatureFromCommitLine(line []byte) (sig *Signature, err error) {
 	sig = new(Signature)
 	emailStart := bytes.LastIndexByte(line, '<')
 	emailEnd := bytes.LastIndexByte(line, '>')
@@ -131,7 +131,7 @@ func (s *Signature) encodeTimeAndTimeZone(w io.Writer) error {
 }
 
 func SignatureFromLine(line string) *Signature {
-	if signature, err := newSignatureFromCommitline([]byte(line)); err == nil {
+	if signature, err := newSignatureFromCommitLine([]byte(line)); err == nil {
 		return signature
 	}
 	return &Signature{}

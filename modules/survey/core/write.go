@@ -343,7 +343,7 @@ func copy(t reflect.Value, v reflect.Value) (err error) {
 	// if we are copying from one slice or array to another
 	if isList(v) && isList(t) {
 		// loop over every item in the desired value
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			// write to the target given its kind
 			switch t.Kind() {
 			// if its a slice

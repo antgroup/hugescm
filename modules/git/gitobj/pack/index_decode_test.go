@@ -14,7 +14,7 @@ func TestDecodeIndexV2(t *testing.T) {
 	buf := make([]byte, 0, indexV2Width+indexFanoutWidth)
 	buf = append(buf, 0xff, 0x74, 0x4f, 0x63)
 	buf = append(buf, 0x0, 0x0, 0x0, 0x2)
-	for i := 0; i < indexFanoutEntries; i++ {
+	for range indexFanoutEntries {
 		x := make([]byte, 4)
 
 		binary.BigEndian.PutUint32(x, uint32(3))

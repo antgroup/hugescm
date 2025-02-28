@@ -63,7 +63,7 @@ var DefaultDiffTreeOptions = &DiffTreeOptions{
 // recommended options are DefaultDiffTreeOptions.
 // An error will be returned if the context expires.
 // This function will be deprecated and removed in v6 so the default
-// behaviour of DiffTree is to detect renames.
+// behavior of DiffTree is to detect renames.
 func DiffTreeWithOptions(
 	ctx context.Context,
 	a, b *Tree,

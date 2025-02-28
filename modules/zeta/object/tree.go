@@ -276,7 +276,7 @@ func (t *Tree) Equal(other *Tree) bool {
 			return false
 		}
 
-		for i := 0; i < len(t.Entries); i++ {
+		for i := range t.Entries {
 			e1 := t.Entries[i]
 			e2 := other.Entries[i]
 
@@ -395,7 +395,7 @@ func (t *Tree) Files() *FileIter {
 
 func (t *Tree) buildMap() {
 	t.m = make(map[string]*TreeEntry)
-	for i := 0; i < len(t.Entries); i++ {
+	for i := range t.Entries {
 		t.m[t.Entries[i].Name] = t.Entries[i]
 	}
 }

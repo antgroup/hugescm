@@ -54,7 +54,7 @@ func (s secretServiceProvider) Set(ctx context.Context, service, user, pass stri
 	return nil
 }
 
-// findItem looksup an item by service and user.
+// findItem lookup an item by service and user.
 func (s secretServiceProvider) findItem(svc *ss.SecretService, service, user string) (dbus.ObjectPath, error) {
 	collection := svc.GetLoginCollection()
 
@@ -99,7 +99,7 @@ func (s secretServiceProvider) Get(ctx context.Context, service, user string) (s
 	}
 	defer svc.Close(session)
 
-	// unlock if invdividual item is locked
+	// unlock if individual item is locked
 	err = svc.Unlock(item)
 	if err != nil {
 		return "", err

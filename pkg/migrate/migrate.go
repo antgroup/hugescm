@@ -323,7 +323,7 @@ func (m *Migrator) migrateBlobs(ctx context.Context) error {
 	defer cancelCtx(nil)
 
 	cg := &migrateGroup{
-		ch:     make(chan []byte, 20), // 8 gorutine
+		ch:     make(chan []byte, 20), // 8 goroutine
 		errors: make(chan error, batchLimit),
 		bar:    bar,
 	}

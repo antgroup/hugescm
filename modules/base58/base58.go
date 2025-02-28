@@ -73,7 +73,7 @@ func Decode(b string) []byte {
 	tmpval := answer.Bytes()
 
 	var numZeros int
-	for numZeros = 0; numZeros < len(b); numZeros++ {
+	for numZeros = range len(b) {
 		if b[numZeros] != alphabetIdx0 {
 			break
 		}

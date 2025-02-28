@@ -44,8 +44,8 @@ func (c *Commit) MergeBase(ctx context.Context, other *Commit) ([]*Commit, error
 }
 
 // IsAncestor returns true if the actual commit is ancestor of the passed one.
-// It returns an error if the history is not transversable
-// It mimics the behavior of `git merge --is-ancestor actual other`
+// It returns an error if the history is not traversable
+// It mimics the behavior of `zeta merge --is-ancestor actual other`
 func (c *Commit) IsAncestor(ctx context.Context, other *Commit) (bool, error) {
 	found := false
 	iter := NewCommitPreorderIter(other, nil, nil)

@@ -196,13 +196,13 @@ func (s *Server) BatchObjects(w http.ResponseWriter, r *Request) {
 	}
 	for _, oid := range oids {
 		if err := writeFunc(oid); err != nil {
-			logrus.Errorf("batch-oids write blob %s error: %v", oid, err)
+			logrus.Errorf("batch-objects: write blob %s error: %v", oid, err)
 			return
 		}
 	}
 	_ = protocol.WriteObjectsItem(cw, nil, "", 0) // FLUSH
 	if _, err := cw.Finish(); err != nil {
-		logrus.Errorf("batch-oids finish crc64 error: %v", err)
+		logrus.Errorf("batch-objects: finish crc64 error: %v", err)
 	}
 }
 
@@ -577,5 +577,4 @@ func (s *Server) BranchPush(w http.ResponseWriter, r *Request, branchName string
 		}
 		return
 	}
-
 }

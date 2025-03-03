@@ -21,7 +21,7 @@ import (
 
 func writeMetadataHeader(w io.Writer) error {
 	if err := binary.Write(w, metaTransportMagic[:], PROTOCOL_VERSION, reserved[:]); err != nil {
-		return fmt.Errorf("write metadata error: %v", err)
+		return fmt.Errorf("write metadata magic error: %v", err)
 	}
 	return nil
 }
@@ -54,7 +54,7 @@ func writeMetadataItem(w io.Writer, e object.Encoder, oid string) error {
 
 func WriteBatchObjectsHeader(w io.Writer) error {
 	if err := binary.Write(w, objectsTransportMagic[:], PROTOCOL_VERSION, reserved[:]); err != nil {
-		return fmt.Errorf("write batch-blobs error: %v", err)
+		return fmt.Errorf("write batch-objects magic error: %v", err)
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func WriteObjectsItem(w io.Writer, r io.Reader, oid string, size int64) error {
 
 func WriteSingleObjectsHeader(w io.Writer, contentLength, compressedSize int64) error {
 	if err := binary.Write(w, objectsTransportMagic[:], PROTOCOL_VERSION, contentLength, compressedSize); err != nil {
-		return fmt.Errorf("write batch-blobs error: %v", err)
+		return fmt.Errorf("write object magic error: %v", err)
 	}
 	return nil
 }

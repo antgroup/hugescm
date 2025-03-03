@@ -47,7 +47,7 @@ func ParseRange(s string, size int64) ([]Range, error) { // nolint:gocognit
 	}
 	var ranges []Range
 	noOverlap := false
-	for _, ra := range strings.Split(s[len(b):], ",") {
+	for ra := range strings.SplitSeq(s[len(b):], ",") {
 		ra = textproto.TrimString(ra)
 		if ra == "" {
 			continue

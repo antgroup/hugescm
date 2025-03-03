@@ -125,10 +125,10 @@ type HaveObject struct {
 	Action         string `json:"action,omitempty"`
 }
 
-type BatchRequest struct {
+type BatchCheckRequest struct {
 	Objects []*HaveObject `json:"objects"`
 }
 
-type BatchResponse struct {
+type BatchCheckResponse struct {
 	Objects []*HaveObject `json:"objects"`
 }

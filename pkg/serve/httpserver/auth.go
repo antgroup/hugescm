@@ -29,7 +29,7 @@ func EqualFold(s, t string) bool {
 	if len(s) != len(t) {
 		return false
 	}
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if lower(s[i]) != lower(t[i]) {
 			return false
 		}

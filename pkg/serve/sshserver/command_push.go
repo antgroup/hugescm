@@ -100,7 +100,7 @@ func (c *Push) Exec(ctx *RunCtx) int {
 }
 
 func (s *Server) BatchCheck(e *Session, refname string) int {
-	var request protocol.BatchRequest
+	var request protocol.BatchCheckRequest
 	if err := json.NewDecoder(e).Decode(&request); err != nil {
 		return e.ExitFormat(400, "decode request body error: %v", err)
 	}
@@ -112,7 +112,7 @@ func (s *Server) BatchCheck(e *Session, refname string) int {
 		return e.ExitError(err)
 	}
 	defer rr.Close()
-	response := &protocol.BatchResponse{
+	response := &protocol.BatchCheckResponse{
 		Objects: make([]*protocol.HaveObject, 0, len(request.Objects)),
 	}
 	odb := rr.ODB()

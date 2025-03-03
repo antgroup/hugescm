@@ -332,7 +332,7 @@ func (s *Server) updateReferenceDryRun(w http.ResponseWriter, r *Request) bool {
 
 // POST /{namespace}/{repo}/reference/{refname:.*}/objects/batch
 func (s *Server) BatchCheck(w http.ResponseWriter, r *Request) {
-	var request protocol.BatchRequest
+	var request protocol.BatchCheckRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		renderFailureFormat(w, r.Request, http.StatusBadRequest, "decode request body error: %v", err)
 		return
@@ -345,7 +345,7 @@ func (s *Server) BatchCheck(w http.ResponseWriter, r *Request) {
 		return
 	}
 	defer rr.Close()
-	response := &protocol.BatchResponse{
+	response := &protocol.BatchCheckResponse{
 		Objects: make([]*protocol.HaveObject, 0, len(request.Objects)),
 	}
 	odb := rr.ODB()

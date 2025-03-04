@@ -26,6 +26,15 @@ var bigRadix = [...]*big.Int{
 
 var bigRadix10 = big.NewInt(58 * 58 * 58 * 58 * 58 * 58 * 58 * 58 * 58 * 58) // 58^10
 
+func countNumZeros(s string) int {
+	for i := range len(s) {
+		if s[i] != alphabetIdx0 {
+			return i
+		}
+	}
+	return len(s)
+}
+
 // Decode decodes a modified base58 string to a byte slice.
 func Decode(b string) []byte {
 	answer := big.NewInt(0)
@@ -71,13 +80,7 @@ func Decode(b string) []byte {
 	}
 
 	tmpval := answer.Bytes()
-
-	var numZeros int
-	for numZeros = range len(b) {
-		if b[numZeros] != alphabetIdx0 {
-			break
-		}
-	}
+	numZeros := countNumZeros(b)
 	flen := numZeros + len(tmpval)
 	val := make([]byte, flen)
 	copy(val[numZeros:], tmpval)

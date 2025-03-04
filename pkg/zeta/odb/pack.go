@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	pushStreamMagic         = [4]byte{'Z', 'P', '\x00', '\x01'}
-	supportedVersion uint32 = 1
-	reserved         [16]byte
+	PUSH_STREAM_MAGIC        = [4]byte{'Z', 'P', '\x00', '\x01'}
+	supportedVersion  uint32 = 1
+	reserved          [16]byte
 )
 
 func (d *ODB) writeObjectToPack(oid plumbing.Hash, metadata bool, w io.Writer, r io.Reader, size int64) error {
@@ -69,7 +69,7 @@ func (d *ODB) onPush(ctx context.Context, originWriter io.Writer, objects *PushO
 	default:
 	}
 	w := crc.NewCrc64Writer(originWriter)
-	if err := binary.Write(w, pushStreamMagic[:]); err != nil {
+	if err := binary.Write(w, PUSH_STREAM_MAGIC[:]); err != nil {
 		return err
 	}
 	if err := binary.WriteUint32(w, supportedVersion); err != nil {

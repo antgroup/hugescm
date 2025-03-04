@@ -27,7 +27,7 @@ var (
 )
 
 var (
-	ErrUncacheableObject = errors.New("uncacheable object")
+	ErrObjectNotCached = errors.New("object cannot be cached")
 )
 
 func (d *Database) store(a any) error {
@@ -46,7 +46,7 @@ func (d *Database) store(a any) error {
 	case *object.Tag:
 		_ = d.metaLRU.Set(v.Hash.String(), v, 1)
 	default:
-		return ErrUncacheableObject
+		return ErrObjectNotCached
 	}
 	return nil
 }
@@ -68,7 +68,7 @@ func (d *Database) fromCache(oid plumbing.Hash) (any, error) {
 	default:
 
 	}
-	return nil, ErrUncacheableObject
+	return nil, ErrObjectNotCached
 }
 
 func (d *Database) Exists(oid plumbing.Hash, metadata bool) error {

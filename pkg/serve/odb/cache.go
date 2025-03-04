@@ -89,7 +89,7 @@ func (d *cacheDB) Tag(ctx context.Context, rid int64, oid plumbing.Hash) (*objec
 }
 
 var (
-	ErrUncacheableObject = errors.New("uncacheable object")
+	ErrObjectNotCached = errors.New("object cannot be cached")
 )
 
 func (d *cacheDB) Store(ctx context.Context, rid int64, a any) error {
@@ -105,7 +105,7 @@ func (d *cacheDB) Store(ctx context.Context, rid int64, a any) error {
 	case *object.Tag:
 		_ = d.Set(cacheKey(rid, v.Hash), v, 1)
 	default:
-		return ErrUncacheableObject
+		return ErrObjectNotCached
 	}
 	return nil
 }

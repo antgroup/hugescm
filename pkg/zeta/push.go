@@ -197,7 +197,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		}
 		ignoreParents = append(ignoreParents, shallowCommit.Parents...)
 	}
-	var fasfForward, isNewPush bool
+	var fastForward, isNewPush bool
 	var theirs, oldRev plumbing.Hash
 	ref, err := t.FetchReference(ctx, target)
 	switch {
@@ -216,12 +216,12 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 			return nil
 		}
 		// When updating a remote tag reference, if the remote reference is a tag object, you need to use --force to allow a push.
-		if fasfForward, err = r.isFastForward(ctx, oldRev, newRev, ignoreParents); err != nil {
+		if fastForward, err = r.isFastForward(ctx, oldRev, newRev, ignoreParents); err != nil {
 			die("check is fast-forward %s error: %s", shallow, err)
 			return err
 		}
 		cleanedRemote := r.cleanedRemote()
-		if !fasfForward && !o.Force {
+		if !fastForward && !o.Force {
 			term.Fprintf(os.Stderr, rejectFormat, cleanedRemote, ourName.Short(), ref.Name.Short(), cleanedRemote)
 			return ErrPushRejected
 		}
@@ -301,7 +301,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		// not branch or tag skip
 		return nil
 	}
-	if !fasfForward {
+	if !fastForward {
 		fmt.Fprintf(os.Stderr, " + %s...%s %s -> %s (forced update)\n", shortHash(oldRev), shortHash(newRev), ourName.Short(), shortReferenceName(target))
 		return nil
 	}

@@ -100,7 +100,7 @@ func (o *ODB) Objects(ctx context.Context, oid plumbing.Hash) (a any, err error)
 		case *object.Tag:
 			return v, nil
 		default:
-			return nil, ErrUncacheableObject
+			return nil, ErrObjectNotCached
 		}
 	}
 	if !plumbing.IsNoSuchObject(err) {
@@ -129,7 +129,7 @@ func (o *ODB) Objects(ctx context.Context, oid plumbing.Hash) (a any, err error)
 			_, _ = o.odb.WriteEncoded(v)
 			_ = o.cdb.Store(ctx, o.rid, v)
 		default:
-			return nil, ErrUncacheableObject
+			return nil, ErrObjectNotCached
 		}
 		return a, nil
 	}

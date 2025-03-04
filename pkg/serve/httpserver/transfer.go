@@ -22,7 +22,6 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/pkg/serve"
 	"github.com/antgroup/hugescm/pkg/serve/database"
-	"github.com/antgroup/hugescm/pkg/serve/odb"
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
 	"github.com/antgroup/hugescm/pkg/serve/repo"
 	"github.com/gorilla/mux"
@@ -287,7 +286,7 @@ func (s *Server) GetObject(w http.ResponseWriter, r *Request) {
 	w.Header().Set("Content-Length", strconv.FormatInt(length, 10))
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.WriteHeader(statusCode)
-	if _, err := odb.Copy(w, sr); err != nil {
+	if _, err := streamio.Copy(w, sr); err != nil {
 		logrus.Errorf("copy error: %v", err)
 	}
 }

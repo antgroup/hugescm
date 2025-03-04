@@ -9,7 +9,6 @@ import (
 
 	"github.com/antgroup/hugescm/modules/oss"
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/antgroup/hugescm/modules/streamio"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -76,11 +75,4 @@ func (o *ODB) Close() error {
 		return o.odb.Close()
 	}
 	return nil
-}
-
-// Copy copy reader to writer
-func Copy(dst io.Writer, src io.Reader) (written int64, err error) {
-	buf := streamio.GetByteSlice()
-	defer streamio.PutByteSlice(buf)
-	return io.CopyBuffer(dst, src, *buf)
 }

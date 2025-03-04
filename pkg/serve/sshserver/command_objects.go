@@ -13,7 +13,6 @@ import (
 	"github.com/antgroup/hugescm/modules/crc"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/streamio"
-	"github.com/antgroup/hugescm/pkg/serve/odb"
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
 	"github.com/sirupsen/logrus"
 )
@@ -154,7 +153,7 @@ func (s *Server) GetObject(e *Session, oid plumbing.Hash, offset int64) int {
 	if err := protocol.WriteSingleObjectsHeader(e, sr.Size()-offset, sr.Size()); err != nil {
 		return e.ExitError(err)
 	}
-	if _, err := odb.Copy(e, sr); err != nil {
+	if _, err := streamio.Copy(e, sr); err != nil {
 		return e.ExitError(err)
 	}
 	return 0

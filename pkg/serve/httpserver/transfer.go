@@ -501,7 +501,7 @@ func (s *Server) TagPush(w http.ResponseWriter, r *Request, tagName string) {
 		ReferenceName: plumbing.NewTagReferenceName(tagName),
 		OldRev:        r.Header.Get("X-Zeta-Command-OldRev"),
 		NewRev:        r.Header.Get("X-Zeta-Command-NewRev"),
-		Terminal:      r.Header.Get("X-Zeta-Termainl"),
+		Terminal:      r.Header.Get("X-Zeta-Terminal"),
 		Language:      serve.Language(r.Request),
 	}
 	if !plumbing.ValidateHashHex(command.NewRev) {

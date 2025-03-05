@@ -6,6 +6,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -21,7 +22,7 @@ func (d *database) FindBranch(ctx context.Context, rid int64, branchName string)
 		b.UpdatedAt = b.UpdatedAt.Local()
 		return &b, nil
 	}
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, &ErrRevisionNotFound{Revision: branchName}
 	}
 	return nil, err
@@ -59,7 +60,7 @@ func (d *database) doRemoveBranch(ctx context.Context, rid int64, branchName str
 	var createdAt, updateAt time.Time
 	if err := tx.QueryRowContext(ctx, "select id, hash, protection_level, created_at, updated_at from branches where rid = ? and name = ?",
 		rid, branchName).Scan(&branchID, &oldRev, &protectionLevel, &createdAt, &updateAt); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &ErrRevisionNotFound{Revision: string(plumbing.NewBranchReferenceName(branchName))}
 		}
 		return nil, err
@@ -130,7 +131,7 @@ func (d *database) DoBranchUpdate(ctx context.Context, cmd *Command) (*Branch, e
 	var oldRev string
 	var protectionLevel int
 	if err := tx.QueryRowContext(ctx, "select hash,protection_level from branches where rid = ? and name = ?", cmd.RID, branchName).Scan(&oldRev, &protectionLevel); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &ErrRevisionNotFound{Revision: branchName}
 		}
 		return nil, err

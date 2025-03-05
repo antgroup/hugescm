@@ -1,7 +1,6 @@
 package zeta
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestLog(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/tmp/b3",
 	})
 	if err != nil {
@@ -19,7 +18,7 @@ func TestLog(t *testing.T) {
 	}
 	defer r.Close()
 
-	commits, err := r.revList(context.Background(),
+	commits, err := r.revList(t.Context(),
 		plumbing.NewHash("6c4abb63943a42c4374e42b805113f2288b832319ccce79c12c836e59c41ccce"),
 		plumbing.NewHash("c0869060ede3e208c464cac81fd78e6f31cecb572a3450b9a7dce4784c6dab5f"), nil)
 	if err != nil {

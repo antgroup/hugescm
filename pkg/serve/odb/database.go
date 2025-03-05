@@ -6,6 +6,7 @@ package odb
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -27,7 +28,7 @@ func NewMetadataDB(db *sql.DB, rid int64) *MetadataDB {
 func (d *MetadataDB) DecodeCommit(ctx context.Context, oid plumbing.Hash, b object.Backend) (*object.Commit, error) {
 	var bindata string
 	err := d.QueryRowContext(ctx, "select bindata from commits where rid = ? and hash = ?", d.rid, oid.String()).Scan(&bindata)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, plumbing.NoSuchObject(oid)
 	}
 	if err != nil {
@@ -81,7 +82,7 @@ func (d *MetadataDB) BatchEncodeCommit(ctx context.Context, commits []*object.Co
 func (d *MetadataDB) DecodeTree(ctx context.Context, oid plumbing.Hash, b object.Backend) (*object.Tree, error) {
 	var bindata string
 	err := d.QueryRowContext(ctx, "select bindata from trees where rid = ? and hash = ?", d.rid, oid.String()).Scan(&bindata)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, plumbing.NoSuchObject(oid)
 	}
 	if err != nil {
@@ -134,7 +135,7 @@ func (d *MetadataDB) BatchEncodeTree(ctx context.Context, trees []*object.Tree) 
 func (d *MetadataDB) Object(ctx context.Context, oid plumbing.Hash, b object.Backend) (any, error) {
 	var bindata string
 	if err := d.QueryRowContext(ctx, "select bindata from objects where rid = ? and hash = ?", d.rid, oid.String()).Scan(&bindata); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, plumbing.NoSuchObject(oid)
 		}
 		return nil, err

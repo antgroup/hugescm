@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -21,7 +20,7 @@ func TestODB(t *testing.T) {
 		return
 	}
 	defer db.Close()
-	cc, err := db.Commit(context.TODO(), plumbing.NewHash("498afa6582e4b15dea40f8c355ac01dbbca98c5e4013b552c0a9e3c0ea1872a2"))
+	cc, err := db.Commit(t.Context(), plumbing.NewHash("498afa6582e4b15dea40f8c355ac01dbbca98c5e4013b552c0a9e3c0ea1872a2"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
 		return
@@ -48,7 +47,7 @@ func TestHashTo(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "stat error: %v\n", err)
 		return
 	}
-	oid, err := db.HashTo(context.TODO(), fd, si.Size())
+	oid, err := db.HashTo(t.Context(), fd, si.Size())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "hashTo error: %v\n", err)
 		return
@@ -63,7 +62,7 @@ func TestLookLooseObjects(t *testing.T) {
 		return
 	}
 	defer db.Close()
-	cc, err := db.Commit(context.TODO(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
+	cc, err := db.Commit(t.Context(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
 		return

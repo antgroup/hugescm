@@ -1,7 +1,6 @@
 package zeta
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestBlame(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/hugescm-dev",
 	})
 	if err != nil {
@@ -18,12 +17,12 @@ func TestBlame(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	cc, err := r.odb.Commit(context.Background(), plumbing.NewHash("4b2982c5c8835dfc3c1a8d0eddca9100e1aee1b7e7b9da44160bc9de99aa0b77"))
+	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("4b2982c5c8835dfc3c1a8d0eddca9100e1aee1b7e7b9da44160bc9de99aa0b77"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open commit error: %v\n", err)
 		return
 	}
-	b, err := Blame(context.Background(), cc, "pkg/zeta/worktree_diff.go")
+	b, err := Blame(t.Context(), cc, "pkg/zeta/worktree_diff.go")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open commit error: %v\n", err)
 		return

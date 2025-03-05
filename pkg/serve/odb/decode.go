@@ -65,7 +65,7 @@ func (o *ODB) ParseRevExhaustive(ctx context.Context, oid plumbing.Hash) (*objec
 	if !ok {
 		return nil, backend.NewErrMismatchedObjectType(oid, "commit")
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if current.ObjectType == object.BlobObject {
 			return nil, backend.NewErrMismatchedObjectType(oid, "commit")
 		}

@@ -42,7 +42,7 @@ func (q *QuarantineDB) parseRev(ctx context.Context, oid plumbing.Hash) (a any, 
 
 func (q *QuarantineDB) ParseRev(ctx context.Context, oid plumbing.Hash) (cc *object.Commit, isolated bool, err error) {
 	var a any
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if a, isolated, err = q.parseRev(ctx, oid); err != nil {
 			return
 		}

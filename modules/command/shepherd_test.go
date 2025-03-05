@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewCommand(t *testing.T) {
-	cmd := New(context.Background(), ".", "git", "version")
+	cmd := New(t.Context(), ".", "git", "version")
 	line, err := cmd.OneLine()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err)
@@ -21,7 +21,7 @@ func TestNewCommand(t *testing.T) {
 
 func TestNewCommand2(t *testing.T) {
 	var stdout strings.Builder
-	cmd := NewFromOptions(context.Background(), &RunOpts{RepoPath: ".", Stdout: &stdout}, "git", "version")
+	cmd := NewFromOptions(t.Context(), &RunOpts{RepoPath: ".", Stdout: &stdout}, "git", "version")
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err)
 		return
@@ -35,7 +35,7 @@ func TestNewCommand2(t *testing.T) {
 }
 
 func TestNewCommand3(t *testing.T) {
-	cmd := New(context.Background(), ".", "git", "version---")
+	cmd := New(t.Context(), ".", "git", "version---")
 	b, err := cmd.Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\nCount: %d\n", FromError(err), ProcessesCount())
@@ -45,7 +45,7 @@ func TestNewCommand3(t *testing.T) {
 }
 
 func TestNewCommand4(t *testing.T) {
-	cmd := New(context.Background(), ".", "git", "help")
+	cmd := New(t.Context(), ".", "git", "help")
 	b, err := cmd.Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\nCount: %d\n", FromError(err), ProcessesCount())
@@ -55,7 +55,7 @@ func TestNewCommand4(t *testing.T) {
 }
 
 func TestWaitTimeout(t *testing.T) {
-	newCtx, cancelCtx := context.WithTimeout(context.Background(), time.Second*4)
+	newCtx, cancelCtx := context.WithTimeout(t.Context(), time.Second*4)
 	defer cancelCtx()
 	cmd := NewFromOptions(newCtx, &RunOpts{
 		Stderr: os.Stderr,
@@ -69,7 +69,7 @@ func TestWaitTimeout(t *testing.T) {
 }
 
 func TestChildProcess(t *testing.T) {
-	newCtx, cancelCtx := context.WithTimeout(context.Background(), time.Second*10)
+	newCtx, cancelCtx := context.WithTimeout(t.Context(), time.Second*10)
 	defer cancelCtx()
 	cmd := NewFromOptions(newCtx, &RunOpts{
 		Stderr: os.Stderr,

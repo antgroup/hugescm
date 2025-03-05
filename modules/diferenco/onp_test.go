@@ -1,7 +1,6 @@
 package diferenco
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,7 +28,7 @@ func TestONP(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := OnpDiff(context.Background(), a, b)
+	changes, _ := OnpDiff(t.Context(), a, b)
 	i := 0
 	for _, c := range changes {
 		for ; i < c.P1; i++ {

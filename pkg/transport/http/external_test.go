@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +11,7 @@ import (
 
 func TestProxy(t *testing.T) {
 	dl := NewDownloader(true, false, "socks5://127.0.0.1:13659")
-	sr, err := dl.Download(context.Background(), &transport.Representation{
+	sr, err := dl.Download(t.Context(), &transport.Representation{
 		Href: "https://github.com/zed-industries/zed/releases/download/v0.166.1/zed-remote-server-macos-x86_64.gz",
 	}, 0)
 	if err != nil {

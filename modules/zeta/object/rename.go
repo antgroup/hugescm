@@ -311,7 +311,7 @@ func nameSimilarityScore(a, b string) int {
 		if dirScoreLtr == 100 {
 			dirScoreRtl = 100
 		} else {
-			for dirSim = 0; dirSim < dirMin; dirSim++ {
+			for dirSim = range dirMin {
 				if a[aDirLen-1-dirSim] != b[bDirLen-1-dirSim] {
 					break
 				}

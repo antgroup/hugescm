@@ -5,6 +5,7 @@ package odb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -32,7 +33,7 @@ func ossJoin(rid int64, oid plumbing.Hash) string {
 
 func (o *ODB) ossExists(ctx context.Context, oid plumbing.Hash) error {
 	_, err := o.bucket.Stat(ctx, ossJoin(o.rid, oid))
-	if err == os.ErrNotExist {
+	if errors.Is(err, os.ErrNotExist) {
 		return plumbing.NoSuchObject(oid)
 	}
 	return err
@@ -52,7 +53,7 @@ func (o *ODB) Share(ctx context.Context, oid plumbing.Hash, expiresAt int64) (*R
 	resourcePath := ossJoin(o.rid, oid)
 	si, err := o.bucket.Stat(ctx, resourcePath)
 	if err != nil {
-		if err == os.ErrNotExist {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil, plumbing.NoSuchObject(oid)
 		}
 		return nil, err
@@ -203,7 +204,7 @@ func (o *ODB) Batch(ctx context.Context, oids []plumbing.Hash, batchLimit int) e
 
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
 	defer cancelCtx(nil)
-	for i := 0; i < batchLimit; i++ {
+	for range batchLimit {
 		g.run(newCtx, o)
 	}
 	for _, oid := range oids {

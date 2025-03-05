@@ -8,7 +8,7 @@ import (
 )
 
 func TestVersion(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		now := time.Now()
 		v, err := Version()
 		if err != nil {

@@ -1,7 +1,6 @@
 package diferenco
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -32,21 +31,21 @@ tomatoes
 wine
 `
 
-	content, conflict, err := DefaultMerge(context.Background(), textO, textA, textB, "o.txt", "a.txt", "b.txt")
+	content, conflict, err := DefaultMerge(t.Context(), textO, textA, textB, "o.txt", "a.txt", "b.txt")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
 	}
 	fmt.Fprintf(os.Stderr, "%s\nconflicts: %v\n", content, conflict)
 
-	content, conflict, err = Merge(context.Background(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_ZEALOUS_DIFF3})
+	content, conflict, err = Merge(t.Context(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_ZEALOUS_DIFF3})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
 	}
 	fmt.Fprintf(os.Stderr, "ZEALOUS_DIFF3\n%s\nconflicts: %v\n", content, conflict)
 
-	content, conflict, err = Merge(context.Background(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_DIFF3})
+	content, conflict, err = Merge(t.Context(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_DIFF3})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
@@ -71,7 +70,7 @@ onions
 wine
 `
 
-	content, conflict, err := DefaultMerge(context.Background(), textO, textA, textA, "o.txt", "a.txt", "b.txt")
+	content, conflict, err := DefaultMerge(t.Context(), textO, textA, textA, "o.txt", "a.txt", "b.txt")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
@@ -109,21 +108,21 @@ wine
 77777
 `
 
-	content, conflict, err := DefaultMerge(context.Background(), textO, textA, textB, "o.txt", "a.txt", "b.txt")
+	content, conflict, err := DefaultMerge(t.Context(), textO, textA, textB, "o.txt", "a.txt", "b.txt")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
 	}
 	fmt.Fprintf(os.Stderr, "%s\nconflicts: %v\n", content, conflict)
 
-	content, conflict, err = Merge(context.Background(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_ZEALOUS_DIFF3})
+	content, conflict, err = Merge(t.Context(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_ZEALOUS_DIFF3})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
 	}
 	fmt.Fprintf(os.Stderr, "%s\nconflicts: %v\n", content, conflict)
 
-	content, conflict, err = Merge(context.Background(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_DIFF3})
+	content, conflict, err = Merge(t.Context(), &MergeOptions{TextO: textO, TextA: textA, TextB: textB, LabelO: "o.txt", LabelA: "a.txt", LabelB: "b.txt", Style: STYLE_DIFF3})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return

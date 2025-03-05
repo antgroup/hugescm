@@ -1,7 +1,6 @@
 package keyring
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -18,7 +17,7 @@ const (
 
 // TestStore tests setting a user and password in the keyring.
 func TestStore(t *testing.T) {
-	err := Store(context.Background(), service, &Cred{UserName: user, Password: password})
+	err := Store(t.Context(), service, &Cred{UserName: user, Password: password})
 	if err != nil {
 		t.Errorf("Should not fail, got: %s", err)
 	}

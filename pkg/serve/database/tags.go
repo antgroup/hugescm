@@ -6,6 +6,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -88,7 +89,7 @@ func (d *database) doRemoveTag(ctx context.Context, rid int64, tagName string) (
 	if err := tx.QueryRowContext(ctx, "select hash, subject, description, uid, created_at, updated_at from tags where rid = ? and name = ?", rid, tagName).Scan(
 		&t.Hash, &t.Subject, &t.Description, &t.UID, &t.CreatedAt, &t.UpdatedAt,
 	); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &ErrRevisionNotFound{Revision: string(plumbing.NewTagReferenceName(tagName))}
 		}
 		return nil, err
@@ -127,7 +128,7 @@ func (d *database) doTagUpdate(ctx context.Context, cmd *Command) (*Tag, error) 
 	}
 	var oldRev string
 	if err := tx.QueryRowContext(ctx, "select hash from tags where rid = ? and name = ?", cmd.RID, tagName).Scan(&oldRev); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &ErrRevisionNotFound{Revision: tagName}
 		}
 		return nil, err

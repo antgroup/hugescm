@@ -2,7 +2,6 @@ package systemproxy
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -17,7 +16,7 @@ func TestDialGithub(t *testing.T) {
 	if err != nil {
 		return
 	}
-	conn, err := DialServerViaCONNECT(context.Background(), "github.com:22", proxyURL, &d)
+	conn, err := DialServerViaCONNECT(t.Context(), "github.com:22", proxyURL, &d)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return

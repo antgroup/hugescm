@@ -35,10 +35,6 @@ type ODB struct {
 	rid    int64
 }
 
-var (
-	_ DB = &ODB{}
-)
-
 func NewODB(rid int64, root string, compressionALGO string, cdb CacheDB, mdb *MetadataDB, bucket oss.Bucket) (*ODB, error) {
 	o := &ODB{
 		cdb:    cdb,

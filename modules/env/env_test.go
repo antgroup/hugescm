@@ -9,7 +9,7 @@ import (
 )
 
 func TestEnviron(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		now := time.Now()
 		env := Environ()
 		fmt.Fprintf(os.Stderr, "use time: %v\n", time.Since(now))

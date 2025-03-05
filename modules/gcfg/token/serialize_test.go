@@ -94,7 +94,7 @@ func TestSerialization(t *testing.T) {
 	p := NewFileSet()
 	checkSerialize(t, p)
 	// add some files
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		f, _ := p.AddFile(fmt.Sprintf("file%d", i), p.Base()+i, i*100)
 		checkSerialize(t, p)
 		// add some lines and alternative file infos

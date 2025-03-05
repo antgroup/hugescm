@@ -1,7 +1,6 @@
 package diferenco
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,7 +30,7 @@ func TestMinimalDiff(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := MinimalDiff(context.Background(), a, b)
+	changes, _ := MinimalDiff(t.Context(), a, b)
 	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())

@@ -1,7 +1,6 @@
 package diffbug
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"os"
@@ -27,7 +26,7 @@ func TestDiffText(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
 		return
 	}
-	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
+	u, err := diferenco.DoUnified(t.Context(), &diferenco.Options{
 		From: &diferenco.File{
 			Name: "a.go",
 		},

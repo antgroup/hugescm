@@ -1,7 +1,6 @@
 package diferenco
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ func TestDiff(t *testing.T) {
 	aa := []Algorithm{Histogram, Myers, ONP, Patience}
 	for _, a := range aa {
 		now := time.Now()
-		u, err := DoUnified(context.Background(), &Options{
+		u, err := DoUnified(t.Context(), &Options{
 			From: &File{
 				Name: "a.txt",
 			},
@@ -62,7 +61,7 @@ func TestPatchFD(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -99,7 +98,7 @@ func TestPatch(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -130,7 +129,7 @@ func TestPatchNew(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: nil,
 		To: &File{
 			Name: "a.txt",
@@ -157,7 +156,7 @@ func TestPatchDelete(t *testing.T) {
 		return
 	}
 	textA := string(bytesA)
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "6547898",
@@ -187,7 +186,7 @@ world
 
 foo bar
 31df1778815171897c907daf454c4419cfaa46f9`
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "6547898",
@@ -220,7 +219,7 @@ func TestPatchScss(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -257,7 +256,7 @@ func TestPatchCss(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(context.Background(), &Options{
+	u, err := DoUnified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -306,7 +305,7 @@ func TestShowPatch(t *testing.T) {
 func TestDiffRunes(t *testing.T) {
 	a := "The quick brown fox jumps over the lazy dog"
 	b := "The quick brown dog leaps over the lazy cat"
-	sd, err := DiffRunes(context.Background(), a, b, ONP)
+	sd, err := DiffRunes(t.Context(), a, b, ONP)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "diff error: %v\n", err)
 		return
@@ -327,7 +326,7 @@ func TestDiffRunes(t *testing.T) {
 func TestDiffWords(t *testing.T) {
 	a := "The quick brown fox jumps over the lazy dog"
 	b := "The quick brown dog leaps over the lazy cat"
-	sd, err := DiffWords(context.Background(), a, b, Histogram, nil)
+	sd, err := DiffWords(t.Context(), a, b, Histogram, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "diff error: %v\n", err)
 		return
@@ -349,7 +348,7 @@ func TestDiffWords(t *testing.T) {
 func TestDiffWords2(t *testing.T) {
 	a := "The quick 你好brown fox jumps over the lazy dog"
 	b := "The quick 你好 brown dog  leaps over the lazy cat"
-	sd, err := DiffWords(context.Background(), a, b, Histogram, nil)
+	sd, err := DiffWords(t.Context(), a, b, Histogram, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "diff error: %v\n", err)
 		return

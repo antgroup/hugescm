@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	pushMagic = [4]byte{'Z', 'P', '\x00', '\x01'}
+	PUSH_STREAM_MAGIC = [4]byte{'Z', 'P', '\x00', '\x01'}
 )
 
 type Objects struct {
@@ -74,7 +74,7 @@ func (o *ODB) Unpack(ctx context.Context, r io.Reader, ss *OStats, validator Val
 	if _, err = io.ReadFull(r, magic[:]); err != nil {
 		return nil, zeta.NewErrStatusCode(http.StatusBadRequest, "read magic error: %v", err)
 	}
-	if !bytes.Equal(magic[:], pushMagic[:]) {
+	if !bytes.Equal(magic[:], PUSH_STREAM_MAGIC[:]) {
 		return nil, zeta.NewErrStatusCode(http.StatusBadRequest, "Bad magic ['\\%x','\\%x','\\%x','\\%x']", magic[0], magic[1], magic[2], magic[3])
 	}
 	if version, err = binary.ReadUint32(r); err != nil {

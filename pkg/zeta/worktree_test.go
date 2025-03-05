@@ -20,7 +20,7 @@ import (
 )
 
 func TestWorktree(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh3",
 	})
 	if err != nil {
@@ -29,17 +29,17 @@ func TestWorktree(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	cc, err := r.odb.Commit(context.TODO(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
+	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo commit error: %v\n", err)
 		return
 	}
-	tt, err := r.odb.Tree(context.TODO(), cc.Tree)
+	tt, err := r.odb.Tree(t.Context(), cc.Tree)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo tree error: %v\n", err)
 		return
 	}
-	changes, err := w.diffTreeWithStaging(context.Background(), tt, true)
+	changes, err := w.diffTreeWithStaging(t.Context(), tt, true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo tree error: %v\n", err)
 		return
@@ -50,7 +50,7 @@ func TestWorktree(t *testing.T) {
 }
 
 func TestWorktree2(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/k4",
 	})
 	if err != nil {
@@ -59,17 +59,17 @@ func TestWorktree2(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	cc, err := r.odb.Commit(context.TODO(), plumbing.NewHash("a8b63b8ba5256d03587ab2c595b5b3f0473c1b7c5498f022d9b36cf1139e0a21"))
+	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("a8b63b8ba5256d03587ab2c595b5b3f0473c1b7c5498f022d9b36cf1139e0a21"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo commit error: %v\n", err)
 		return
 	}
-	tt, err := r.odb.Tree(context.TODO(), cc.Tree)
+	tt, err := r.odb.Tree(t.Context(), cc.Tree)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo tree error: %v\n", err)
 		return
 	}
-	changes, err := w.diffTreeWithStaging(context.Background(), tt, true)
+	changes, err := w.diffTreeWithStaging(t.Context(), tt, true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo tree error: %v\n", err)
 		return
@@ -80,7 +80,7 @@ func TestWorktree2(t *testing.T) {
 }
 
 func TestWorktree3(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh7",
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func TestWorktree3(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	changes, err := w.Status(context.Background(), true)
+	changes, err := w.Status(t.Context(), true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "checkout error: %v\n", err)
 	}
@@ -99,7 +99,7 @@ func TestWorktree3(t *testing.T) {
 }
 
 func TestCheckout(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh3",
 	})
 	if err != nil {
@@ -108,18 +108,18 @@ func TestCheckout(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	cc, err := r.odb.Commit(context.TODO(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
+	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open repo commit error: %v\n", err)
 		return
 	}
-	if err := w.Checkout(context.TODO(), &CheckoutOptions{Hash: cc.Hash}); err != nil {
+	if err := w.Checkout(t.Context(), &CheckoutOptions{Hash: cc.Hash}); err != nil {
 		fmt.Fprintf(os.Stderr, "checkout error: %v\n", err)
 	}
 }
 
 func TestStatus(t *testing.T) {
-	r, err := Open(context.TODO(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/bb",
 	})
 	if err != nil {
@@ -128,7 +128,7 @@ func TestStatus(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	changes, err := w.Status(context.TODO(), true)
+	changes, err := w.Status(t.Context(), true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "status error: %v\n", err)
 	}
@@ -138,7 +138,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestStatus2(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/k3",
 	})
 	if err != nil {
@@ -147,7 +147,7 @@ func TestStatus2(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	changes, err := w.Status(context.Background(), true)
+	changes, err := w.Status(t.Context(), true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "status error: %v\n", err)
 	}
@@ -157,7 +157,7 @@ func TestStatus2(t *testing.T) {
 }
 
 func TestIndex(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/k3",
 	})
 	if err != nil {
@@ -166,19 +166,19 @@ func TestIndex(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	tree, err := w.odb.Tree(context.TODO(), plumbing.NewHash("e23e0364b4c49bbfd179ce65bb76a224aa8a3a27dea25e691bed31ed8b7a693b"))
+	tree, err := w.odb.Tree(t.Context(), plumbing.NewHash("e23e0364b4c49bbfd179ce65bb76a224aa8a3a27dea25e691bed31ed8b7a693b"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open tree error: %v\n", err)
 		return
 	}
-	err = w.resetIndex(context.Background(), tree)
+	err = w.resetIndex(t.Context(), tree)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "reset index error: %v\n", err)
 	}
 }
 
 func TestCommit(t *testing.T) {
-	r, err := Open(context.TODO(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh4",
 	})
 	if err != nil {
@@ -187,7 +187,7 @@ func TestCommit(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	oid, err := w.Commit(context.TODO(), &CommitOptions{All: true, Message: []string{"new commit message"}})
+	oid, err := w.Commit(t.Context(), &CommitOptions{All: true, Message: []string{"new commit message"}})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "checkout error: %v\n", err)
 	}
@@ -195,7 +195,7 @@ func TestCommit(t *testing.T) {
 }
 
 func TestCommit2(t *testing.T) {
-	r, err := Open(context.TODO(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh5",
 	})
 	if err != nil {
@@ -204,7 +204,7 @@ func TestCommit2(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	oid, err := w.Commit(context.TODO(), &CommitOptions{All: true, Message: []string{"new commit message ------>\n"}})
+	oid, err := w.Commit(t.Context(), &CommitOptions{All: true, Message: []string{"new commit message ------>\n"}})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "checkout error: %v\n", err)
 	}
@@ -233,13 +233,13 @@ func TestTreeNode(t *testing.T) {
 		return
 	}
 	defer o.Close()
-	tree, err := o.Tree(context.TODO(), plumbing.NewHash("dee3c85319b94c91616e16014cdf2839ca7d0d3cf8412a633ac7169440fc1a58"))
+	tree, err := o.Tree(t.Context(), plumbing.NewHash("dee3c85319b94c91616e16014cdf2839ca7d0d3cf8412a633ac7169440fc1a58"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open tree error: %s\n", err)
 		return
 	}
 	node := object.NewTreeRootNode(tree, noder.NewSparseTreeMatcher([]string{"dir3", "dir1"}), true)
-	WalkNode(context.TODO(), node)
+	WalkNode(t.Context(), node)
 }
 
 func TestCalculateChunk(t *testing.T) {
@@ -287,7 +287,7 @@ func TestMask(t *testing.T) {
 }
 
 func TestGrep(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh5",
 	})
 	if err != nil {
@@ -296,7 +296,7 @@ func TestGrep(t *testing.T) {
 	}
 	defer r.Close()
 	w := r.Worktree()
-	result, err := w.Grep(context.TODO(), &GrepOptions{
+	result, err := w.Grep(t.Context(), &GrepOptions{
 		Patterns: []*regexp.Regexp{regexp.MustCompile("import")},
 	})
 	if err != nil {
@@ -309,7 +309,7 @@ func TestGrep(t *testing.T) {
 }
 
 func TestStat(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh5",
 	})
 	if err != nil {
@@ -317,12 +317,12 @@ func TestStat(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	cc, err := r.odb.Commit(context.TODO(), plumbing.NewHash("cc9bc711ee644d0441d5d0a63bba5548d4bb3e06ee99edc0e27aa0c57d57efe8"))
+	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("cc9bc711ee644d0441d5d0a63bba5548d4bb3e06ee99edc0e27aa0c57d57efe8"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open commit error: %v\n", err)
 		return
 	}
-	ss, err := cc.StatsContext(context.Background(), noder.NewSparseTreeMatcher(r.Core.SparseDirs), &object.PatchOptions{})
+	ss, err := cc.StatsContext(t.Context(), noder.NewSparseTreeMatcher(r.Core.SparseDirs), &object.PatchOptions{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "stats commit error: %v\n", err)
 		return
@@ -333,7 +333,7 @@ func TestStat(t *testing.T) {
 }
 
 func TestResolveImmutableEntries(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/k4",
 	})
 	if err != nil {
@@ -346,22 +346,22 @@ func TestResolveImmutableEntries(t *testing.T) {
 		trees:           make(map[string]*object.Tree),
 		readOnlyEntries: make(map[string]*object.TreeEntry),
 	}
-	oid, err := r.Revision(context.Background(), "HEAD^")
+	oid, err := r.Revision(t.Context(), "HEAD^")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve error: %v\n", err)
 		return
 	}
-	cc, err := r.odb.Commit(context.TODO(), oid)
+	cc, err := r.odb.Commit(t.Context(), oid)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
 		return
 	}
-	tree, err := r.odb.Tree(context.TODO(), cc.Tree)
+	tree, err := r.odb.Tree(t.Context(), cc.Tree)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve tree error: %v\n", err)
 		return
 	}
-	if err := h.resolveReadOnlyEntries(context.TODO(), tree, "", noder.NewSparseTreeMatcher(r.Core.SparseDirs)); err != nil {
+	if err := h.resolveReadOnlyEntries(t.Context(), tree, "", noder.NewSparseTreeMatcher(r.Core.SparseDirs)); err != nil {
 		fmt.Fprintf(os.Stderr, "resolve error: %v\n", err)
 		return
 	}
@@ -392,7 +392,7 @@ func TestMatcher2(t *testing.T) {
 	}
 }
 
-func checkTreeSize(o *odb.ODB, tree *object.Tree, parent string, action string) error {
+func checkTreeSize(ctx context.Context, o *odb.ODB, tree *object.Tree, parent string, action string) error {
 	entries := make([]*object.TreeEntry, 0, len(tree.Entries))
 	entries = append(entries, tree.Entries...)
 	sort.Sort(object.SubtreeOrder(entries))
@@ -412,14 +412,14 @@ func checkTreeSize(o *odb.ODB, tree *object.Tree, parent string, action string) 
 		if e.Size != 0 {
 			fmt.Fprintf(os.Stderr, "[%s] tree size not zero: %s\n", action, name)
 		}
-		sub, err := o.Tree(context.TODO(), e.Hash)
+		sub, err := o.Tree(ctx, e.Hash)
 		if plumbing.IsNoSuchObject(err) {
 			continue
 		}
 		if err != nil {
 			return err
 		}
-		if err := checkTreeSize(o, sub, name, action); err != nil {
+		if err := checkTreeSize(ctx, o, sub, name, action); err != nil {
 			return err
 		}
 	}
@@ -427,7 +427,7 @@ func checkTreeSize(o *odb.ODB, tree *object.Tree, parent string, action string) 
 }
 
 func TestCat4(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/xh7",
 	})
 	if err != nil {
@@ -435,23 +435,23 @@ func TestCat4(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	t0, err := r.odb.Tree(context.TODO(), plumbing.NewHash("2dfb5cfe652f747551d9c03da557af00b147e103ae6810e8e226662dc9b05a9c"))
+	t0, err := r.odb.Tree(t.Context(), plumbing.NewHash("2dfb5cfe652f747551d9c03da557af00b147e103ae6810e8e226662dc9b05a9c"))
 	if err != nil {
 		return
 	}
-	_ = checkTreeSize(r.odb, t0, "", "oldtree")
-	t1, err := r.odb.Tree(context.TODO(), plumbing.NewHash("bb126e78f3b5ce90fc53602b1c6180999893d4cefb995e11bbb5e09ca5f026ad"))
+	_ = checkTreeSize(t.Context(), r.odb, t0, "", "oldtree")
+	t1, err := r.odb.Tree(t.Context(), plumbing.NewHash("bb126e78f3b5ce90fc53602b1c6180999893d4cefb995e11bbb5e09ca5f026ad"))
 	if err != nil {
 		return
 	}
-	_ = checkTreeSize(r.odb, t0, "", "newtree")
+	_ = checkTreeSize(t.Context(), r.odb, t0, "", "newtree")
 	if t0.Equal(t1) {
 		fmt.Fprintf(os.Stderr, "equal %s %s\n", t0.Hash, t1.Hash)
 	}
 }
 
 func TestMergeBase(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/b3",
 	})
 	if err != nil {
@@ -459,17 +459,17 @@ func TestMergeBase(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	c1, err := r.odb.Commit(context.TODO(), plumbing.NewHash("3d9fb9964feffd6da7a46552e6f3c1a5360c106de2f7de13642b3bfce6970d95"))
+	c1, err := r.odb.Commit(t.Context(), plumbing.NewHash("3d9fb9964feffd6da7a46552e6f3c1a5360c106de2f7de13642b3bfce6970d95"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
 		return
 	}
-	c2, err := r.odb.Commit(context.TODO(), plumbing.NewHash("16f7d9dcac2ec114f63e4468c08dad952adeb05ae9ca59ea9e9b0ad1cd6a730d"))
+	c2, err := r.odb.Commit(t.Context(), plumbing.NewHash("16f7d9dcac2ec114f63e4468c08dad952adeb05ae9ca59ea9e9b0ad1cd6a730d"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
 		return
 	}
-	bases, err := c1.MergeBase(context.TODO(), c2)
+	bases, err := c1.MergeBase(t.Context(), c2)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "check merge-base error: %v\n", err)
 		return
@@ -484,7 +484,7 @@ func TestMergeBase(t *testing.T) {
 }
 
 func TestMergeBase2(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/b2",
 	})
 	if err != nil {
@@ -492,21 +492,21 @@ func TestMergeBase2(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	c1, err := r.odb.Commit(context.TODO(), plumbing.NewHash("abf364f16c0def448adb4db318d6677523a8b09d5947e502bb9e0d32e9c4b7b6"))
+	c1, err := r.odb.Commit(t.Context(), plumbing.NewHash("abf364f16c0def448adb4db318d6677523a8b09d5947e502bb9e0d32e9c4b7b6"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
 		return
 	}
-	c2, err := r.odb.Commit(context.TODO(), plumbing.NewHash("1a3738abb6463fd98fcfea561942e9ed8d515137b901119c3e6f1d0c0bda4663"))
+	c2, err := r.odb.Commit(t.Context(), plumbing.NewHash("1a3738abb6463fd98fcfea561942e9ed8d515137b901119c3e6f1d0c0bda4663"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
 		return
 	}
-	b, err := c1.IsAncestor(context.TODO(), c2)
+	b, err := c1.IsAncestor(t.Context(), c2)
 	fmt.Fprintf(os.Stderr, "c1 isAncestor c2: %v %v\n", b, err)
-	b, err = c2.IsAncestor(context.TODO(), c1)
+	b, err = c2.IsAncestor(t.Context(), c1)
 	fmt.Fprintf(os.Stderr, "c2 isAncestor c1: %v %v\n", b, err)
-	bases, err := c1.MergeBase(context.TODO(), c2)
+	bases, err := c1.MergeBase(t.Context(), c2)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "check merge-base error: %v\n", err)
 		return
@@ -521,7 +521,7 @@ func TestMergeBase2(t *testing.T) {
 }
 
 func TestLsTreeFilter(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/k6",
 	})
 	if err != nil {
@@ -529,12 +529,12 @@ func TestLsTreeFilter(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	tree, err := r.resolveTree(context.Background(), "HEAD:")
+	tree, err := r.resolveTree(t.Context(), "HEAD:")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve tree %s\n", err)
 		return
 	}
-	entries, err := r.lsTreeRecurseFilter(context.Background(), tree, NewMatcher([]string{"*.k", "sigma/appops/intelligent_engine/business_intelligence-recommendation_engine/tapeargo"}))
+	entries, err := r.lsTreeRecurseFilter(t.Context(), tree, NewMatcher([]string{"*.k", "sigma/appops/intelligent_engine/business_intelligence-recommendation_engine/tapeargo"}))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ls tree %s\n", err)
 		return
@@ -545,7 +545,7 @@ func TestLsTreeFilter(t *testing.T) {
 }
 
 func TestLsTreeFilter2(t *testing.T) {
-	r, err := Open(context.Background(), &OpenOptions{
+	r, err := Open(t.Context(), &OpenOptions{
 		Worktree: "/private/tmp/zeta-extra",
 	})
 	if err != nil {
@@ -553,12 +553,12 @@ func TestLsTreeFilter2(t *testing.T) {
 		return
 	}
 	defer r.Close()
-	tree, err := r.resolveTree(context.Background(), "HEAD:")
+	tree, err := r.resolveTree(t.Context(), "HEAD:")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve tree %s\n", err)
 		return
 	}
-	entries, err := r.lsTreeRecurseFilter(context.Background(), tree, NewMatcher([]string{"cmd", "*.c"}))
+	entries, err := r.lsTreeRecurseFilter(t.Context(), tree, NewMatcher([]string{"cmd", "*.c"}))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ls tree %s\n", err)
 		return

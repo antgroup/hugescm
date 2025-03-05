@@ -156,19 +156,19 @@ type Transport struct {
 }
 
 const (
-	minLargSize = 512 << 10 // 512K
-	largeSize   = 10 << 20  // 10M
+	minLargeSize = 512 << 10 // 512K
+	largeSize    = 10 << 20  // 10M
 )
 
 func (t Transport) LargeSize() int64 {
-	if t.LargeSizeRaw.Size < minLargSize {
+	if t.LargeSizeRaw.Size < minLargeSize {
 		return largeSize
 	}
 	return t.LargeSizeRaw.Size
 }
 
 func (t *Transport) Overwrite(o *Transport) {
-	if o.LargeSizeRaw.Size >= minLargSize {
+	if o.LargeSizeRaw.Size >= minLargeSize {
 		t.LargeSizeRaw.Size = o.LargeSizeRaw.Size
 	}
 	if o.MaxEntries > 0 {

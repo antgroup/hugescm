@@ -196,11 +196,11 @@ func (s Section) filterAll(k string) ([]any, error) {
 	rv := reflect.ValueOf(v)
 	switch rv.Kind() {
 	case reflect.Array:
-		for i := 0; i < rv.Len(); i++ {
+		for i := range rv.Len() {
 			vals = append(vals, rv.Index(i).Interface())
 		}
 	case reflect.Slice:
-		for i := 0; i < rv.Len(); i++ {
+		for i := range rv.Len() {
 			vals = append(vals, rv.Index(i).Interface())
 		}
 	default:

@@ -31,14 +31,14 @@ func (opts *DisplayOptions) Show(a any, keys ...string) error {
 	v := reflect.ValueOf(a)
 	switch v.Kind() {
 	case reflect.Array:
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			if err := opts.Show(v.Index(i).Interface(), keys...); err != nil {
 				return err
 			}
 		}
 		return nil
 	case reflect.Slice:
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			if err := opts.Show(v.Index(i).Interface(), keys...); err != nil {
 				return err
 			}

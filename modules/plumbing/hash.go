@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"hash"
 	"sort"
 
@@ -127,6 +128,13 @@ func ValidateHashHex(s string) bool {
 		}
 	}
 	return true
+}
+
+func NewHashEx(s string) (Hash, error) {
+	if !ValidateHashHex(s) {
+		return ZeroHash, fmt.Errorf("zeta: '%s' not a valid object name", s)
+	}
+	return NewHash(s), nil
 }
 
 func IsLooseDir(s string) bool {

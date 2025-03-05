@@ -25,18 +25,16 @@ const (
 func (s *Server) checkDeepen(w http.ResponseWriter, r *Request) (deepen int, deepenFrom, have plumbing.Hash, err error) {
 	q := r.URL.Query()
 	if s := q.Get(Have); len(s) != 0 {
-		if !plumbing.ValidateHashHex(s) {
+		if have, err = plumbing.NewHashEx(s); err != nil {
 			renderFailureFormat(w, r.Request, http.StatusBadRequest, "bad have '%s'", s)
 			return
 		}
-		have = plumbing.NewHash(s)
 	}
 	if ds := q.Get(DeepenFrom); len(ds) != 0 {
-		if !plumbing.ValidateHashHex(ds) {
+		if deepenFrom, err = plumbing.NewHashEx(ds); err != nil {
 			renderFailureFormat(w, r.Request, http.StatusBadRequest, "bad deepen-from '%s'", ds)
 			return
 		}
-		deepenFrom = plumbing.NewHash(ds)
 		deepen = -1
 		return
 	}

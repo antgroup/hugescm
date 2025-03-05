@@ -41,19 +41,19 @@ func (b *bounds) Right() int64 {
 
 // WithLeft returns a new copy of this *bounds instance, replacing the left
 // value with the given argument.
-func (b *bounds) WithLeft(new int64) *bounds {
+func (b *bounds) WithLeft(newLeft int64) *bounds {
 	return &bounds{
-		left:  new,
+		left:  newLeft,
 		right: b.right,
 	}
 }
 
 // WithRight returns a new copy of this *bounds instance, replacing the right
 // value with the given argument.
-func (b *bounds) WithRight(new int64) *bounds {
+func (b *bounds) WithRight(newRight int64) *bounds {
 	return &bounds{
 		left:  b.left,
-		right: new,
+		right: newRight,
 	}
 }
 

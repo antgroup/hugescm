@@ -6,7 +6,7 @@ package pack
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"io"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -130,10 +130,10 @@ func (i *Index) Close() error {
 var (
 	// errNotFound is an error returned by Index.Entry() (see: below) when
 	// an object cannot be found in the index.
-	errNotFound = fmt.Errorf("zeta: object not found in index")
+	errNotFound = errors.New("zeta: object not found in index")
 	// ErrShortFanout is an error representing situations where the entire
 	// fanout table could not be read, and is thus too short.
-	ErrShortFanout = fmt.Errorf("zeta: too short fanout table")
+	ErrShortFanout = errors.New("zeta: too short fanout table")
 )
 
 // IsNotFound returns whether a given error represents a missing object in the
@@ -203,7 +203,7 @@ func prefixCompare(want, got plumbing.Hash) int {
 	return bytes.Compare(want[:sl], got[:sl])
 }
 
-func (i *Index) Search(name plumbing.Hash) (oid plumbing.Hash, error error) {
+func (i *Index) Search(name plumbing.Hash) (oid plumbing.Hash, err error) {
 	var last *bounds
 	bounds := i.bounds(name)
 

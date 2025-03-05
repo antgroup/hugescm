@@ -118,10 +118,10 @@ func (s *set) eachSearch(name plumbing.Hash, fn serachFn) (oid plumbing.Hash, er
 func packsConcat(packs ...*Packfile) Set {
 	m := make(map[byte][]*Packfile)
 
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		n := byte(i)
 
-		for j := 0; j < len(packs); j++ {
+		for j := range packs {
 			pack := packs[j]
 
 			var count uint32

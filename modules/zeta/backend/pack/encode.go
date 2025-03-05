@@ -91,7 +91,7 @@ func (e *Encoder) WriteTrailer() error {
 		}
 		return e.bw.Flush()
 	}
-	// Flush all data, we shou
+	// Flush all data
 	if err := e.bw.Flush(); err != nil {
 		return err
 	}

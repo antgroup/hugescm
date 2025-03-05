@@ -622,14 +622,15 @@ func (w *Worktree) doAddFile(ctx context.Context, idx *index.Index, s Status, pa
 		fmt.Fprintf(os.Stdout, "add '%s'\n", path)
 		return false, h, nil
 	}
+	if s.IsDeleted(path) {
+		added = true
+		h, err = w.deleteFromIndex(idx, path)
+		return
+	}
+
 	w.DbgPrint("add '%s'", path)
 	var asFragments bool
 	if h, asFragments, err = w.copyFileToStorage(ctx, path); err != nil {
-		if os.IsNotExist(err) {
-			added = true
-			h, err = w.deleteFromIndex(idx, path)
-		}
-
 		return
 	}
 

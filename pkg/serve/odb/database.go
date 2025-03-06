@@ -300,7 +300,7 @@ func (o *ODB) BatchTrees(ctx context.Context, oids []plumbing.Hash) error {
 	return nil
 }
 
-func (o *ODB) batchObjects(ctx context.Context, oids []plumbing.Hash) error {
+func (o *ODB) batchMetaObjects(ctx context.Context, oids []plumbing.Hash) error {
 	fragments := make([]*object.Fragments, 0, 100)
 	tags := make([]*object.Tag, 0, 100)
 	for _, oid := range oids {
@@ -336,10 +336,10 @@ func (o *ODB) batchObjects(ctx context.Context, oids []plumbing.Hash) error {
 	return nil
 }
 
-func (o *ODB) BatchObjects(ctx context.Context, oids []plumbing.Hash) error {
+func (o *ODB) BatchMetaObjects(ctx context.Context, oids []plumbing.Hash) error {
 	for len(oids) > 0 {
 		batchSize := min(len(oids), 1000)
-		if err := o.batchObjects(ctx, oids[:batchSize]); err != nil {
+		if err := o.batchMetaObjects(ctx, oids[:batchSize]); err != nil {
 			return err
 		}
 		oids = oids[batchSize:]

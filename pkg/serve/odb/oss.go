@@ -192,8 +192,8 @@ func (g *uploadGroup) run(ctx context.Context, o *ODB) {
 	}()
 }
 
-// Batch: batch upload objects
-func (o *ODB) Batch(ctx context.Context, oids []plumbing.Hash, batchLimit int) error {
+// BatchObjects: batch upload objects
+func (o *ODB) BatchObjects(ctx context.Context, oids []plumbing.Hash, batchLimit int) error {
 	if len(oids) == 0 {
 		return nil
 	}

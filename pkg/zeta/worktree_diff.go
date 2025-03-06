@@ -83,7 +83,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool)
 		return f, content, a.IsFragments(), false, nil
 	default:
 	}
-	return nil, "", false, false, errors.New("unsupport noder type")
+	return nil, "", false, false, errors.New("unsupported noder type")
 }
 
 func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (*diferenco.Unified, error) {

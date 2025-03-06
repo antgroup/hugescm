@@ -91,7 +91,7 @@ func (w *Worktree) validChangeIgnore(ch merkletrie.Change, ignore map[string]boo
 	return false, nil
 }
 
-func (w *Worktree) resetIndexIngoreFiles(ctx context.Context, t *object.Tree, doNotCheckouts map[string]bool) error {
+func (w *Worktree) resetIndexIgnoreFiles(ctx context.Context, t *object.Tree, doNotCheckouts map[string]bool) error {
 	idx, err := w.odb.Index()
 
 	if err != nil {
@@ -301,7 +301,7 @@ func (w *Worktree) checkout(ctx context.Context, opts *CheckoutOptions, bar Prog
 	if err != nil {
 		return err
 	}
-	if err := w.resetIndexIngoreFiles(ctx, newTree, doNotCheckouts); err != nil {
+	if err := w.resetIndexIgnoreFiles(ctx, newTree, doNotCheckouts); err != nil {
 		return err
 	}
 	if err := w.checkoutIgnoreFiles(ctx, newTree, doNotCheckouts, bar); err != nil {

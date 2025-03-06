@@ -269,15 +269,15 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 	}
 	var g errgroup.Group
 	g.Go(func() error {
-		if err := r.odb.Batch(ctx, recvObjects.Blobs, 50); err != nil {
+		if err := r.odb.BatchObjects(ctx, recvObjects.Objects, 50); err != nil {
 			logrus.Errorf("batch upload blobs error: %v", err)
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		if err := r.odb.BatchObjects(ctx, recvObjects.Objects); err != nil {
-			logrus.Errorf("batch encode objects error: %v", err)
+		if err := r.odb.BatchMetaObjects(ctx, recvObjects.MetaObjects); err != nil {
+			logrus.Errorf("batch encode metadata objects error: %v", err)
 			return err
 		}
 		return nil

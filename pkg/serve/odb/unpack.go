@@ -38,11 +38,11 @@ var (
 )
 
 type Objects struct {
-	Commits []plumbing.Hash // commits
-	Trees   []plumbing.Hash // trees
-	Objects []plumbing.Hash // fragments and tags
-	Blobs   []plumbing.Hash // blobs
-	Larges  []plumbing.Hash
+	Commits     []plumbing.Hash // commits
+	Trees       []plumbing.Hash // trees
+	MetaObjects []plumbing.Hash // fragments and tags
+	Objects     []plumbing.Hash // blobs
+	Larges      []plumbing.Hash
 }
 
 type Validator func(ctx context.Context, quarantineDir string, o *Objects) error
@@ -86,11 +86,11 @@ func (o *ODB) Unpack(ctx context.Context, r io.Reader, ss *OStats, validator Val
 	if _, err := io.ReadFull(r, reserved[:]); err != nil {
 		return nil, zeta.NewErrStatusCode(http.StatusBadRequest, "read reserved error: %v", err)
 	}
-	recvObjs := &Objects{
-		Commits: make([]plumbing.Hash, 0, 10),
-		Trees:   make([]plumbing.Hash, 0, 100),
-		Objects: make([]plumbing.Hash, 0, 10),
-		Blobs:   make([]plumbing.Hash, 0, 100),
+	recvObjects := &Objects{
+		Commits:     make([]plumbing.Hash, 0, 10),
+		Trees:       make([]plumbing.Hash, 0, 100),
+		MetaObjects: make([]plumbing.Hash, 0, 10),
+		Objects:     make([]plumbing.Hash, 0, 100),
 	}
 	u, err := NewUnpackers(ss, metadataDir, blobDir)
 	if err != nil {
@@ -131,9 +131,9 @@ func (o *ODB) Unpack(ctx context.Context, r io.Reader, ss *OStats, validator Val
 				return nil, zeta.NewErrStatusCode(http.StatusBadRequest, "decode blob error: %v", err)
 			}
 			if size > LargeSize {
-				recvObjs.Larges = append(recvObjs.Larges, oid)
+				recvObjects.Larges = append(recvObjects.Larges, oid)
 			}
-			recvObjs.Blobs = append(recvObjs.Blobs, oid)
+			recvObjects.Objects = append(recvObjects.Objects, oid)
 			continue
 		}
 		t, err := u.mu.Unpack(oid, reader, uint32(currentSize), true)
@@ -142,11 +142,11 @@ func (o *ODB) Unpack(ctx context.Context, r io.Reader, ss *OStats, validator Val
 		}
 		switch t {
 		case object.CommitObject:
-			recvObjs.Commits = append(recvObjs.Commits, oid)
+			recvObjects.Commits = append(recvObjects.Commits, oid)
 		case object.TreeObject:
-			recvObjs.Trees = append(recvObjs.Trees, oid)
+			recvObjects.Trees = append(recvObjects.Trees, oid)
 		default:
-			recvObjs.Objects = append(recvObjs.Objects, oid)
+			recvObjects.MetaObjects = append(recvObjects.MetaObjects, oid)
 		}
 	}
 	// if err := r.Verify(); err != nil {
@@ -158,14 +158,14 @@ func (o *ODB) Unpack(ctx context.Context, r io.Reader, ss *OStats, validator Val
 		return nil, err
 	}
 	logrus.Infof("[RID-%d] objects unpacking consumption: %v", o.rid, time.Since(now))
-	if err := validator(ctx, quarantineDir, recvObjs); err != nil {
+	if err := validator(ctx, quarantineDir, recvObjects); err != nil {
 		return nil, err
 	}
 
 	if err := o.moveFromQuarantineDir(quarantineDir); err != nil {
 		return nil, err
 	}
-	return recvObjs, nil
+	return recvObjects, nil
 }
 
 // /home/zeta/repositories/a.zeta/tmp/quarantine-XXXX/metadata/8d/8d0607257a2ee5a4c85d287c70900c14c2380f55cd49179f2db6228edee7db25

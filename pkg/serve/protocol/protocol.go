@@ -50,7 +50,7 @@ type PayloadHeader struct {
 type SASPayload struct {
 	Header    PayloadHeader `json:"header"`
 	Notice    string        `json:"notice,omitempty"`
-	ExpiresAt time.Time     `json:"expires_at,omitempty"`
+	ExpiresAt time.Time     `json:"expires_at,omitzero"`
 }
 
 type ErrorCode struct {

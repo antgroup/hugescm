@@ -4,6 +4,7 @@
 package transport
 
 import (
+	"maps"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -25,7 +26,7 @@ type SASHandshake struct {
 type SASPayload struct {
 	Header    map[string]string `json:"header,omitempty"`
 	Notice    string            `json:"notice,omitempty"`
-	ExpiresAt time.Time         `json:"expires_at,omitempty"`
+	ExpiresAt time.Time         `json:"expires_at,omitzero"`
 }
 
 func (p *SASPayload) IsExpired() bool {
@@ -74,7 +75,7 @@ type Representation struct {
 	CompressedSize int64             `json:"compressed_size"`
 	Href           string            `json:"href"`
 	Header         map[string]string `json:"header,omitempty"`
-	ExpiresAt      time.Time         `json:"expires_at,omitempty"`
+	ExpiresAt      time.Time         `json:"expires_at,omitzero"`
 }
 
 func (r *Representation) IsExpired() bool {
@@ -84,9 +85,7 @@ func (r *Representation) IsExpired() bool {
 func (r *Representation) Copy() *Representation {
 	header := make(map[string]string)
 	if r.Header != nil {
-		for k, v := range r.Header {
-			header[k] = v
-		}
+		maps.Copy(header, r.Header)
 	}
 	return &Representation{OID: r.OID, CompressedSize: r.CompressedSize, Href: r.Href, Header: header, ExpiresAt: r.ExpiresAt}
 }

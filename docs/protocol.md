@@ -388,7 +388,7 @@ type Representation struct {
     CompressedSize int64             `json:"compressed_size"`
     Href           string            `json:"href"`
     Header         map[string]string `json:"header,omitempty"`
-    ExpiresAt      time.Time         `json:"expires_at,omitempty"`
+    ExpiresAt      time.Time         `json:"expires_at,omitzero"`
 }
 
 type BatchShareObjectsResponse struct {

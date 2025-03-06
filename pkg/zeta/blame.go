@@ -319,7 +319,7 @@ func (b *blame) addBlames(ctx context.Context, curItems []*queueItem) (bool, err
 		getFromParent := make([]lineMap, 0)
 	out:
 		for _, h := range u.Hunks {
-			for hl := 0; hl < len(h.Lines); hl++ {
+			for hl := range h.Lines {
 				switch h.Lines[hl].Kind {
 				case diferenco.Equal:
 					prevl++

@@ -183,6 +183,9 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 		}
 		if lab == "ok" {
 			refname, newRev, _ := strings.Cut(line[pos+1:], " ")
+			if !plumbing.ValidateReferenceName([]byte(refname)) || !plumbing.ValidateHashHex(newRev) {
+				break
+			}
 			result = &Report{ReferenceName: plumbing.ReferenceName(refname), NewRev: newRev}
 			break
 		}
@@ -199,7 +202,10 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 			break
 		}
 		if lab == "status" {
-			_, _ = term.SanitizedF("remote: %s\n", line[pos+1:])
+			// multiline-status
+			for s := range strings.SplitSeq(line[pos+1:], "\n") {
+				_, _ = term.SanitizedF("remote: %s\n", s)
+			}
 			continue
 		}
 	}

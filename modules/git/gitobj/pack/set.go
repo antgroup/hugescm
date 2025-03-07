@@ -50,39 +50,42 @@ func NewSet(db string, algo hash.Hash) (*Set, error) {
 	packs := make([]*Packfile, 0, len(paths))
 
 	for _, path := range paths {
-		submatch := nameRe.FindStringSubmatch(filepath.Base(path))
-		if len(submatch) != 2 {
+		subMatch := nameRe.FindStringSubmatch(filepath.Base(path))
+		if len(subMatch) != 2 {
 			continue
 		}
 
-		name := submatch[1]
+		name := subMatch[1]
 
-		idxf, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.idx", name)))
+		ifd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.idx", name)))
 		if err != nil {
 			// We have a pack (since it matched the regex), but the
 			// index is missing or unusable.  Skip this pack and
 			// continue on with the next one, as Git does.
-			if idxf != nil {
+			if ifd != nil {
 				// In the unlikely event that we did open a
 				// file, close it, but discard any error in
 				// doing so.
-				idxf.Close()
+				ifd.Close()
 			}
 			continue
 		}
 
-		packf, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.pack", name)))
+		pfd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.pack", name)))
 		if err != nil {
+			_ = ifd.Close()
 			return nil, err
 		}
 
-		pack, err := DecodePackfile(packf, algo)
+		pack, err := DecodePackfile(pfd, algo)
 		if err != nil {
+			_ = ifd.Close()
 			return nil, err
 		}
 
-		idx, err := DecodeIndex(idxf, algo)
+		idx, err := DecodeIndex(ifd, algo)
 		if err != nil {
+			_ = pack.Close()
 			return nil, err
 		}
 

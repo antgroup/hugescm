@@ -90,7 +90,7 @@ func (s *set) eachExists(name plumbing.Hash, fn func(*Packfile) error) error {
 	return plumbing.NoSuchObject(name)
 }
 
-type serachFn func(p *Packfile) (oid plumbing.Hash, err error)
+type searchFn func(p *Packfile) (oid plumbing.Hash, err error)
 
 func (s *set) Search(prefix plumbing.Hash) (oid plumbing.Hash, err error) {
 	return s.eachSearch(prefix, func(p *Packfile) (oid plumbing.Hash, err error) {
@@ -98,7 +98,7 @@ func (s *set) Search(prefix plumbing.Hash) (oid plumbing.Hash, err error) {
 	})
 }
 
-func (s *set) eachSearch(name plumbing.Hash, fn serachFn) (oid plumbing.Hash, err error) {
+func (s *set) eachSearch(name plumbing.Hash, fn searchFn) (oid plumbing.Hash, err error) {
 	k := name[0]
 	for _, pack := range s.m[k] {
 		o, err := fn(pack)
@@ -191,38 +191,40 @@ func newPacks(db string) ([]*Packfile, error) {
 	packs := make([]*Packfile, 0, len(paths))
 
 	for _, path := range paths {
-		submatch := nameRe.FindStringSubmatch(filepath.Base(path))
-		if len(submatch) != 2 {
+		subMatch := nameRe.FindStringSubmatch(filepath.Base(path))
+		if len(subMatch) != 2 {
 			continue
 		}
 
-		name := submatch[1]
+		name := subMatch[1]
 
-		idxf, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.idx", name)))
+		ifd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.idx", name)))
 		if err != nil {
 			// We have a pack (since it matched the regex), but the
 			// index is missing or unusable.  Skip this pack and
 			// continue on with the next one, as Git does.
-			if idxf != nil {
+			if ifd != nil {
 				// In the unlikely event that we did open a
 				// file, close it, but discard any error in
 				// doing so.
-				idxf.Close()
+				ifd.Close()
 			}
 			continue
 		}
 
-		packf, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.pack", name)))
+		pfd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.pack", name)))
 		if err != nil {
+			_ = ifd.Close()
 			return nil, err
 		}
 
-		pack, err := DecodePackfile(packf)
+		pack, err := DecodePackfile(pfd)
 		if err != nil {
+			_ = ifd.Close()
 			return nil, err
 		}
 
-		idx, err := DecodeIndex(idxf)
+		idx, err := DecodeIndex(ifd)
 		if err != nil {
 			_ = pack.Close()
 			return nil, err

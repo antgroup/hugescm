@@ -99,7 +99,7 @@ func calculateChunk(size, partSize int64) []chunk {
 	N := int(size / partSize)
 	chunks := make([]chunk, 0, N+1)
 	var offset int64
-	for i := 0; i < N; i++ {
+	for i := range N {
 		chunks = append(chunks, chunk{number: i + 1, offset: offset, size: partSize})
 		offset += partSize
 	}

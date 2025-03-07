@@ -204,7 +204,7 @@ func (d *Decoder) Object(objectKey string) (any, error) {
 		return tree, nil
 	default:
 	}
-	return nil, &ErrUnexpectedType{message: fmt.Sprintf("unexoected object '%s' type: %s", objectKey, obj.Type)}
+	return nil, &ErrUnexpectedType{message: fmt.Sprintf("unexpected object '%s' type: %s", objectKey, obj.Type)}
 }
 
 func (d *Decoder) Tree(objectKey string) (*Tree, error) {

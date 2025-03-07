@@ -103,8 +103,8 @@ func NewBucket(opts *NewBucketOptions) (Bucket, error) {
 		Client: &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
-				DialContext: func(ctx context.Context, netw, addr string) (net.Conn, error) {
-					conn, err := dialer.DialContext(ctx, netw, addr)
+				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					conn, err := dialer.DialContext(ctx, network, addr)
 					if err != nil {
 						return nil, err
 					}

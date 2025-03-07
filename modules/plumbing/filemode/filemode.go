@@ -38,7 +38,7 @@ const (
 	// but it has been deprecated nowadays.  This library uses them
 	// internally, so you can read old packfiles, but will treat them as
 	// Regulars when interfacing with the outside world.  This is the
-	// standard git behaviour.
+	// standard git behavior.
 	Deprecated FileMode = 0100664
 	// Executable represents executable files.
 	Executable FileMode = 0100755
@@ -147,7 +147,7 @@ func (m FileMode) IsFragments() bool {
 	return m&Fragments != 0
 }
 
-// String returns the FileMode as a string in the standatd git format,
+// String returns the FileMode as a string in the standard git format,
 // this is, an octal number padded with ceros to 7 digits.  Malformed
 // modes are printed in that same format, for easier debugging.
 //

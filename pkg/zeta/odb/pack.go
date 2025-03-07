@@ -183,8 +183,11 @@ func (d *ODB) OnReport(ctx context.Context, refname plumbing.ReferenceName, read
 		}
 		if lab == "ok" {
 			refname, newRev, _ := strings.Cut(line[pos+1:], " ")
-			if !plumbing.ValidateReferenceName([]byte(refname)) || !plumbing.ValidateHashHex(newRev) {
-				break
+			if !plumbing.ValidateReferenceName([]byte(refname)) {
+				return nil, fmt.Errorf("remote: invalid refname '%s' for ok-result", sanitizeLine(refname))
+			}
+			if !plumbing.ValidateHashHex(newRev) {
+				return nil, fmt.Errorf("remote: invalid new-rev '%s' for ok-result", sanitizeLine(refname))
 			}
 			result = &Report{ReferenceName: plumbing.ReferenceName(refname), NewRev: newRev}
 			break

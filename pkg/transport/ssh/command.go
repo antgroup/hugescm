@@ -17,7 +17,8 @@ type Command struct {
 	io.Reader
 	DbgPrint  func(format string, args ...any)
 	once      sync.Once
-	lastError *zeta.ErrStatusCode
+	closer    []io.Closer
+	lastError error
 }
 
 func (c *Command) LastError() error {
@@ -43,6 +44,9 @@ func (c *Command) Wait() error {
 }
 
 func (c *Command) Close() error {
+	for _, cc := range c.closer {
+		_ = cc.Close()
+	}
 	if err := c.Wait(); err != nil {
 		switch a := err.(type) {
 		case *ssh.ExitError:

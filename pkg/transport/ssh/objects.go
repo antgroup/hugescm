@@ -4,7 +4,6 @@
 package ssh
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -23,24 +22,16 @@ var (
 
 // BatchObjects: zeta-serve objects "group/mono-zeta" --batch
 func (c *client) BatchObjects(ctx context.Context, objects []plumbing.Hash) (transport.SessionReader, error) {
-	pr, pw := io.Pipe()
-	go func() {
-		defer pw.Close()
-		buf := bufio.NewWriter(pw)
-		defer buf.Flush()
-		for _, o := range objects {
-			_, _ = buf.WriteString(o.String())
-			_ = buf.WriteByte('\n')
-		}
-		_ = buf.WriteByte('\n')
-	}()
+	reader := transport.NewObjectsReader(objects)
 	psArgs := []string{"zeta-serve", "objects", fmt.Sprintf("'%s'", c.Path), "--batch"}
 	commandArgs := strings.Join(psArgs, " ")
 	cmd, err := c.NewBaseCommand(ctx)
 	if err != nil {
+		_ = reader.Close()
 		return nil, err
 	}
-	cmd.Stdin = pr
+	cmd.Stdin = reader
+	cmd.closer = append(cmd.closer, reader)
 	if cmd.Reader, err = cmd.StdoutPipe(); err != nil {
 		_ = cmd.Close()
 		return nil, err

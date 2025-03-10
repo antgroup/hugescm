@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	zetaBlobMIME           = "application/vnd.zeta-blob"
-	MiByte           int64 = 1048576
-	defaultThreshold       = 100 * MiByte
+	OSS_ZETA_BLOB_MIME       = "application/vnd.zeta-blob"
+	MiByte             int64 = 1048576
+	defaultThreshold         = 100 * MiByte
 )
 
 func ossJoin(rid int64, oid plumbing.Hash) string {
@@ -79,32 +79,34 @@ func (o *ODB) WriteDirect(ctx context.Context, oid plumbing.Hash, r io.Reader, s
 		return 0, err
 	}
 	pr, pw := io.Pipe()
-
 	var got plumbing.Hash
-
 	g, newCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		if got, err = object.HashFrom(pr); err != nil {
-			return err
+		var hashErr error
+		if got, hashErr = object.HashFrom(pr); err != nil {
+			_ = pr.CloseWithError(err)
+			return hashErr
 		}
+		_ = pr.Close()
 		return nil
 	})
 	g.Go(func() error {
-		defer pw.Close()
 		if size > 0 {
-			if err := o.bucket.LinearUpload(newCtx, resourcePath, io.TeeReader(r, pw), size, zetaBlobMIME); err != nil {
-				pw.CloseWithError(err)
+			if err := o.bucket.LinearUpload(newCtx, resourcePath, io.TeeReader(r, pw), size, OSS_ZETA_BLOB_MIME); err != nil {
+				_ = pw.CloseWithError(err)
 				return err
 			}
-		} else {
-			if err := o.bucket.Put(newCtx, resourcePath, io.TeeReader(r, pw), zetaBlobMIME); err != nil {
-				pw.CloseWithError(err)
-				return err
-			}
+			_ = pw.Close()
+			return nil
 		}
+		if err := o.bucket.Put(newCtx, resourcePath, io.TeeReader(r, pw), OSS_ZETA_BLOB_MIME); err != nil {
+			_ = pw.CloseWithError(err)
+			return err
+		}
+		_ = pw.Close()
 		return nil
 	})
-	if err := g.Wait(); err != nil {
+	if err = g.Wait(); err != nil {
 		return 0, err
 	}
 	if got != oid {
@@ -127,7 +129,7 @@ func (o *ODB) Push(ctx context.Context, oid plumbing.Hash) error {
 	}
 	defer sr.Close()
 
-	if err := o.bucket.LinearUpload(ctx, resourcePath, sr, sr.Size(), zetaBlobMIME); err != nil {
+	if err := o.bucket.LinearUpload(ctx, resourcePath, sr, sr.Size(), OSS_ZETA_BLOB_MIME); err != nil {
 		return err
 	}
 	o.cdb.Mark(o.rid, oid)

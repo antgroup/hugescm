@@ -4,15 +4,16 @@
 package ssh
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/klauspost/compress/zstd"
 )
@@ -36,7 +37,8 @@ func (c *client) FetchReference(ctx context.Context, refname plumbing.ReferenceN
 	var r transport.Reference
 	if err := json.NewDecoder(stdout).Decode(&r); err != nil {
 		_ = cmd.Close()
-		if cmd.lastError != nil && cmd.lastError.Code == 404 {
+		var lastErr *zeta.ErrStatusCode
+		if errors.As(cmd.lastError, &lastErr) && lastErr.Code == 404 {
 			return nil, transport.ErrReferenceNotExist
 		}
 		return nil, cmd.lastError
@@ -121,18 +123,8 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	return &decompressReader{decoder: zr, cmd: cmd}, nil
 }
 
-func (c *client) BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth int) (transport.SessionReader, error) {
-	pr, pw := io.Pipe()
-	go func() {
-		defer pw.Close()
-		buf := bufio.NewWriter(pw)
-		defer buf.Flush()
-		for _, o := range oids {
-			_, _ = buf.WriteString(o.String())
-			_ = buf.WriteByte('\n')
-		}
-		_ = buf.WriteByte('\n')
-	}()
+func (c *client) BatchMetadata(ctx context.Context, objects []plumbing.Hash, depth int) (transport.SessionReader, error) {
+	reader := transport.NewObjectsReader(objects)
 	psArgs := []string{"zeta-serve", "metadata", fmt.Sprintf("'%s'", c.Path), "--batch"}
 	if depth >= 0 {
 		psArgs = append(psArgs, "--depth="+strconv.Itoa(depth))
@@ -141,9 +133,11 @@ func (c *client) BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth 
 	commandArgs := strings.Join(psArgs, " ")
 	cmd, err := c.NewBaseCommand(ctx)
 	if err != nil {
+		_ = reader.Close()
 		return nil, err
 	}
-	cmd.Stdin = pr
+	cmd.Stdin = reader
+	cmd.closer = append(cmd.closer, reader)
 	if cmd.Reader, err = cmd.StdoutPipe(); err != nil {
 		_ = cmd.Close()
 		return nil, err

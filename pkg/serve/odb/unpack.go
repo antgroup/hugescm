@@ -255,35 +255,36 @@ func NewPackedUnpacker(root string) (*packedUnpacker, error) {
 }
 
 func (u *packedUnpacker) Unpack(oid plumbing.Hash, r io.Reader, size uint32, metadata bool) (object.ObjectType, error) {
-	var err error
 	pr, pw := io.Pipe()
 	var got plumbing.Hash
 	var t object.ObjectType
 	var g errgroup.Group
-
 	g.Go(func() error {
+		var err error
 		if metadata {
 			if got, t, err = object.HashObject(pr); err != nil {
+				_ = pr.CloseWithError(err)
 				return err
 			}
+			_ = pr.Close()
 			return nil
 		}
 		if got, err = object.HashFrom(pr); err != nil {
+			_ = pr.CloseWithError(err)
 			return err
 		}
+		_ = pr.Close()
 		return nil
 	})
 	g.Go(func() error {
-		defer pw.Close()
 		if err := u.Write(oid, size, io.TeeReader(r, pw), u.modification); err != nil {
+			_ = pw.CloseWithError(err)
 			return err
 		}
+		_ = pr.Close()
 		return nil
 	})
 	if err := g.Wait(); err != nil {
-		return object.InvalidObject, err
-	}
-	if got != oid {
 		return t, fmt.Errorf("unexpected blob oid got '%s' want '%s'", got, oid)
 	}
 	return t, nil

@@ -4,7 +4,6 @@
 package http
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -19,21 +18,11 @@ import (
 	"github.com/antgroup/hugescm/pkg/transport"
 )
 
-func (c *client) BatchObjects(ctx context.Context, oids []plumbing.Hash) (transport.SessionReader, error) {
-	pr, pw := io.Pipe()
-	go func() {
-		defer pw.Close()
-		buf := bufio.NewWriter(pw)
-		defer buf.Flush()
-		for _, o := range oids {
-			_, _ = buf.WriteString(o.String())
-			_ = buf.WriteByte('\n')
-		}
-		_ = buf.WriteByte('\n')
-	}()
-
+func (c *client) BatchObjects(ctx context.Context, objects []plumbing.Hash) (transport.SessionReader, error) {
+	reader := transport.NewObjectsReader(objects)
+	defer reader.Close()
 	batchURL := c.baseURL.JoinPath("objects", "batch").String()
-	req, err := c.newRequest(ctx, "POST", batchURL, pr)
+	req, err := c.newRequest(ctx, "POST", batchURL, reader)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@
 package http
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -114,18 +113,9 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 	}, nil
 }
 
-func (c *client) BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth int) (transport.SessionReader, error) {
-	pr, pw := io.Pipe()
-	go func() {
-		defer pw.Close()
-		buf := bufio.NewWriter(pw)
-		defer buf.Flush()
-		for _, o := range oids {
-			_, _ = buf.WriteString(o.String())
-			_ = buf.WriteByte('\n')
-		}
-		_ = buf.WriteByte('\n')
-	}()
+func (c *client) BatchMetadata(ctx context.Context, objects []plumbing.Hash, depth int) (transport.SessionReader, error) {
+	reader := transport.NewObjectsReader(objects)
+	defer reader.Close()
 
 	metadataURL := c.baseURL.JoinPath("metadata", "batch")
 	if depth >= 0 {
@@ -133,7 +123,7 @@ func (c *client) BatchMetadata(ctx context.Context, oids []plumbing.Hash, depth 
 		q.Set("depth", strconv.Itoa(depth))
 		metadataURL.RawQuery = q.Encode()
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, metadataURL.String(), pr)
+	req, err := c.newRequest(ctx, http.MethodPost, metadataURL.String(), reader)
 	if err != nil {
 		return nil, err
 	}

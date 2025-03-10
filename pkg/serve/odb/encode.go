@@ -83,7 +83,7 @@ func (o *ODB) HashTo(ctx context.Context, r io.Reader, size int64) (oid plumbing
 		return
 	}
 	defer sr.Close()
-	if err = o.bucket.LinearUpload(ctx, resourcePath, sr, size, zetaBlobMIME); err != nil {
+	if err = o.bucket.LinearUpload(ctx, resourcePath, sr, size, OSS_ZETA_BLOB_MIME); err != nil {
 		return plumbing.ZeroHash, err
 	}
 	return oid, nil

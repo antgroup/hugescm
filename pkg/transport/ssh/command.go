@@ -18,7 +18,7 @@ type Command struct {
 	DbgPrint  func(format string, args ...any)
 	once      sync.Once
 	closer    []io.Closer
-	lastError error
+	lastError error // Do not use specific types to store errors, otherwise nil will not be equal to nil
 }
 
 func (c *Command) LastError() error {

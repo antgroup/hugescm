@@ -124,6 +124,29 @@ func (s *Server) LsTagReference(w http.ResponseWriter, r *Request, tagName strin
 	ZetaEncodeVND(w, branch)
 }
 
+func (s *Server) LsOrdinaryReference(w http.ResponseWriter, r *Request, refname plumbing.ReferenceName) {
+	ref, err := s.db.FindOrdinaryReference(r.Context(), r.R.ID, refname)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			renderFailureFormat(w, r.Request, http.StatusNotFound, r.W("reference '%s' not exist"), refname)
+			return
+		}
+		s.renderError(w, r, err)
+		return
+	}
+	branch := &protocol.Reference{
+		Remote:          r.makeRemoteURL(),
+		Name:            string(refname),
+		Hash:            ref.Hash,
+		HEAD:            protocol.BRANCH_PREFIX + r.R.DefaultBranch,
+		Version:         int(protocol.PROTOCOL_VERSION),
+		Agent:           s.serverName,
+		HashAlgo:        r.R.HashAlgo,
+		CompressionAlgo: r.R.CompressionAlgo,
+	}
+	ZetaEncodeVND(w, branch)
+}
+
 // GET /{namespace}/{repo}/reference/{refname:.*}
 func (s *Server) LsReference(w http.ResponseWriter, r *Request) {
 	refname, err := url.PathUnescape(mux.Vars(r.Request)["refname"])
@@ -144,8 +167,7 @@ func (s *Server) LsReference(w http.ResponseWriter, r *Request) {
 		return
 	}
 	if strings.HasPrefix(refname, protocol.REF_PREFIX) {
-		// TODO: support pull or other refs ???
-		renderFailureFormat(w, r.Request, http.StatusNotFound, r.W("reference '%s' not exist"), refname)
+		s.LsOrdinaryReference(w, r, plumbing.ReferenceName(refname))
 		return
 	}
 	s.LsBranchReference(w, r, refname)

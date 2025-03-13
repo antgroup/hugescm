@@ -5,48 +5,22 @@ package database
 
 import (
 	"context"
-	"time"
+	"database/sql"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 )
 
-type Reference struct {
-	ID              int64                  `json:"id"`
-	Name            plumbing.ReferenceName `json:"name"`
-	RID             int64                  `json:"rid"`
-	Hash            string                 `json:"hash"`
-	ProtectionLevel int                    `json:"protection_level"`
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
-}
-
-func (d *database) DoReferenceUpdate(ctx context.Context, cmd *Command) (*Reference, error) {
-	switch {
-	case cmd.ReferenceName.IsBranch():
-		b, err := d.DoBranchUpdate(ctx, cmd)
-		if err != nil {
-			return nil, err
-		}
-		return &Reference{
-			ID:              b.ID,
-			Name:            cmd.ReferenceName,
-			RID:             b.RID,
-			Hash:            b.Hash,
-			ProtectionLevel: b.ProtectionLevel,
-			CreatedAt:       b.CreatedAt,
-			UpdatedAt:       b.UpdatedAt}, nil
-	case cmd.ReferenceName.IsTag():
-		t, err := d.doTagUpdate(ctx, cmd)
-		if err != nil {
-			return nil, err
-		}
-		return &Reference{
-			Name:      cmd.ReferenceName,
-			RID:       t.RID,
-			Hash:      t.Hash,
-			CreatedAt: t.CreatedAt,
-			UpdatedAt: t.UpdatedAt,
-		}, nil
+func (d *database) FindOrdinaryReference(ctx context.Context, rid int64, refname plumbing.ReferenceName) (*Reference, error) {
+	row := d.QueryRowContext(ctx, "select id, hash, created_at, updated_at from refs where rid = ? and name = ?", rid, refname)
+	ref := Reference{RID: rid, Name: refname}
+	err := row.Scan(&ref.ID, &ref.Hash, &ref.CreatedAt, &ref.UpdatedAt)
+	if err == nil {
+		ref.CreatedAt = ref.CreatedAt.Local()
+		ref.UpdatedAt = ref.UpdatedAt.Local()
+		return &ref, nil
 	}
-	return nil, ErrReferenceNotAllowed
+	if err == sql.ErrNoRows {
+		return nil, &ErrRevisionNotFound{Revision: string(refname)}
+	}
+	return nil, err
 }

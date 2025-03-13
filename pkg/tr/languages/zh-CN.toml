@@ -25,6 +25,7 @@
 "Checkout a non-editable snapshot" = "检出不可编辑的快照"
 "Direct the new HEAD to the <name> branch after checkout" = "签出后将新 HEAD 定向到 <name> 分支"
 "Direct the new HEAD to the <name> tag's commit after checkout" = "签出后将新 HEAD 定向到 <name> 标签对应的提交"
+"Direct the new HEAD to the <name> ref's commit after checkout" = "签出后将新 HEAD 定向到 <name> 常规引用对应的提交"
 "Direct the new HEAD to the <commit> branch after checkout" = "签出后将新 HEAD 定向到 <commit> 提交"
 "Create a shallow clone with a history truncated to the specified number of commits" = "创建一个浅克隆，其历史记录被截断为指定的提交次数"
 "Branch to checkout, HEAD by default" = "待检出的分支，默认为 HEAD"

@@ -6,6 +6,7 @@ package sshserver
 import (
 	"strings"
 
+	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/pkg/serve/database"
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
 )
@@ -53,9 +54,7 @@ func (s *Server) LsRemote(e *Session, repoPath, refname string) int {
 		return s.LsTagReference(e, tagName)
 	}
 	if strings.HasPrefix(refname, protocol.REF_PREFIX) {
-		// TODO: support pull or other refs ???
-		e.WriteError("reference '%s' not exist", refname)
-		return 404
+		return s.LsOrdinaryReference(e, plumbing.ReferenceName(refname))
 	}
 	return s.LsBranchReference(e, refname)
 }
@@ -99,6 +98,30 @@ func (s *Server) LsTagReference(e *Session, tagName string) int {
 		Name:            protocol.TAG_PREFIX + tagName,
 		Hash:            oid,
 		Peeled:          peeled,
+		HEAD:            protocol.BRANCH_PREFIX + e.DefaultBranch,
+		Version:         int(protocol.PROTOCOL_VERSION),
+		Agent:           s.serverName,
+		HashAlgo:        e.HashAlgo,
+		CompressionAlgo: e.CompressionAlgo,
+	}
+	ZetaEncodeVND(e, branch)
+	return 0
+}
+
+func (s *Server) LsOrdinaryReference(e *Session, refname plumbing.ReferenceName) int {
+	ref, err := s.db.FindOrdinaryReference(e.Context(), e.RID, refname)
+	if err != nil {
+		if database.IsErrRevisionNotFound(err) {
+			e.WriteError(e.W("reference '%s' not exist"), refname)
+			return 404
+		}
+		e.WriteError("find branch error: %v", err)
+		return 500
+	}
+	branch := &protocol.Reference{
+		Remote:          e.makeRemoteURL(s.Endpoint),
+		Name:            string(refname),
+		Hash:            ref.Hash,
 		HEAD:            protocol.BRANCH_PREFIX + e.DefaultBranch,
 		Version:         int(protocol.PROTOCOL_VERSION),
 		Agent:           s.serverName,

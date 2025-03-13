@@ -84,6 +84,16 @@ type Command struct {
 	UID           int64                  `json:"uid"`
 }
 
+type Reference struct {
+	ID              int64                  `json:"id"`
+	Name            plumbing.ReferenceName `json:"name"`
+	RID             int64                  `json:"rid"`
+	Hash            string                 `json:"hash"`
+	ProtectionLevel int                    `json:"protection_level"`
+	CreatedAt       time.Time              `json:"created_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
+}
+
 // ^[a-zA-Z][a-zA-Z-_.]*((?<!.zeta)(?<!.deleted))$ start alpha
 // ^(?!^[0-9]+$)(?!.*(?:.zeta|.deleted)$)[a-zA-Z0-9-_.]+$ no number
 // ^(?!^[0-9]+$)(?!.*.deleted$)[a-zA-Z0-9-_.]+$

@@ -87,6 +87,10 @@ func NewTagReferenceName(name string) ReferenceName {
 	return ReferenceName(refTagPrefix + name)
 }
 
+func (r ReferenceName) HasReferencePrefix() bool {
+	return strings.HasPrefix(string(r), ReferencePrefix)
+}
+
 // IsBranch check if a reference is a branch
 func (r ReferenceName) IsBranch() bool {
 	return strings.HasPrefix(string(r), refHeadPrefix)

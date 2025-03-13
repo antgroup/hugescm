@@ -17,6 +17,7 @@ type Checkout struct {
 	Args            []string `arg:"" optional:""`
 	Branch          string   `name:"branch" short:"b" help:"Direct the new HEAD to the <name> branch after checkout" placeholder:"<branch>"`
 	TagName         string   `name:"tag" short:"t" help:"Direct the new HEAD to the <name> tag's commit after checkout" placeholder:"<tag>"`
+	Refname         string   `name:"refname" help:"Direct the new HEAD to the <name> ref's commit after checkout" placeholder:"<tag>"`
 	Commit          string   `name:"commit" help:"Direct the new HEAD to the <commit> branch after checkout" placeholder:"<commit>"`
 	Sparse          []string `name:"sparse" short:"s" help:"A subset of repository files, all files are checked out by default" placeholder:"<dir>"`
 	Limit           int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
@@ -59,6 +60,7 @@ func (c *Checkout) doRemote(g *Globals, remote, destination string) error {
 		Remote:      remote,
 		Branch:      c.Branch,
 		TagName:     c.TagName,
+		Refname:     c.Refname,
 		Commit:      c.Commit,
 		Destination: destination,
 		SparseDirs:  c.Sparse,

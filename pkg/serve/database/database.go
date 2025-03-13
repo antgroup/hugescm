@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -32,6 +33,7 @@ type DB interface {
 	FindTagForPrefix(ctx context.Context, rid int64, prefix string) (*Tag, error)
 	FindBranch(ctx context.Context, rid int64, branchName string) (*Branch, error)
 	FindTag(ctx context.Context, rid int64, tagName string) (*Tag, error)
+	FindOrdinaryReference(ctx context.Context, rid int64, refname plumbing.ReferenceName) (*Reference, error)
 	DoBranchUpdate(ctx context.Context, cmd *Command) (*Branch, error)
 	DoReferenceUpdate(ctx context.Context, cmd *Command) (*Reference, error)
 	Close() error

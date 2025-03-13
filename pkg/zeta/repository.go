@@ -102,6 +102,7 @@ type NewOptions struct {
 	Branch      string
 	TagName     string
 	Commit      string
+	Refname     string
 	Destination string
 	Depth       int
 	SparseDirs  []string
@@ -211,7 +212,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		return nil, err
 	}
 
-	// New config from globa config
+	// New config from global config
 	cfg, err := config.LoadBaseline()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve global config error: %v\n", err)
@@ -263,6 +264,15 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		// IF --commit we fetch HEAD reference
 	case len(opts.Branch) != 0:
 		refname = plumbing.NewBranchReferenceName(opts.Branch)
+	case strings.HasPrefix(opts.Refname, plumbing.ReferencePrefix):
+		refname = plumbing.ReferenceName(opts.Refname)
+		// compatible
+		switch {
+		case refname.IsBranch():
+			opts.Branch = refname.BranchName()
+		case refname.IsTag():
+			opts.TagName = refname.TagName()
+		}
 	default:
 	}
 	ref, err := tr.FetchReference(ctx, refname)

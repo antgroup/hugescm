@@ -13,6 +13,19 @@ CREATE TABLE
     ) DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分支表';
 
 CREATE TABLE
+    `refs` (
+        `id` bigint (20) unsigned NOT NULL AUTO_INCREMENT comment '主键',
+        `name` varchar(4096) NOT NULL DEFAULT '' comment '引用全名',
+        `rid` bigint (20) unsigned NOT NULL comment '存储库 ID',
+        `hash` char(64) NOT NULL DEFAULT '' comment '引用提交',
+        `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP comment '创建时间',
+        `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP comment '修改时间',
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_refs_rid_name` (`rid`, `name`) LOCAL,
+        KEY `idx_refs_rid` (`rid`) LOCAL
+    ) DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '引用表';
+
+CREATE TABLE
     `objects` (
         `id` bigint (20) unsigned NOT NULL AUTO_INCREMENT comment '主键',
         `rid` bigint (20) unsigned NOT NULL comment '仓库 ID',

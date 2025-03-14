@@ -113,7 +113,7 @@ func (d *ODB) DoTransfer(ctx context.Context, oid plumbing.Hash, transfer Transf
 	if err != nil {
 		return err
 	}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if err = d.doTransfer(ctx, oid, fd, transfer, i, m, mode); err == nil {
 			break
 		}

@@ -209,11 +209,11 @@ func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes m
 		return opts.ShowStats(ctx, fileStats)
 	}
 
-	filePatchs, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
+	filePatches, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
 	if err != nil {
 		return err
 	}
-	return opts.ShowPatch(ctx, filePatchs)
+	return opts.ShowPatch(ctx, filePatches)
 }
 
 func (w *Worktree) diffWorktree(ctx context.Context, opts *DiffOptions) error {

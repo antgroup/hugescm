@@ -135,8 +135,8 @@ func (r *Repository) Debug(format string, args ...any) {
 }
 
 type Matcher struct {
-	prefix     []string
-	wildmatchs []*wildmatch.Wildmatch
+	prefix []string
+	ws     []*wildmatch.Wildmatch
 }
 
 func NewMatcher(patterns []string) *Matcher {
@@ -149,7 +149,7 @@ func NewMatcher(patterns []string) *Matcher {
 			m.prefix = append(m.prefix, strings.TrimSuffix(pattern, "/"))
 			continue
 		}
-		m.wildmatchs = append(m.wildmatchs, wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents))
+		m.ws = append(m.ws, wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents))
 	}
 	return m
 }
@@ -171,7 +171,7 @@ func hasDotDot(name string) bool {
 }
 
 func (m *Matcher) Match(name string) bool {
-	if len(m.wildmatchs) == 0 && len(m.prefix) == 0 {
+	if len(m.ws) == 0 && len(m.prefix) == 0 {
 		return true
 	}
 	for _, p := range m.prefix {
@@ -180,7 +180,7 @@ func (m *Matcher) Match(name string) bool {
 			return true
 		}
 	}
-	for _, w := range m.wildmatchs {
+	for _, w := range m.ws {
 		if w.Match(name) {
 			return true
 		}

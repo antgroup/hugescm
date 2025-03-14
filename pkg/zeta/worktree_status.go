@@ -383,7 +383,7 @@ func (w *Worktree) AddWithOptions(ctx context.Context, opts *AddOptions) error {
 	return err
 }
 
-func (w *Worktree) cleanpPatterns(paths []string) ([]string, bool, error) {
+func (w *Worktree) cleanPatterns(paths []string) ([]string, bool, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, false, err
@@ -412,7 +412,7 @@ func (w *Worktree) Add(ctx context.Context, pathSpec []string, dryRun bool) erro
 	if len(pathSpec) == 1 && pathSpec[0] == "." {
 		return w.AddWithOptions(ctx, &AddOptions{All: true, DryRun: dryRun})
 	}
-	patterns, hasDot, err := w.cleanpPatterns(pathSpec)
+	patterns, hasDot, err := w.cleanPatterns(pathSpec)
 	if err != nil {
 		return err
 	}

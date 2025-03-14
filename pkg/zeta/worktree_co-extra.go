@@ -408,7 +408,7 @@ func (w *Worktree) DoPathCo(ctx context.Context, worktreeOnly bool, oid plumbing
 	if err != nil {
 		return err
 	}
-	patterns, hasDot, err := w.cleanpPatterns(pathSpec)
+	patterns, hasDot, err := w.cleanPatterns(pathSpec)
 	if err != nil {
 		return err
 	}

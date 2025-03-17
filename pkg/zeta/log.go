@@ -156,7 +156,7 @@ func (r *Repository) revList0(ctx context.Context, start, end plumbing.Hash, pat
 	default:
 	}
 	opts := &LogOptions{
-		Order: LogOrderBSF,
+		Order: LogOrderBFS,
 		From:  start,
 	}
 	if len(paths) != 0 {
@@ -274,7 +274,7 @@ func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, p
 	}
 	if len(mergeBases) == 0 {
 		opts := &LogOptions{
-			Order: LogOrderBSF,
+			Order: LogOrderBFS,
 			From:  newRev.Hash,
 		}
 		if len(paths) != 0 {
@@ -289,7 +289,7 @@ func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, p
 		return nil
 	}
 	opts := &LogOptions{
-		Order: LogOrderBSF,
+		Order: LogOrderBFS,
 		From:  newRev.Hash,
 	}
 	if len(paths) != 0 {
@@ -335,7 +335,7 @@ func (r *Repository) Log(ctx context.Context, revRange string, paths []string, f
 		return err
 	}
 	opts := &LogOptions{
-		Order: LogOrderBSF,
+		Order: LogOrderBFS,
 		From:  rev,
 	}
 	if len(paths) != 0 {
@@ -439,7 +439,7 @@ func commitIterFunc(order LogOrder) func(c *object.Commit) object.CommitIter {
 		return func(c *object.Commit) object.CommitIter {
 			return object.NewCommitPostorderIter(c, nil)
 		}
-	case LogOrderBSF:
+	case LogOrderBFS:
 		return func(c *object.Commit) object.CommitIter {
 			return object.NewCommitIterBSF(c, nil, nil)
 		}

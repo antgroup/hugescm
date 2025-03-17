@@ -356,7 +356,7 @@ const (
 	LogOrderDefault LogOrder = iota
 	LogOrderDFS
 	LogOrderDFSPost
-	LogOrderBSF
+	LogOrderBFS
 	LogOrderCommitterTime
 )
 

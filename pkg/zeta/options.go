@@ -246,53 +246,6 @@ var (
 	ErrMissingAuthor = errors.New("author field is required")
 )
 
-type LogOrder int8
-
-const (
-	LogOrderDefault LogOrder = iota
-	LogOrderDFS
-	LogOrderDFSPost
-	LogOrderBSF
-	LogOrderCommitterTime
-)
-
-// LogOptions describes how a log action should be performed.
-type LogOptions struct {
-	// When the From option is set the log will only contain commits
-	// reachable from it. If this option is not set, HEAD will be used as
-	// the default From.
-	From plumbing.Hash
-
-	// The default traversal algorithm is Depth-first search
-	// set Order=LogOrderCommitterTime for ordering by committer time (more compatible with `git log`)
-	// set Order=LogOrderBSF for Breadth-first search
-	Order LogOrder
-
-	// Show only those commits in which the specified file was inserted/updated.
-	// It is equivalent to running `zeta log -- <file-name>`.
-	// this field is kept for compatibility, it can be replaced with PathFilter
-	FileName *string
-
-	// Filter commits based on the path of files that are updated
-	// takes file path as argument and should return true if the file is desired
-	// It can be used to implement `zeta log -- <path>`
-	// either <path> is a file path, or directory path, or a regexp of file/directory path
-	PathFilter func(string) bool
-
-	// Pretend as if all the refs in refs/, along with HEAD, are listed on the command line as <commit>.
-	// It is equivalent to running `zeta log --all`.
-	// If set on true, the From option will be ignored.
-	All bool
-
-	// Show commits more recent than a specific date.
-	// It is equivalent to running `zeta log --since <date>` or `zeta log --after <date>`.
-	Since *time.Time
-
-	// Show commits older than a specific date.
-	// It is equivalent to running `zeta log --until <date>` or `zeta log --before <date>`.
-	Until *time.Time
-}
-
 // Validate validates the fields and sets the default values.
 func (o *CommitOptions) Validate(r *Repository) error {
 	if o.All && o.Amend {
@@ -395,6 +348,53 @@ func (o *CommitOptions) loadConfigAuthorAndCommitter(r *Repository) error {
 		return ErrMissingAuthor
 	}
 	return nil
+}
+
+type LogOrder int8
+
+const (
+	LogOrderDefault LogOrder = iota
+	LogOrderDFS
+	LogOrderDFSPost
+	LogOrderBSF
+	LogOrderCommitterTime
+)
+
+// LogOptions describes how a log action should be performed.
+type LogOptions struct {
+	// When the From option is set the log will only contain commits
+	// reachable from it. If this option is not set, HEAD will be used as
+	// the default From.
+	From plumbing.Hash
+
+	// The default traversal algorithm is Depth-first search
+	// set Order=LogOrderCommitterTime for ordering by committer time (more compatible with `git log`)
+	// set Order=LogOrderBSF for Breadth-first search
+	Order LogOrder
+
+	// Show only those commits in which the specified file was inserted/updated.
+	// It is equivalent to running `zeta log -- <file-name>`.
+	// this field is kept for compatibility, it can be replaced with PathFilter
+	FileName *string
+
+	// Filter commits based on the path of files that are updated
+	// takes file path as argument and should return true if the file is desired
+	// It can be used to implement `zeta log -- <path>`
+	// either <path> is a file path, or directory path, or a regexp of file/directory path
+	PathFilter func(string) bool
+
+	// Pretend as if all the refs in refs/, along with HEAD, are listed on the command line as <commit>.
+	// It is equivalent to running `zeta log --all`.
+	// If set on true, the From option will be ignored.
+	All bool
+
+	// Show commits more recent than a specific date.
+	// It is equivalent to running `zeta log --since <date>` or `zeta log --after <date>`.
+	Since *time.Time
+
+	// Show commits older than a specific date.
+	// It is equivalent to running `zeta log --until <date>` or `zeta log --before <date>`.
+	Until *time.Time
 }
 
 // CleanOptions describes how a clean should be performed.

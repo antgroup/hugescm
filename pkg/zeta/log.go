@@ -90,9 +90,9 @@ func (r *Repository) ReferencesEx(ctx context.Context) (*ReferencesEx, error) {
 	return &ReferencesEx{DB: rdb, M: m}, nil
 }
 
-func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, latest plumbing.Hash, formatJSON bool) error {
+func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore plumbing.Hash, formatJSON bool) error {
 	if formatJSON {
-		iter, err := r.logInter(ctx, opts)
+		iter, err := r.logInter(ctx, opts, ignore)
 		if err != nil {
 			return err
 		}
@@ -100,16 +100,14 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, latest plum
 		commits := make([]*object.Commit, 0, 20)
 		var cc *object.Commit
 		for {
-			if cc, err = iter.Next(ctx); err != nil {
+			cc, err = iter.Next(ctx)
+			if err == io.EOF {
 				break
 			}
-			if cc.Hash == latest {
-				break
+			if err != nil {
+				return err
 			}
 			commits = append(commits, cc)
-		}
-		if err != io.EOF && err != nil {
-			return err
 		}
 		return json.NewEncoder(os.Stdout).Encode(commits)
 	}
@@ -118,7 +116,7 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, latest plum
 		fmt.Fprintf(os.Stderr, "resolve references error: %v\n", err)
 		return err
 	}
-	iter, err := r.logInter(ctx, opts)
+	iter, err := r.logInter(ctx, opts, ignore)
 	if err != nil {
 		return err
 	}
@@ -126,11 +124,13 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, latest plum
 	p := NewPrinter(ctx)
 	var cc *object.Commit
 	for {
-		if cc, err = iter.Next(ctx); err != nil {
+		cc, err = iter.Next(ctx)
+		if err == io.EOF {
 			break
 		}
-		if cc.Hash == latest {
-			break
+		if err != nil {
+			_ = p.Close()
+			return err
 		}
 		if err := p.LogOne(cc, rdb.M[cc.Hash]); err != nil {
 			_ = p.Close()
@@ -138,10 +138,7 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, latest plum
 		}
 	}
 	_ = p.Close()
-	if err == io.EOF {
-		err = nil
-	}
-	return err
+	return nil
 }
 
 type commitsGroup struct {
@@ -163,28 +160,25 @@ func (r *Repository) revList0(ctx context.Context, start, end plumbing.Hash, pat
 		m := NewMatcher(paths)
 		opts.PathFilter = m.Match
 	}
-	iter, err := r.logInter(ctx, opts)
+	iter, err := r.logInter(ctx, opts, end)
 	if err != nil {
 		return err
 	}
 	defer iter.Close()
-	var cc *object.Commit
 	for {
-		if cc, err = iter.Next(ctx); err != nil {
+		cc, err := iter.Next(ctx)
+		if err == io.EOF {
 			break
 		}
-		if cc.Hash == end {
-			break
+		if err != nil {
+			return err
 		}
 		if cg.seen[cc.Hash] {
 			continue
 		}
 		cg.commits = append(cg.commits, cc)
 	}
-	if err == io.EOF {
-		err = nil
-	}
-	return err
+	return nil
 }
 
 func (r *Repository) revList(ctx context.Context, start, end plumbing.Hash, paths []string) ([]*object.Commit, error) {
@@ -346,8 +340,8 @@ func (r *Repository) Log(ctx context.Context, revRange string, paths []string, f
 }
 
 // logInter returns the commit history from the given LogOptions.
-func (r *Repository) logInter(ctx context.Context, o *LogOptions) (object.CommitIter, error) {
-	fn := commitIterFunc(o.Order)
+func (r *Repository) logInter(ctx context.Context, o *LogOptions, ignore plumbing.Hash) (object.CommitIter, error) {
+	fn := commitIterFunc(o.Order, ignore)
 	if fn == nil {
 		return nil, fmt.Errorf("invalid Order=%v", o.Order)
 	}
@@ -425,27 +419,27 @@ func (*Repository) logWithLimit(commitIter object.CommitIter, limitOptions objec
 	return object.NewCommitLimitIterFromIter(commitIter, limitOptions)
 }
 
-func commitIterFunc(order LogOrder) func(c *object.Commit) object.CommitIter {
+func commitIterFunc(order LogOrder, ignore plumbing.Hash) func(c *object.Commit) object.CommitIter {
 	switch order {
 	case LogOrderDefault:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitPreorderIter(c, nil, nil)
+			return object.NewCommitPreorderIter(c, nil, []plumbing.Hash{ignore})
 		}
 	case LogOrderDFS:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitPreorderIter(c, nil, nil)
+			return object.NewCommitPreorderIter(c, nil, []plumbing.Hash{ignore})
 		}
 	case LogOrderDFSPost:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitPostorderIter(c, nil)
+			return object.NewCommitPostorderIter(c, []plumbing.Hash{ignore})
 		}
 	case LogOrderBFS:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitIterBSF(c, nil, nil)
+			return object.NewCommitIterBSF(c, nil, []plumbing.Hash{ignore})
 		}
 	case LogOrderCommitterTime:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitIterCTime(c, nil, nil)
+			return object.NewCommitIterCTime(c, nil, []plumbing.Hash{ignore})
 		}
 	}
 	return nil

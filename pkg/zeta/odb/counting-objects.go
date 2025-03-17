@@ -213,7 +213,10 @@ func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.H
 	if maxEntries <= 0 {
 		maxEntries = defaultMaxEntries
 	}
-	iter := object.NewCommitIterBSF(c, nil, nil)
+	haves := map[plumbing.Hash]bool{
+		deepenFrom: true,
+	}
+	iter := object.NewCommitIterBSF(c, haves, nil)
 	defer iter.Close()
 	for {
 		cc, err := iter.Next(ctx)
@@ -222,9 +225,6 @@ func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.H
 		}
 		if err != nil {
 			return err
-		}
-		if cc.Hash == deepenFrom {
-			break
 		}
 		if err := o.countingTreeObjects(ctx, cc.Tree, g, maxEntries, fetcher); err != nil {
 			return err

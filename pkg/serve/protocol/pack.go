@@ -333,7 +333,11 @@ func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit
 	if deepen == -1 {
 		deepen = math.MaxInt
 	}
-	iter := object.NewCommitIterBSF(current, nil, nil)
+	haves := map[plumbing.Hash]bool{
+		deepenFrom: true,
+		have:       true,
+	}
+	iter := object.NewCommitIterBSF(current, haves, nil)
 	defer iter.Close()
 	for range deepen {
 		cc, err := iter.Next(ctx)
@@ -344,9 +348,6 @@ func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit
 			return err
 		}
 		oid := cc.Hash
-		if oid == deepenFrom || oid == have {
-			break
-		}
 		if err := writeMetadataItem(p.w, cc, oid.String()); err != nil {
 			return err
 		}
@@ -362,7 +363,11 @@ func (p *Packer) WriteDeepenSparseMetadata(ctx context.Context, current *object.
 		deepen = math.MaxInt
 	}
 	m := NewSparseTreeMatcher(paths)
-	iter := object.NewCommitIterBSF(current, nil, nil)
+	haves := map[plumbing.Hash]bool{
+		deepenFrom: true,
+		have:       true,
+	}
+	iter := object.NewCommitIterBSF(current, haves, nil)
 	defer iter.Close()
 	for range deepen {
 		cc, err := iter.Next(ctx)
@@ -373,9 +378,6 @@ func (p *Packer) WriteDeepenSparseMetadata(ctx context.Context, current *object.
 			return err
 		}
 		oid := cc.Hash
-		if oid == deepenFrom || oid == have {
-			break
-		}
 		if err := writeMetadataItem(p.w, cc, oid.String()); err != nil {
 			return err
 		}

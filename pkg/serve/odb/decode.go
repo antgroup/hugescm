@@ -308,7 +308,7 @@ func (o *ODB) Open(ctx context.Context, oid plumbing.Hash, start int64) (sr back
 	return sr, nil
 }
 
-func (o *ODB) Blob(ctx context.Context, oid plumbing.Hash) (b *object.Blob, err error) {
+func (o *ODB) Blob(ctx context.Context, oid plumbing.Hash) (br *object.Blob, err error) {
 	if oid == backend.BLANK_BLOB_HASH {
 		return &object.Blob{Contents: strings.NewReader("")}, nil
 	}
@@ -316,7 +316,10 @@ func (o *ODB) Blob(ctx context.Context, oid plumbing.Hash) (b *object.Blob, err 
 	if err != nil {
 		return nil, err
 	}
-	return object.NewBlob(sr)
+	if br, err = object.NewBlob(sr); err != nil {
+		_ = sr.Close()
+	}
+	return
 }
 
 func (o *ODB) IsBinaryFast(ctx context.Context, oid plumbing.Hash) (bool, error) {

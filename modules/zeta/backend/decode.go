@@ -169,7 +169,7 @@ func (d *Database) Tag(ctx context.Context, oid plumbing.Hash) (*object.Tag, err
 	return nil, NewErrMismatchedObjectType(oid, "tag")
 }
 
-func (d *Database) Blob(_ context.Context, oid plumbing.Hash) (blob *object.Blob, err error) {
+func (d *Database) Blob(_ context.Context, oid plumbing.Hash) (br *object.Blob, err error) {
 	if oid == BLANK_BLOB_HASH {
 		return &object.Blob{Contents: strings.NewReader("")}, nil
 	}
@@ -179,7 +179,7 @@ func (d *Database) Blob(_ context.Context, oid plumbing.Hash) (blob *object.Blob
 	if rc, err = d.ro.Open(oid); err != nil {
 		return nil, err
 	}
-	if blob, err = object.NewBlob(rc); err != nil {
+	if br, err = object.NewBlob(rc); err != nil {
 		_ = rc.Close()
 	}
 	return

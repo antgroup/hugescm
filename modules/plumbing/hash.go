@@ -36,6 +36,7 @@ const (
 
 const (
 	BLANK_BLOB = "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262"
+	BLANK_TREE = "e448b21e70d321c1ee07c7b3ca6effa275aee59cdba662afb7152182a3706eb7"
 	ZERO_OID   = "0000000000000000000000000000000000000000000000000000000000000000"
 )
 
@@ -67,8 +68,14 @@ func (h *Hash) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// ZeroHash is Hash with value zero
-var ZeroHash Hash
+var (
+	// ZeroHash is Hash with value zero
+	ZeroHash Hash
+	// EmptyBlob is Hash with empty blob
+	EmptyBlob = NewHash(BLANK_BLOB)
+	// EmptyTree is Hash with empty tree
+	EmptyTree = NewHash(BLANK_TREE)
+)
 
 // NewHash return a new Hash from a hexadecimal hash representation
 func NewHash(s string) Hash {

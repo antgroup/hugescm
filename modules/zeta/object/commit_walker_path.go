@@ -138,12 +138,7 @@ func (c *commitPathIter) hasFileChange(changes Changes, parent *Commit) bool {
 }
 
 func isParentHash(hash plumbing.Hash, commit *Commit) bool {
-	for _, h := range commit.Parents {
-		if h == hash {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(commit.Parents, hash)
 }
 
 func (c *commitPathIter) ForEach(ctx context.Context, cb func(*Commit) error) error {

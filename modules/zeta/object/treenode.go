@@ -145,6 +145,11 @@ func canonicalName(name string) string {
 	return name
 }
 
+const (
+	dot    = "."
+	dotDot = ".."
+)
+
 // Returns the children of a tree as treenoders.
 // Efficiency is key here.
 func transformChildren(ctx context.Context, t *Tree, m noder.Matcher, conflictDetection bool) ([]noder.Noder, error) {
@@ -167,6 +172,10 @@ func transformChildren(ctx context.Context, t *Tree, m noder.Matcher, conflictDe
 		if err != nil {
 			walker.Close()
 			return nil, err
+		}
+		if e.Name == dot || e.Name == dotDot {
+			// BAD entry
+			continue
 		}
 
 		var n *TreeNoder

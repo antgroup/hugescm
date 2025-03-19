@@ -398,10 +398,7 @@ const maxMatrixSize = 10000
 func buildSimilarityMatrix(ctx context.Context, srcs, dsts []*Change, renameScore int) (similarityMatrix, error) {
 	// Allocate for the worst-case scenario where every pair has a score
 	// that we need to consider. We might not need that many.
-	matrixSize := len(srcs) * len(dsts)
-	if matrixSize > maxMatrixSize {
-		matrixSize = maxMatrixSize
-	}
+	matrixSize := min(len(srcs)*len(dsts), maxMatrixSize)
 	matrix := make(similarityMatrix, 0, matrixSize)
 	srcSizes := make([]int64, len(srcs))
 	dstSizes := make([]int64, len(dsts))

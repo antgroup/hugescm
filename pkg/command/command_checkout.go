@@ -14,7 +14,6 @@ import (
 )
 
 type Checkout struct {
-	Args            []string `arg:"" optional:""`
 	Branch          string   `name:"branch" short:"b" help:"Direct the new HEAD to the <name> branch after checkout" placeholder:"<branch>"`
 	TagName         string   `name:"tag" short:"t" help:"Direct the new HEAD to the <name> tag's commit after checkout" placeholder:"<tag>"`
 	Refname         string   `name:"refname" help:"Direct the new HEAD to the <name> ref's commit after checkout" placeholder:"<tag>"`
@@ -26,6 +25,7 @@ type Checkout struct {
 	Depth           int      `name:"depth" help:"Create a shallow clone with a history truncated to the specified number of commits" default:"1"`
 	One             bool     `name:"one" help:"Checkout large files one after another"`
 	Quiet           bool     `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`
+	Args            []string `arg:"" optional:""`
 	passthroughArgs []string `kong:"-"`
 }
 
@@ -86,6 +86,9 @@ func (c *Checkout) doRemote(g *Globals, remote, destination string) error {
 func (c *Checkout) destination() string {
 	if len(c.Args) >= 2 {
 		return c.Args[1]
+	}
+	if len(c.passthroughArgs) > 0 {
+		return c.passthroughArgs[0]
 	}
 	return ""
 }

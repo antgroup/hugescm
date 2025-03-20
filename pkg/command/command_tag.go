@@ -23,14 +23,14 @@ type Tag struct {
 }
 
 const (
-	tagSumaryFormat = `%szeta tag [<options>] [-a] [-f] [-m <msg>] <tagname> [<start-point>]
+	tagSummaryFormat = `%szeta tag [<options>] [-a] [-f] [-m <msg>] <tagname> [<start-point>]
 %szeta tag [<options>] [-l] [<pattern>...]
 %szeta tag [<options>] -d <tagname>...`
 )
 
 func (t *Tag) Summary() string {
 	or := W("   or: ")
-	return fmt.Sprintf(tagSumaryFormat, W("Usage: "), or, or)
+	return fmt.Sprintf(tagSummaryFormat, W("Usage: "), or, or)
 }
 
 func (t *Tag) Run(g *Globals) error {

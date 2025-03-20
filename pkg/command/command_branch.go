@@ -25,7 +25,7 @@ type Branch struct {
 }
 
 const (
-	branchSumaryFormat = `%szeta branch [<options>] [-f] <branchname> [<start-point>]
+	branchSummaryFormat = `%szeta branch [<options>] [-f] <branchname> [<start-point>]
 %szeta branch [<options>] [-l] [<pattern>...]
 %szeta branch [<options>] (-d | -D) <branchname>...
 %szeta branch [<options>] (-m | -M) [<old-branch>] <new-branch>
@@ -35,7 +35,7 @@ const (
 
 func (b *Branch) Summary() string {
 	or := W("   or: ")
-	return fmt.Sprintf(branchSumaryFormat, W("Usage: "), or, or, or, or, or)
+	return fmt.Sprintf(branchSummaryFormat, W("Usage: "), or, or, or, or, or)
 }
 
 func (b *Branch) IsMove() bool {

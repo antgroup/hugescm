@@ -15,12 +15,12 @@ func Parse(cli any, options ...Option) *Context {
 	return ctx
 }
 
-func ParseArgs(cli any, arsg []string, options ...Option) *Context {
+func ParseArgs(cli any, args []string, options ...Option) *Context {
 	parser, err := New(cli, options...)
 	if err != nil {
 		panic(err)
 	}
-	ctx, err := parser.Parse(arsg)
+	ctx, err := parser.Parse(args)
 	parser.FatalIfErrorf(err)
 	return ctx
 }

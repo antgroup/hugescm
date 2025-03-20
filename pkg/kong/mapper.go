@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
 var (
@@ -336,7 +334,7 @@ func durationDecoder() MapperFunc {
 		var d time.Duration
 		switch v := t.Value.(type) {
 		case string:
-			d, err = strengthen.ParseDuration(v)
+			d, err = time.ParseDuration(v)
 			if err != nil {
 				return fmt.Errorf("expected duration but got %q: %v", v, err)
 			}

@@ -91,13 +91,13 @@ func TestCheckout(t *testing.T) {
 			return
 		}
 	}
-	argss := [][]string{
+	argLists := [][]string{
 		{"co", "--", "a.txt", "b.txt"},
 		{"co", "master", "--", "a.txt", "b.txt"},
 		{"co", ".", "--", "a.txt", "b.txt"},
 		{"co", ".", "--", "a.txt", "b.txt", "--"},
 	}
-	for _, args := range argss {
+	for _, args := range argLists {
 		parseArgs(args)
 	}
 }
@@ -121,11 +121,12 @@ func TestDiff(t *testing.T) {
 			return
 		}
 	}
-	argss := [][]string{
+	argLists := [][]string{
 		{"diff", "--", "a.txt", "b.txt"},
 		{"diff", "master", "--", "a.txt", "b.txt"},
+		{"diff", "master", "dev", "--", "a.txt", "b.txt"},
 	}
-	for _, args := range argss {
+	for _, args := range argLists {
 		parseArgs(args)
 	}
 }

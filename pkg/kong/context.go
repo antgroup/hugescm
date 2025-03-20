@@ -26,6 +26,9 @@ type Path struct {
 
 	// True if this Path element was created as the result of a resolver.
 	Resolved bool
+
+	// Remaining tokens after this node
+	remainder []Token
 }
 
 // Node returns the Node associated with this Path, or nil if Path is a non-Node.
@@ -64,6 +67,15 @@ func (p *Path) Visitable() Visitable {
 	return nil
 }
 
+// Remainder returns the remaining unparsed args after this Path element.
+func (p *Path) Remainder() []string {
+	args := []string{}
+	for _, token := range p.remainder {
+		args = append(args, token.String())
+	}
+	return args
+}
+
 // Context contains the current parse context.
 type Context struct {
 	*Kong
@@ -87,14 +99,15 @@ type Context struct {
 // This just constructs a new trace. To fully apply the trace you must call Reset(), Resolve(),
 // Validate() and Apply().
 func Trace(k *Kong, args []string) (*Context, error) {
+	s := Scan(args...)
 	c := &Context{
 		Kong: k,
 		Args: args,
 		Path: []*Path{
-			{App: k.Model, Flags: k.Model.Flags},
+			{App: k.Model, Flags: k.Model.Flags, remainder: s.PeekAll()},
 		},
 		values:   map[*Value]reflect.Value{},
-		scan:     Scan(args...),
+		scan:     s,
 		bindings: bindings{},
 	}
 	c.Error = c.trace(c.Model.Node)
@@ -119,8 +132,20 @@ func (c *Context) BindTo(impl, iface any) {
 //
 // This is useful when the Run() function of different commands require different values that may
 // not all be initialisable from the main() function.
+//
+// "provider" must be a function with the signature func(...) (T, error) or func(...) T,
+// where ... will be recursively injected with bound values.
 func (c *Context) BindToProvider(provider any) error {
-	return c.bindings.addProvider(provider)
+	return c.bindings.addProvider(provider, false /* singleton */)
+}
+
+// BindSingletonProvider allows binding of provider functions.
+// The provider will be called once and the result cached.
+//
+// "provider" must be a function with the signature func(...) (T, error) or func(...) T,
+// where ... will be recursively injected with bound values.
+func (c *Context) BindSingletonProvider(provider any) error {
+	return c.bindings.addProvider(provider, true /* singleton */)
 }
 
 // Value returns the value for a particular path element.
@@ -488,6 +513,7 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 				c.Path = append(c.Path, &Path{
 					Parent:     node,
 					Positional: arg,
+					remainder:  c.scan.PeekAll(),
 				})
 				positional++
 				break
@@ -519,9 +545,10 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 				if branch.Type == CommandNode && branch.Name == token.Value {
 					c.scan.Pop()
 					c.Path = append(c.Path, &Path{
-						Parent:  node,
-						Command: branch,
-						Flags:   branch.Flags,
+						Parent:    node,
+						Command:   branch,
+						Flags:     branch.Flags,
+						remainder: c.scan.PeekAll(),
 					})
 					return c.trace(branch)
 				}
@@ -533,9 +560,10 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 					arg := branch.Argument
 					if err := arg.Parse(c.scan, c.getValue(arg)); err == nil {
 						c.Path = append(c.Path, &Path{
-							Parent:   node,
-							Argument: branch,
-							Flags:    branch.Flags,
+							Parent:    node,
+							Argument:  branch,
+							Flags:     branch.Flags,
+							remainder: c.scan.PeekAll(),
 						})
 						return c.trace(branch)
 					}
@@ -546,13 +574,19 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 			// matches, take the branch of the default command
 			if node.DefaultCmd != nil && node.DefaultCmd.Tag.Default == "withargs" {
 				c.Path = append(c.Path, &Path{
-					Parent:  node,
-					Command: node.DefaultCmd,
-					Flags:   node.DefaultCmd.Flags,
+					Parent:    node,
+					Command:   node.DefaultCmd,
+					Flags:     node.DefaultCmd.Flags,
+					remainder: c.scan.PeekAll(),
 				})
 				return c.trace(node.DefaultCmd)
 			}
-
+			// FIXME: Please note that kong's passthrough mechanism has some quirks, for example,
+			// if the user runs ls -la a -v b, if -v is a bool type, b will not be saved to the passthrough variable.
+			if provider, ok := node.Target.Addr().Interface().(PassthroughProvider); ok {
+				provider.Passthrough([]string{token.String()})
+				return
+			}
 			return findPotentialCandidates(token.String(), candidates, "unexpected argument %s", token)
 		default:
 			return fmt.Errorf("unexpected token %s", token)
@@ -561,19 +595,25 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 	return c.maybeSelectDefault(flags, node)
 }
 
+// IgnoreDefault can be implemented by flags that want to be applied before any default commands.
+type IgnoreDefault interface {
+	IgnoreDefault()
+}
+
 // End of the line, check for a default command, but only if we're not displaying help,
 // otherwise we'd only ever display the help for the default command.
 func (c *Context) maybeSelectDefault(flags []*Flag, node *Node) error {
 	for _, flag := range flags {
-		if flag.Name == "help" && flag.Set {
+		if _, ok := flag.Target.Interface().(IgnoreDefault); ok && flag.Set {
 			return nil
 		}
 	}
 	if node.DefaultCmd != nil {
 		c.Path = append(c.Path, &Path{
-			Parent:  node.DefaultCmd,
-			Command: node.DefaultCmd,
-			Flags:   node.DefaultCmd.Flags,
+			Parent:    node.DefaultCmd,
+			Command:   node.DefaultCmd,
+			Flags:     node.DefaultCmd.Flags,
+			remainder: c.scan.PeekAll(),
 		})
 	}
 	return nil
@@ -618,8 +658,9 @@ func (c *Context) Resolve() error {
 				return err
 			}
 			inserted = append(inserted, &Path{
-				Flag:     flag,
-				Resolved: true,
+				Flag:      flag,
+				Resolved:  true,
+				remainder: c.scan.PeekAll(),
 			})
 		}
 	}
@@ -763,7 +804,10 @@ func (c *Context) parseFlag(flags []*Flag, match string) (err error) {
 			}
 			flag.Value.Apply(value)
 		}
-		c.Path = append(c.Path, &Path{Flag: flag})
+		c.Path = append(c.Path, &Path{
+			Flag:      flag,
+			remainder: c.scan.PeekAll(),
+		})
 		return nil
 	}
 	return &unknownFlagError{Cause: findPotentialCandidates(match, candidates, "unknown flag %s", match)}
@@ -808,11 +852,11 @@ func (c *Context) RunNode(node *Node, binds ...any) (err error) {
 			// Try value and pointer to value.
 			for _, p := range []reflect.Value{p.Target, p.Target.Addr()} {
 				t := p.Type()
-				for i := 0; i < p.NumMethod(); i++ {
+				for i := range p.NumMethod() {
 					methodt := t.Method(i)
 					if strings.HasPrefix(methodt.Name, "Provide") {
 						method := p.Method(i)
-						if err := methodBinds.addProvider(method.Interface()); err != nil {
+						if err := methodBinds.addProvider(method.Interface(), false /* singleton */); err != nil {
 							return fmt.Errorf("%s.%s: %w", t.Name(), methodt.Name, err)
 						}
 					}
@@ -1009,7 +1053,7 @@ func checkMissingPositionals(positional int, values []*Value) error {
 func checkEnum(value *Value, target reflect.Value) error {
 	switch target.Kind() {
 	case reflect.Slice, reflect.Array:
-		for i := 0; i < target.Len(); i++ {
+		for i := range target.Len() {
 			if err := checkEnum(value, target.Index(i)); err != nil {
 				return err
 			}

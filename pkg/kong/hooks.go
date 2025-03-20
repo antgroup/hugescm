@@ -31,7 +31,7 @@ var (
 	}
 )
 
-// Registering localization functions
+// Registering translation functions
 func BindW(w func(s string) string) {
 	W = w
 }

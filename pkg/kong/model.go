@@ -174,6 +174,9 @@ func (n *Node) Summary() string {
 		allFlags = append(allFlags, n.Parent.Flags...)
 	}
 	for _, flag := range allFlags {
+		if _, ok := flag.Target.Interface().(helpFlag); ok {
+			continue
+		}
 		if !flag.Required {
 			summary += " [flags]"
 			break
@@ -264,7 +267,7 @@ type Value struct {
 	Passthrough     bool            // Deprecated: Use PassthroughMode instead. Set to true to stop flag parsing when encountered.
 	PassthroughMode PassthroughMode //
 	Active          bool            // Denotes the value is part of an active branch in the CLI.
-	ShortOnly       bool            // short-only
+	ShortOnly       bool
 }
 
 // EnumMap returns a map of the enums in this value.

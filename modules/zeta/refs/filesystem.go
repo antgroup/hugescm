@@ -122,7 +122,7 @@ func (b *fsBackend) walkReferencesTree(prefix string, db *DB) error {
 		return err
 	}
 	for _, f := range files {
-		newPrefix := prefix + "/" + f.Name() // awlays use unix '/'
+		newPrefix := prefix + "/" + f.Name() // always use unix '/'
 		if f.IsDir() {
 			if err = b.walkReferencesTree(newPrefix, db); err != nil {
 				return err
@@ -376,8 +376,8 @@ func (b *fsBackend) lockPackedRefs(fn func() error) error {
 }
 
 func CheckClose(c io.Closer, err *error) {
-	if cerr := c.Close(); cerr != nil && *err == nil {
-		*err = cerr
+	if closeErr := c.Close(); closeErr != nil && *err == nil {
+		*err = closeErr
 	}
 }
 

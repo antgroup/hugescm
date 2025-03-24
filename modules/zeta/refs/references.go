@@ -38,7 +38,7 @@ func (d *DB) Lookup(name string) *plumbing.Reference {
 }
 
 func (d *DB) Resolve(name plumbing.ReferenceName) (*plumbing.Reference, error) {
-	for i := 0; i < MaxResolveRecursion; i++ {
+	for range MaxResolveRecursion {
 		r := d.Lookup(string(name))
 		if r == nil {
 			return nil, plumbing.ErrReferenceNotFound
@@ -73,7 +73,7 @@ func (d *DB) ShortName(refname plumbing.ReferenceName, strict bool) string {
 		 * check if the short name resolves to a valid ref,
 		 * but use only rules prior to the matched one
 		 */
-		for j = 0; j < rulesToFail; j++ {
+		for j = range rulesToFail {
 			/* skip matched rule */
 			if i == j {
 				continue

@@ -15,7 +15,7 @@ func TestRefRevParseRules(t *testing.T) {
 }
 
 func BenchmarkRepeat(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, r := range refRevParseRules {
 			_ = r.ReferenceName("mainline")
 		}
@@ -23,7 +23,7 @@ func BenchmarkRepeat(b *testing.B) {
 }
 
 func BenchmarkRepeat2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, r := range plumbing.RefRevParseRules {
 			_ = fmt.Sprintf(r, "mainline")
 		}

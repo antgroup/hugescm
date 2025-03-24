@@ -42,7 +42,7 @@ const MaxResolveRecursion = 1024
 var ErrMaxResolveRecursion = errors.New("max. recursion level reached")
 
 func ReferenceResolve(b Backend, name plumbing.ReferenceName) (ref *plumbing.Reference, err error) {
-	for i := 0; i < MaxResolveRecursion; i++ {
+	for range MaxResolveRecursion {
 		if ref, err = b.Reference(name); err != nil {
 			return nil, err
 		}

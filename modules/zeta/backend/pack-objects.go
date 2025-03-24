@@ -83,7 +83,7 @@ func openObject(ro storage.Storage, oid plumbing.Hash, o *packedObject) (SizeRea
 	return nil, 0, errors.New("unable detect reader size")
 }
 
-func repackMetadataObjects(ctx context.Context, ro storage.Storage, objects packedObjects, quarantine string, bar Indicators) error {
+func repackMetaObjects(ctx context.Context, ro storage.Storage, objects packedObjects, quarantine string, bar Indicators) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -109,7 +109,7 @@ func repackMetadataObjects(ctx context.Context, ro storage.Storage, objects pack
 	return w.WriteTrailer()
 }
 
-func repackBlobObjects(ctx context.Context, opts *PackOptions, ro storage.Storage, fo *fileStorer, objects packedObjects, quarantine string, bar Indicators) error {
+func repackObjects(ctx context.Context, opts *PackOptions, ro storage.Storage, fo *fileStorer, objects packedObjects, quarantine string, bar Indicators) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -149,15 +149,15 @@ func repackBlobObjects(ctx context.Context, opts *PackOptions, ro storage.Storag
 	return w.WriteTrailer()
 }
 
-func repackObjects(ctx context.Context, opts *PackOptions, ro storage.Storage, fo *fileStorer, objects packedObjects, quarantine string, meta bool) (err error) {
+func repackObjectsEx(ctx context.Context, opts *PackOptions, ro storage.Storage, fo *fileStorer, objects packedObjects, quarantine string, meta bool) (err error) {
 	bar := opts.NewIndicators("Writing objects", "", uint64(len(objects)), opts.Quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
 	bar.Run(newCtx)
 
 	if meta {
-		err = repackMetadataObjects(ctx, ro, objects, quarantine, bar)
+		err = repackMetaObjects(ctx, ro, objects, quarantine, bar)
 	} else {
-		err = repackBlobObjects(ctx, opts, ro, fo, objects, quarantine, bar)
+		err = repackObjects(ctx, opts, ro, fo, objects, quarantine, bar)
 	}
 	if err != nil {
 		cancelCtx(err)
@@ -195,12 +195,12 @@ func pruneObjects(ctx context.Context, opts *PackOptions, fo *fileStorer, object
 }
 
 func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, meta bool) error {
-	fsobj := newFileStorer(root, "", opts.CompressionALGO)
+	fo := newFileStorer(root, "", opts.CompressionALGO)
 	packs, err := pack.NewScanner(root)
 	if err != nil {
 		return fmt.Errorf("new scanner error: %w", err)
 	}
-	ro := storage.MultiStorage(fsobj, packs)
+	ro := storage.MultiStorage(fo, packs)
 	closed := false
 	defer func() {
 		if !closed {
@@ -208,7 +208,7 @@ func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, me
 		}
 	}()
 	objects := make(packedObjects)
-	looseObjects, err := fsobj.looseObjects(opts.PackThreshold)
+	looseObjects, err := fo.looseObjects(opts.PackThreshold)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, me
 	}()
 
 	opts.Printf("Pack %s objects: loose object %d packed objects %d\n", step, len(looseObjects), packedEntries)
-	if err := repackObjects(ctx, opts, ro, fsobj, objects, quarantineDir, meta); err != nil {
+	if err := repackObjectsEx(ctx, opts, ro, fo, objects, quarantineDir, meta); err != nil {
 		return fmt.Errorf("repack objects [metadata: %v] %w", meta, err)
 	}
 	if err := preservePack(root, quarantineDir); err != nil {
@@ -257,9 +257,9 @@ func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, me
 		_ = os.Remove(strings.TrimSuffix(p, ".pack") + ".idx")    // PACK INDEX
 		_ = os.Remove(strings.TrimSuffix(p, ".pack") + ".mtimes") // PACK INDEX
 	}
-	count := pruneObjects(ctx, opts, fsobj, objects)
+	count := pruneObjects(ctx, opts, fo, objects)
 	var prunedDirs int
-	if prunedDirs, err = fsobj.Prune(ctx); err != nil {
+	if prunedDirs, err = fo.Prune(ctx); err != nil {
 		return err
 	}
 	opts.Printf("Removed duplicate packages: %d, duplicate objects: %d empty dirs: %d\n", len(names), count, prunedDirs)

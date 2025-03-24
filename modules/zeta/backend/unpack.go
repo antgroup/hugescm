@@ -45,11 +45,11 @@ func (u *Unpacker) HashTo(r io.Reader, size int64, modification int64) (oid plum
 	buffer := streamio.GetBytesBuffer()
 	defer streamio.PutBytesBuffer(buffer)
 	// 4 byte magic
-	if _, err = buffer.Write(blobMagic[:]); err != nil {
+	if _, err = buffer.Write(BLOB_MAGIC[:]); err != nil {
 		return
 	}
 	// 2 byte version
-	if err = binary.Write(buffer, binary.BigEndian, defaultBlobVersion); err != nil {
+	if err = binary.Write(buffer, binary.BigEndian, DEFAULT_BLOB_VERSION); err != nil {
 		return
 	}
 	// 2 byte method

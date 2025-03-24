@@ -1,28 +1,29 @@
 package storage
 
 import (
+	"errors"
 	"io"
 
-	"github.com/antgroup/hugescm/modules/git/gitobj/errors"
+	ge "github.com/antgroup/hugescm/modules/git/gitobj/errors"
 )
 
 // Storage implements an interface for reading, but not writing, objects in an
 // object database.
 type multiStorage struct {
-	impls []Storage
+	storages []Storage
 }
 
 func MultiStorage(args ...Storage) Storage {
-	return &multiStorage{impls: args}
+	return &multiStorage{storages: args}
 }
 
 // Open returns a handle on an existing object keyed by the given object
 // ID.  It returns an error if that file does not already exist.
 func (m *multiStorage) Open(oid []byte) (f io.ReadCloser, err error) {
-	for _, s := range m.impls {
+	for _, s := range m.storages {
 		f, err := s.Open(oid)
 		if err != nil {
-			if errors.IsNoSuchObject(err) {
+			if ge.IsNoSuchObject(err) {
 				continue
 			}
 			return nil, err
@@ -32,18 +33,19 @@ func (m *multiStorage) Open(oid []byte) (f io.ReadCloser, err error) {
 		}
 		return f, nil
 	}
-	return nil, errors.NoSuchObject(oid)
+	return nil, ge.NoSuchObject(oid)
 }
 
 // Close closes the filesystem, after which no more operations are
 // allowed.
 func (m *multiStorage) Close() error {
-	for _, s := range m.impls {
+	var errs []error
+	for _, s := range m.storages {
 		if err := s.Close(); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // Compressed indicates whether data read from this storage source will

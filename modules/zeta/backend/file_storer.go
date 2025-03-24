@@ -23,12 +23,12 @@ import (
 )
 
 const (
-	mimePacketSize            = 4096
-	defaultBlobVersion uint16 = 1
+	mimePacketSize              = 4096
+	DEFAULT_BLOB_VERSION uint16 = 1
 )
 
 var (
-	blobMagic = [4]byte{'Z', 'B', 0x00, 0x01}
+	BLOB_MAGIC = [4]byte{'Z', 'B', 0x00, 0x01}
 )
 
 type CompressMethod uint16
@@ -177,11 +177,11 @@ func compress(r io.Reader, w ExtendWriter, method CompressMethod) (written int64
 func (so *fileStorer) hashToInternal(fd *os.File, r io.Reader, size int64, compressed bool) error {
 	var err error
 	// 4 byte magic
-	if _, err := fd.Write(blobMagic[:]); err != nil {
+	if _, err := fd.Write(BLOB_MAGIC[:]); err != nil {
 		return err
 	}
 	// 2 byte version
-	if err := binary.Write(fd, binary.BigEndian, defaultBlobVersion); err != nil {
+	if err := binary.Write(fd, binary.BigEndian, DEFAULT_BLOB_VERSION); err != nil {
 		return err
 	}
 	// 2 byte method

@@ -72,10 +72,7 @@ occurrencesIter:
 	for {
 		occurrences := h.numTokenOccurrences(token)
 		s1, s2 := tokenIndex1, afterPos
-		for {
-			if s1 == 0 || s2 == 0 {
-				break
-			}
+		for s1 != 0 && s2 != 0 {
 			t1, t2 := before[s1-1], after[s2-1]
 			if t1 != t2 {
 				break
@@ -86,10 +83,7 @@ occurrencesIter:
 			occurrences = min(newOccurrences, occurrences)
 		}
 		e1, e2 := tokenIndex1+1, afterPos+1
-		for {
-			if e1 >= len(before) || e2 >= len(after) {
-				break
-			}
+		for e1 < len(before) && e2 < len(after) {
 			t1, t2 := before[e1], after[e2]
 			if t1 != t2 {
 				break

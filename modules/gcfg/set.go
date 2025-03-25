@@ -38,7 +38,7 @@ func fieldFold(v reflect.Value, name string) (reflect.Value, tag) {
 	if unicode.IsLetter(r0) && !unicode.IsLower(r0) && !unicode.IsUpper(r0) {
 		n = "X"
 	}
-	n += strings.Replace(name, "-", "_", -1)
+	n += strings.ReplaceAll(name, "-", "_")
 	f, ok := v.Type().FieldByNameFunc(func(fieldName string) bool {
 		if !v.FieldByName(fieldName).CanSet() {
 			return false

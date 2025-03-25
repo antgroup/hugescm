@@ -103,8 +103,8 @@ func (r *Repository) NewTag(ctx context.Context, opts *NewTagOptions) error {
 	}
 	tagName := plumbing.NewTagReferenceName(opts.Name)
 	oldRef, err := r.ReferencePrefixMatch(tagName)
-	switch {
-	case err == nil:
+	switch err {
+	case nil:
 		if oldRef.Name() != tagName {
 			die("'%s' exists; cannot create '%s'", oldRef.Name(), tagName)
 			return errors.New("tag exists")
@@ -113,7 +113,7 @@ func (r *Repository) NewTag(ctx context.Context, opts *NewTagOptions) error {
 			die("tag '%s' already exists", opts.Name)
 			return errors.New("tag exists")
 		}
-	case err == plumbing.ErrReferenceNotFound:
+	case plumbing.ErrReferenceNotFound:
 	default:
 		die_error("find tag: %v", err)
 	}

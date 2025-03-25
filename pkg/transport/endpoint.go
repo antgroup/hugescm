@@ -172,7 +172,7 @@ func getPort(u *url.URL) int {
 }
 
 func getPath(u *url.URL) string {
-	var res string = u.Path
+	res := u.Path
 	if u.RawQuery != "" {
 		res += "?" + u.RawQuery
 	}

@@ -106,7 +106,7 @@ var globEscapes = map[string]string{
 
 func escapeGlobPattern(s string) string {
 	for char, escape := range globEscapes {
-		s = strings.Replace(s, char, escape, -1)
+		s = strings.ReplaceAll(s, char, escape)
 	}
 	return s
 }

@@ -161,7 +161,7 @@ func (c *Commit) encodeInternal(w io.Writer) (err error) {
 	}
 
 	for _, hdr := range c.ExtraHeaders {
-		if _, err = fmt.Fprintf(w, "%s %s\n", hdr.K, strings.Replace(hdr.V, "\n", "\n ", -1)); err != nil {
+		if _, err = fmt.Fprintf(w, "%s %s\n", hdr.K, strings.ReplaceAll(hdr.V, "\n", "\n ")); err != nil {
 			return err
 		}
 

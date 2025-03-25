@@ -129,8 +129,8 @@ func (e *ChangeEntry) conflictMode() (filemode.FileMode, bool) {
 }
 
 func (e *ChangeEntry) hasConflict() bool {
-	// !(their modified|our modified|our equal their: delete both or insert both)
-	return !(e.Ancestor.Equal(e.Our) || e.Ancestor.Equal(e.Their) || e.Our.Equal(e.Their))
+	// not their modified && not our modified && not our equal their: delete both or insert both
+	return !e.Ancestor.Equal(e.Our) && !e.Ancestor.Equal(e.Their) && !e.Our.Equal(e.Their)
 }
 
 func (e *ChangeEntry) makeConflict(side int) *Conflict {
@@ -161,7 +161,7 @@ type RenameEntry struct {
 
 func (e *RenameEntry) conflict() bool {
 	// !(their rename|our rename|both rename equal)
-	return !(e.Our == nil || e.Their == nil || e.Our.Equal(e.Their))
+	return e.Our != nil && e.Their != nil && !e.Our.Equal(e.Their)
 }
 
 func (e *RenameEntry) makeConflict() *Conflict {

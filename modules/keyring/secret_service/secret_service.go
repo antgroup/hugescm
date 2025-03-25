@@ -74,7 +74,7 @@ func (s *SecretService) OpenSession() (dbus.BusObject, error) {
 // CheckCollectionPath accepts dbus path and returns nil if the path is found
 // in the collection interface (and can be used).
 func (s *SecretService) CheckCollectionPath(path dbus.ObjectPath) error {
-	obj := s.Conn.Object(serviceName, servicePath)
+	obj := s.Object(serviceName, servicePath)
 	val, err := obj.GetProperty(collectionsInterface)
 	if err != nil {
 		return err

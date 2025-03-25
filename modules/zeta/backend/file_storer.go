@@ -97,9 +97,9 @@ func Join(root string, oid plumbing.Hash) string {
 }
 
 // path returns an absolute path on disk to the object given by the OID "sha".
-func (so *fileStorer) path(oid plumbing.Hash) string {
+func (fo *fileStorer) path(oid plumbing.Hash) string {
 	encoded := oid.String()
-	return filepath.Join(so.root, encoded[:2], encoded[2:4], encoded)
+	return filepath.Join(fo.root, encoded[:2], encoded[2:4], encoded)
 }
 
 // Open implements the storer.Open function, and returns a io.ReadCloser
@@ -108,16 +108,16 @@ func (so *fileStorer) path(oid plumbing.Hash) string {
 //
 // It is the caller's responsibility to close the given file "f" after its use
 // is complete.
-func (so *fileStorer) Open(oid plumbing.Hash) (f io.ReadCloser, err error) {
-	f, err = so.open(so.path(oid), os.O_RDONLY)
+func (fo *fileStorer) Open(oid plumbing.Hash) (f io.ReadCloser, err error) {
+	f, err = fo.open(fo.path(oid), os.O_RDONLY)
 	if os.IsNotExist(err) {
 		return nil, plumbing.NoSuchObject(oid)
 	}
 	return f, err
 }
 
-func (so *fileStorer) Exists(oid plumbing.Hash) error {
-	p := so.path(oid)
+func (fo *fileStorer) Exists(oid plumbing.Hash) error {
+	p := fo.path(oid)
 	if _, err := os.Stat(p); err != nil && os.IsNotExist(err) {
 		return plumbing.NoSuchObject(oid)
 	}
@@ -125,25 +125,26 @@ func (so *fileStorer) Exists(oid plumbing.Hash) error {
 }
 
 // Root gives the absolute (fully-qualified) path to the file storer on disk.
-func (so *fileStorer) Root() string {
-	return so.root
+func (fo *fileStorer) Root() string {
+	return fo.root
 }
 
 // Close closes the file storer.
-func (so *fileStorer) Close() error {
+func (fo *fileStorer) Close() error {
 	return nil
 }
 
 // open opens a given file.
-func (so *fileStorer) open(path string, flag int) (*os.File, error) {
+func (fo *fileStorer) open(path string, flag int) (*os.File, error) {
 	return os.OpenFile(path, flag, 0)
 }
 
-func (so *fileStorer) method(compressed bool) CompressMethod {
+// method: compressed flag --> content has been compressed
+func (fo *fileStorer) method(compressed bool) CompressMethod {
 	if compressed {
 		return STORE
 	}
-	return so.selectedMethod
+	return fo.selectedMethod
 }
 
 type ExtendWriter interface {
@@ -174,7 +175,7 @@ func compress(r io.Reader, w ExtendWriter, method CompressMethod) (written int64
 // 2 byte method
 // 8 byte uncompressed length
 // N bytes raw or compressed data
-func (so *fileStorer) hashToInternal(fd *os.File, r io.Reader, size int64, compressed bool) error {
+func (fo *fileStorer) hashToInternal(fd *os.File, r io.Reader, size int64, compressed bool) error {
 	var err error
 	// 4 byte magic
 	if _, err := fd.Write(BLOB_MAGIC[:]); err != nil {
@@ -185,7 +186,7 @@ func (so *fileStorer) hashToInternal(fd *os.File, r io.Reader, size int64, compr
 		return err
 	}
 	// 2 byte method
-	method := so.method(compressed)
+	method := fo.method(compressed)
 	if err := binary.Write(fd, binary.BigEndian, method); err != nil {
 		return err
 	}
@@ -225,9 +226,9 @@ func mkdir(paths ...string) error {
 	return nil
 }
 
-func finalizeObject(oldpath string, newpath string) (err error) {
-	if err = strengthen.FinalizeObject(oldpath, newpath); err == nil {
-		_ = os.Chmod(newpath, 0444)
+func finalizeObject(oldPath string, newPath string) (err error) {
+	if err = strengthen.FinalizeObject(oldPath, newPath); err == nil {
+		_ = os.Chmod(newPath, 0444)
 	}
 	return
 }
@@ -240,7 +241,7 @@ func finalizeObject(oldpath string, newpath string) (err error) {
 //	2 byte method
 //	8 byte uncompressed length
 //	N bytes raw or compressed data
-func (so *fileStorer) HashTo(ctx context.Context, r io.Reader, size int64) (oid plumbing.Hash, err error) {
+func (fo *fileStorer) HashTo(ctx context.Context, r io.Reader, size int64) (oid plumbing.Hash, err error) {
 	var payload []byte
 	if payload, err = streamio.ReadMax(r, mimePacketSize); err != nil && err != io.EOF {
 		return oid, fmt.Errorf("ReadFull error: %v", err)
@@ -251,15 +252,15 @@ func (so *fileStorer) HashTo(ctx context.Context, r io.Reader, size int64) (oid 
 		contents = io.MultiReader(contents, r)
 	}
 	hasher := plumbing.NewHasher()
-	if err = mkdir(so.incoming); err != nil {
+	if err = mkdir(fo.incoming); err != nil {
 		return
 	}
 	var fd *os.File
-	if fd, err = os.CreateTemp(so.incoming, "blob"); err != nil {
+	if fd, err = os.CreateTemp(fo.incoming, "blob"); err != nil {
 		return oid, err
 	}
 	incomingPath := fd.Name()
-	if err = so.hashToInternal(fd, io.TeeReader(contents, hasher), size, compressed); err != nil {
+	if err = fo.hashToInternal(fd, io.TeeReader(contents, hasher), size, compressed); err != nil {
 		_ = fd.Close()
 		_ = os.Remove(incomingPath)
 		return
@@ -267,7 +268,7 @@ func (so *fileStorer) HashTo(ctx context.Context, r io.Reader, size int64) (oid 
 	_ = fd.Sync() // flush
 	_ = fd.Close()
 	oid = hasher.Sum()
-	objectPath := so.path(oid)
+	objectPath := fo.path(oid)
 	if err = os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
 		_ = os.Remove(incomingPath)
 		return
@@ -279,12 +280,12 @@ func (so *fileStorer) HashTo(ctx context.Context, r io.Reader, size int64) (oid 
 	return
 }
 
-func (so *fileStorer) WriteEncoded(e object.Encoder) (oid plumbing.Hash, err error) {
+func (fo *fileStorer) WriteEncoded(e object.Encoder) (oid plumbing.Hash, err error) {
 	var fd *os.File
-	if err = mkdir(so.incoming); err != nil {
+	if err = mkdir(fo.incoming); err != nil {
 		return
 	}
-	if fd, err = os.CreateTemp(so.incoming, "metadata"); err != nil {
+	if fd, err = os.CreateTemp(fo.incoming, "metadata"); err != nil {
 		return oid, err
 	}
 	incomingPath := fd.Name()
@@ -297,7 +298,7 @@ func (so *fileStorer) WriteEncoded(e object.Encoder) (oid plumbing.Hash, err err
 	_ = fd.Sync() // flush
 	_ = fd.Close()
 	oid = hasher.Sum()
-	metaObjectPath := so.path(oid)
+	metaObjectPath := fo.path(oid)
 	if err = os.MkdirAll(filepath.Dir(metaObjectPath), 0755); err != nil {
 		_ = os.Remove(incomingPath)
 		return
@@ -315,9 +316,9 @@ var (
 	}
 )
 
-func (so *fileStorer) Search(prefix plumbing.Hash) (oid plumbing.Hash, err error) {
+func (fo *fileStorer) Search(prefix plumbing.Hash) (oid plumbing.Hash, err error) {
 	prefixStr := prefix.Prefix()
-	searchRoot := filepath.Join(so.root, prefixStr[0:2], prefixStr[2:4])
+	searchRoot := filepath.Join(fo.root, prefixStr[0:2], prefixStr[2:4])
 	err = filepath.WalkDir(searchRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -352,9 +353,9 @@ type LooseObject struct {
 
 type LooseObjects []*LooseObject
 
-func (so *fileStorer) looseObjects(sizeMax int64) (LooseObjects, error) {
+func (fo *fileStorer) looseObjects(sizeMax int64) (LooseObjects, error) {
 	objects := make([]*LooseObject, 0, 100)
-	err := filepath.WalkDir(so.root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(fo.root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -382,9 +383,9 @@ func (so *fileStorer) looseObjects(sizeMax int64) (LooseObjects, error) {
 	return objects, err
 }
 
-func (so *fileStorer) LooseObjects() ([]plumbing.Hash, error) {
+func (fo *fileStorer) LooseObjects() ([]plumbing.Hash, error) {
 	oids := make([]plumbing.Hash, 0, 100)
-	err := filepath.WalkDir(so.root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(fo.root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -404,12 +405,12 @@ func (so *fileStorer) LooseObjects() ([]plumbing.Hash, error) {
 	return oids, err
 }
 
-func (so *fileStorer) Unpack(oid plumbing.Hash, r io.Reader) (err error) {
-	if err = mkdir(so.incoming); err != nil {
+func (fo *fileStorer) Unpack(oid plumbing.Hash, r io.Reader) (err error) {
+	if err = mkdir(fo.incoming); err != nil {
 		return
 	}
 	var fd *os.File
-	if fd, err = os.CreateTemp(so.incoming, "object"); err != nil {
+	if fd, err = os.CreateTemp(fo.incoming, "object"); err != nil {
 		return
 	}
 	incomingPath := fd.Name()
@@ -419,7 +420,7 @@ func (so *fileStorer) Unpack(oid plumbing.Hash, r io.Reader) (err error) {
 		return
 	}
 	_ = fd.Close()
-	objectPath := so.path(oid)
+	objectPath := fo.path(oid)
 	if err = os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
 		_ = os.Remove(incomingPath)
 		return
@@ -512,8 +513,8 @@ func removeDirIfEmpty(ctx context.Context, target string) (total int, deleted bo
 	return total + 1, true, nil
 }
 
-func (so *fileStorer) Prune(ctx context.Context) (int, error) {
-	total, _, err := removeDirIfEmpty(ctx, so.root)
+func (fo *fileStorer) Prune(ctx context.Context) (int, error) {
+	total, _, err := removeDirIfEmpty(ctx, fo.root)
 	return total, err
 }
 
@@ -521,21 +522,21 @@ var (
 	ErrCanceled = context.Canceled
 )
 
-func (so *fileStorer) PruneObject(ctx context.Context, oid plumbing.Hash) error {
+func (fo *fileStorer) PruneObject(ctx context.Context, oid plumbing.Hash) error {
 	if err := ctx.Err(); err != nil {
 		return ErrCanceled
 	}
-	p := so.path(oid)
+	p := fo.path(oid)
 	if err := os.Remove(p); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (so *fileStorer) PruneObjects(ctx context.Context, largeSize int64) ([]plumbing.Hash, int64, error) {
+func (fo *fileStorer) PruneObjects(ctx context.Context, largeSize int64) ([]plumbing.Hash, int64, error) {
 	oids := make([]plumbing.Hash, 0, 100)
 	var totalSize int64
-	err := filepath.WalkDir(so.root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(fo.root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

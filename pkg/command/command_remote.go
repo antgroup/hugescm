@@ -33,7 +33,7 @@ func (c *ShowRemote) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close()
-	remote := r.Config.Core.Remote
+	remote := r.Core.Remote
 	if c.JSON {
 		m := map[string]string{
 			"remote": remote,

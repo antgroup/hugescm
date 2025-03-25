@@ -130,5 +130,5 @@ func (b *bucket) getResourceV2(objectName, subResource string) string {
 	if subResource != "" {
 		subResource = "?" + subResource
 	}
-	return url.QueryEscape("/"+b.name+"/") + strings.Replace(url.QueryEscape(objectName), "+", "%20", -1) + subResource
+	return url.QueryEscape("/"+b.name+"/") + strings.ReplaceAll(url.QueryEscape(objectName), "+", "%20") + subResource
 }

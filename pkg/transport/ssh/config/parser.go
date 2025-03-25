@@ -101,7 +101,7 @@ func (p *sshParser) parseKV() sshParserStateFn {
 	if tok == nil {
 		tok = &token{typ: tokenEOF}
 	}
-	if tok.typ == tokenComment && tok.Position.Line == val.Position.Line {
+	if tok.typ == tokenComment && tok.Line == val.Line {
 		tok = p.getToken()
 		comment = tok.val
 	}
@@ -161,7 +161,7 @@ func (p *sshParser) parseKV() sshParserStateFn {
 		spaceAfterValue: spaceAfterValue,
 		Comment:         comment,
 		hasEquals:       hasEquals,
-		leadingSpace:    key.Position.Col - 1,
+		leadingSpace:    key.Col - 1,
 		position:        key.Position,
 	}
 	lastHost.Nodes = append(lastHost.Nodes, kv)
@@ -174,7 +174,7 @@ func (p *sshParser) parseComment() sshParserStateFn {
 	lastHost.Nodes = append(lastHost.Nodes, &Empty{
 		Comment: comment.val,
 		// account for the "#" as well
-		leadingSpace: comment.Position.Col - 2,
+		leadingSpace: comment.Col - 2,
 		position:     comment.Position,
 	})
 	return p.parseStart

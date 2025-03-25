@@ -20,13 +20,13 @@ import (
 // GIT_ALTERNATE_OBJECT_DIRECTORIES.  The hash algorithm used is specified by
 // the algo parameter.
 func NewFilesystemBackend(root, tmp, alternates string, algo hash.Hash) (storage.Backend, error) {
-	fsobj := newFileStorer(root, tmp)
+	fo := newFileStorer(root, tmp)
 	packs, err := pack.NewStorage(root, algo)
 	if err != nil {
 		return nil, err
 	}
 
-	storage, err := findAllBackends(fsobj, packs, root, algo)
+	storage, err := findAllBackends(fo, packs, root, algo)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func NewFilesystemBackend(root, tmp, alternates string, algo hash.Hash) (storage
 	}
 
 	return &filesystemBackend{
-		fs:       fsobj,
+		fs:       fo,
 		backends: storage,
 	}, nil
 }
@@ -126,7 +126,7 @@ func splitAlternateString(env string, separator string) []string {
 		// Strip leading and trailing quotation marks
 		s = s[1 : len(s)-1]
 		for _, repl := range replacements {
-			s = strings.Replace(s, repl.olds, repl.news, -1)
+			s = strings.ReplaceAll(s, repl.olds, repl.news)
 		}
 		s = octalEscape.ReplaceAllStringFunc(s, func(inp string) string {
 			val, _ := strconv.ParseUint(inp[1:], 8, 64)

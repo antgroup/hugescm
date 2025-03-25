@@ -48,7 +48,7 @@ func (r *Repository) switchBranchFromRemote(ctx context.Context, branch string, 
 		return err
 	}
 	opts := &CheckoutOptions{Merge: so.Merge, Force: so.Force, First: false, One: so.one}
-	if fo.Reference != nil && fo.Reference.Name.IsBranch() {
+	if fo.Reference != nil && fo.Name.IsBranch() {
 		if err := r.CreateBranch(ctx, branch, fo.FETCH_HEAD.String(), so.ForceCreate, true); err != nil {
 			return err
 		}

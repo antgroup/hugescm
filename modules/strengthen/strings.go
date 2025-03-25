@@ -114,7 +114,7 @@ var (
 )
 
 func ParseSize(data string) (int64, error) {
-	var ratio int64 = Byte
+	var ratio = Byte
 	if len(data) == 0 {
 		return 0, ErrSyntaxSize
 	}

@@ -120,13 +120,13 @@ func (d *Database) initializeBlobStorage() error {
 	if err := mkdir(root, incoming); err != nil {
 		return err
 	}
-	fsobj := newFileStorer(root, incoming, d.compressionALGO)
+	fo := newFileStorer(root, incoming, d.compressionALGO)
 	packs, err := pack.NewStorage(root)
 	if err != nil {
 		return err
 	}
-	d.ro = storage.MultiStorage(fsobj, packs)
-	d.rw = fsobj
+	d.ro = storage.MultiStorage(fo, packs)
+	d.rw = fo
 	return nil
 }
 
@@ -144,13 +144,13 @@ func (d *Database) initializeMetadataStorage() error {
 	if err := mkdir(root, incoming); err != nil {
 		return err
 	}
-	fsobj := newFileStorer(root, incoming, d.compressionALGO)
+	fo := newFileStorer(root, incoming, d.compressionALGO)
 	packs, err := pack.NewStorage(root)
 	if err != nil {
 		return err
 	}
-	d.metaRO = storage.MultiStorage(fsobj, packs)
-	d.metaRW = fsobj
+	d.metaRO = storage.MultiStorage(fo, packs)
+	d.metaRW = fo
 	if !d.enableLRU {
 		return nil
 	}

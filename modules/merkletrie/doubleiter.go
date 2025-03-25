@@ -141,7 +141,7 @@ func (d *doubleIter) sameHash() bool {
 	a, fromOK := from.(noder.Comparators)
 	b, toOK := to.(noder.Comparators)
 	if fromOK && toOK {
-		if a.Mode() == b.Mode() && a.ModifiedAt() == b.ModifiedAt() {
+		if a.Mode() == b.Mode() && a.ModifiedAt().Equal(b.ModifiedAt()) {
 			return true
 		}
 	}

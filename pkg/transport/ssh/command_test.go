@@ -42,7 +42,7 @@ func (c *LastErrorCode) LastError2() error {
 func TestLastError(t *testing.T) {
 	var cc LastErrorCode
 	badErr := cc.LastErrorBAD()
-	var badErr2 error = badErr
+	badErr2 := badErr
 	goodErr := cc.LastErrorOK()
 	err2 := cc.LastError2()
 	fmt.Fprintf(os.Stderr, "%v LastErrorBAD() is nil %v\n", badErr, badErr == nil)

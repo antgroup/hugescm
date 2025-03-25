@@ -494,7 +494,7 @@ func parseComponent(s string) []componentFn {
 		var (
 			// i will denote the currently-inspected index of the character
 			// group.
-			i int = 1
+			i = 1
 			// include will denote the list of included runeFn's
 			// composing the character group.
 			include []runeFn
@@ -732,7 +732,7 @@ func wildcard(n int, fns []componentFn) componentFn {
 		return "", true
 	}
 
-	var str string = "*"
+	var str = "*"
 	for _, fn := range fns {
 		str += fn.String()
 	}

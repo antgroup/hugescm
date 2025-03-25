@@ -50,7 +50,7 @@ func NewDecryptor(decryptedKey string) (*Decryptor, error) {
 }
 
 func (d *Decryptor) Decrypt(data []byte) ([]byte, error) {
-	chunkLen := d.PrivateKey.N.BitLen() / 8
+	chunkLen := d.N.BitLen() / 8
 	var b bytes.Buffer
 	chunkNum := int(math.Ceil(float64(len(data)) / float64(chunkLen)))
 	var err error
@@ -70,16 +70,16 @@ func (d *Decryptor) Decrypt(data []byte) ([]byte, error) {
 }
 
 func (d *Decryptor) Encrypt(data []byte) ([]byte, error) {
-	chunkLen := d.PrivateKey.PublicKey.N.BitLen()/8 - 11
+	chunkLen := d.N.BitLen()/8 - 11
 	var b bytes.Buffer
 	chunkNum := int(math.Ceil(float64(len(data)) / float64(chunkLen)))
 	var err error
 	var encryptedPart []byte
 	for i := range chunkNum {
 		if i == chunkNum-1 {
-			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PrivateKey.PublicKey, data[chunkLen*i:])
+			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PublicKey, data[chunkLen*i:])
 		} else {
-			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PrivateKey.PublicKey, data[chunkLen*i:chunkLen*(i+1)])
+			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PublicKey, data[chunkLen*i:chunkLen*(i+1)])
 		}
 		if err != nil {
 			return nil, err

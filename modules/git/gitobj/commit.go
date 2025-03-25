@@ -211,7 +211,7 @@ func (c *Commit) Encode(to io.Writer) (n int, err error) {
 
 	for _, hdr := range c.ExtraHeaders {
 		n3, err := fmt.Fprintf(to, "%s %s\n",
-			hdr.K, strings.Replace(hdr.V, "\n", "\n ", -1))
+			hdr.K, strings.ReplaceAll(hdr.V, "\n", "\n "))
 		if err != nil {
 			return n, err
 		}

@@ -194,6 +194,40 @@ func pruneObjects(ctx context.Context, opts *PackOptions, fo *fileStorer, object
 	return count
 }
 
+const (
+	MaxLooseObjects = 2048
+	MaxPacks        = 4
+	MinPackSize     = 200 << 20 // 200M
+)
+
+func hasTidyPacks(root string) bool {
+	packDir := filepath.Join(root, "pack")
+	entries, err := os.ReadDir(packDir)
+	if err != nil {
+		return false
+	}
+	var count int
+	var hasTidyPack bool
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, ".pack") {
+			continue
+		}
+		count++
+		si, err := e.Info()
+		if err != nil {
+			return false
+		}
+		if si.Size() < MinPackSize {
+			hasTidyPack = true
+		}
+	}
+	return hasTidyPack && count > 1
+}
+
 func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, meta bool) error {
 	fo := newFileStorer(root, "", opts.CompressionALGO)
 	packs, err := pack.NewScanner(root)
@@ -217,7 +251,7 @@ func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, me
 		step = "metadata"
 	}
 
-	if len(looseObjects) == 0 {
+	if len(looseObjects) == 0 && !hasTidyPacks(root) {
 		// no small loose objects, skipped.
 		opts.Printf("Pack %s objects: no smaller loose object, skipping packing.\n", step)
 		return nil

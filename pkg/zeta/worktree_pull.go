@@ -71,13 +71,13 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 		return nil
 	}
 
-	fasfForward, err := w.isFastForward(ctx, current.Hash(), fo.FETCH_HEAD, ignoreParents)
+	fastForward, err := w.isFastForward(ctx, current.Hash(), fo.FETCH_HEAD, ignoreParents)
 	if err != nil {
 		die_error("check fast-forward error: %v", err)
 		return err
 	}
 	branchName := currentName.BranchName()
-	if fasfForward {
+	if fastForward {
 		newRev := fo.FETCH_HEAD
 		if !opts.FF {
 			messagePrefix := fmt.Sprintf("Merge branch '%s of %s' into %s", branchName, w.cleanedRemote(), branchName)

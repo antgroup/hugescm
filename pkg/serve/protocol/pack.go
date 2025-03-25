@@ -329,15 +329,38 @@ func (p *Packer) WriteSparseTree(ctx context.Context, oid plumbing.Hash, m Spars
 	return nil
 }
 
-func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit, deepenFrom, have plumbing.Hash, deepen int) error {
-	if deepen == -1 {
-		deepen = math.MaxInt
-	}
+func (p *Packer) newCommitIter(ctx context.Context, current *object.Commit, deepenFrom, have plumbing.Hash) object.CommitIter {
 	haves := map[plumbing.Hash]bool{
 		deepenFrom: true,
 		have:       true,
 	}
-	iter := object.NewCommitIterBSF(current, haves, nil)
+	if !have.IsZero() {
+		if cc, err := p.Commit(ctx, have); err == nil {
+			if bases, err := current.MergeBase(ctx, cc); err == nil {
+				for _, b := range bases {
+					haves[b.Hash] = true
+				}
+			}
+		}
+	}
+	if !deepenFrom.IsZero() {
+		if cc, err := p.Commit(ctx, deepenFrom); err == nil {
+			if bases, err := current.MergeBase(ctx, cc); err == nil {
+				for _, b := range bases {
+					haves[b.Hash] = true
+				}
+
+			}
+		}
+	}
+	return object.NewCommitIterBSF(current, haves, nil)
+}
+
+func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit, deepenFrom, have plumbing.Hash, deepen int) error {
+	if deepen == -1 {
+		deepen = math.MaxInt
+	}
+	iter := p.newCommitIter(ctx, current, deepenFrom, have)
 	defer iter.Close()
 	for range deepen {
 		cc, err := iter.Next(ctx)
@@ -363,11 +386,7 @@ func (p *Packer) WriteDeepenSparseMetadata(ctx context.Context, current *object.
 		deepen = math.MaxInt
 	}
 	m := NewSparseTreeMatcher(paths)
-	haves := map[plumbing.Hash]bool{
-		deepenFrom: true,
-		have:       true,
-	}
-	iter := object.NewCommitIterBSF(current, haves, nil)
+	iter := p.newCommitIter(ctx, current, deepenFrom, have)
 	defer iter.Close()
 	for range deepen {
 		cc, err := iter.Next(ctx)

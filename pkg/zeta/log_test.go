@@ -20,7 +20,9 @@ func TestLog(t *testing.T) {
 
 	commits, err := r.revList(t.Context(),
 		plumbing.NewHash("6c4abb63943a42c4374e42b805113f2288b832319ccce79c12c836e59c41ccce"),
-		plumbing.NewHash("c0869060ede3e208c464cac81fd78e6f31cecb572a3450b9a7dce4784c6dab5f"), nil)
+		[]plumbing.Hash{
+			plumbing.NewHash("c0869060ede3e208c464cac81fd78e6f31cecb572a3450b9a7dce4784c6dab5f"),
+		}, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return

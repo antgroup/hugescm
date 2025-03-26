@@ -93,8 +93,11 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 		fmt.Fprintf(os.Stderr, "rebase: %s\n", W("refusing to merge unrelated histories"))
 		return plumbing.ZeroHash, ErrUnrelatedHistories
 	}
-	mergeBase := bases[0]
-	baseTree, err := mergeBase.Root(ctx)
+	ignore := make([]plumbing.Hash, 0, 2)
+	for _, c := range bases {
+		ignore = append(ignore, c.Hash)
+	}
+	baseTree, err := bases[0].Root(ctx)
 	if err != nil {
 		die_error("unable resolve root tree: %v", err)
 		return plumbing.ZeroHash, err
@@ -104,7 +107,7 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 		die_error("resolve onto tree: %v", err)
 		return plumbing.ZeroHash, err
 	}
-	commits, err := w.revList(ctx, our, mergeBase.Hash, nil)
+	commits, err := w.revList(ctx, our, ignore, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return plumbing.ZeroHash, err
@@ -308,7 +311,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		return err
 	}
 	mergeDriver := w.resolveMergeDriver()
-	commits, err := w.revList(ctx, md.REBASE_HEAD, md.STOPPED, nil)
+	commits, err := w.revList(ctx, md.REBASE_HEAD, []plumbing.Hash{md.STOPPED}, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return err

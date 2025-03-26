@@ -358,6 +358,7 @@ const (
 	LogOrderDFSPost
 	LogOrderBFS
 	LogOrderCommitterTime
+	LogOrderAuthorTime
 )
 
 // LogOptions describes how a log action should be performed.
@@ -395,6 +396,25 @@ type LogOptions struct {
 	// Show commits older than a specific date.
 	// It is equivalent to running `zeta log --until <date>` or `zeta log --before <date>`.
 	Until *time.Time
+
+	//
+	Reverse bool
+}
+
+func newLogPathFilter(paths []string) func(string) bool {
+	if len(paths) == 0 {
+		return nil
+	}
+	m := NewMatcher(paths)
+	return m.Match
+}
+
+type LogCommandOptions struct {
+	Revision   string
+	Order      LogOrder
+	Reverse    bool
+	FormatJSON bool
+	Paths      []string
 }
 
 // CleanOptions describes how a clean should be performed.

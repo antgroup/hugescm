@@ -88,8 +88,7 @@ func NewHash(s string) Hash {
 }
 
 func (h Hash) IsZero() bool {
-	var empty Hash
-	return h == empty
+	return h == ZeroHash
 }
 
 func (h Hash) String() string {

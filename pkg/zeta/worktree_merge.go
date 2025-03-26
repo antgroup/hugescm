@@ -228,8 +228,8 @@ func (w *Worktree) Merge(ctx context.Context, opts *MergeOptions) error {
 
 const maxSizeForSquashedCommitMessage = 4 << 10
 
-func (w *Worktree) makeSquashMessage(ctx context.Context, from, base plumbing.Hash, messagePrefix string) (string, error) {
-	commits, err := w.revList(ctx, from, base, nil)
+func (w *Worktree) makeSquashMessage(ctx context.Context, from plumbing.Hash, ignore []plumbing.Hash, messagePrefix string) (string, error) {
+	commits, err := w.revList(ctx, from, ignore, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return "", err
@@ -281,7 +281,7 @@ func (w *Worktree) mergeInternal(ctx context.Context, into, from plumbing.Hash, 
 	parents := []plumbing.Hash{into}
 	message := messageFn()
 	if squash {
-		if message, err = w.makeSquashMessage(ctx, from, result.b0, message); err != nil {
+		if message, err = w.makeSquashMessage(ctx, from, result.bases, message); err != nil {
 			return plumbing.ZeroHash, err
 		}
 	} else {

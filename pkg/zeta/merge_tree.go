@@ -101,7 +101,7 @@ func (o *MergeTreeOptions) format(result *odb.MergeResult) {
 
 type mergeTreeResult struct {
 	*odb.MergeResult
-	b0 plumbing.Hash
+	bases []plumbing.Hash
 }
 
 func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *object.Commit, mergeDriver odb.MergeDriver, allowUnrelatedHistories, textconv bool) (*object.Tree, error) {
@@ -155,50 +155,54 @@ func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *objec
 	return r.odb.Tree(ctx, result.NewTree)
 }
 
-func (r *Repository) resolveAncestorTree(ctx context.Context, into, from, base *object.Commit, mergeDriver odb.MergeDriver, allowUnrelatedHistories, textconv bool) (plumbing.Hash, *object.Tree, error) {
+func (r *Repository) resolveAncestorTree(ctx context.Context, into, from, base *object.Commit, mergeDriver odb.MergeDriver, allowUnrelatedHistories, textconv bool) ([]plumbing.Hash, *object.Tree, error) {
 	if base != nil {
 		o, err := base.Root(ctx)
 		if err != nil {
 			die_error("resolve bases tree: %v", err)
-			return plumbing.ZeroHash, nil, err
+			return nil, nil, err
 		}
-		return base.Hash, o, nil
+		return []plumbing.Hash{base.Hash}, o, nil
 	}
 	bases, err := into.MergeBase(ctx, from)
 	if err != nil {
 		die_error("merge-base '%s-%s': %v", from.Hash, into.Hash, err)
-		return plumbing.ZeroHash, nil, err
+		return nil, nil, err
 	}
 	if len(bases) == 0 {
 		if !allowUnrelatedHistories {
 			r.DbgPrint("merge: merge from %s to %s refusing to merge unrelated histories", from.Hash, into.Hash)
 			fmt.Fprintf(os.Stderr, "merge: %s\n", W("refusing to merge unrelated histories"))
-			return plumbing.ZeroHash, nil, ErrUnrelatedHistories
+			return nil, nil, ErrUnrelatedHistories
 		}
-		return plumbing.ZeroHash, r.odb.EmptyTree(), nil
+		return nil, r.odb.EmptyTree(), nil
+	}
+	baseOIDs := make([]plumbing.Hash, 0, 2)
+	for _, c := range bases {
+		baseOIDs = append(baseOIDs, c.Hash)
 	}
 	if len(bases) == 1 {
 		o, err := bases[0].Root(ctx)
 		if err != nil {
 			die_error("resolve bases tree: %v", err)
-			return plumbing.ZeroHash, nil, err
+			return nil, nil, err
 		}
-		return bases[0].Hash, o, nil
+		return baseOIDs, o, nil
 	}
 	o, err := r.resolveAncestorTree0(ctx, bases[0], bases[1], mergeDriver, allowUnrelatedHistories, textconv)
 	if err != nil {
-		return plumbing.ZeroHash, nil, err
+		return nil, nil, err
 	}
-	return bases[0].Hash, o, nil
+	return baseOIDs, o, nil
 }
 
 func (r *Repository) mergeTree(ctx context.Context, into, from, base *object.Commit, branch1, branch2 string, allowUnrelatedHistories, textconv bool) (*mergeTreeResult, error) {
 	mergeDriver := r.resolveMergeDriver()
-	base0, o, err := r.resolveAncestorTree(ctx, into, from, base, mergeDriver, allowUnrelatedHistories, textconv)
+	bases, o, err := r.resolveAncestorTree(ctx, into, from, base, mergeDriver, allowUnrelatedHistories, textconv)
 	if err != nil {
 		return nil, err
 	}
-	r.DbgPrint("merge from %s to %s base: %s", from.Hash, into.Hash, base0)
+	r.DbgPrint("merge from %s to %s base: %s", from.Hash, into.Hash, bases)
 	a, err := into.Root(ctx)
 	if err != nil {
 		die_error("read tree '%s:' %v", from.Hash, err)
@@ -210,7 +214,7 @@ func (r *Repository) mergeTree(ctx context.Context, into, from, base *object.Com
 		return nil, err
 	}
 	if a.Equal(b) {
-		return &mergeTreeResult{MergeResult: &odb.MergeResult{NewTree: a.Hash}, b0: base0}, nil
+		return &mergeTreeResult{MergeResult: &odb.MergeResult{NewTree: a.Hash}, bases: bases}, nil
 	}
 	result, err := r.odb.MergeTree(ctx, o, a, b, &odb.MergeOptions{
 		Branch1:       branch1,
@@ -224,7 +228,7 @@ func (r *Repository) mergeTree(ctx context.Context, into, from, base *object.Com
 		die_error("merge-tree: %v", err)
 		return nil, err
 	}
-	return &mergeTreeResult{MergeResult: result, b0: base0}, nil
+	return &mergeTreeResult{MergeResult: result, bases: bases}, nil
 }
 
 func (r *Repository) MergeTree(ctx context.Context, opts *MergeTreeOptions) error {

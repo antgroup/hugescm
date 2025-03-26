@@ -24,9 +24,12 @@ import (
 // the given patterns are chosen (similarly for multiple --committer=<pattern>).
 
 type Log struct {
-	RevisionRange string   `arg:"" optional:"" name:"revision-range" help:"Revision range"`
-	JSON          bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
-	paths         []string `kong:"-"`
+	Revision        string   `arg:"" optional:"" name:"revision-range" help:"Revision range"`
+	DateOrder       bool     `name:"date-order" help:"Committer timestamp order"`
+	AuthorDateOrder bool     `name:"author-date-order" help:"Author timestamp order"`
+	Reverse         bool     `name:"reverse" help:"Reverse order"`
+	JSON            bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
+	paths           []string `kong:"-"`
 }
 
 const (
@@ -51,7 +54,20 @@ func (c *Log) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close()
-	if err := r.Log(context.Background(), c.RevisionRange, slashPaths(c.paths), c.JSON); err != nil {
+	opts := &zeta.LogCommandOptions{
+		Revision:   c.Revision,
+		Order:      zeta.LogOrderBFS,
+		Paths:      slashPaths(c.paths),
+		Reverse:    c.Reverse,
+		FormatJSON: c.JSON,
+	}
+	switch {
+	case c.DateOrder:
+		opts.Order = zeta.LogOrderCommitterTime
+	case c.AuthorDateOrder:
+		opts.Order = zeta.LogOrderAuthorTime
+	}
+	if err := r.Log(context.Background(), opts); err != nil {
 		return err
 	}
 	return nil

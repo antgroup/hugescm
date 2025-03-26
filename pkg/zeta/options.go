@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -410,11 +411,52 @@ func newLogPathFilter(paths []string) func(string) bool {
 }
 
 type LogCommandOptions struct {
-	Revision   string
-	Order      LogOrder
-	Reverse    bool
-	FormatJSON bool
-	Paths      []string
+	Revision      string
+	Order         LogOrder
+	OrderByDate   bool
+	OrderByAuthor bool
+	Reverse       bool
+	FormatJSON    bool
+	Paths         []string
+}
+type commitsSortFunc func([]*object.Commit)
+
+func (o *LogCommandOptions) SortFunc() commitsSortFunc {
+	if o.Reverse || o.OrderByAuthor || o.OrderByDate {
+		return o.sort
+	}
+	return nil
+}
+
+func (o *LogCommandOptions) sort(commits []*object.Commit) {
+	if o.OrderByDate {
+		if o.Reverse {
+			slices.SortFunc(commits, func(a, b *object.Commit) int {
+				return a.Committer.When.Compare(b.Committer.When)
+			})
+			return
+		}
+		slices.SortFunc(commits, func(a, b *object.Commit) int {
+			return b.Committer.When.Compare(a.Committer.When)
+		})
+		return
+	}
+	if o.OrderByAuthor {
+		if o.Reverse {
+			slices.SortFunc(commits, func(a, b *object.Commit) int {
+				return a.Author.When.Compare(b.Author.When)
+			})
+			return
+		}
+		slices.SortFunc(commits, func(a, b *object.Commit) int {
+			return b.Author.When.Compare(a.Author.When)
+		})
+		return
+	}
+	if o.Reverse {
+		slices.Reverse(commits)
+		return
+	}
 }
 
 // CleanOptions describes how a clean should be performed.

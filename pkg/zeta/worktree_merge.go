@@ -167,12 +167,12 @@ func (w *Worktree) Merge(ctx context.Context, opts *MergeOptions) error {
 		return nil
 	}
 
-	fasfForward, err := w.isFastForward(ctx, current.Hash(), from, ignoreParents)
+	fastForward, err := w.isFastForward(ctx, current.Hash(), from, ignoreParents)
 	if err != nil {
 		die_error("check fast-forward error: %v", err)
 		return err
 	}
-	if fasfForward {
+	if fastForward {
 		newRev := from
 		if !opts.FF {
 			message, err := w.mergeMessageGen(ctx, opts, branchName)

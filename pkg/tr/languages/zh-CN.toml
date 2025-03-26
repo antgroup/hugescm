@@ -174,8 +174,8 @@
 "Show the working tree status" = "显示工作树状态"
 "Give the output in the short-format" = "以短格式给出输出"
 "Revision range" = "版本范围"
-"Committer timestamp order" = "按提交时间排序"
-"Author timestamp order" = "按作者时间排序"
+"Order by committer date" = "按提交时间排序，不遵循拓扑关系"
+"Order by author date" = "按作者时间排序，不尊许拓扑关系"
 "Reverse order" = "以相反的顺序输出"
 # status
 "(use \"zeta restore --staged <file>...\" to unstage)" = "（使用 \"zeta restore --staged <文件>...\" 以取消暂存）"

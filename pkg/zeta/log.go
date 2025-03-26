@@ -454,7 +454,7 @@ func commitIterFunc(order LogOrder, ignore []plumbing.Hash) func(c *object.Commi
 		}
 	case LogOrderBFS:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitIterBSF(c, nil, ignore)
+			return object.NewCommitIterBFS(c, nil, ignore)
 		}
 	case LogOrderCommitterTime:
 		return func(c *object.Commit) object.CommitIter {

@@ -216,7 +216,7 @@ func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.H
 	haves := map[plumbing.Hash]bool{
 		deepenFrom: true,
 	}
-	iter := object.NewCommitIterBSF(c, haves, nil)
+	iter := object.NewCommitIterBFS(c, haves, nil)
 	defer iter.Close()
 	for {
 		cc, err := iter.Next(ctx)

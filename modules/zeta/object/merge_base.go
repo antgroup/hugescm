@@ -70,7 +70,7 @@ func ancestorsIndex(ctx context.Context, excluded, starting *Commit) (map[plumbi
 	}
 
 	startingHistory := map[plumbing.Hash]struct{}{}
-	startingIter := NewCommitIterBSF(starting, nil, nil)
+	startingIter := NewCommitIterBFS(starting, nil, nil)
 	err := startingIter.ForEach(ctx, func(commit *Commit) error {
 		if commit.Hash == excluded.Hash {
 			return errIsReachable

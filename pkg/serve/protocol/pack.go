@@ -353,7 +353,7 @@ func (p *Packer) newCommitIter(ctx context.Context, current *object.Commit, deep
 			}
 		}
 	}
-	return object.NewCommitIterBSF(current, haves, nil)
+	return object.NewCommitIterBFS(current, haves, nil)
 }
 
 func (p *Packer) WriteDeepenMetadata(ctx context.Context, current *object.Commit, deepenFrom, have plumbing.Hash, deepen int) error {

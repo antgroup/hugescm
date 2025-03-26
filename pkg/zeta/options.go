@@ -370,7 +370,7 @@ type LogOptions struct {
 
 	// The default traversal algorithm is Depth-first search
 	// set Order=LogOrderCommitterTime for ordering by committer time (more compatible with `git log`)
-	// set Order=LogOrderBSF for Breadth-first search
+	// set Order=LogOrderBFS for Breadth-first search
 	Order LogOrder
 
 	// Show only those commits in which the specified file was inserted/updated.

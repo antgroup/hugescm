@@ -42,7 +42,7 @@ func (r *Repository) readMissingText(ctx context.Context, oid plumbing.Hash, tex
 	default:
 		return "", "", err
 	}
-	defer br.Close()
+	defer br.Close() // nolint
 	return diferenco.ReadUnifiedText(br.Contents, br.Size, textconv)
 }
 

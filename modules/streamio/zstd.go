@@ -67,6 +67,6 @@ func GetZstdWriter(w io.Writer) *ZstdEncoder {
 
 // PutZstdWriter puts w back into its sync.Pool.
 func PutZstdWriter(w *ZstdEncoder) {
-	w.Encoder.Close() // close flush writer
+	_ = w.Close() // close flush writer
 	zstdWriter.Put(w)
 }

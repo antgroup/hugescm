@@ -18,7 +18,7 @@ func TestEncode(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	mc := make(map[string]any)
 	_, err = toml.NewDecoder(fd).Decode(&mc)
 	if err != nil {
@@ -64,7 +64,7 @@ func TestUpdateKey(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	sections := make(Sections)
 	if _, err = toml.NewDecoder(fd).Decode(&sections); err != nil {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
@@ -86,7 +86,7 @@ func TestUpdateNot(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	sections := make(Sections)
 	if _, err = toml.NewDecoder(fd).Decode(&sections); err != nil {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
@@ -108,7 +108,7 @@ func TestUpdateNot2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	sections := make(Sections)
 	if _, err = toml.NewDecoder(fd).Decode(&sections); err != nil {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)

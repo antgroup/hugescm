@@ -55,5 +55,5 @@ func Display(w io.Writer, opts *DisplayOpts) {
 		}
 		_ = rw.Paint()
 	}
-	fmt.Fprintf(w, template, opts.UserName, opts.UserName, opts.KeyType, opts.Fingerprint)
+	_, _ = fmt.Fprintf(w, template, opts.UserName, opts.UserName, opts.KeyType, opts.Fingerprint)
 }

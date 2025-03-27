@@ -50,10 +50,10 @@ func (opts *DisplayOptions) Show(a any, keys ...string) error {
 		// nothing
 	}
 	if opts.Z {
-		fmt.Fprintf(opts.Writer, "%s\n%v%c", prefixKey, v, NUL)
+		_, _ = fmt.Fprintf(opts.Writer, "%s\n%v%c", prefixKey, v, NUL)
 		return nil
 	}
-	fmt.Fprintf(opts.Writer, "%s=%v\n", prefixKey, v)
+	_, _ = fmt.Fprintf(opts.Writer, "%s=%v\n", prefixKey, v)
 	return nil
 }
 
@@ -115,12 +115,12 @@ type GetOptions struct {
 func (opts *GetOptions) show(vals []any) {
 	if opts.Z {
 		for _, v := range vals {
-			fmt.Fprintf(opts, "%v%c", v, NUL)
+			_, _ = fmt.Fprintf(opts, "%v%c", v, NUL)
 		}
 		return
 	}
 	for _, v := range vals {
-		fmt.Fprintln(opts, v)
+		_, _ = fmt.Fprintln(opts, v)
 	}
 }
 

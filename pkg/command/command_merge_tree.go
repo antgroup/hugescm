@@ -29,7 +29,7 @@ func (c *MergeTree) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	err = r.MergeTree(context.Background(), &zeta.MergeTreeOptions{
 		Branch1:                 c.Branch1,
 		Branch2:                 c.Branch2,

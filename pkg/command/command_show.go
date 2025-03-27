@@ -68,7 +68,7 @@ func (c *Show) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	a, err := c.checkAlgorithm()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "parse options error: %v\n", err)

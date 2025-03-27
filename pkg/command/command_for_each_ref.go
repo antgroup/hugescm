@@ -26,7 +26,7 @@ func (c *ForEachRef) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 
 	return r.ForEachReference(context.Background(), &zeta.ForEachReferenceOptions{
 		FormatJSON: c.JSON,

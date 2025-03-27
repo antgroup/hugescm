@@ -33,7 +33,7 @@ func (a *Add) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	if a.ALL {
 		if err := w.AddWithOptions(context.Background(), &zeta.AddOptions{All: true, DryRun: a.DryRun}); err != nil {
@@ -60,7 +60,7 @@ func (a *Add) Run(g *Globals) error {
 		return nil
 	}
 	if len(a.PathSpec) == 0 {
-		term.Fprintf(os.Stderr, "%s\n\x1b[33m%s\x1b[0m\n",
+		_, _ = term.Fprintf(os.Stderr, "%s\n\x1b[33m%s\x1b[0m\n",
 			W("Nothing specified, nothing added."),
 			W("hint: Maybe you wanted to say 'zeta add .'?"))
 		return errors.New("nothing specified, nothing added")

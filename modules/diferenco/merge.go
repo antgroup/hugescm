@@ -353,13 +353,13 @@ func (opts *MergeOptions) ValidateOptions() error {
 
 func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *Conflict[int]) {
 	if opts.Style == STYLE_DIFF3 {
-		fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
+		_, _ = fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
 		s.WriteLine(out, conflict.a...)
-		fmt.Fprintf(out, "%s%s\n", SepO, opts.LabelO)
+		_, _ = fmt.Fprintf(out, "%s%s\n", SepO, opts.LabelO)
 		s.WriteLine(out, conflict.o...)
-		fmt.Fprintf(out, "%s\n", Sep2)
+		_, _ = fmt.Fprintf(out, "%s\n", Sep2)
 		s.WriteLine(out, conflict.b...)
-		fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
+		_, _ = fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
 		return
 	}
 	a, b := conflict.a, conflict.b
@@ -368,18 +368,18 @@ func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *Confli
 	a = a[prefix:]
 	b = b[prefix:]
 	suffix := commonSuffixLength(a, b)
-	fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
+	_, _ = fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
 	s.WriteLine(out, a[:len(a)-suffix]...)
 
 	if opts.Style == STYLE_ZEALOUS_DIFF3 {
 		// Zealous Diff3
-		fmt.Fprintf(out, "%s%s\n", SepO, opts.LabelO)
+		_, _ = fmt.Fprintf(out, "%s%s\n", SepO, opts.LabelO)
 		s.WriteLine(out, conflict.o...)
 	}
 
-	fmt.Fprintf(out, "%s\n", Sep2)
+	_, _ = fmt.Fprintf(out, "%s\n", Sep2)
 	s.WriteLine(out, b[:len(b)-suffix]...)
-	fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
+	_, _ = fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
 	if suffix != 0 {
 		s.WriteLine(out, b[suffix:]...)
 	}

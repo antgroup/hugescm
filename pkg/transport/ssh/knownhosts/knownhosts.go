@@ -61,7 +61,7 @@ func NewDB(files ...string) (*HostKeyDB, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer f.Close()
+		defer f.Close() // nolint
 		scanner := bufio.NewScanner(f)
 		lineNum := 0
 		for scanner.Scan() {

@@ -34,7 +34,7 @@ func (b *ChainBase) Unpack() ([]byte, error) {
 		return nil, err
 	}
 
-	defer zr.Close()
+	defer zr.Close() // nolint
 
 	buf := make([]byte, b.size)
 	if _, err := io.ReadFull(zr, buf); err != nil {

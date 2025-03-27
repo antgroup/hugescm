@@ -43,7 +43,7 @@ var (
 		if err != nil {
 			return err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		if _, err := toml.NewDecoder(fd).Decode(&langTable); err != nil {
 			return err
 		}

@@ -170,12 +170,12 @@ func (c *Diff) nameStatus() error {
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	if c.NameOnly {
-		fmt.Fprintf(w, "%s%c", c.From, c.NewLine())
+		_, _ = fmt.Fprintf(w, "%s%c", c.From, c.NewLine())
 		return nil
 	}
-	fmt.Fprintf(w, "%c    %s%c", 'M', c.To, c.NewLine())
+	_, _ = fmt.Fprintf(w, "%c    %s%c", 'M', c.To, c.NewLine())
 	return nil
 }
 
@@ -249,7 +249,7 @@ func (c *Diff) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	opts, err := c.NewOptions()
 	if err != nil {

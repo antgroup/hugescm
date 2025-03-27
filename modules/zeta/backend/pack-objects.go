@@ -71,7 +71,7 @@ func openObject(ro storage.Storage, oid plumbing.Hash, o *packedObject) (SizeRea
 	case *os.File:
 		si, err := v.Stat()
 		if err != nil {
-			v.Close()
+			_ = v.Close()
 			return nil, 0, err
 		}
 		return &sizeReader{Reader: v, closer: v, size: si.Size()}, o.modification, nil
@@ -93,7 +93,7 @@ func repackMetaObjects(ctx context.Context, ro storage.Storage, objects packedOb
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	for oid, po := range objects {
 		bar.Add(1)
 		sr, modification, err := openObject(ro, oid, po)
@@ -101,7 +101,7 @@ func repackMetaObjects(ctx context.Context, ro storage.Storage, objects packedOb
 			return err
 		}
 		err = w.Write(oid, uint32(sr.Size()), sr, modification)
-		sr.Close()
+		_ = sr.Close()
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func repackObjects(ctx context.Context, opts *PackOptions, ro storage.Storage, f
 	default:
 	}
 	unpack := func(oid plumbing.Hash, po *packedObject, sr SizeReader) error {
-		defer sr.Close()
+		defer sr.Close() // nolint
 		if !po.packed {
 			return nil
 		}
@@ -126,7 +126,7 @@ func repackObjects(ctx context.Context, opts *PackOptions, ro storage.Storage, f
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	for oid, po := range objects {
 		bar.Add(1)
 		sr, modification, err := openObject(ro, oid, po)
@@ -141,7 +141,7 @@ func repackObjects(ctx context.Context, opts *PackOptions, ro storage.Storage, f
 			continue
 		}
 		err = w.Write(oid, uint32(sr.Size()), sr, modification)
-		sr.Close()
+		_ = sr.Close()
 		if err != nil {
 			return err
 		}
@@ -238,7 +238,7 @@ func packObjectsInternal(ctx context.Context, opts *PackOptions, root string, me
 	closed := false
 	defer func() {
 		if !closed {
-			ro.Close()
+			_ = ro.Close()
 		}
 	}()
 	objects := make(packedObjects)

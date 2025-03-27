@@ -30,7 +30,7 @@ func (c *Cat) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	return r.Cat(context.Background(), &zeta.CatOptions{
 		Object:    c.Object,
 		Limit:     c.Limit,

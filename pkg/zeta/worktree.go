@@ -740,7 +740,7 @@ func (w *Worktree) checkoutSymlink(ctx context.Context, name string, e *object.T
 		if to, err = w.fs.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode.Perm()); err != nil {
 			return err
 		}
-		defer to.Close()
+		defer to.Close() // nolint
 		_, err = to.WriteString(target)
 		return err
 	}
@@ -943,7 +943,7 @@ func findMatchInFile(ctx context.Context, file *object.File, treeName string, op
 	if err != nil {
 		return grepResults, err
 	}
-	defer rc.Close()
+	defer rc.Close() // nolint
 
 	br := bufio.NewScanner(rc)
 	for lineNum := 0; br.Scan(); lineNum++ {

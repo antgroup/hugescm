@@ -72,8 +72,8 @@ func TestDecodeObject(t *testing.T) {
 		var buf bytes.Buffer
 
 		zw := zlib.NewWriter(&buf)
-		fmt.Fprintf(zw, "blob 14\x00%s", contents)
-		zw.Close()
+		_, _ = fmt.Fprintf(zw, "blob 14\x00%s", contents)
+		zw.Close() // nolint
 
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.sha: &buf,
@@ -115,8 +115,8 @@ func TestDecodeBlob(t *testing.T) {
 		var buf bytes.Buffer
 
 		zw := zlib.NewWriter(&buf)
-		fmt.Fprintf(zw, "blob 14\x00%s", contents)
-		zw.Close()
+		_, _ = fmt.Fprintf(zw, "blob 14\x00%s", contents)
+		zw.Close() // nolint
 
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.sha: &buf,
@@ -169,10 +169,10 @@ func TestDecodeTree(t *testing.T) {
 		var buf bytes.Buffer
 
 		zw := zlib.NewWriter(&buf)
-		fmt.Fprintf(zw, "tree %d\x00", test.size)
-		fmt.Fprintf(zw, "100644 hello.txt\x00")
+		_, _ = fmt.Fprintf(zw, "tree %d\x00", test.size)
+		_, _ = fmt.Fprintf(zw, "100644 hello.txt\x00")
 		_, _ = zw.Write(hexBlobSha)
-		zw.Close()
+		zw.Close() // nolint
 
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.treeSha: &buf,
@@ -222,12 +222,12 @@ func TestDecodeCommit(t *testing.T) {
 		var buf bytes.Buffer
 
 		zw := zlib.NewWriter(&buf)
-		fmt.Fprintf(zw, "commit %d\x00", test.size)
-		fmt.Fprintf(zw, "tree %s\n", test.treeSha)
-		fmt.Fprintf(zw, "author Taylor Blau <me@ttaylorr.com> 1494620424 -0600\n")
-		fmt.Fprintf(zw, "committer Taylor Blau <me@ttaylorr.com> 1494620424 -0600\n")
-		fmt.Fprintf(zw, "\ninitial commit")
-		zw.Close()
+		_, _ = fmt.Fprintf(zw, "commit %d\x00", test.size)
+		_, _ = fmt.Fprintf(zw, "tree %s\n", test.treeSha)
+		_, _ = fmt.Fprintf(zw, "author Taylor Blau <me@ttaylorr.com> 1494620424 -0600\n")
+		_, _ = fmt.Fprintf(zw, "committer Taylor Blau <me@ttaylorr.com> 1494620424 -0600\n")
+		_, _ = fmt.Fprintf(zw, "\ninitial commit")
+		zw.Close() // nolint
 
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.commitSha: &buf,
@@ -402,14 +402,14 @@ func TestDecodeTag(t *testing.T) {
 	var buf bytes.Buffer
 
 	zw := zlib.NewWriter(&buf)
-	fmt.Fprintf(zw, "tag 165\x00")
-	fmt.Fprintf(zw, "object 6161616161616161616161616161616161616161\n")
-	fmt.Fprintf(zw, "type commit\n")
-	fmt.Fprintf(zw, "tag v2.4.0\n")
-	fmt.Fprintf(zw, "tagger A U Thor <author@example.com>\n")
-	fmt.Fprintf(zw, "\n")
-	fmt.Fprintf(zw, "The quick brown fox jumps over the lazy dog.\n")
-	zw.Close()
+	_, _ = fmt.Fprintf(zw, "tag 165\x00")
+	_, _ = fmt.Fprintf(zw, "object 6161616161616161616161616161616161616161\n")
+	_, _ = fmt.Fprintf(zw, "type commit\n")
+	_, _ = fmt.Fprintf(zw, "tag v2.4.0\n")
+	_, _ = fmt.Fprintf(zw, "tagger A U Thor <author@example.com>\n")
+	_, _ = fmt.Fprintf(zw, "\n")
+	_, _ = fmt.Fprintf(zw, "The quick brown fox jumps over the lazy dog.\n")
+	zw.Close() // nolint
 
 	b, err := NewMemoryBackend(map[string]io.ReadWriter{
 		sha: &buf,

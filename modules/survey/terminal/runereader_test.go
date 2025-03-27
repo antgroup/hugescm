@@ -5,7 +5,7 @@ import (
 )
 
 func TestRuneWidthInvisible(t *testing.T) {
-	var example rune = '⁣'
+	var example = '⁣'
 	expected := 0
 	actual := runeWidth(example)
 	if actual != expected {
@@ -14,7 +14,7 @@ func TestRuneWidthInvisible(t *testing.T) {
 }
 
 func TestRuneWidthNormal(t *testing.T) {
-	var example rune = 'a'
+	var example = 'a'
 	expected := 1
 	actual := runeWidth(example)
 	if actual != expected {
@@ -23,7 +23,7 @@ func TestRuneWidthNormal(t *testing.T) {
 }
 
 func TestRuneWidthWide(t *testing.T) {
-	var example rune = '错'
+	var example = '错'
 	expected := 2
 	actual := runeWidth(example)
 	if actual != expected {

@@ -191,11 +191,11 @@ func ValidateNumber(s string) bool {
 func ValidateHex(hs string) error {
 	bs := []byte(hs)
 	if len(bs) != GIT_SHA1_HEXSZ && len(bs) != GIT_SHA256_HEXSZ {
-		return fmt.Errorf("object id: %q was not a valid character hexidecimal, len=%d", hs, len(bs))
+		return fmt.Errorf("object id: %q was not a valid character hexadecimal, len=%d", hs, len(bs))
 	}
 	for _, b := range bs {
 		if c := reverseHexTable[b]; c > 0x0f {
-			return fmt.Errorf("object id: %q was not a valid character hexidecimal", hs)
+			return fmt.Errorf("object id: %q was not a valid character hexadecimal", hs)
 		}
 	}
 	return nil

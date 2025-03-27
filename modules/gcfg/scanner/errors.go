@@ -107,9 +107,9 @@ func (p ErrorList) Err() error {
 func PrintError(w io.Writer, err error) {
 	if list, ok := err.(ErrorList); ok {
 		for _, e := range list {
-			fmt.Fprintf(w, "%s\n", e)
+			_, _ = fmt.Fprintf(w, "%s\n", e)
 		}
 	} else if err != nil {
-		fmt.Fprintf(w, "%s\n", err)
+		_, _ = fmt.Fprintf(w, "%s\n", err)
 	}
 }

@@ -104,7 +104,7 @@ func (s *Server) LsTagReference(w http.ResponseWriter, r *Request, tagName strin
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	oid, peeled, err := rr.LsTag(r.Context(), tagName)
 	if err != nil {
 		s.renderError(w, r, err)
@@ -184,7 +184,7 @@ func (s *Server) BatchObjects(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	w.Header().Set("Content-Type", ZETA_MIME_BLOBS)
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("X-Accel-Buffering", "no")
@@ -209,10 +209,10 @@ func (s *Server) BatchObjects(w http.ResponseWriter, r *Request) {
 			return err
 		}
 		if sr.Size() > protocol.MAX_BATCH_BLOB_SIZE {
-			sr.Close()
+			_ = sr.Close()
 			return nil
 		}
-		defer sr.Close()
+		defer sr.Close() // nolint
 		return protocol.WriteObjectsItem(cw, sr, oid.String(), sr.Size())
 	}
 	for _, oid := range oids {
@@ -238,7 +238,7 @@ func (s *Server) ShareObjects(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	response := &protocol.BatchShareObjectsResponse{
 		Objects: make([]*protocol.Representation, 0, len(request.Objects)),
@@ -285,14 +285,14 @@ func (s *Server) GetObject(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer repo.Close()
+	defer repo.Close() // nolint
 	o := repo.ODB()
 	sr, err := o.Open(r.Context(), plumbing.NewHash(sid), rg.Start)
 	if err != nil {
 		s.renderError(w, r, err)
 		return
 	}
-	defer sr.Close()
+	defer sr.Close() // nolint
 	w.Header().Set("Content-Type", ZETA_MIME_BLOB)
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set(ZETA_COMPRESSED_SIZE, strconv.FormatInt(sr.Size(), 10))
@@ -365,7 +365,7 @@ func (s *Server) BatchCheck(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	response := &protocol.BatchCheckResponse{
 		Objects: make([]*protocol.HaveObject, 0, len(request.Objects)),
 	}
@@ -427,7 +427,7 @@ func (s *Server) PutObject(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	size, err := rr.ODB().WriteDirect(r.Context(), oid, r.Body, uploadSize)
 	if err != nil {
@@ -544,7 +544,7 @@ func (s *Server) TagPush(w http.ResponseWriter, r *Request, tagName string) {
 		s.renderError(w, r, err)
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	w.Header().Set("Content-Type", ZETA_MIME_REPORT_RESULT)
 	w.Header().Set("Cache-Control", "no-cache")
@@ -588,7 +588,7 @@ func (s *Server) BranchPush(w http.ResponseWriter, r *Request, branchName string
 		s.renderError(w, r, err)
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	w.Header().Set("Content-Type", ZETA_MIME_REPORT_RESULT)
 	w.Header().Set("Cache-Control", "no-cache")

@@ -294,7 +294,7 @@ func (s *Select) Prompt(config *PromptConfig) (any, error) {
 			return "", err
 		}
 		if r == terminal.KeyInterrupt {
-			return "", terminal.InterruptErr
+			return "", terminal.ErrInterrupt
 		}
 		if r == terminal.KeyEndTransmission {
 			break

@@ -29,7 +29,7 @@ func (c *LsFiles) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	opts := &zeta.LsFilesOptions{
 		Z:     c.Z,

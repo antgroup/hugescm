@@ -143,7 +143,7 @@ func (b *bucket) initiateMultipartUpload(ctx context.Context, resourcePath strin
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, os.ErrNotExist
 	}
@@ -179,7 +179,7 @@ func (b *bucket) abortMultipartUpload(resourcePath string, mur *InitiateMultipar
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return readOssError(resp)
 	}
@@ -214,7 +214,7 @@ func (b *bucket) completeMultipartUpload(ctx context.Context, resourcePath strin
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return readOssError(resp)
 	}
@@ -248,7 +248,7 @@ func (b *bucket) uploadPart(ctx context.Context, resourcePath string, reader io.
 	if err != nil {
 		return result, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return result, os.ErrNotExist
 	}

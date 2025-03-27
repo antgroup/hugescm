@@ -270,7 +270,7 @@ func ReadFileInto(config any, filename string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint
 	src, err := io.ReadAll(f)
 	if err != nil {
 		return err

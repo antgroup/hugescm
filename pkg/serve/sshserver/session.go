@@ -153,7 +153,7 @@ func (e *Session) Write(data []byte) (int, error) {
 // WriteError: format error after write to session.Stderr
 func (e *Session) WriteError(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	fmt.Fprintln(e.Stderr(), strings.TrimRightFunc(message, unicode.IsSpace))
+	_, _ = fmt.Fprintln(e.Stderr(), strings.TrimRightFunc(message, unicode.IsSpace))
 }
 
 func (e *Session) makeRemoteURL(endpoint string) string {

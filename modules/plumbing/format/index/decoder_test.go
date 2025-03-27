@@ -12,7 +12,7 @@ func TestDecode(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open index error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	d := NewDecoder(fd)
 	idx := &Index{}
 	if err := d.Decode(idx); err != nil {
@@ -30,7 +30,7 @@ func TestDecodeSkip(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open index error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	d := NewDecoder(fd)
 	idx := &Index{}
 	if err := d.Decode(idx); err != nil {
@@ -53,7 +53,7 @@ func TestDecode2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open index error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	d := NewDecoder(fd)
 	idx := &Index{}
 	if err := d.Decode(idx); err != nil {
@@ -74,7 +74,7 @@ func TestIndexGlob(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open index error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	d := NewDecoder(fd)
 	idx := &Index{}
 	if err := d.Decode(idx); err != nil {

@@ -118,7 +118,7 @@ func (s *Server) OnKey(ctx ssh.Context, key ssh.PublicKey) bool {
 func (s *Server) OnSession(session ssh.Session) {
 	se, err := s.NewSession(session)
 	if err != nil {
-		fmt.Fprintf(session.Stderr(), "bad ssh session")
+		_, _ = fmt.Fprintf(session.Stderr(), "bad ssh session")
 		logrus.Errorf("bad ssh session: %v", err)
 		_ = session.Exit(1)
 		return
@@ -197,7 +197,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		logrus.Errorf("shutdown ssh server %v", err)
 	}
 	if s.db != nil {
-		s.db.Close()
+		_ = s.db.Close()
 	}
 	return nil
 }

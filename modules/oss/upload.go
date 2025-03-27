@@ -16,7 +16,7 @@ func (b *bucket) upload(ctx context.Context, resourcePath, filePath string, mime
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return b.Put(ctx, resourcePath, fd, mime)
 }
 
@@ -26,7 +26,7 @@ func (b *bucket) uploadFilePart(ctx context.Context, resourcePath string, filePa
 	if err != nil {
 		return result, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if _, err := fd.Seek(k.offset, io.SeekStart); err != nil {
 		return result, err
 	}

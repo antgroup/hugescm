@@ -29,7 +29,7 @@ func fromWindowsProxy() (values windowsProxyConfig, err error) {
 			//consider the value of tempPrxUsrSettings if it is a success
 			proxySettingsPerUser = tempPrxUsrSettings
 		}
-		k.Close()
+		_ = k.Close()
 	}
 	var hkey registry.Key
 	if proxySettingsPerUser == 0 {
@@ -41,7 +41,7 @@ func fromWindowsProxy() (values windowsProxyConfig, err error) {
 	if err != nil {
 		return
 	}
-	defer k.Close()
+	defer k.Close() // nolint
 
 	values.ProxyServer, _, err = k.GetStringValue("ProxyServer")
 	if err != nil && err != registry.ErrNotExist {
@@ -73,7 +73,7 @@ func newSystemDialer(forward *net.Dialer) Dialer {
 	}
 	noProxy := strings.Split(values.ProxyOverride, ";")
 	protocol := make(map[string]string)
-	for _, s := range strings.Split(values.ProxyServer, ";") {
+	for s := range strings.SplitSeq(values.ProxyServer, ";") {
 		if s == "" {
 			continue
 		}
@@ -129,7 +129,7 @@ func systemProxyConfig() *httpproxy.Config {
 		return cfg
 	}
 	protocol := make(map[string]string)
-	for _, s := range strings.Split(values.ProxyServer, ";") {
+	for s := range strings.SplitSeq(values.ProxyServer, ";") {
 		if s == "" {
 			continue
 		}

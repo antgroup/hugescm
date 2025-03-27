@@ -40,7 +40,7 @@ func (opts *CatOptions) Println(a ...any) error {
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	_, err = fmt.Fprintln(fd, a...)
 	return err
 }
@@ -106,7 +106,7 @@ func (r *Repository) printSize(ctx context.Context, opts *CatOptions, o *promise
 	if b, err = r.catMissingObject(ctx, o); err != nil {
 		return catShowError(o.oid.String(), err)
 	}
-	defer b.Close()
+	defer b.Close() // nolint
 	return opts.Println(b.Size)
 }
 
@@ -145,7 +145,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 	if err != nil {
 		return err
 	}
-	defer b.Close()
+	defer b.Close() // nolint
 	fd, colorMode, err := opts.NewFD()
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	objects := make([]*object.Blob, 0, len(ff.Entries))
 	defer func() {
 		for _, o := range objects {
@@ -244,7 +244,7 @@ func (r *Repository) catObject(ctx context.Context, opts *CatOptions, o *promise
 		if err != nil {
 			return err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		return json.NewEncoder(fd).Encode(a)
 	}
 	if opts.Direct {
@@ -258,7 +258,7 @@ func (r *Repository) catObject(ctx context.Context, opts *CatOptions, o *promise
 		if err != nil {
 			return err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		_ = w.Pretty(fd)
 	}
 	return nil

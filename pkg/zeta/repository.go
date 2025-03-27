@@ -127,7 +127,7 @@ func (opts *NewOptions) tidySparse() {
 	sparseDirs := make([]string, 0, len(opts.SparseDirs))
 	for _, s := range opts.SparseDirs {
 		if filepath.IsAbs(s) {
-			term.Fprintf(os.Stderr, "\x1b[01;33m%s: \x1b[0;33m'%s' %s\x1b[0m\n", W("WARNING"), s, W("is an absolute path and cannot be set as a sparse dir."))
+			_, _ = term.Fprintf(os.Stderr, "\x1b[01;33m%s: \x1b[0;33m'%s' %s\x1b[0m\n", W("WARNING"), s, W("is an absolute path and cannot be set as a sparse dir."))
 			continue
 		}
 		p := path.Clean(s)
@@ -698,7 +698,7 @@ func (r *Repository) Postflight(ctx context.Context) error {
 	if len(oids) == 0 {
 		return nil
 	}
-	tr.Fprintf(os.Stderr, "postflight: remove large files in extreme mode: %d, reduce: %s.", len(oids), strengthen.FormatSize(totalSize))
+	_, _ = tr.Fprintf(os.Stderr, "postflight: remove large files in extreme mode: %d, reduce: %s.", len(oids), strengthen.FormatSize(totalSize))
 	return nil
 }
 

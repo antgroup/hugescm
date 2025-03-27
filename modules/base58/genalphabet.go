@@ -55,7 +55,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fi.Close()
+	defer fi.Close() // nolint
 
 	write(fi, start)
 	write(fi, nl)

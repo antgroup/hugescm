@@ -94,7 +94,7 @@ func (f *File) UnifiedText(ctx context.Context, codecvt bool) (content string, e
 	if err != nil {
 		return "", err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	content, _, err = diferenco.ReadUnifiedText(r, f.Size, codecvt)
 	return content, err
 }

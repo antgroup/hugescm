@@ -31,7 +31,7 @@ func (r *Repository) Gc(ctx context.Context, opts *GcOptions) error {
 	}
 	if !r.quiet {
 		packOpts.Logger = func(format string, a ...any) {
-			tr.Fprintf(os.Stderr, format, a...)
+			_, _ = tr.Fprintf(os.Stderr, format, a...)
 		}
 		packOpts.NewIndicators = func(description, completed string, total uint64, quiet bool) backend.Indicators {
 			return progress.NewIndicators(description, completed, total, quiet)

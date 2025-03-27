@@ -44,7 +44,7 @@ func BareDecode(repoPath string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	cfg := New()
 	if err := NewDecoder(fd).Decode(cfg); err != nil {
 		return nil, err

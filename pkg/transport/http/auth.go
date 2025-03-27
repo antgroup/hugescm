@@ -195,7 +195,7 @@ func (c *client) checkAuthRedirect(ctx context.Context, cred *Credentials, opera
 		return nil, err
 	}
 	if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		location, err := resp.Location()
 		if err != nil {
 			return nil, err
@@ -231,7 +231,7 @@ func (c *client) checkAuth(ctx context.Context, cred *Credentials, operation tra
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == 200 {
 		var sa transport.SASPayload
 		if err := json.NewDecoder(resp.Body).Decode(&sa); err != nil {

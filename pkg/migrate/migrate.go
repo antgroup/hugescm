@@ -154,7 +154,7 @@ func (m *Migrator) commitsToMigrate(ctx context.Context) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	sr := bufio.NewScanner(reader)
 	var commits [][]byte
 	for sr.Scan() {
@@ -198,7 +198,7 @@ func (m *Migrator) migrateLFSObject(ctx context.Context, br *gitobj.Blob) (*blob
 	if err != nil {
 		return m.hashTo(ctx, bytes.NewReader(b), br.Size)
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return m.hashTo(ctx, fd, p.Size)
 }
 
@@ -207,7 +207,7 @@ func (m *Migrator) migrateBlob(ctx context.Context, oid []byte) (*blob, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer br.Close()
+	defer br.Close() // nolint
 	if m.lfs && br.Size < blobSizeCutoff {
 		return m.migrateLFSObject(ctx, br)
 	}
@@ -284,7 +284,7 @@ func countObjects(ctx context.Context, repoPath string) int {
 	if err != nil {
 		return -1
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	nums := make(map[string]int)
 	br := bufio.NewScanner(reader)
 	for br.Scan() {
@@ -313,7 +313,7 @@ func (m *Migrator) migrateBlobs(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("start git cat-file error %w", err)
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	br := bufio.NewReader(reader)
 	objectsCount := countObjects(ctx, m.from)
 	bar := NewBar(tr.W("Migrate Blobs"), objectsCount, m.stepCurrent, m.stepEnd, m.verbose)
@@ -592,7 +592,7 @@ func (m *Migrator) migrateMetadata(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer ur.Close()
+	defer ur.Close() // nolint
 	if err := m.migrateCommits(ctx, ur); err != nil {
 		return err
 	}

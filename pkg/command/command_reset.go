@@ -114,7 +114,7 @@ func (c *Reset) Run(g *Globals) error {
 		if err := r.Postflight(context.Background()); err != nil {
 			fmt.Fprintf(os.Stderr, "postflight: prune objects error: %v\n", err)
 		}
-		r.Close()
+		_ = r.Close()
 	}()
 	w := r.Worktree()
 

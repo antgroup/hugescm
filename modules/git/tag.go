@@ -123,7 +123,7 @@ func FindTagReference(ctx context.Context, repoPath string, name string) (*Refer
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	scanner := bufio.NewScanner(reader)
 	if scanner.Scan() {
 		return ParseReferenceLine(scanner.Text())

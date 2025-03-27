@@ -41,7 +41,7 @@ func parseOneDict(name string, p string) error {
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if _, err := toml.NewDecoder(fd).Decode(&dict); err != nil {
 		return err
 	}

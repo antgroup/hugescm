@@ -23,7 +23,7 @@ func (pc *pseudoConfig) Decode(cfg string, expandEnv bool) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if _, err := toml.NewDecoder(r).Decode(pc); err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (c *Encrypt) Run(globals *Globals) error {
 			if err != nil {
 				return "", err
 			}
-			defer fd.Close()
+			defer fd.Close() // nolint
 			si, err := fd.Stat()
 			if err != nil {
 				return "", err
@@ -79,7 +79,7 @@ func (c *Encrypt) Run(globals *Globals) error {
 		return err
 	}
 	if len(c.Destination) == 0 {
-		fmt.Fprintln(os.Stdout, secret)
+		_, _ = fmt.Fprintln(os.Stdout, secret)
 		return nil
 	}
 	if err := os.MkdirAll(filepath.Dir(c.Destination), 0755); err != nil {
@@ -91,7 +91,7 @@ func (c *Encrypt) Run(globals *Globals) error {
 		fmt.Fprintf(os.Stderr, "create secret file error: %v\n", err)
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if _, err := fd.WriteString(secret); err != nil {
 		fmt.Fprintf(os.Stderr, "write secret to file error: %v\n", err)
 		return err

@@ -18,7 +18,7 @@ func TestProxy(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "download error: %v\n", err)
 		return
 	}
-	defer sr.Close()
+	defer sr.Close() // nolint
 	if _, err := io.Copy(io.Discard, sr); err != nil {
 		fmt.Fprintf(os.Stderr, "download error: %v\n", err)
 	}

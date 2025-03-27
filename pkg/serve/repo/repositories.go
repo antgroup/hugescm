@@ -93,7 +93,7 @@ func (r *repositories) New(ctx context.Context, newRepo *database.Repository, u 
 	if err != nil {
 		return nil, err
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	if err := rr.Initialize(ctx, u, repo.DefaultBranch); err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (r *repository) Initialize(ctx context.Context, u *database.User, initBranc
 		if err != nil {
 			return plumbing.ZeroHash, 0, err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		si, err := fd.Stat()
 		if err != nil {
 			return plumbing.ZeroHash, 0, err

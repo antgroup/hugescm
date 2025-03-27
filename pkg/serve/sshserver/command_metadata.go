@@ -110,7 +110,7 @@ func (s *Server) FetchMetadata(e *Session, c *Metadata) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	ro, err := rr.ParseRev(e.Context(), c.Revision)
 	if err != nil {
 		return e.ExitError(err)
@@ -123,7 +123,7 @@ func (s *Server) FetchMetadata(e *Session, c *Metadata) int {
 		logrus.Errorf("new packer error %v", err)
 		return e.ExitError(err)
 	}
-	defer p.Close()
+	defer p.Close() // nolint
 	for oid, o := range ro.Objects {
 		if err := p.WriteAny(e.Context(), o, oid); err != nil {
 			logrus.Errorf("write objects error %v", err)
@@ -151,7 +151,7 @@ func (s *Server) GetSparseMetadata(e *Session, c *Metadata) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	ro, err := rr.ParseRev(e.Context(), c.Revision)
 	if err != nil {
@@ -166,7 +166,7 @@ func (s *Server) GetSparseMetadata(e *Session, c *Metadata) int {
 		logrus.Errorf("new packer error %v", err)
 		return e.ExitError(err)
 	}
-	defer p.Close()
+	defer p.Close() // nolint
 	for oid, o := range ro.Objects {
 		if err := p.WriteAny(e.Context(), o, oid); err != nil {
 			logrus.Errorf("write objects error %v", err)
@@ -194,7 +194,7 @@ func (s *Server) BatchMetadata(e *Session, depth int, useZSTD bool) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	odb := rr.ODB()
 	objects := make([]any, 0, len(oids))
 	for _, oid := range oids {
@@ -209,7 +209,7 @@ func (s *Server) BatchMetadata(e *Session, depth int, useZSTD bool) int {
 		logrus.Errorf("new packer error %v", err)
 		return e.ExitError(err)
 	}
-	defer p.Close()
+	defer p.Close() // nolint
 	for _, a := range objects {
 		switch v := a.(type) {
 		case *object.Commit:

@@ -449,7 +449,9 @@ func sizePadding(e *TreeEntry, padding int) string {
 func (t *Tree) Pretty(w io.Writer) error {
 	padding := t.SizePadding()
 	for _, e := range t.Entries {
-		fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), e.Hash.String(), sizePadding(e, padding), e.Name)
+		if _, err := fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), e.Hash.String(), sizePadding(e, padding), e.Name); err != nil {
+			return err
+		}
 	}
 	return nil
 }

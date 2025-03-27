@@ -84,7 +84,7 @@ func (b *fsBackend) addRefsFromPackedRefs(db *DB) error {
 		return err
 	}
 
-	defer fd.Close()
+	defer fd.Close() // nolint
 	s := bufio.NewScanner(fd)
 	for s.Scan() {
 		ref, err := b.processLine(s.Text())
@@ -159,7 +159,7 @@ func (b *fsBackend) readReferenceFile(refname string) (ref *plumbing.Reference, 
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return b.readReferenceFrom(fd, refname)
 }
 
@@ -174,7 +174,7 @@ func (b *fsBackend) readReferenceMatchPrefix(prefix string) (ref *plumbing.Refer
 		if err != nil {
 			return nil, err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		return b.readReferenceFrom(fd, prefix)
 	}
 	var refname string
@@ -195,7 +195,7 @@ func (b *fsBackend) readReferenceMatchPrefix(prefix string) (ref *plumbing.Refer
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return b.readReferenceFrom(fd, refname)
 }
 
@@ -258,7 +258,7 @@ func (b *fsBackend) packedRef(name plumbing.ReferenceName) (*plumbing.Reference,
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 
 	s := bufio.NewScanner(fd)
 	for s.Scan() {
@@ -309,7 +309,7 @@ func (b *fsBackend) matchPackedRefPrefix(prefix plumbing.ReferenceName) (*plumbi
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 
 	s := bufio.NewScanner(fd)
 	for s.Scan() {
@@ -397,12 +397,12 @@ func (b *fsBackend) rewritePackedRefsWithoutRef(name plumbing.ReferenceName) err
 			}
 			return false, err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		tmp, err := os.CreateTemp(b.repoPath, tmpPackedRefsPrefix)
 		if err != nil {
 			return false, err
 		}
-		defer tmp.Close()
+		defer tmp.Close() // nolint
 		_ = tmp.Chmod(0644)
 		tmpName = tmp.Name()
 		s := bufio.NewScanner(fd)
@@ -519,7 +519,7 @@ func (b *fsBackend) rewritePackedRefs() error {
 		if err != nil {
 			return err
 		}
-		defer tmp.Close()
+		defer tmp.Close() // nolint
 
 		tempPackedRefs = tmp.Name()
 		w := bufio.NewWriter(tmp)

@@ -239,7 +239,7 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 	}
 	recvObjects, err := r.odb.Unpack(ctx, reader, &odb.OStats{M: cmd.M, B: cmd.B}, func(ctx context.Context, quarantineDir string, o *odb.Objects) error {
 		if err := ro.EncodeString("unpack ok"); err != nil {
-			ro.close()
+			_ = ro.close()
 			return ErrReportStarted
 		}
 		qr, err := NewQR(r.odb, quarantineDir)
@@ -247,10 +247,10 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 			_ = ro.ng(cmd, cmd.W("check integrity error: %v"), err)
 			return err
 		}
-		defer qr.Close()
+		defer qr.Close() // nolint
 
 		if err = qr.checkIntegrity(ctx, cmd, ro); err != nil {
-			ro.close()
+			_ = ro.close()
 			return ErrReportStarted
 		}
 		if qr.forcePush && cmd.OldRev != plumbing.ZERO_OID {
@@ -262,7 +262,7 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 		return err
 	}
 	logrus.Infof("objects %d", len(recvObjects.Commits))
-	defer ro.close()
+	defer ro.close() // nolint
 	if err := r.odb.Reload(); err != nil {
 		_ = ro.ng(cmd, "reload odb error: %v", err)
 		return err

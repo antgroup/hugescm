@@ -21,7 +21,7 @@ func TestDialGithub(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint
 	if _, err := conn.Write([]byte("SSH-2.0-Jack-7.9\n")); err != nil {
 		fmt.Fprintf(os.Stderr, "write error: %v\n", err)
 		return

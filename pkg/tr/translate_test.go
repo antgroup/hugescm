@@ -19,7 +19,7 @@ func TestFS(t *testing.T) {
 }
 
 func TestLANG(t *testing.T) {
-	os.Setenv("LC_ALL", "zh_CN.UTF8")
+	_ = os.Setenv("LC_ALL", "zh_CN.UTF8")
 	_ = Initialize()
 	fmt.Fprintf(os.Stderr, "load ok={%v}\n", W("ok"))
 	_, _ = Fprintf(os.Stderr, "current os '%s'\n", runtime.GOOS)

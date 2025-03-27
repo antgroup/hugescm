@@ -40,7 +40,7 @@ func (c *Restore) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	opts := &zeta.RestoreOptions{
 		Source:   c.Source,

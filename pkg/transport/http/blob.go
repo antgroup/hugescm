@@ -20,7 +20,7 @@ import (
 
 func (c *client) BatchObjects(ctx context.Context, objects []plumbing.Hash) (transport.SessionReader, error) {
 	reader := transport.NewObjectsReader(objects)
-	defer reader.Close()
+	defer reader.Close() // nolint
 	batchURL := c.baseURL.JoinPath("objects", "batch").String()
 	req, err := c.newRequest(ctx, "POST", batchURL, reader)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *client) Share(ctx context.Context, wantObjects []*transport.WantObject)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
 		return nil, parseError(resp)
 	}
@@ -125,7 +125,7 @@ func (c *client) GetObject(ctx context.Context, oid plumbing.Hash, offset int64)
 		return nil, err
 	}
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		return nil, parseError(resp)
 	}
 	sr := &sizeReader{

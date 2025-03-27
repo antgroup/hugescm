@@ -118,6 +118,6 @@ func messageReadFromPath(p string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return messageReadFrom(fd)
 }

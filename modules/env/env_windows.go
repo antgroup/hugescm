@@ -16,7 +16,7 @@ func searchGitForWindows() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	defer k.Close()
+	defer k.Close() // nolint
 	installPath, _, err := k.GetStringValue("InstallPath")
 	if err != nil {
 		return "", err
@@ -35,7 +35,7 @@ func hasGitExe(installDir string) bool {
 func checkLessExe(installDir string) {
 	lessExe := filepath.Join(installDir, "usr", "bin", "less.exe")
 	if _, err := os.Stat(lessExe); err == nil {
-		os.Setenv(ZETA_LESS_EXE_HIJACK, lessExe)
+		_ = os.Setenv(ZETA_LESS_EXE_HIJACK, lessExe)
 	}
 }
 
@@ -84,6 +84,6 @@ func InitializeEnv() error {
 		seen[u] = true
 		pathNewList = append(pathNewList, cleanedPath)
 	}
-	os.Setenv("PATH", strings.Join(pathNewList, string(os.PathListSeparator)))
+	_ = os.Setenv("PATH", strings.Join(pathNewList, string(os.PathListSeparator)))
 	return nil
 }

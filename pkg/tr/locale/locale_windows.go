@@ -26,7 +26,7 @@ func detectViaRegistry() (langs []string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer key.Close()
+	defer key.Close() // nolint
 
 	lang, _, err := key.GetStringValue("LocaleName")
 	if err != nil {

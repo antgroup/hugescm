@@ -90,7 +90,7 @@ func HashFromEnv(ctx context.Context, environ []string, repoPath string) (string
 		fmt.Fprintf(os.Stderr, "unable resolve %s HEAD error: %v\n", repoPath, err)
 	}
 	h := blake3.New()
-	fmt.Fprintf(h, "ref: %s\n", head)
+	_, _ = fmt.Fprintf(h, "ref: %s\n", head)
 	stderr := command.NewStderr()
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{
 		Environ:  environ,
@@ -101,7 +101,7 @@ func HashFromEnv(ctx context.Context, environ []string, repoPath string) (string
 	if err != nil {
 		return "", fmt.Errorf("unable create stdout pipe %v", err)
 	}
-	defer out.Close()
+	defer out.Close() // nolint
 	if err := cmd.Start(); err != nil {
 		return "", fmt.Errorf("unable create stdout pipe %v", err)
 	}
@@ -146,7 +146,7 @@ func HashEx(ctx context.Context, repoPath string) (*HashResult, error) {
 	}
 	hr.HEAD = head
 	h := blake3.New()
-	fmt.Fprintf(h, "ref: %s\n", head)
+	_, _ = fmt.Fprintf(h, "ref: %s\n", head)
 	stderr := command.NewStderr()
 	cmd := command.NewFromOptions(ctx,
 		&command.RunOpts{RepoPath: repoPath, Stderr: stderr},
@@ -155,7 +155,7 @@ func HashEx(ctx context.Context, repoPath string) (*HashResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable create stdout pipe %v", err)
 	}
-	defer out.Close()
+	defer out.Close() // nolint
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("unable create stdout pipe %v", err)

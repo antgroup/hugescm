@@ -9,7 +9,7 @@ import (
 )
 
 func TestInitializeEnv(t *testing.T) {
-	os.Setenv("PATH", os.Getenv("PATH")+";C:\\Windows")
+	_ = os.Setenv("PATH", os.Getenv("PATH")+";C:\\Windows")
 	if err := InitializeEnv(); err != nil {
 		fmt.Fprintf(os.Stderr, "initialize env error: %v\n", err)
 	}

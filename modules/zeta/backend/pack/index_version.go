@@ -91,7 +91,7 @@ func (v *IndexZ) PackedObjects(idx *Index, recv RecvFunc) error {
 		}
 		return nil
 	}
-	defer mfd.Close()
+	defer mfd.Close() // nolint
 	if _, err := mfd.Seek(8, io.SeekStart); err != nil {
 		return err
 	}

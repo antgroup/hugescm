@@ -17,7 +17,7 @@ func (d *ODB) SetIndex(idx *index.Index) (err error) {
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 
 	bw := bufio.NewWriter(fd)
 	defer func() {
@@ -43,7 +43,7 @@ func (d *ODB) Index() (i *index.Index, err error) {
 		}
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	dec := index.NewDecoder(fd)
 	err = dec.Decode(idx)
 	return idx, err

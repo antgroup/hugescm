@@ -17,7 +17,7 @@ func TestPackDecode(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open index error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	_, _ = fd.Seek(4+4, io.SeekStart)
 	for i := range 256 {
 		n, err := binary.ReadUint32(fd)

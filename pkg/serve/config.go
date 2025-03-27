@@ -109,7 +109,7 @@ func NewExpandReader(file string, expandEnv bool) (io.ReadCloser, error) {
 	if !expandEnv {
 		return fd, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	buf, err := streamio.GrowReadMax(fd, 64*MiByte, 4096)
 	if err != nil {
 		return nil, err

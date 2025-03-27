@@ -25,6 +25,6 @@ func (c *GC) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	return r.Gc(context.Background(), &zeta.GcOptions{Prune: time.Second * time.Duration(c.Prune)})
 }

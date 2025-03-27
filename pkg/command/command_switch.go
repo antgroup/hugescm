@@ -52,7 +52,7 @@ func (s *Switch) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if len(s.Args) == 0 {
 		die("missing branch or commit argument")
 		return ErrArgRequired

@@ -31,14 +31,14 @@ func (c *HashObject) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if c.Stdin {
 		oid, err := r.ODB().HashTo(context.Background(), os.Stdin, -1)
 		if err != nil {
 			diev("hash-object error: %v", err)
 			return err
 		}
-		fmt.Fprintln(os.Stdout, oid)
+		_, _ = fmt.Fprintln(os.Stdout, oid)
 		return nil
 	}
 	if len(c.Path) == 0 {
@@ -50,7 +50,7 @@ func (c *HashObject) Run(g *Globals) error {
 		diev("open %s error: %v", c.Path, err)
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	si, err := fd.Stat()
 	if err != nil {
 		diev("stat %s error: %v", c.Path, err)
@@ -61,7 +61,7 @@ func (c *HashObject) Run(g *Globals) error {
 		diev("hash-object error: %v", err)
 		return err
 	}
-	fmt.Fprintln(os.Stdout, oid)
+	_, _ = fmt.Fprintln(os.Stdout, oid)
 	return nil
 }
 
@@ -76,7 +76,7 @@ func (c *HashObject) hashObject() error {
 			diev("open %s error: %v", c.Path, err)
 			return err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		r = fd
 	default:
 		diev("require --stdin or --path")

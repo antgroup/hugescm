@@ -40,7 +40,7 @@ func (c *MergeBase) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if c.IsAncestor {
 		if len(c.Args) != 2 {
 			diev("Need tow revision,  eg: zeta merge-base --is-ancestor A B")

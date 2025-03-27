@@ -77,7 +77,7 @@ func (s *Server) FetchMetadata(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	ro, err := rr.ParseRev(r.Context(), rev)
 	if err != nil {
 		s.renderError(w, r, err)
@@ -92,7 +92,7 @@ func (s *Server) FetchMetadata(w http.ResponseWriter, r *Request) {
 		logrus.Errorf("new packer error %v", err)
 		return
 	}
-	defer p.Close()
+	defer p.Close() // nolint
 	for oid, o := range ro.Objects {
 		if err := p.WriteAny(r.Context(), o, oid); err != nil {
 			logrus.Errorf("write objects error %v", err)
@@ -135,7 +135,7 @@ func (s *Server) GetSparseMetadata(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	ro, err := rr.ParseRev(r.Context(), rev)
 	if err != nil {
 		s.renderError(w, r, err)
@@ -151,7 +151,7 @@ func (s *Server) GetSparseMetadata(w http.ResponseWriter, r *Request) {
 		logrus.Errorf("new packer error %v", err)
 		return
 	}
-	defer p.Close()
+	defer p.Close() // nolint
 	for oid, o := range ro.Objects {
 		if err := p.WriteAny(r.Context(), o, oid); err != nil {
 			logrus.Errorf("write objects error %v", err)
@@ -182,7 +182,7 @@ func (s *Server) BatchMetadata(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	odb := rr.ODB()
 	objects := make([]any, 0, len(oids))
 	for _, oid := range oids {
@@ -198,7 +198,7 @@ func (s *Server) BatchMetadata(w http.ResponseWriter, r *Request) {
 		logrus.Errorf("new packer error %v", err)
 		return
 	}
-	defer p.Close()
+	defer p.Close() // nolint
 	for _, a := range objects {
 		switch v := a.(type) {
 		case *object.Commit:

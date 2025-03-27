@@ -89,9 +89,8 @@ func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 			showHelp = true
 			continue
 		default:
-			// we didnt get a valid answer, so print error and prompt again
-			//lint:ignore ST1005 it should be fine for this error message to have punctuation
-			if err := c.Error(config, fmt.Errorf("%q is not a valid answer, please try again.", val)); err != nil {
+			// we didn't get a valid answer, so print error and prompt again
+			if err := c.Error(config, fmt.Errorf("%q is not a valid answer, please try again", val)); err != nil {
 				return c.Default, err
 			}
 			err := c.Render(

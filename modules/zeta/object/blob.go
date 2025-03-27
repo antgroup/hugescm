@@ -95,7 +95,7 @@ func HashFrom(r io.Reader) (plumbing.Hash, error) {
 	if err != nil {
 		return plumbing.ZeroHash, err
 	}
-	defer br.Close()
+	defer br.Close() // nolint
 	hasher := plumbing.NewHasher()
 	if _, err := io.Copy(hasher, br.Contents); err != nil {
 		return plumbing.ZeroHash, err

@@ -181,7 +181,7 @@ func (d *DB) Read(refname plumbing.ReferenceName) (*Reflog, error) {
 		_ = fd.Close()
 		return &Reflog{name: refname, Entries: make([]*Entry, 0)}, nil
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	reflog := &Reflog{
 		name: refname,
 	}

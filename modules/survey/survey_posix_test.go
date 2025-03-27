@@ -26,7 +26,7 @@ func RunTest(t *testing.T, procedure func(expectConsole), test func(terminal.Std
 	if err != nil {
 		t.Fatalf("failed to create console: %v", err)
 	}
-	defer c.Close()
+	defer c.Close() // nolint
 
 	donec := make(chan struct{})
 	go func() {

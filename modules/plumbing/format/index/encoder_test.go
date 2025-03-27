@@ -16,7 +16,7 @@ func TestIndex(t *testing.T) {
 	if err != nil {
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	treeEntries := make([]TreeEntry, 0, 100)
 	e := NewEncoder(fd)
 	_ = e.Encode(&Index{

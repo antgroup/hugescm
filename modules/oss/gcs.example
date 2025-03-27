@@ -68,7 +68,7 @@ func (b *gscBucket) Put(ctx context.Context, resourcePath string, r io.Reader, m
 	h := b.bucket.Object(resourcePath)
 	w := h.NewWriter(ctx)
 	w.ContentType = mime
-	defer w.Close()
+	defer w.Close() // nolint
 	if _, err := io.Copy(w, r); err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (b *gscBucket) StartUpload(ctx context.Context, resourcePath, filePath stri
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return b.Put(ctx, resourcePath, fd, mime)
 }
 
@@ -92,7 +92,7 @@ func (b *gscBucket) LinearUpload(ctx context.Context, resourcePath string, r io.
 	w := h.NewWriter(ctx)
 	w.ContentType = mime
 	w.ChunkSize = int(defaultPartSize)
-	defer w.Close()
+	defer w.Close() // nolint
 	if _, err := io.Copy(w, r); err != nil {
 		return err
 	}

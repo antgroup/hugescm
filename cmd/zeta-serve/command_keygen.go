@@ -42,7 +42,7 @@ func (c *Keygen) genRAS() error {
 			Bytes: x509.MarshalPKCS1PrivateKey(key),
 		},
 	)
-	fmt.Fprint(os.Stdout, string(keyPEM))
+	_, _ = fmt.Fprint(os.Stdout, string(keyPEM))
 	return nil
 }
 
@@ -57,7 +57,7 @@ func (c *Keygen) genED25519() error {
 		fmt.Fprintf(os.Stderr, "GenKey error: %v\n", err)
 		return err
 	}
-	fmt.Fprint(os.Stdout, string(pem.EncodeToMemory(block)))
+	_, _ = fmt.Fprint(os.Stdout, string(pem.EncodeToMemory(block)))
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (c *Keygen) genECDSA() error {
 		fmt.Fprintf(os.Stderr, "GenKey error: %v\n", err)
 		return err
 	}
-	fmt.Fprint(os.Stdout, string(pem.EncodeToMemory(block)))
+	_, _ = fmt.Fprint(os.Stdout, string(pem.EncodeToMemory(block)))
 	return nil
 }
 

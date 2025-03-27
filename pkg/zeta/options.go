@@ -411,25 +411,25 @@ func newLogPathFilter(paths []string) func(string) bool {
 }
 
 type LogCommandOptions struct {
-	Revision      string
-	Order         LogOrder
-	OrderByDate   bool
-	OrderByAuthor bool
-	Reverse       bool
-	FormatJSON    bool
-	Paths         []string
+	Revision             string
+	Order                LogOrder
+	OrderByCommitterDate bool
+	OrderByAuthorDate    bool
+	Reverse              bool
+	FormatJSON           bool
+	Paths                []string
 }
 type commitsSortFunc func([]*object.Commit)
 
 func (o *LogCommandOptions) SortFunc() commitsSortFunc {
-	if o.Reverse || o.OrderByAuthor || o.OrderByDate {
+	if o.Reverse || o.OrderByAuthorDate || o.OrderByCommitterDate {
 		return o.sort
 	}
 	return nil
 }
 
 func (o *LogCommandOptions) sort(commits []*object.Commit) {
-	if o.OrderByDate {
+	if o.OrderByCommitterDate {
 		if o.Reverse {
 			slices.SortFunc(commits, func(a, b *object.Commit) int {
 				return a.Committer.When.Compare(b.Committer.When)
@@ -441,7 +441,7 @@ func (o *LogCommandOptions) sort(commits []*object.Commit) {
 		})
 		return
 	}
-	if o.OrderByAuthor {
+	if o.OrderByAuthorDate {
 		if o.Reverse {
 			slices.SortFunc(commits, func(a, b *object.Commit) int {
 				return a.Author.When.Compare(b.Author.When)

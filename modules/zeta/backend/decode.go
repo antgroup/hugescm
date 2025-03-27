@@ -94,7 +94,7 @@ func (d *Database) Object(_ context.Context, oid plumbing.Hash) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rc.Close()
+	defer rc.Close() // nolint
 	a, err := object.Decode(rc, oid, d.backend)
 	if err == nil {
 		_ = d.store(a)
@@ -228,7 +228,7 @@ func (d *Database) metaSizeReader(oid plumbing.Hash) (SizeReader, error) {
 	}
 	// TODO: When the server supports compressed metadata, we don't need to decompress it.
 	if isZstdMagic(magic) {
-		defer rc.Close()
+		defer rc.Close() // nolint
 		b := &bytes.Buffer{}
 		zr, err := streamio.GetZstdReader(rc)
 		if err != nil {
@@ -322,7 +322,7 @@ func (d *Database) OpenReader(oid plumbing.Hash, meta bool) (io.ReadCloser, erro
 	}
 	// TODO: When the server supports compressed metadata, we don't need to decompress it.
 	if isZstdMagic(magic) {
-		defer rc.Close()
+		defer rc.Close() // nolint
 		zr, err := streamio.GetZstdReader(rc)
 		if err != nil {
 			return nil, err

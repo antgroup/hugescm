@@ -54,7 +54,7 @@ func TestPatchFD(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "read a error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	bytesB, err := os.ReadFile(filepath.Join(dir, "testdata/b.txt"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)

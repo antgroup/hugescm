@@ -198,7 +198,7 @@ func checkUnauthorized(err error, showErr bool) bool {
 	}
 	if ec.status == http.StatusUnauthorized {
 		if showErr {
-			term.Fprintf(os.Stderr, "auth: \x1b[31m%s\x1b[0m\n", ec.Message)
+			_, _ = term.Fprintf(os.Stderr, "auth: \x1b[31m%s\x1b[0m\n", ec.Message)
 		}
 		return true
 	}

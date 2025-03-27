@@ -10,7 +10,7 @@ type recognizerSingleByte struct {
 }
 
 func (r *recognizerSingleByte) Match(input *recognizerInput) recognizerOutput {
-	var charset string = r.charset
+	charset := r.charset
 	if input.hasC1Bytes && len(r.hasC1ByteCharset) > 0 {
 		charset = r.hasC1ByteCharset
 	}
@@ -40,7 +40,7 @@ func newNgramState(table *[64]uint32) *ngramState {
 
 func (s *ngramState) AddByte(b byte) {
 	const ngramMask = 0xFFFFFF
-	if !(b == 0x20 && s.ignoreSpace) {
+	if b != 0x20 || !s.ignoreSpace {
 		s.ngram = ((s.ngram << 8) | uint32(b)) & ngramMask
 		s.ignoreSpace = (s.ngram == 0x20)
 		s.ngramCount++

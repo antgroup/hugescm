@@ -127,7 +127,7 @@ func (o *ODB) Push(ctx context.Context, oid plumbing.Hash) error {
 	if err != nil {
 		return err
 	}
-	defer sr.Close()
+	defer sr.Close() // nolint
 
 	if err := o.bucket.LinearUpload(ctx, resourcePath, sr, sr.Size(), OSS_ZETA_BLOB_MIME); err != nil {
 		return err

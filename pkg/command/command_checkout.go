@@ -75,7 +75,7 @@ func (c *Checkout) doRemote(g *Globals, remote, destination string) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if err := r.Postflight(context.Background()); err != nil {
 		fmt.Fprintf(os.Stderr, "postflight: prune objects error: %v\n", err)
 		return err
@@ -184,7 +184,7 @@ func (c *Checkout) Run(g *Globals) error {
 		if err := r.Postflight(context.Background()); err != nil {
 			fmt.Fprintf(os.Stderr, "postflight: prune objects error: %v\n", err)
 		}
-		r.Close()
+		_ = r.Close()
 	}()
 	if c.Batch {
 		w := r.Worktree()

@@ -194,7 +194,7 @@ func (c *downloader) Download(ctx context.Context, o *transport.Representation, 
 		return nil, err
 	}
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		return nil, readError(resp)
 	}
 	sr := &sizeReader{

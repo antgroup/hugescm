@@ -27,7 +27,7 @@ func TestWorktree(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
 	if err != nil {
@@ -57,7 +57,7 @@ func TestWorktree2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("a8b63b8ba5256d03587ab2c595b5b3f0473c1b7c5498f022d9b36cf1139e0a21"))
 	if err != nil {
@@ -87,7 +87,7 @@ func TestWorktree3(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	changes, err := w.Status(t.Context(), true)
 	if err != nil {
@@ -106,7 +106,7 @@ func TestCheckout(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
 	if err != nil {
@@ -126,7 +126,7 @@ func TestStatus(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	changes, err := w.Status(t.Context(), true)
 	if err != nil {
@@ -145,7 +145,7 @@ func TestStatus2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	changes, err := w.Status(t.Context(), true)
 	if err != nil {
@@ -164,7 +164,7 @@ func TestIndex(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	tree, err := w.odb.Tree(t.Context(), plumbing.NewHash("e23e0364b4c49bbfd179ce65bb76a224aa8a3a27dea25e691bed31ed8b7a693b"))
 	if err != nil {
@@ -185,7 +185,7 @@ func TestCommit(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	oid, err := w.Commit(t.Context(), &CommitOptions{All: true, Message: []string{"new commit message"}})
 	if err != nil {
@@ -202,7 +202,7 @@ func TestCommit2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	oid, err := w.Commit(t.Context(), &CommitOptions{All: true, Message: []string{"new commit message ------>\n"}})
 	if err != nil {
@@ -232,7 +232,7 @@ func TestTreeNode(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open odb error: %s\n", err)
 		return
 	}
-	defer o.Close()
+	defer o.Close() // nolint
 	tree, err := o.Tree(t.Context(), plumbing.NewHash("dee3c85319b94c91616e16014cdf2839ca7d0d3cf8412a633ac7169440fc1a58"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open tree error: %s\n", err)
@@ -294,7 +294,7 @@ func TestGrep(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	result, err := w.Grep(t.Context(), &GrepOptions{
 		Patterns: []*regexp.Regexp{regexp.MustCompile("import")},
@@ -316,7 +316,7 @@ func TestStat(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("cc9bc711ee644d0441d5d0a63bba5548d4bb3e06ee99edc0e27aa0c57d57efe8"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open commit error: %v\n", err)
@@ -434,7 +434,7 @@ func TestCat4(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	t0, err := r.odb.Tree(t.Context(), plumbing.NewHash("2dfb5cfe652f747551d9c03da557af00b147e103ae6810e8e226662dc9b05a9c"))
 	if err != nil {
 		return
@@ -458,7 +458,7 @@ func TestMergeBase(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	c1, err := r.odb.Commit(t.Context(), plumbing.NewHash("3d9fb9964feffd6da7a46552e6f3c1a5360c106de2f7de13642b3bfce6970d95"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
@@ -491,7 +491,7 @@ func TestMergeBase2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	c1, err := r.odb.Commit(t.Context(), plumbing.NewHash("abf364f16c0def448adb4db318d6677523a8b09d5947e502bb9e0d32e9c4b7b6"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve commit error: %v\n", err)
@@ -528,7 +528,7 @@ func TestLsTreeFilter(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	tree, err := r.resolveTree(t.Context(), "HEAD:")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve tree %s\n", err)
@@ -552,7 +552,7 @@ func TestLsTreeFilter2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	tree, err := r.resolveTree(t.Context(), "HEAD:")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve tree %s\n", err)

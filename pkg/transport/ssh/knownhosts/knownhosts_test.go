@@ -269,7 +269,7 @@ func TestIsHostKeyChanged(t *testing.T) {
 	if err := WriteKnownHost(f, "only-ecdsa.example.test:22", noAddr, pubKey); err != nil {
 		t.Fatalf("Unable to write known host line: %v", err)
 	}
-	f.Close()
+	_ = f.Close()
 	if kh, err = New(khPath); err != nil {
 		t.Fatalf("Unexpected error from New: %v", err)
 	}
@@ -306,7 +306,7 @@ func TestIsHostUnknown(t *testing.T) {
 	if err := WriteKnownHost(f, "newhost.example.test:22", noAddr, pubKey); err != nil {
 		t.Fatalf("Unable to write known host line: %v", err)
 	}
-	f.Close()
+	_ = f.Close()
 	if kh, err = New(khPath); err != nil {
 		t.Fatalf("Unexpected error from New: %v", err)
 	}
@@ -452,7 +452,7 @@ func writeTestKnownHosts(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Unable to open %s for writing: %v", khPath, err)
 	}
-	defer f.Close()
+	defer f.Close() // nolint
 	noAddr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:0")
 	for host, keys := range hosts {
 		for _, k := range keys {
@@ -496,7 +496,7 @@ func appendCertTestKnownHosts(t *testing.T, filePath, hostPattern, keyType strin
 	if err != nil {
 		t.Fatalf("Unable to open %s for writing: %v", filePath, err)
 	}
-	defer f.Close()
+	defer f.Close() // nolint
 	if err := WriteKnownHostCA(f, hostPattern, pubKey); err != nil {
 		t.Fatalf("Unable to append @cert-authority line to %s: %v", filePath, err)
 	}

@@ -36,7 +36,7 @@ func (b *bucket) Stat(ctx context.Context, resourcePath string) (*Stat, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, os.ErrNotExist
 	}
@@ -104,7 +104,7 @@ func (b *bucket) Open(ctx context.Context, resourcePath string, start, length in
 		return nil, os.ErrNotExist
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		return nil, readOssError(resp)
 	}
 	size, err := b.checkSize(ctx, resourcePath, resp)
@@ -134,7 +134,7 @@ func (b *bucket) Put(ctx context.Context, resourcePath string, r io.Reader, mime
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return os.ErrNotExist
 	}

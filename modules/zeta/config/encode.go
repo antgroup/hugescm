@@ -24,7 +24,7 @@ func atomicEncode(zf string, a any) error {
 		if err != nil {
 			return "", err
 		}
-		defer fd.Close()
+		defer fd.Close() // nolint
 		enc := toml.NewEncoder(fd)
 		enc.Indent = ""
 		if err := enc.Encode(a); err != nil {

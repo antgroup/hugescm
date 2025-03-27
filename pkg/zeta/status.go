@@ -175,7 +175,7 @@ func (cs *changes) show() {
 		fmt.Fprintf(os.Stdout, "%s\n", W("Changes to be committed:"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore --staged <file>...\" to unstage)"))
 		for _, c := range cs.Staging {
-			term.Fprintf(os.Stdout, "      \x1b[32m%s\t%s\x1b[0m\n", W(StatusName(c.Staging)), cs.makePath(c.path))
+			_, _ = term.Fprintf(os.Stdout, "      \x1b[32m%s\t%s\x1b[0m\n", W(StatusName(c.Staging)), cs.makePath(c.path))
 		}
 
 	}
@@ -184,7 +184,7 @@ func (cs *changes) show() {
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to update what will be committed)"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore <file>...\" to discard changes in working directory)"))
 		for _, c := range cs.Unstaging {
-			term.Fprintf(os.Stdout, "      \x1b[31m%s\t%s\x1b[0m\n", W(StatusName(c.Worktree)), cs.makePath(c.path))
+			_, _ = term.Fprintf(os.Stdout, "      \x1b[31m%s\t%s\x1b[0m\n", W(StatusName(c.Worktree)), cs.makePath(c.path))
 		}
 
 	}
@@ -192,7 +192,7 @@ func (cs *changes) show() {
 		fmt.Fprintf(os.Stdout, "%s:\n", W("Untracked files"))
 		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to include in what will be committed)"))
 		for _, c := range cs.Untracked {
-			term.Fprintf(os.Stdout, "      \x1b[31m%s\x1b[0m\n", cs.makePath(c.path))
+			_, _ = term.Fprintf(os.Stdout, "      \x1b[31m%s\x1b[0m\n", cs.makePath(c.path))
 		}
 	}
 	if len(cs.Staging) == 0 && len(cs.Unstaging) == 0 {
@@ -231,11 +231,11 @@ func statusShow(status Status, root string, z bool) {
 	sort.Sort(changeOrder(changes))
 	if !z {
 		for _, c := range changes {
-			term.Fprintf(os.Stdout, "\x1b[32m%c\x1b[31m%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
+			_, _ = term.Fprintf(os.Stdout, "\x1b[32m%c\x1b[31m%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
 		}
 		sort.Sort(changeOrder(untracked))
 		for _, c := range untracked {
-			term.Fprintf(os.Stdout, "\x1b[31m%c%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
+			_, _ = term.Fprintf(os.Stdout, "\x1b[31m%c%c\x1b[0m %s\n", c.Staging, c.Worktree, makePath(c.path))
 		}
 		return
 	}

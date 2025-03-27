@@ -32,7 +32,7 @@ func (c *ShowRemote) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	remote := r.Core.Remote
 	if c.JSON {
 		m := map[string]string{
@@ -58,7 +58,7 @@ func (c *SetRemote) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	e, err := transport.NewEndpoint(c.URL, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "zeta remote set remote to '%s' error: %v\n", c.URL, err)

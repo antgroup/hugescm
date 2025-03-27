@@ -36,7 +36,7 @@ func NewRootNode(ctx context.Context, idx *index.Index, fn FragmentsGetter) node
 	m := map[string]*Node{rootNode: {isDir: true}}
 
 	for _, e := range idx.Entries {
-		parts := strings.Split(e.Name, string("/"))
+		parts := strings.Split(e.Name, "/")
 
 		var fullpath string
 		for _, part := range parts {

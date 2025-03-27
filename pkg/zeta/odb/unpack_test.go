@@ -14,14 +14,14 @@ func TestMetadataUnpack(t *testing.T) {
 		return
 	}
 	defer func() {
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	}()
 	odb, err := NewODB(tempDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "create odb dir: %v", err)
 		return
 	}
-	defer odb.Close()
+	defer odb.Close() // nolint
 	if err := odb.MetadataUnpack(strings.NewReader(""), true); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v", err)
 		return

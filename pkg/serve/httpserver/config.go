@@ -35,7 +35,7 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	sc := &ServerConfig{
 		Listen: "127.0.0.1:21000",
 		IdleTimeout: serve.Duration{

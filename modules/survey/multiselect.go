@@ -312,7 +312,7 @@ func (m *MultiSelect) Prompt(config *PromptConfig) (any, error) {
 			break
 		}
 		if r == terminal.KeyInterrupt {
-			return "", terminal.InterruptErr
+			return "", terminal.ErrInterrupt
 		}
 		if r == terminal.KeyEndTransmission {
 			break

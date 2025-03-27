@@ -216,7 +216,7 @@ func (u *looseUnpacker) Unpack(oid plumbing.Hash, r io.Reader, size uint32, meta
 	if fd, err = os.Create(saveTo); err != nil {
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	var got plumbing.Hash
 	tr := io.TeeReader(r, fd)
 	if metadata {

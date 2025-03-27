@@ -111,13 +111,13 @@ func (s *Sink) parseLines(r io.Reader, text string) ([]int, error) {
 func (s *Sink) WriteLine(w io.Writer, E ...int) {
 	if s.NewLine == NEWLINE_CRLF {
 		for _, e := range E {
-			fmt.Fprintf(w, "%s\r\n", s.Lines[e])
+			_, _ = fmt.Fprintf(w, "%s\r\n", s.Lines[e])
 		}
 		return
 	}
 	if s.NewLine == NEWLINE_LF {
 		for _, e := range E {
-			fmt.Fprintln(w, s.Lines[e])
+			_, _ = fmt.Fprintln(w, s.Lines[e])
 		}
 		return
 	}

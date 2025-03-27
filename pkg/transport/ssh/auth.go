@@ -101,7 +101,7 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 		fmt.Fprintf(os.Stderr, "error: unable open ~/.ssh/known_hosts: %v", ferr)
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if ferr = knownhosts.WriteKnownHost(fd, hostname, remote, key); ferr != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to add host %s to known_hosts: %v\n", hostname, err)
 		return nil
@@ -201,7 +201,7 @@ func (c *client) sshAuthSigners() ([]ssh.Signer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not find ssh agent: %w", err)
 	}
-	defer sshAgentConn.Close()
+	defer sshAgentConn.Close() // nolint
 	cc := agent.NewClient(sshAgentConn)
 	return cc.Signers()
 }

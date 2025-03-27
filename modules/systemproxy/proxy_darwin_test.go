@@ -43,7 +43,7 @@ func TestConnectHackNews(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	fmt.Fprintf(os.Stderr, "%d %s\n", resp.StatusCode, resp.Status)
 	for k, v := range resp.Header {
 		if len(v) != 0 {

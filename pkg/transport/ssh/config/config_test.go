@@ -275,7 +275,7 @@ func TestInclude(t *testing.T) {
 	if err != nil {
 		t.Skipf("couldn't write SSH config file: %v", err.Error())
 	}
-	defer os.Remove(testPath)
+	defer os.Remove(testPath) // nolint
 	us := &UserSettings{
 		UserConfigFinder: testConfigFinder("testdata/include"),
 	}
@@ -294,7 +294,7 @@ func TestIncludeSystem(t *testing.T) {
 	if err != nil {
 		t.Skipf("couldn't write SSH config file: %v", err.Error())
 	}
-	defer os.Remove(testPath)
+	defer os.Remove(testPath) // nolint
 	us := &UserSettings{
 		SystemConfigFinder: testConfigFinder("testdata/include"),
 	}
@@ -318,7 +318,7 @@ func TestIncludeRecursive(t *testing.T) {
 	if err != nil {
 		t.Skipf("couldn't write SSH config file: %v", err.Error())
 	}
-	defer os.Remove(testPath)
+	defer os.Remove(testPath) // nolint
 	us := &UserSettings{
 		UserConfigFinder: testConfigFinder("testdata/include-recursive"),
 	}

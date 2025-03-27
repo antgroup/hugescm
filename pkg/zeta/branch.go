@@ -136,7 +136,7 @@ func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
 	}
 	m := NewMatcher(pattern)
 	w := NewPrinter(ctx)
-	defer w.Close()
+	defer w.Close() // nolint
 	target := db.HEAD().Target()
 	for _, r := range db.References() {
 		if !r.Name().IsBranch() {

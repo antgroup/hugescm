@@ -19,7 +19,7 @@ func TestODB(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
 		return
 	}
-	defer db.Close()
+	defer db.Close() // nolint
 	cc, err := db.Commit(t.Context(), plumbing.NewHash("498afa6582e4b15dea40f8c355ac01dbbca98c5e4013b552c0a9e3c0ea1872a2"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
@@ -34,14 +34,14 @@ func TestHashTo(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
 		return
 	}
-	defer db.Close()
+	defer db.Close() // nolint
 	_, filename, _, _ := runtime.Caller(0)
 	fd, err := os.Open(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open file error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	si, err := fd.Stat()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "stat error: %v\n", err)
@@ -61,7 +61,7 @@ func TestLookLooseObjects(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
 		return
 	}
-	defer db.Close()
+	defer db.Close() // nolint
 	cc, err := db.Commit(t.Context(), plumbing.NewHash("0942fdefc71cd54066e99b56dd47570ae2f18f41eb2406d65b0092e9c9d2efaf"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open database error: %v\n", err)
@@ -95,7 +95,7 @@ func TestLookLooseObjects(t *testing.T) {
 			return
 		}
 		err = enc.Write(o, uint32(sr.Size()), sr, 0)
-		sr.Close()
+		_ = sr.Close()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "write item error: %v\n", err)
 			_ = fd.Close()
@@ -116,7 +116,7 @@ func TestLookLooseObjects(t *testing.T) {
 	}
 	idxName := idx.Name()
 	err = enc.WriteIndex(idx)
-	idx.Close()
+	_ = idx.Close()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "write index error: %v\n", err)
 		return
@@ -133,7 +133,7 @@ func TestLookLooseObjects(t *testing.T) {
 	}
 	mtimeName := mtime.Name()
 	err = enc.WriteModification(mtime)
-	mtime.Close()
+	_ = mtime.Close()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "write mtimes error: %v\n", err)
 		return
@@ -147,7 +147,7 @@ func TestPackDeocde(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "read set error: %v\n", err)
 		return
 	}
-	defer sa.Close()
+	defer sa.Close() // nolint
 	oid := plumbing.NewHash("ff07b8065913e8f9b8e4c74ad6d2bd64a8b8f0ef8f025567f79950d0c39fe138")
 	sr, err := sa.Open(oid)
 	if err != nil {
@@ -157,7 +157,7 @@ func TestPackDeocde(t *testing.T) {
 	br, err := object.NewBlob(sr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve blob error: %v\n", err)
-		sr.Close()
+		_ = sr.Close()
 		return
 	}
 	_, _ = io.Copy(os.Stderr, br.Contents)
@@ -177,7 +177,7 @@ func TestSearchObject(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "resolve blob error: %v\n", err)
 		return
 	}
-	defer odb.Close()
+	defer odb.Close() // nolint
 	oid, err := odb.Search("ff0929c5c92f519f59518666d094c315f")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read set error: %v prefix: %s\n", err, oid.Prefix())

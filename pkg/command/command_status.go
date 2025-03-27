@@ -34,7 +34,7 @@ func (s *Status) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	w.ShowFs(g.Verbose)
 	shortFormat := s.Short || s.Z

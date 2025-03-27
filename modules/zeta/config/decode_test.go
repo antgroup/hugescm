@@ -19,7 +19,7 @@ func TestDecode(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	meta, err := toml.NewDecoder(fd).Decode(&cc)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
@@ -39,7 +39,7 @@ func TestDecode2(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)
 		return
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	sections := make(Sections)
 	if _, err = toml.NewDecoder(fd).Decode(&sections); err != nil {
 		fmt.Fprintf(os.Stderr, "open error: %v\n", err)

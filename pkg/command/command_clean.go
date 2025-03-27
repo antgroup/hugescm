@@ -32,7 +32,7 @@ func (c *Clean) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	if err := w.Clean(context.Background(), &zeta.CleanOptions{DryRun: c.DryRun, Dir: c.Dir, All: c.ALL}); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta clean error: %v\n", err)

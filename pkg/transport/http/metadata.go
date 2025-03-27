@@ -99,7 +99,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 		return nil, err
 	}
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		return nil, parseError(resp)
 	}
 	rc, err := newDecompressReader(resp.Body, resp.Header)
@@ -115,7 +115,7 @@ func (c *client) FetchMetadata(ctx context.Context, target plumbing.Hash, opts *
 
 func (c *client) BatchMetadata(ctx context.Context, objects []plumbing.Hash, depth int) (transport.SessionReader, error) {
 	reader := transport.NewObjectsReader(objects)
-	defer reader.Close()
+	defer reader.Close() // nolint
 
 	metadataURL := c.baseURL.JoinPath("metadata", "batch")
 	if depth >= 0 {
@@ -134,7 +134,7 @@ func (c *client) BatchMetadata(ctx context.Context, objects []plumbing.Hash, dep
 		return nil, err
 	}
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		return nil, parseError(resp)
 	}
 	rc, err := newDecompressReader(resp.Body, resp.Header)

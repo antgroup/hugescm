@@ -66,7 +66,7 @@ func (opts *DiffOptions) showNameOnly(ctx context.Context, changes object.Change
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	m := NewMatcher(opts.PathSpec)
 	for _, c := range changes {
 		name := c.Name()
@@ -102,7 +102,7 @@ func (opts *DiffOptions) showNameStatus(ctx context.Context, changes object.Chan
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	m := NewMatcher(opts.PathSpec)
 	for _, c := range changes {
 		name, stat := changeStat(c)
@@ -145,7 +145,7 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	if opts.Shortstat {
 		var added, deleted int
 		for _, s := range fileStats {
@@ -206,7 +206,7 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unifi
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	e := diferenco.NewUnifiedEncoder(w)
 	if w.ColorMode() != term.LevelNone {
 		e.SetColor(color.NewColorConfig())
@@ -223,7 +223,7 @@ func (opts *DiffOptions) showChangesStatus(ctx context.Context, changes merkletr
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer w.Close() // nolint
 	m := NewMatcher(opts.PathSpec)
 	if opts.NameOnly {
 		for _, c := range changes {

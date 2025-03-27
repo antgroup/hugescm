@@ -35,7 +35,7 @@ func NewDebugger(debugMode bool) *Debugger {
 	}
 	d.closeFn = func() {
 		pprof.StopCPUProfile()
-		fd.Close()
+		_ = fd.Close()
 		fmt.Fprintf(os.Stderr, "Task operation completed\ngo tool pprof -http=\":8080\" %s\n", pprofName)
 	}
 	return d

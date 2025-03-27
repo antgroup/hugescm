@@ -203,7 +203,7 @@ func (n *Node) doCalculateHashForRegular() plumbing.Hash {
 		return plumbing.ZeroHash
 	}
 
-	defer f.Close()
+	defer f.Close() // nolint
 
 	h := plumbing.NewHasher()
 	if _, err := streamio.Copy(h, f); err != nil {

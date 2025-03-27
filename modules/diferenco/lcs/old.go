@@ -109,7 +109,7 @@ func forward(e *editGraph) lcs {
 		return ans
 	}
 	// from D to D+1
-	for D := 0; D < e.limit; D++ {
+	for D := range e.limit {
 		e.setForward(D+1, -(D + 1), e.getForward(D, -D))
 		if ok, ans := e.fdone(D+1, -(D + 1)); ok {
 			return ans
@@ -209,7 +209,7 @@ func backward(e *editGraph) lcs {
 		return ans
 	}
 	// from D to D+1
-	for D := 0; D < e.limit; D++ {
+	for D := range e.limit {
 		e.setBackward(D+1, -(D + 1), e.getBackward(D, -D)-1)
 		if ok, ans := e.bdone(D+1, -(D + 1)); ok {
 			return ans
@@ -380,14 +380,8 @@ func (e *editGraph) twoDone(df, db int) (int, bool) {
 	if (df+db+e.delta)%2 != 0 {
 		return 0, false // diagonals cannot overlap
 	}
-	kmin := -db + e.delta
-	if -df > kmin {
-		kmin = -df
-	}
-	kmax := db + e.delta
-	if df < kmax {
-		kmax = df
-	}
+	kmin := max(-df, -db+e.delta)
+	kmax := min(df, db+e.delta)
 	for k := kmin; k <= kmax; k += 2 {
 		x := e.vf.get(df, k)
 		u := e.vb.get(db, k-e.delta)

@@ -62,7 +62,7 @@ func (r *Repository) putObject(ctx context.Context, t transport.Transport, refna
 	if err != nil {
 		return err
 	}
-	defer sr.Close()
+	defer sr.Close() // nolint
 	var reader io.Reader = sr
 	var b *progressbar.ProgressBar
 	if !r.quiet {
@@ -75,7 +75,7 @@ func (r *Repository) putObject(ctx context.Context, t transport.Transport, refna
 			progressbar.OptionFullWidth(),
 			progressbar.OptionSetTheme(progress.MakeTheme()))
 		reader = io.TeeReader(sr, b)
-		defer b.Close()
+		defer b.Close() // nolint
 	}
 	if err = t.PutObject(ctx, refname, oid, reader, sr.Size()); err != nil {
 		return err
@@ -130,7 +130,7 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 	}
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		defer pipeWriter.Close()
+		defer pipeWriter.Close() // nolint
 		if err := r.odb.PushTo(ctx, pipeWriter, &odb.PushObjects{
 			Metadata:     make([]plumbing.Hash, 0),
 			Objects:      make([]plumbing.Hash, 0),
@@ -168,13 +168,13 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 	if result.Rejected {
 		sv := strengthen.StrSplitSkipEmpty(result.Reason, 2, '\n')
 		for _, s := range sv {
-			term.Fprintf(os.Stderr, "remote: %s\n", s)
+			_, _ = term.Fprintf(os.Stderr, "remote: %s\n", s)
 		}
-		term.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s (delete)\n", cleanedRemote, target.Short())
+		_, _ = term.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s (delete)\n", cleanedRemote, target.Short())
 		error_red("failed to push some refs to '%s'", cleanedRemote)
 		return errors.New(result.Reason)
 	}
-	fmt.Fprintf(os.Stderr, "To: %s\n - [deleted] '%s'\n", cleanedRemote, target.Short())
+	_, _ = fmt.Fprintf(os.Stderr, "To: %s\n - [deleted] '%s'\n", cleanedRemote, target.Short())
 	return nil
 }
 
@@ -222,7 +222,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		}
 		cleanedRemote := r.cleanedRemote()
 		if !fastForward && !o.Force {
-			term.Fprintf(os.Stderr, rejectFormat, cleanedRemote, ourName.Short(), ref.Name.Short(), cleanedRemote)
+			_, _ = term.Fprintf(os.Stderr, rejectFormat, cleanedRemote, ourName.Short(), ref.Name.Short(), cleanedRemote)
 			return ErrPushRejected
 		}
 		theirs = ref.Target()
@@ -245,7 +245,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 	}
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		defer pipeWriter.Close()
+		defer pipeWriter.Close() // nolint
 		if err := r.odb.PushTo(ctx, pipeWriter, po, r.quiet); err != nil {
 			return
 		}
@@ -284,7 +284,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		for _, s := range sv {
 			fmt.Fprintf(os.Stderr, "remote: %s\n", s)
 		}
-		term.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s\n", cleanedRemote, target.Short())
+		_, _ = term.Fprintf(os.Stderr, "To: %s\n \x1b[31m! [remote rejected]\x1b[0m %s\n", cleanedRemote, target.Short())
 		error_red("failed to push some refs to '%s'", cleanedRemote)
 		return errors.New(result.Reason)
 	}

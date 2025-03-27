@@ -17,7 +17,7 @@ func TestLog(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "log error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 
 	commits, err := r.revList(t.Context(),
 		plumbing.NewHash("dffa478d973aed6d6af1d9a32c3e07bc61fdc98eddc76f5f36aa69d004d3aad4"),

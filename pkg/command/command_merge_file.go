@@ -103,7 +103,7 @@ func (c *MergeFile) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	var style int
 	switch {
 	case c.Diff3:

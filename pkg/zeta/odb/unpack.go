@@ -30,7 +30,7 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 	if err != nil {
 		return err
 	}
-	defer ur.Close()
+	defer ur.Close() // nolint
 	b := progress.NewUnknownBar(tr.W("Metadata downloading"), quiet)
 	cr := crc.NewCrc64Reader(b.NewTeeReader(r))
 	var magic, version [4]byte
@@ -100,7 +100,7 @@ func (d *ODB) Unpack(r io.Reader, expected int, quiet bool) error {
 	if err != nil {
 		return err
 	}
-	defer ur.Close()
+	defer ur.Close() // nolint
 	cr := crc.NewCrc64Reader(r)
 	var magic, version [4]byte
 	var reserved [16]byte

@@ -98,7 +98,7 @@ func (w *Worktree) checkoutOne(ctx context.Context, t transport.Transport, name 
 }
 
 func (w *Worktree) checkoutOneAfterAnother0(ctx context.Context, entries []*odb.TreeEntry) error {
-	tr.Fprintf(os.Stderr, "Start checkout large files, total: %d\n", len(entries))
+	_, _ = tr.Fprintf(os.Stderr, "Start checkout large files, total: %d\n", len(entries))
 	t, err := w.newTransport(ctx, transport.DOWNLOAD)
 	if err != nil {
 		return err
@@ -107,9 +107,9 @@ func (w *Worktree) checkoutOneAfterAnother0(ctx context.Context, entries []*odb.
 		if err := w.checkoutOne(ctx, t, e.Path, e.TreeEntry); err != nil {
 			return err
 		}
-		tr.Fprintf(os.Stderr, "Checkout '%s' success.\n", e.Path)
+		_, _ = tr.Fprintf(os.Stderr, "Checkout '%s' success.\n", e.Path)
 	}
-	tr.Fprintf(os.Stderr, "Checkout one after another, total: %d\n", len(entries))
+	_, _ = tr.Fprintf(os.Stderr, "Checkout one after another, total: %d\n", len(entries))
 	return nil
 }
 

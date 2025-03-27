@@ -26,7 +26,7 @@ func (c *client) FetchReference(ctx context.Context, refname plumbing.ReferenceN
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	switch resp.StatusCode {
 	case http.StatusOK:
 		break

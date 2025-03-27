@@ -123,7 +123,7 @@ func (b *s3Bucket) upload(ctx context.Context, resourcePath, filePath string, mi
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return b.Put(ctx, resourcePath, fd, mime)
 }
 
@@ -133,7 +133,7 @@ func (b *s3Bucket) uploadFilePart(ctx context.Context, resourcePath string, file
 	if err != nil {
 		return result, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if _, err := fd.Seek(k.offset, io.SeekStart); err != nil {
 		return result, err
 	}

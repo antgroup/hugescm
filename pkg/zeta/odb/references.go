@@ -56,7 +56,7 @@ func (d *ODB) Shallow(oid plumbing.Hash) error {
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if _, err := fd.WriteString(oid.String()); err != nil {
 		return err
 	}

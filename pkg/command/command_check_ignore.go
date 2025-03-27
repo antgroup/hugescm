@@ -54,7 +54,7 @@ func (c *CheckIgnore) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.DoCheckIgnore(context.Background(), &zeta.CheckIgnoreOption{
 		Paths: slashPaths(c.Paths),

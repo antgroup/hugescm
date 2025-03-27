@@ -23,7 +23,7 @@ func (w *Worktree) openText(p string, size int64, textconv bool) (string, error)
 	if err != nil {
 		return "", err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	content, _, err := diferenco.ReadUnifiedText(fd, size, textconv)
 	return content, err
 }
@@ -33,7 +33,7 @@ func (w *Worktree) openBlobText(ctx context.Context, oid plumbing.Hash, textconv
 	if err != nil {
 		return "", err
 	}
-	defer br.Close()
+	defer br.Close() // nolint
 	content, _, err := diferenco.ReadUnifiedText(br.Contents, br.Size, textconv)
 	return content, err
 }

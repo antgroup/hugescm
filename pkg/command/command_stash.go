@@ -34,7 +34,7 @@ func (c *StashPush) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashPush(context.Background(), &zeta.StashPushOptions{U: c.U})
 }
@@ -51,7 +51,7 @@ func (c *StashList) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashList(context.Background())
 }
@@ -70,7 +70,7 @@ func (c *StashShow) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashShow(context.Background(), c.Stash)
 }
@@ -87,7 +87,7 @@ func (c *StashClear) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashClear(context.Background())
 }
@@ -105,7 +105,7 @@ func (c *StashDrop) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashDrop(context.Background(), c.Stash)
 }
@@ -125,7 +125,7 @@ func (c *StashPop) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashPop(context.Background(), c.Stash)
 }
@@ -143,7 +143,7 @@ func (c *StashApply) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	return w.StashApply(context.Background(), c.Stash)
 }

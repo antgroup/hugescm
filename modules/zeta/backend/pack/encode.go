@@ -272,7 +272,7 @@ func (w *Writer) WriteTrailer() error {
 	if err != nil {
 		return err
 	}
-	defer ifd.Close()
+	defer ifd.Close() // nolint
 	if err := w.e.WriteIndex(ifd); err != nil {
 		return err
 	}
@@ -281,7 +281,7 @@ func (w *Writer) WriteTrailer() error {
 	if err != nil {
 		return err
 	}
-	defer mfd.Close()
+	defer mfd.Close() // nolint
 	err = w.e.WriteModification(mfd)
 	_ = mfd.Chmod(0444) // Set mtimes to read-only
 	return err

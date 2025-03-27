@@ -88,7 +88,7 @@ func (s *Server) LsTagReference(e *Session, tagName string) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	oid, peeled, err := rr.LsTag(e.Context(), tagName)
 	if err != nil {
 		return e.ExitError(err)

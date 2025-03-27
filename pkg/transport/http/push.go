@@ -37,7 +37,7 @@ func (c *client) Push(ctx context.Context, r io.Reader, cmd *transport.Command) 
 		return nil, fmt.Errorf("do request error: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint
 		return nil, parseError(resp)
 	}
 	if contentType := resp.Header.Get("Content-Type"); contentType != ZETA_MIME_REPORT_RESULT {
@@ -68,7 +68,7 @@ func (c *client) BatchCheck(ctx context.Context, refname plumbing.ReferenceName,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode > 299 || resp.StatusCode < 200 {
 		return nil, parseError(resp)
 	}
@@ -92,7 +92,7 @@ func (c *client) PutObject(ctx context.Context, refname plumbing.ReferenceName, 
 	if err != nil {
 		return fmt.Errorf("do request error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode != http.StatusOK {
 		return parseError(resp)
 	}

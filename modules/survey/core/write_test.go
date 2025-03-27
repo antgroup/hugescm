@@ -620,7 +620,7 @@ func TestWrite_canStringToBool(t *testing.T) {
 
 func TestWrite_canStringToInt(t *testing.T) {
 	// a pointer to hold the value
-	var ptr int = 1
+	ptr := 1
 
 	// try to copy a value to the pointer
 	err := WriteAnswer(&ptr, "", "2")
@@ -807,7 +807,7 @@ func TestWrite_canStringToFloat32(t *testing.T) {
 
 func TestWrite_canStringToFloat64(t *testing.T) {
 	// a pointer to hold the value
-	var ptr float64 = 1.0
+	ptr := 1.0
 
 	// try to copy a value to the pointer
 	err := WriteAnswer(&ptr, "", "2.5")

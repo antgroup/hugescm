@@ -565,7 +565,7 @@ func (i *similarityIndex) hash(ctx context.Context, f *File) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 
 	return i.hashContent(r, f.Size, bin)
 }

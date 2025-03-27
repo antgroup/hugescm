@@ -23,7 +23,7 @@ func readIgnoreFile(fs vfs.VFS, path []string, ignoreFile string) (ps []Pattern,
 	ignoreFile = strengthen.ExpandPath(ignoreFile)
 	f, err := os.Open(fs.Join(append(path, ignoreFile)...))
 	if err == nil {
-		defer f.Close()
+		defer f.Close() // nolint
 
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {

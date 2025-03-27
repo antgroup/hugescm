@@ -25,7 +25,7 @@ func (c *RevParse) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	switch {
 	case c.ShowToplevel:
 		fmt.Fprintln(os.Stdout, r.BaseDir())

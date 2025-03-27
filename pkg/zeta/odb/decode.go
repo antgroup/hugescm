@@ -25,7 +25,7 @@ func (d *ODB) DecodeTo(ctx context.Context, w io.Writer, oid plumbing.Hash, n in
 	if err != nil {
 		return err
 	}
-	defer b.Close()
+	defer b.Close() // nolint
 	if _, err = io.CopyN(w, b.Contents, min(n, b.Size)); err != nil {
 		return err
 	}

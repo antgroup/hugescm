@@ -83,7 +83,7 @@ func (d *Database) NewTruncateFD(oid plumbing.Hash) (*os.File, error) {
 }
 
 func (d *Database) validateFD(fd *os.File, oid plumbing.Hash) error {
-	defer fd.Close()
+	defer fd.Close() // nolint
 	if _, err := fd.Seek(0, io.SeekStart); err != nil {
 		return err
 	}

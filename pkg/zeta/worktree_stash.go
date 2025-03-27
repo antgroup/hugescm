@@ -191,7 +191,7 @@ func (w *Worktree) StashList(ctx context.Context) error {
 		return nil
 	}
 	writer := NewPrinter(ctx)
-	defer writer.Close()
+	defer writer.Close() // nolint
 	ro, err := w.rdb.Read(StashName)
 	if err != nil {
 		return err
@@ -228,7 +228,7 @@ func (w *Worktree) StashShow(ctx context.Context, stashRev string) error {
 		deleted += s.Deletion
 	}
 	p := NewPrinter(ctx)
-	defer p.Close()
+	defer p.Close() // nolint
 	object.StatsWriteTo(p, stats, p.ColorMode() != term.LevelNone)
 	fmt.Fprintf(p, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
 	return nil

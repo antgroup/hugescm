@@ -111,7 +111,7 @@ func (s *Server) BatchCheck(e *Session, refname string) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	response := &protocol.BatchCheckResponse{
 		Objects: make([]*protocol.HaveObject, 0, len(request.Objects)),
 	}
@@ -151,7 +151,7 @@ func (s *Server) PutObject(e *Session, refname string, oid plumbing.Hash, compre
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	size, err := rr.ODB().WriteDirect(e.Context(), oid, e, compressedSize)
 	if err != nil {
@@ -203,7 +203,7 @@ func (s *Server) TagPush(e *Session, tagName string, oldRev, newRev plumbing.Has
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	if err = rr.DoPush(e.Context(), command, e, e); err != nil {
 		if es, ok := err.(*zeta.ErrStatusCode); ok {
 			return e.ExitFormat(es.Code, "reason: %v", err)
@@ -235,7 +235,7 @@ func (s *Server) BranchPush(e *Session, branchName string, oldRev, newRev plumbi
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	if err = rr.DoPush(e.Context(), command, e, e); err != nil {
 		if es, ok := err.(*zeta.ErrStatusCode); ok {
 			return e.ExitFormat(es.Code, "reason: %v", err)

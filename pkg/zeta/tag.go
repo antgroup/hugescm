@@ -48,7 +48,7 @@ func (r *Repository) ListTag(ctx context.Context, pattern []string) error {
 	}
 	m := NewMatcher(pattern)
 	w := NewPrinter(ctx)
-	defer w.Close()
+	defer w.Close() // nolint
 	for _, r := range db.References() {
 		if !r.Name().IsTag() {
 			continue

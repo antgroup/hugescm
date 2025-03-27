@@ -97,7 +97,7 @@ func (s *Server) BatchObjects(e *Session) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 	buffedWriter := streamio.GetBufferWriter(e)
 	defer func() {
 		_ = buffedWriter.Flush()
@@ -118,10 +118,10 @@ func (s *Server) BatchObjects(e *Session) int {
 			return err
 		}
 		if sr.Size() > protocol.MAX_BATCH_BLOB_SIZE {
-			sr.Close()
+			_ = sr.Close()
 			return nil
 		}
-		defer sr.Close()
+		defer sr.Close() // nolint
 		return protocol.WriteObjectsItem(cw, sr, oid.String(), sr.Size())
 	}
 	for _, oid := range oids {
@@ -138,17 +138,17 @@ func (s *Server) BatchObjects(e *Session) int {
 }
 
 func (s *Server) GetObject(e *Session, oid plumbing.Hash, offset int64) int {
-	repo, err := s.open(e)
+	rr, err := s.open(e)
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer repo.Close()
-	o := repo.ODB()
+	defer rr.Close() // nolint
+	o := rr.ODB()
 	sr, err := o.Open(e.Context(), oid, 0)
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer sr.Close()
+	defer sr.Close() // nolint
 	logrus.Infof("write %s content-length: %d size: %d", oid, sr.Size()-offset, sr.Size())
 	if err := protocol.WriteSingleObjectsHeader(e, sr.Size()-offset, sr.Size()); err != nil {
 		return e.ExitError(err)
@@ -168,7 +168,7 @@ func (s *Server) ShareObjects(e *Session) int {
 	if err != nil {
 		return e.ExitError(err)
 	}
-	defer rr.Close()
+	defer rr.Close() // nolint
 
 	response := &protocol.BatchShareObjectsResponse{
 		Objects: make([]*protocol.Representation, 0, len(request.Objects)),

@@ -303,7 +303,7 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		b, err := ParseReferenceLine(scanner.Text())
@@ -330,7 +330,7 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 	if err != nil {
 		return nil, err
 	}
-	defer d.Close()
+	defer d.Close() // nolint
 
 	cc, err := d.ResolveCommit(br.Hash)
 	if IsErrNotExist(err) {
@@ -363,7 +363,7 @@ func ParseReferences(ctx context.Context, repoPath string, order Order) ([]*Refe
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	refs := make([]*Reference, 0, 100)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {

@@ -16,7 +16,7 @@ func TestBlame(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open repo error: %v\n", err)
 		return
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	cc, err := r.odb.Commit(t.Context(), plumbing.NewHash("4b2982c5c8835dfc3c1a8d0eddca9100e1aee1b7e7b9da44160bc9de99aa0b77"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open commit error: %v\n", err)

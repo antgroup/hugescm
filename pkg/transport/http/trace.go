@@ -67,15 +67,15 @@ func wroteHeaderField(key string, value []string) {
 	switch term.StderrLevel {
 	case term.Level256:
 		for _, v := range value {
-			fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[33m%s\x1b[0m\n", key, redactedHeader(key, v))
+			_, _ = fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[33m%s\x1b[0m\n", key, redactedHeader(key, v))
 		}
 	case term.Level16M:
 		for _, v := range value {
-			fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+			_, _ = fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
 		}
 	default:
 		for _, v := range value {
-			fmt.Fprintf(os.Stderr, "< %s: %s\n", key, redactedHeader(key, v))
+			_, _ = fmt.Fprintf(os.Stderr, "< %s: %s\n", key, redactedHeader(key, v))
 		}
 	}
 }
@@ -83,21 +83,21 @@ func wroteHeaderField(key string, value []string) {
 func wrapRequest(req *http.Request) *http.Request {
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(di httptrace.DNSStartInfo) {
-			term.Fprintf(os.Stderr, "\x1b[33mResolve %s\x1b[0m", di.Host)
+			_, _ = term.Fprintf(os.Stderr, "\x1b[33mResolve %s\x1b[0m", di.Host)
 		},
 		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
 			if dnsInfo.Err == nil {
-				term.Fprintf(os.Stderr, "\x1b[33m to %s\x1b[0m\n", flatAddress(dnsInfo.Addrs))
+				_, _ = term.Fprintf(os.Stderr, "\x1b[33m to %s\x1b[0m\n", flatAddress(dnsInfo.Addrs))
 			}
 		},
 		ConnectDone: func(network, addr string, err error) {
 			if err == nil {
-				term.Fprintf(os.Stderr, "\x1b[33mConnecting to %s connected\x1b[0m\n", addr)
+				_, _ = term.Fprintf(os.Stderr, "\x1b[33mConnecting to %s connected\x1b[0m\n", addr)
 			}
 		},
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			if err == nil {
-				term.Fprintf(os.Stderr, "\x1b[33mSSL connection using %s/%s\x1b[0m\n", tlsVersionName(state.Version), tls.CipherSuiteName(state.CipherSuite))
+				_, _ = term.Fprintf(os.Stderr, "\x1b[33mSSL connection using %s/%s\x1b[0m\n", tlsVersionName(state.Version), tls.CipherSuiteName(state.CipherSuite))
 			}
 		},
 		WroteHeaderField: wroteHeaderField,

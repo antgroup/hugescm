@@ -54,7 +54,7 @@ func findAllBackends(mainLoose *fileStorer, mainPacked *pack.Storage, root strin
 		}
 		return nil, err
 	}
-	defer f.Close()
+	defer f.Close() // nolint
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {

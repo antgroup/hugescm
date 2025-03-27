@@ -486,7 +486,7 @@ func (d *ODB) unifiedText(ctx context.Context, oid plumbing.Hash, textconv bool)
 	if err != nil {
 		return "", "", err
 	}
-	defer br.Close()
+	defer br.Close() // nolint
 	return diferenco.ReadUnifiedText(br.Contents, br.Size, textconv)
 }
 

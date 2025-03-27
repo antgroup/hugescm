@@ -67,7 +67,7 @@ func (b *Branch) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if b.ShowCurrent {
 		return r.ShowCurrent(os.Stdout)
 	}

@@ -53,15 +53,15 @@ func (c *Log) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	opts := &zeta.LogCommandOptions{
-		Revision:      c.Revision,
-		Order:         zeta.LogOrderCommitterTime,
-		OrderByDate:   c.OrderByDate,
-		OrderByAuthor: c.OrderByAuthor,
-		Paths:         slashPaths(c.paths),
-		Reverse:       c.Reverse,
-		FormatJSON:    c.JSON,
+		Revision:             c.Revision,
+		Order:                zeta.LogOrderCommitterTime,
+		OrderByCommitterDate: c.OrderByDate,
+		OrderByAuthorDate:    c.OrderByAuthor,
+		Paths:                slashPaths(c.paths),
+		Reverse:              c.Reverse,
+		FormatJSON:           c.JSON,
 	}
 	if err := r.Log(context.Background(), opts); err != nil {
 		return err

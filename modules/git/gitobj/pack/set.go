@@ -66,7 +66,7 @@ func NewSet(db string, algo hash.Hash) (*Set, error) {
 				// In the unlikely event that we did open a
 				// file, close it, but discard any error in
 				// doing so.
-				ifd.Close()
+				_ = ifd.Close()
 			}
 			continue
 		}

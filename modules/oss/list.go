@@ -86,7 +86,7 @@ func (b *bucket) ListObjects(ctx context.Context, prefix, continuationToken stri
 	if err != nil {
 		return nil, "", err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, "", readOssError(resp)
 	}

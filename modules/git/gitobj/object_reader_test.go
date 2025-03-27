@@ -16,7 +16,7 @@ func TestObjectReaderReadsHeaders(t *testing.T) {
 
 	zw := zlib.NewWriter(&compressed)
 	_, _ = zw.Write([]byte("blob 1\x00"))
-	zw.Close()
+	_ = zw.Close()
 
 	or, err := NewObjectReader(&compressed)
 	assert.Nil(t, err)
@@ -33,7 +33,7 @@ func TestObjectReaderConsumesHeaderBeforeReads(t *testing.T) {
 
 	zw := zlib.NewWriter(&compressed)
 	_, _ = zw.Write([]byte("blob 1\x00asdf"))
-	zw.Close()
+	_ = zw.Close()
 
 	or, err := NewObjectReader(&compressed)
 	assert.Nil(t, err)

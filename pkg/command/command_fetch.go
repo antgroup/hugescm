@@ -38,7 +38,7 @@ func (c *Fetch) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	_, err = r.DoFetch(context.Background(), &zeta.DoFetchOptions{
 		Name:        c.Name,
 		Unshallow:   c.Unshallow,

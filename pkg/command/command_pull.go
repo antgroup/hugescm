@@ -32,7 +32,7 @@ func (c *Pull) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	w := r.Worktree()
 	if err := w.Pull(context.Background(), &zeta.PullOptions{
 		FF:        c.FF,

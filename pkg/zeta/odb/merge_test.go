@@ -16,7 +16,7 @@ func TestMerge0(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open odb error: %v\n", err)
 		return
 	}
-	defer odb.Close()
+	defer odb.Close() // nolint
 	o, err := odb.Tree(t.Context(), plumbing.NewHash("dcfe2d5aaa20344a565da7724516700a761c7695285b47ed2e097e44eb6c7b55"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new o %v\n", err)
@@ -68,7 +68,7 @@ func TestMerge1(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open odb error: %v\n", err)
 		return
 	}
-	defer odb.Close()
+	defer odb.Close() // nolint
 	o, err := odb.Tree(t.Context(), plumbing.NewHash("dcfe2d5aaa20344a565da7724516700a761c7695285b47ed2e097e44eb6c7b55"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new o %v\n", err)
@@ -122,7 +122,7 @@ func TestMerge3(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open odb error: %v\n", err)
 		return
 	}
-	defer odb.Close()
+	defer odb.Close() // nolint
 	o, err := odb.Tree(t.Context(), plumbing.NewHash("dcfe2d5aaa20344a565da7724516700a761c7695285b47ed2e097e44eb6c7b55"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new o %v\n", err)

@@ -66,7 +66,7 @@ func (r *Repository) Show(ctx context.Context, opts *ShowOptions) error {
 		objects = append(objects, &showObject{name: o, oid: oid})
 	}
 	p := NewPrinter(ctx)
-	defer p.Close()
+	defer p.Close() // nolint
 	for _, o := range objects {
 		if err := r.showOne(ctx, p, opts, o); err != nil {
 			return err
@@ -102,7 +102,7 @@ func (r *Repository) showBlob(ctx context.Context, w Printer, opts *ShowOptions,
 	if err != nil {
 		return err
 	}
-	defer b.Close()
+	defer b.Close() // nolint
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}

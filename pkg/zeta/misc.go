@@ -328,7 +328,7 @@ func ReadContent(p string, textconv bool) (*Content, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	si, err := fd.Stat()
 	if err != nil {
 		return nil, err
@@ -366,7 +366,7 @@ func ReadText(p string, textconv bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	si, err := fd.Stat()
 	if err != nil {
 		return "", err

@@ -265,7 +265,7 @@ func readSizeReader(sr backend.SizeReader) ([]byte, error) {
 // If it is a smaller file, we use pooled bytes.Buffer to avoid frequent allocation. Memory and GC, for slightly larger files, we directly apply for memory,
 // which can avoid the program occupying a high amount of memory.
 func (o *ODB) newBufferedReader(ctx context.Context, oid plumbing.Hash, sr backend.SizeReader) (backend.SizeReader, error) {
-	defer sr.Close()
+	defer sr.Close() // nolint
 	if sr.Size() > noPooledThreshold {
 		readBytes, err := readSizeReader(sr)
 		if err != nil {
@@ -330,7 +330,7 @@ func (o *ODB) IsBinaryFast(ctx context.Context, oid plumbing.Hash) (bool, error)
 	if err != nil {
 		return false, err
 	}
-	defer sr.Close()
+	defer sr.Close() // nolint
 	var hdr [16]byte
 	if _, err := io.ReadFull(sr, hdr[:]); err != nil {
 		return false, err

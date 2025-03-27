@@ -187,7 +187,7 @@ func (b *bucket) Delete(ctx context.Context, resourcePath string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return readOssError(resp)
 	}
@@ -222,7 +222,7 @@ func (b *bucket) deleteMultipleObjects(ctx context.Context, objectKeys []string)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 	if resp.StatusCode == http.StatusNotFound {
 		return readOssError(resp)
 	}

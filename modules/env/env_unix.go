@@ -25,6 +25,6 @@ func InitializeEnv() error {
 		seen[u] = true
 		pathNewList = append(pathNewList, cleanedPath)
 	}
-	os.Setenv("PATH", strings.Join(pathNewList, string(os.PathListSeparator)))
+	_ = os.Setenv("PATH", strings.Join(pathNewList, string(os.PathListSeparator)))
 	return nil
 }

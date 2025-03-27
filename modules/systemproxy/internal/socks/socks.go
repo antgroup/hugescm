@@ -171,7 +171,7 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 	}
 	a, err := d.connect(ctx, c, address)
 	if err != nil {
-		c.Close()
+		_ = c.Close()
 		proxy, dst, _ := d.pathAddrs(address)
 		return nil, &net.OpError{Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: err}
 	}
@@ -224,7 +224,7 @@ func (d *Dialer) Dial(network, address string) (net.Conn, error) {
 		return nil, &net.OpError{Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: err}
 	}
 	if _, err := d.DialWithConn(context.Background(), c, network, address); err != nil {
-		c.Close()
+		_ = c.Close()
 		return nil, err
 	}
 	return c, nil

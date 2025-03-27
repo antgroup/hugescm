@@ -128,7 +128,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 			}
 
 			// we're done processing the input, and treat interrupt like an error
-			return line, InterruptErr
+			return line, ErrInterrupt
 		}
 
 		// allow for backspace/delete editing of inputs

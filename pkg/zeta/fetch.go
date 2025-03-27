@@ -187,7 +187,7 @@ func (r *Repository) prepareFetch(ctx context.Context, current *plumbing.Referen
 	var err error
 	if current != nil {
 		// Full history check
-		if commits, err = r.revList(ctx, current.Hash(), nil, nil); err != nil {
+		if commits, err = r.revList(ctx, current.Hash(), nil, LogOrderBFS, nil); err != nil {
 			die_error("log commits error: %v", err)
 			return nil, err
 		}

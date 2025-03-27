@@ -203,12 +203,12 @@ func (r *Repository) revList0(ctx context.Context, want plumbing.Hash, ignore []
 	return nil
 }
 
-func (r *Repository) revList(ctx context.Context, want plumbing.Hash, ignore []plumbing.Hash, paths []string) ([]*object.Commit, error) {
+func (r *Repository) revList(ctx context.Context, want plumbing.Hash, ignore []plumbing.Hash, order LogOrder, paths []string) ([]*object.Commit, error) {
 	cg := &commitsGroup{
 		commits: make([]*object.Commit, 0, 100),
 		seen:    make(map[plumbing.Hash]bool),
 	}
-	if err := r.revList0(ctx, want, ignore, LogOrderBFS, paths, cg); err != nil {
+	if err := r.revList0(ctx, want, ignore, order, paths, cg); err != nil {
 		return nil, err
 	}
 	return cg.commits, nil

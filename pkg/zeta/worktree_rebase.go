@@ -107,7 +107,8 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 		die_error("resolve onto tree: %v", err)
 		return plumbing.ZeroHash, err
 	}
-	commits, err := w.revList(ctx, our, ignore, nil)
+	// TODO: rebase: merge commits should be avoided as much as possible
+	commits, err := w.revList(ctx, our, ignore, LogOrderDFS, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return plumbing.ZeroHash, err
@@ -311,7 +312,8 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		return err
 	}
 	mergeDriver := w.resolveMergeDriver()
-	commits, err := w.revList(ctx, md.REBASE_HEAD, []plumbing.Hash{md.STOPPED}, nil)
+	// TODO: rebase: merge commits should be avoided as much as possible
+	commits, err := w.revList(ctx, md.REBASE_HEAD, []plumbing.Hash{md.STOPPED}, LogOrderDFS, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return err

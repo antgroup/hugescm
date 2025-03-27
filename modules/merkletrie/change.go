@@ -51,7 +51,7 @@ func (a Action) String() string {
 	}
 }
 
-// A Change value represent how a noder has change between to merkletries.
+// A Change value represent how a noder has change between to merkletrie.
 type Change struct {
 	// The noder before the change or nil if it was inserted.
 	From noder.Path

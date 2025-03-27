@@ -276,7 +276,7 @@ func DiffTreeContext(ctx context.Context, fromTree, toTree noder.Noder,
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, ErrCanceled
+			return nil, ctx.Err()
 		default:
 		}
 

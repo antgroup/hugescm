@@ -5,7 +5,6 @@ package object
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -14,10 +13,6 @@ import (
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
-)
-
-var (
-	ErrCanceled = errors.New("operation canceled")
 )
 
 type PatchOptions struct {

@@ -518,13 +518,9 @@ func (fo *fileStorer) Prune(ctx context.Context) (int, error) {
 	return total, err
 }
 
-var (
-	ErrCanceled = context.Canceled
-)
-
 func (fo *fileStorer) PruneObject(ctx context.Context, oid plumbing.Hash) error {
 	if err := ctx.Err(); err != nil {
-		return ErrCanceled
+		return err
 	}
 	p := fo.path(oid)
 	if err := os.Remove(p); err != nil {

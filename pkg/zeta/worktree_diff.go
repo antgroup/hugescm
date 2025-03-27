@@ -113,7 +113,7 @@ func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Chang
 	for _, c := range changes {
 		select {
 		case <-ctx.Done():
-			return nil, object.ErrCanceled
+			return nil, ctx.Err()
 		default:
 		}
 		name := nameFromAction(&c)
@@ -179,7 +179,7 @@ func (w *Worktree) getStatsContext(ctx context.Context, changes merkletrie.Chang
 	for _, c := range changes {
 		select {
 		case <-ctx.Done():
-			return nil, object.ErrCanceled
+			return nil, ctx.Err()
 		default:
 		}
 		name := nameFromAction(&c)

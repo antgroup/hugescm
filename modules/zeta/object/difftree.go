@@ -79,9 +79,6 @@ func DiffTreeWithOptions(
 
 	merkletrieChanges, err := merkletrie.DiffTreeContext(ctx, from, to, hashEqual)
 	if err != nil {
-		if err == merkletrie.ErrCanceled {
-			return nil, ErrCanceled
-		}
 		return nil, err
 	}
 

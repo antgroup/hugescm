@@ -9,16 +9,16 @@ import (
 )
 
 // A doubleIter is a convenience type to keep track of the current
-// noders in two merkletries that are going to be iterated in parallel.
+// noders in two merkletrie that are going to be iterated in parallel.
 // It has methods for:
 //
-// - iterating over the merkletries, both at the same time or
+// - iterating over the merkletrie, both at the same time or
 // individually: nextFrom, nextTo, nextBoth, stepBoth
 //
 // - checking if there are noders left in one or both of them with the
 // remaining method and its associated returned type.
 //
-// - comparing the current noders of both merkletries in several ways,
+// - comparing the current noders of both merkletrie in several ways,
 // with the compare method and its associated returned type.
 type doubleIter struct {
 	from struct {
@@ -32,9 +32,9 @@ type doubleIter struct {
 	hashEqual noder.Equal
 }
 
-// NewdoubleIter returns a new doubleIter for the merkletries "from" and
+// NewdoubleIter returns a new doubleIter for the merkletrie "from" and
 // "to".  The hashEqual callback function will be used by the doubleIter
-// to compare the hash of the noders in the merkletries.  The doubleIter
+// to compare the hash of the noders in the merkletrie.  The doubleIter
 // will be initialized to the first elements in each merkletrie if any.
 func newDoubleIter(ctx context.Context, from, to noder.Noder, hashEqual noder.Equal) (
 	*doubleIter, error) {

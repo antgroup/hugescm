@@ -29,7 +29,7 @@ func (r *Repository) ShowCurrent(w io.Writer) error {
 		// detach checkout
 		return nil
 	}
-	fmt.Fprintf(w, "%s\n", current.Name().Short())
+	_, _ = fmt.Fprintf(w, "%s\n", current.Name().Short())
 	return nil
 }
 

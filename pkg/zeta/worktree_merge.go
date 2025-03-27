@@ -229,7 +229,7 @@ func (w *Worktree) Merge(ctx context.Context, opts *MergeOptions) error {
 const maxSizeForSquashedCommitMessage = 4 << 10
 
 func (w *Worktree) makeSquashMessage(ctx context.Context, from plumbing.Hash, ignore []plumbing.Hash, messagePrefix string) (string, error) {
-	commits, err := w.revList(ctx, from, ignore, LogOrderCommitterTime, nil)
+	commits, err := w.revList(ctx, from, ignore, LogOrderTopo, nil)
 	if err != nil {
 		die_error("log range base error: %v", err)
 		return "", err

@@ -355,6 +355,7 @@ type LogOrder int8
 
 const (
 	LogOrderDefault LogOrder = iota
+	LogOrderTopo
 	LogOrderDFS
 	LogOrderDFSPost
 	LogOrderBFS

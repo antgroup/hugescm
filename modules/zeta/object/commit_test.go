@@ -10,6 +10,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/streamio"
+	"github.com/emirpasic/gods/trees/binaryheap"
 )
 
 func TestCommitCompress(t *testing.T) {
@@ -85,4 +86,19 @@ func TestSignature(t *testing.T) {
 	var signature Signature
 	signature.Decode([]byte(s))
 	fmt.Fprintf(os.Stderr, "%v\n", signature)
+}
+
+func TestBinaryHeap(t *testing.T) {
+	numbers := []int{1, 2, 3, 5, 6, 128, 8, 4, 7}
+	p := binaryheap.NewWithIntComparator()
+	for _, i := range numbers {
+		p.Push(i)
+	}
+	for {
+		v, ok := p.Pop()
+		if !ok {
+			break
+		}
+		fmt.Fprintf(os.Stderr, "%v\n", v)
+	}
 }

@@ -64,19 +64,19 @@ func (c *Commit) IsAncestor(ctx context.Context, other *Commit) (bool, error) {
 // ancestorsIndex returns a map with the ancestors of the starting commit if the
 // excluded one is not one of them. It returns errIsReachable if the excluded commit
 // is ancestor of the starting, or another error if the history is not traversable.
-func ancestorsIndex(ctx context.Context, excluded, starting *Commit) (map[plumbing.Hash]struct{}, error) {
+func ancestorsIndex(ctx context.Context, excluded, starting *Commit) (map[plumbing.Hash]bool, error) {
 	if excluded.Hash.String() == starting.Hash.String() {
 		return nil, errIsReachable
 	}
 
-	startingHistory := map[plumbing.Hash]struct{}{}
+	startingHistory := make(map[plumbing.Hash]bool)
 	startingIter := NewCommitIterBFS(starting, nil, nil)
 	err := startingIter.ForEach(ctx, func(commit *Commit) error {
 		if commit.Hash == excluded.Hash {
 			return errIsReachable
 		}
 
-		startingHistory[commit.Hash] = struct{}{}
+		startingHistory[commit.Hash] = true
 		return nil
 	})
 
@@ -187,7 +187,7 @@ func remove(commits []*Commit, toDelete *Commit) []*Commit {
 
 // removeDuplicated removes duplicated commits from the passed slice of commits
 func removeDuplicated(commits []*Commit) []*Commit {
-	seen := make(map[plumbing.Hash]struct{}, len(commits))
+	seen := make(map[plumbing.Hash]bool, len(commits))
 	res := make([]*Commit, len(commits))
 	j := 0
 	for _, commit := range commits {
@@ -195,7 +195,7 @@ func removeDuplicated(commits []*Commit) []*Commit {
 			continue
 		}
 
-		seen[commit.Hash] = struct{}{}
+		seen[commit.Hash] = true
 		res[j] = commit
 		j++
 	}
@@ -205,9 +205,8 @@ func removeDuplicated(commits []*Commit) []*Commit {
 
 // isInIndexCommitFilter returns a commitFilter that returns true
 // if the commit is in the passed index.
-func isInIndexCommitFilter(index map[plumbing.Hash]struct{}) CommitFilter {
+func isInIndexCommitFilter(index map[plumbing.Hash]bool) CommitFilter {
 	return func(c *Commit) bool {
-		_, ok := index[c.Hash]
-		return ok
+		return index[c.Hash]
 	}
 }

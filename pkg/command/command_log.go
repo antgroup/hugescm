@@ -56,7 +56,7 @@ func (c *Log) Run(g *Globals) error {
 	defer r.Close() // nolint
 	opts := &zeta.LogCommandOptions{
 		Revision:             c.Revision,
-		Order:                zeta.LogOrderCommitterTime,
+		Order:                zeta.LogOrderTopo, // --topo-order
 		OrderByCommitterDate: c.OrderByDate,
 		OrderByAuthorDate:    c.OrderByAuthor,
 		Paths:                slashPaths(c.paths),

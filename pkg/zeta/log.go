@@ -438,9 +438,9 @@ func (*Repository) logWithLimit(commitIter object.CommitIter, limitOptions objec
 
 func commitIterFunc(order LogOrder, ignore []plumbing.Hash) func(c *object.Commit) object.CommitIter {
 	switch order {
-	case LogOrderDefault:
+	case LogOrderDefault, LogOrderTopo:
 		return func(c *object.Commit) object.CommitIter {
-			return object.NewCommitPreorderIter(c, nil, ignore)
+			return object.NewCommitIterTopoOrder(c, nil, ignore)
 		}
 	case LogOrderDFS:
 		return func(c *object.Commit) object.CommitIter {

@@ -24,12 +24,12 @@ import (
 // the given patterns are chosen (similarly for multiple --committer=<pattern>).
 
 type Log struct {
-	Revision      string   `arg:"" optional:"" name:"revision-range" help:"Revision range"`
-	OrderByDate   bool     `name:"date-order" help:"Order by committer date"`
-	OrderByAuthor bool     `name:"author-date-order" help:"Order by author date"`
-	Reverse       bool     `name:"reverse" help:"Reverse order"`
-	JSON          bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
-	paths         []string `kong:"-"`
+	Revision        string   `arg:"" optional:"" name:"revision-range" help:"Revision range"`
+	DateOrder       bool     `name:"date-order" help:"Order by committer date"`
+	AuthorDateOrder bool     `name:"author-date-order" help:"Order by author date"`
+	Reverse         bool     `name:"reverse" help:"Reverse order"`
+	JSON            bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
+	paths           []string `kong:"-"`
 }
 
 const (
@@ -57,11 +57,14 @@ func (c *Log) Run(g *Globals) error {
 	opts := &zeta.LogCommandOptions{
 		Revision:             c.Revision,
 		Order:                zeta.LogOrderTopo, // --topo-order
-		OrderByCommitterDate: c.OrderByDate,
-		OrderByAuthorDate:    c.OrderByAuthor,
+		OrderByCommitterDate: c.DateOrder,
+		OrderByAuthorDate:    c.AuthorDateOrder,
 		Paths:                slashPaths(c.paths),
 		Reverse:              c.Reverse,
 		FormatJSON:           c.JSON,
+	}
+	if c.DateOrder || c.AuthorDateOrder {
+		opts.Order = zeta.LogOrderBFS // order --> DATE: switch to BFS and sort by committer time
 	}
 	if err := r.Log(context.Background(), opts); err != nil {
 		return err

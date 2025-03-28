@@ -93,7 +93,7 @@ func SimpleAtob(s string, dv bool) bool {
 }
 
 const (
-	Byte int64 = 1 << (iota * 10)
+	Byte = 1 << (iota * 10) // Byte
 	KiByte
 	MiByte
 	GiByte
@@ -102,45 +102,35 @@ const (
 	EiByte
 )
 
-func toLower(c byte) byte {
-	if 'A' <= c && c <= 'Z' {
-		c += 'a' - 'A'
+var (
+	sizeRatio = map[string]int64{
+		"k": KiByte,
+		"m": MiByte,
+		"g": GiByte,
+		"t": TiByte,
+		"p": PiByte,
+		"e": EiByte,
 	}
-	return c
-}
+)
 
 var (
 	ErrSyntaxSize = errors.New("size syntax error")
 )
 
-func ParseSize(data string) (int64, error) {
-	var ratio = Byte
-	if len(data) == 0 {
-		return 0, ErrSyntaxSize
+func ParseSize(text string) (int64, error) {
+	text = strings.TrimSuffix(strings.ToLower(text), "b")
+	for rs, ratio := range sizeRatio {
+		if prefix, ok := strings.CutSuffix(text, rs); ok {
+			v, err := strconv.ParseInt(strings.TrimSpace(prefix), 10, 64)
+			if err != nil {
+				return 0, ErrSyntaxSize
+			}
+			return v * ratio, nil
+		}
 	}
-	switch toLower(data[len(data)-1]) {
-	case 'k':
-		ratio = KiByte
-		data = data[0 : len(data)-1]
-	case 'm':
-		ratio = MiByte
-		data = data[0 : len(data)-1]
-	case 'g':
-		ratio = GiByte
-		data = data[0 : len(data)-1]
-	case 't':
-		ratio = GiByte
-		data = data[0 : len(data)-1]
-	case 'p':
-		ratio = PiByte
-		data = data[0 : len(data)-1]
-	case 'e':
-		ratio = EiByte
-		data = data[0 : len(data)-1]
-	}
-	sz, err := strconv.ParseInt(strings.TrimSpace(data), 10, 64)
+	v, err := strconv.ParseInt(strings.TrimSpace(text), 10, 64)
 	if err != nil {
 		return 0, ErrSyntaxSize
 	}
-	return sz * ratio, nil
+	return v, nil
 }

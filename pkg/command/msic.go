@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/tr"
 )
@@ -24,45 +25,8 @@ var (
 )
 
 var (
-	ErrSyntaxSize        = errors.New("size syntax error")
 	ErrFlagsIncompatible = errors.New("flags incompatible")
 )
-
-const (
-	Byte int64 = 1 << (iota * 10)
-	KiByte
-	MiByte
-	GiByte
-	TiByte
-	PiByte
-	EiByte
-)
-
-var (
-	sizeRatio = map[string]int64{
-		"b": 1,
-		"k": KiByte,
-		"m": MiByte,
-		"g": GiByte,
-		"t": TiByte,
-		"p": PiByte,
-		"e": EiByte,
-	}
-)
-
-func decodeSize(text string) (int64, error) {
-	text = strings.TrimSuffix(strings.ToLower(text), "b")
-	for s, ratio := range sizeRatio {
-		if strings.HasSuffix(text, s) {
-			i, err := strconv.ParseInt(strings.TrimSpace(text[0:len(text)-len(s)]), 10, 64)
-			if err != nil {
-				return 0, err
-			}
-			return i * ratio, nil
-		}
-	}
-	return strconv.ParseInt(text, 10, 64)
-}
 
 func SizeDecoder() kong.MapperFunc {
 	return func(ctx *kong.DecodeContext, target reflect.Value) error {
@@ -77,7 +41,7 @@ func SizeDecoder() kong.MapperFunc {
 		default:
 			return fmt.Errorf("expected a string value but got %q (%T)", t, t.Value)
 		}
-		i, err := decodeSize(sv)
+		i, err := strengthen.ParseSize(sv)
 		if err != nil {
 			return err
 		}

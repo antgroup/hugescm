@@ -1,7 +1,19 @@
 version: 2
 updates:
-  - package-ecosystem: gomod
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: daily
-    open-pull-requests-limit: 10
+      interval: "weekly"
+    commit-message:
+      prefix: "build"
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "build"
+    groups:
+      golang.org:
+        patterns:
+          - "golang.org/*"

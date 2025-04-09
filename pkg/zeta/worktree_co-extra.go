@@ -18,6 +18,8 @@ import (
 	mindex "github.com/antgroup/hugescm/modules/merkletrie/index"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/plumbing/filemode"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -80,12 +82,20 @@ func (w *Worktree) checkoutOne(ctx context.Context, t transport.Transport, name 
 	default:
 		return nil
 	}
-	if err := w.transfer(ctx, t, larges); err != nil {
+	if err = w.transfer(ctx, t, larges); err != nil {
 		return err
 	}
-	if err := w.checkoutFile(ctx, name, e, bar); plumbing.IsNoSuchObject(err) && w.missingNotFailure {
-		w.addPseudoIndex(name, e, b)
-		return nil
+	if err := w.checkoutFile(ctx, name, e, bar); err != nil {
+		if plumbing.IsNoSuchObject(err) && w.missingNotFailure || filemode.IsErrMalformedMode(err) {
+			w.addPseudoIndex(name, e, b)
+			return nil
+		}
+		if filemode.IsErrMalformedMode(err) {
+			term.Fprintf(os.Stderr, "\x1b[2K\rskip checkout '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", name, e.Mode)
+			w.addPseudoIndex(name, e, b)
+			return nil
+		}
+		return err
 	}
 	if err := w.addIndexFromFile(name, e.Hash, e.Mode, b); err != nil {
 		return err

@@ -573,7 +573,7 @@ func (w *Worktree) resetIndexMatch(ctx context.Context, entries []*odb.TreeEntry
 func (w *Worktree) resetWorktreeEntriesWorktreeOnly(ctx context.Context, entries []*odb.TreeEntry, bar ProgressBar) error {
 	for _, e := range entries {
 		err := w.checkoutFile(ctx, e.Path, e.TreeEntry, bar)
-		if plumbing.IsNoSuchObject(err) && w.missingNotFailure {
+		if plumbing.IsNoSuchObject(err) && w.missingNotFailure || filemode.IsErrMalformedMode(err) {
 			return nil
 		}
 		if err != nil {
@@ -591,6 +591,10 @@ func (w *Worktree) resetWorktreeEntries(ctx context.Context, entries []*odb.Tree
 	b := newIndexBuilder(idx)
 	for _, e := range entries {
 		if err = w.checkoutFile(ctx, e.Path, e.TreeEntry, bar); plumbing.IsNoSuchObject(err) && w.missingNotFailure {
+			w.addPseudoIndex(e.Path, e.TreeEntry, b)
+			return nil
+		}
+		if filemode.IsErrMalformedMode(err) {
 			w.addPseudoIndex(e.Path, e.TreeEntry, b)
 			return nil
 		}
@@ -658,6 +662,10 @@ func (w *Worktree) checkoutChangeRegularFile(ctx context.Context, name string, a
 	case merkletrie.Insert:
 		var err error
 		if err = w.checkoutFile(ctx, name, e, bar); plumbing.IsNoSuchObject(err) && w.missingNotFailure {
+			w.addPseudoIndex(name, e, idx)
+			return nil
+		}
+		if filemode.IsErrMalformedMode(err) {
 			w.addPseudoIndex(name, e, idx)
 			return nil
 		}

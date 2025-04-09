@@ -180,6 +180,22 @@ func (m FileMode) Unmask() FileMode {
 	return m &^ Fragments
 }
 
+type ErrMalformedMode struct {
+	m FileMode
+}
+
+func (e *ErrMalformedMode) Error() string {
+	return fmt.Sprintf("malformed mode (%s)", e.m)
+}
+
+func IsErrMalformedMode(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(*ErrMalformedMode)
+	return ok
+}
+
 // ToOSFileMode returns the os.FileMode to be used when creating file
 // system elements with the given git mode and a nil error on success.
 //
@@ -205,7 +221,7 @@ func (m FileMode) ToOSFileMode() (os.FileMode, error) {
 		return os.ModePerm | os.ModeSymlink, nil
 	}
 
-	return os.FileMode(0), fmt.Errorf("malformed mode (%s)", m)
+	return os.FileMode(0), &ErrMalformedMode{m: m}
 }
 
 func (m FileMode) MarshalJSON() ([]byte, error) {

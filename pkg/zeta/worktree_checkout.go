@@ -13,7 +13,9 @@ import (
 
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/plumbing/format/index"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/progress"
 )
@@ -416,6 +418,11 @@ func (cg *checkoutGroup) coco(ctx context.Context, w *Worktree, bar ProgressBar)
 		}
 		if err := w.checkoutFile(ctx, e.name, e.entry, bar); err != nil {
 			if plumbing.IsNoSuchObject(err) && w.missingNotFailure {
+				w.addPseudoIndexRecv(e.name, e.entry, cg.recv)
+				continue
+			}
+			if filemode.IsErrMalformedMode(err) {
+				term.Fprintf(os.Stderr, "\x1b[2K\rskip checkout '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", e.name, e.entry.Mode)
 				w.addPseudoIndexRecv(e.name, e.entry, cg.recv)
 				continue
 			}

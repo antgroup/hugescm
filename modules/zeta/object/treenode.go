@@ -5,7 +5,6 @@ package object
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"runtime"
 	"strings"
@@ -212,7 +211,7 @@ func transformChildren(ctx context.Context, t *Tree, m noder.Matcher, conflictDe
 				n.fragments = e.Hash
 				n.size = int64(ff.Size)
 			}
-		case BlobObject:
+		default:
 			n = &TreeNoder{
 				parent:            t,
 				name:              e.Name,
@@ -221,8 +220,6 @@ func transformChildren(ctx context.Context, t *Tree, m noder.Matcher, conflictDe
 				size:              e.Size,
 				conflictDetection: conflictDetection,
 			}
-		default:
-			return nil, fmt.Errorf("unexpected object type '%d'", typ)
 		}
 		if conflictDetection {
 			cname := canonicalName(e.Name)

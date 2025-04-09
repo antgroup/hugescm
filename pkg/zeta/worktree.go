@@ -20,6 +20,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/plumbing/format/ignore"
 	"github.com/antgroup/hugescm/modules/plumbing/format/index"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/progress"
@@ -573,7 +574,11 @@ func (w *Worktree) resetIndexMatch(ctx context.Context, entries []*odb.TreeEntry
 func (w *Worktree) resetWorktreeEntriesWorktreeOnly(ctx context.Context, entries []*odb.TreeEntry, bar ProgressBar) error {
 	for _, e := range entries {
 		err := w.checkoutFile(ctx, e.Path, e.TreeEntry, bar)
-		if plumbing.IsNoSuchObject(err) && w.missingNotFailure || filemode.IsErrMalformedMode(err) {
+		if plumbing.IsNoSuchObject(err) && w.missingNotFailure {
+			return nil
+		}
+		if filemode.IsErrMalformedMode(err) {
+			_, _ = term.Fprintf(os.Stderr, "\x1b[2K\rskip reset '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", e.Path, e.Mode)
 			return nil
 		}
 		if err != nil {

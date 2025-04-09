@@ -422,7 +422,7 @@ func (cg *checkoutGroup) coco(ctx context.Context, w *Worktree, bar ProgressBar)
 				continue
 			}
 			if filemode.IsErrMalformedMode(err) {
-				term.Fprintf(os.Stderr, "\x1b[2K\rskip checkout '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", e.name, e.entry.Mode)
+				_, _ = term.Fprintf(os.Stderr, "\x1b[2K\rskip checkout '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", e.name, e.entry.Mode)
 				w.addPseudoIndexRecv(e.name, e.entry, cg.recv)
 				continue
 			}

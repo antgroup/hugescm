@@ -86,12 +86,12 @@ func (w *Worktree) checkoutOne(ctx context.Context, t transport.Transport, name 
 		return err
 	}
 	if err := w.checkoutFile(ctx, name, e, bar); err != nil {
-		if plumbing.IsNoSuchObject(err) && w.missingNotFailure || filemode.IsErrMalformedMode(err) {
+		if plumbing.IsNoSuchObject(err) && w.missingNotFailure {
 			w.addPseudoIndex(name, e, b)
 			return nil
 		}
 		if filemode.IsErrMalformedMode(err) {
-			term.Fprintf(os.Stderr, "\x1b[2K\rskip checkout '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", name, e.Mode)
+			_, _ = term.Fprintf(os.Stderr, "\x1b[2K\rskip checkout '\x1b[31m%s\x1b[0m': malformed mode '%s'\n", name, e.Mode)
 			w.addPseudoIndex(name, e, b)
 			return nil
 		}

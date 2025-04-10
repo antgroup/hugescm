@@ -36,7 +36,7 @@ func classOrMachOFat(in []byte) bool {
 		return false
 	}
 
-	return bytes.HasPrefix(in, []byte{0xCA, 0xFE, 0xBA, 0xBE})
+	return binary.BigEndian.Uint32(in) == macho.MagicFat
 }
 
 // Class matches a java class file.
@@ -46,7 +46,7 @@ func Class(raw []byte, limit uint32) bool {
 
 // MachO matches Mach-O binaries format.
 func MachO(raw []byte, limit uint32) bool {
-	if classOrMachOFat(raw) && raw[7] < 20 {
+	if classOrMachOFat(raw) && raw[7] < 0x14 {
 		return true
 	}
 
@@ -71,7 +71,7 @@ func Dbf(raw []byte, limit uint32) bool {
 	}
 
 	// 3rd and 4th bytes contain the last update month and day of month.
-	if !(0 < raw[2] && raw[2] < 13 && 0 < raw[3] && raw[3] < 32) {
+	if raw[2] == 0 || raw[2] > 12 || raw[3] == 0 || raw[3] > 31 {
 		return false
 	}
 
@@ -143,7 +143,7 @@ func Marc(raw []byte, limit uint32) bool {
 	}
 
 	// First 5 bytes are ASCII digits.
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if raw[i] < '0' || raw[i] > '9' {
 			return false
 		}
@@ -153,7 +153,7 @@ func Marc(raw []byte, limit uint32) bool {
 	return bytes.Contains(raw[:min(2048, len(raw))], []byte{0x1E})
 }
 
-// Glb matches a glTF model format file.
+// GLB matches a glTF model format file.
 // GLB is the binary file format representation of 3D models saved in
 // the GL transmission Format (glTF).
 // GLB uses little endian and its header structure is as follows:
@@ -168,7 +168,7 @@ func Marc(raw []byte, limit uint32) bool {
 //
 // [glTF specification]: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
 // [IANA glTF entry]: https://www.iana.org/assignments/media-types/model/gltf-binary
-var Glb = prefix([]byte("\x67\x6C\x54\x46\x02\x00\x00\x00"),
+var GLB = prefix([]byte("\x67\x6C\x54\x46\x02\x00\x00\x00"),
 	[]byte("\x67\x6C\x54\x46\x01\x00\x00\x00"))
 
 // TzIf matches a Time Zone Information Format (TZif) file.

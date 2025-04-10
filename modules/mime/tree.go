@@ -80,10 +80,10 @@ var (
 		alias("application/x-ogg")
 	oggAudio = newMIME("audio/ogg", ".oga", magic.OggAudio)
 	oggVideo = newMIME("video/ogg", ".ogv", magic.OggVideo)
-	text     = newMIME("text/plain", ".txt", magic.Text /*html,*/, svg, xml /*php, js,*/, lua, perl, python, json, ndJSON, rtf, srt, tcl, csv, tsv, vCard, iCalendar, warc, vtt)
+	text     = newMIME("text/plain", ".txt", magic.Text, svg, xml, lua, perl, python, json, ndJSON, rtf, srt, tcl, csv, tsv, vCard, iCalendar, warc, vtt)
 	xml      = newMIME("text/xml", ".xml", magic.XML, rss, atom, x3d, kml, xliff, collada, gml, gpx, tcx, amf, threemf, xfdf, owl2).
 			alias("application/xml")
-	json    = newMIME("application/json", ".json", magic.JSON, geoJSON, har)
+	json    = newMIME("application/json", ".json", magic.JSON, geoJSON, har, gltf)
 	har     = newMIME("application/json", ".har", magic.HAR)
 	csv     = newMIME("text/csv", ".csv", magic.Csv)
 	tsv     = newMIME("text/tab-separated-values", ".tsv", magic.Tsv)
@@ -91,8 +91,8 @@ var (
 	ndJSON  = newMIME("application/x-ndjson", ".ndjson", magic.NdJSON)
 	// html    = newMIME("text/html", ".html", magic.HTML)
 	rtf = newMIME("text/rtf", ".rtf", magic.Rtf).alias("application/rtf")
-	// js      = newMIME("application/javascript", ".js", magic.Js).
-	// 	alias("application/x-javascript", "text/javascript")
+	// js      = newMIME("text/javascript", ".js", magic.Js).
+	// 	alias("application/x-javascript", "application/javascript")
 	srt = newMIME("application/x-subrip", ".srt", magic.Srt).
 		alias("application/x-srt", "text/x-srt")
 	vtt    = newMIME("text/vtt", ".vtt", magic.Vtt)
@@ -160,7 +160,7 @@ var (
 	aac  = newMIME("audio/aac", ".aac", magic.AAC)
 	voc  = newMIME("audio/x-unknown", ".voc", magic.Voc)
 	aMp4 = newMIME("audio/mp4", ".mp4", magic.AMp4).
-		alias("audio/x-m4a", "audio/x-mp4a")
+		alias("audio/x-mp4a")
 	m4a = newMIME("audio/x-m4a", ".m4a", magic.M4a)
 	m3u = newMIME("application/vnd.apple.mpegurl", ".m3u", magic.M3u).
 		alias("audio/mpegurl")
@@ -261,7 +261,8 @@ var (
 	pat     = newMIME("image/x-gimp-pat", ".pat", magic.Pat)
 	gbr     = newMIME("image/x-gimp-gbr", ".gbr", magic.Gbr)
 	xfdf    = newMIME("application/vnd.adobe.xfdf", ".xfdf", magic.Xfdf)
-	glb     = newMIME("model/gltf-binary", ".glb", magic.Glb)
+	glb     = newMIME("model/gltf-binary", ".glb", magic.GLB)
+	gltf    = newMIME("model/gltf+json", ".gltf", magic.GLTF)
 	jxr     = newMIME("image/jxr", ".jxr", magic.Jxr).alias("image/vnd.ms-photo")
 	parquet = newMIME("application/vnd.apache.parquet", ".parquet", magic.Par1).
 		alias("application/x-parquet")

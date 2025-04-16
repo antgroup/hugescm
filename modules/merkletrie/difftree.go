@@ -287,18 +287,16 @@ func DiffTreeContext(ctx context.Context, fromTree, toTree noder.Noder,
 		case noMoreNoders:
 			return ret, nil
 		case onlyFromRemains:
-			if err = ret.AddRecursiveDelete(ctx, from); err != nil {
-				return nil, err
+			if !from.Skip() {
+				if err = ret.AddRecursiveDelete(ctx, from); err != nil {
+					return nil, err
+				}
 			}
 			if err = ii.nextFrom(ctx); err != nil {
 				return nil, err
 			}
 		case onlyToRemains:
-			if to.Skip() {
-				if err = ret.AddRecursiveDelete(ctx, to); err != nil {
-					return nil, err
-				}
-			} else {
+			if !to.Skip() {
 				if err = ret.AddRecursiveInsert(ctx, to); err != nil {
 					return nil, err
 				}
@@ -307,26 +305,25 @@ func DiffTreeContext(ctx context.Context, fromTree, toTree noder.Noder,
 				return nil, err
 			}
 		case bothHaveNodes:
-			if from.Skip() {
-				if err = ret.AddRecursiveDelete(ctx, from); err != nil {
-					return nil, err
+			var err error
+			switch {
+			case from.Skip():
+				if from.Name() == to.Name() {
+					err = ii.nextBoth(ctx)
+				} else {
+					err = ii.nextFrom(ctx)
 				}
-				if err := ii.nextBoth(ctx); err != nil {
-					return nil, err
+			case to.Skip():
+				if from.Name() == to.Name() {
+					err = ii.nextBoth(ctx)
+				} else {
+					err = ii.nextTo(ctx)
 				}
-				break
-			}
-			if to.Skip() {
-				if err = ret.AddRecursiveDelete(ctx, to); err != nil {
-					return nil, err
-				}
-				if err := ii.nextBoth(ctx); err != nil {
-					return nil, err
-				}
-				break
+			default:
+				err = diffNodes(ctx, &ret, ii)
 			}
 
-			if err = diffNodes(ctx, &ret, ii); err != nil {
+			if err != nil {
 				return nil, err
 			}
 		default:

@@ -63,7 +63,7 @@ const (
 //
 // sparseDir: foo/bar
 // parent: foo/bar/abc --> match
-// parent: foo/abc --> not macth
+// parent: foo/abc --> not match
 // parent: foo --> match
 func isSparseMatch(sparseDir, parent string) bool {
 	parent += "/"

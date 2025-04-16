@@ -144,7 +144,9 @@ func (l *Changes) addRecursive(ctx context.Context, root noder.Path, ctor noderT
 	}
 
 	if !root.IsDir() {
-		l.Add(ctor(root))
+		if !root.Skip() {
+			l.Add(ctor(root))
+		}
 		return nil
 	}
 

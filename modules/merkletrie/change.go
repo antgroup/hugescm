@@ -163,7 +163,7 @@ func (l *Changes) addRecursive(ctx context.Context, root noder.Path, ctor noderT
 			}
 			return err
 		}
-		if current.IsDir() {
+		if current.IsDir() || current.Skip() {
 			continue
 		}
 		l.Add(ctor(current))

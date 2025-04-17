@@ -2,6 +2,7 @@ package ignore
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -40,7 +41,7 @@ type pattern struct {
 // ParsePattern parses a gitignore pattern string into the Pattern structure.
 func ParsePattern(p string, domain []string) Pattern {
 	// storing domain, copy it to ensure it isn't changed externally
-	domain = append([]string(nil), domain...)
+	domain = slices.Clone(domain)
 	res := pattern{domain: domain}
 
 	if strings.HasPrefix(p, inclusionPrefix) {

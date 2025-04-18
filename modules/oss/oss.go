@@ -102,14 +102,8 @@ func NewBucket(opts *NewBucketOptions) (Bucket, error) {
 		partSize:        opts.PartSize,
 		Client: &http.Client{
 			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-					conn, err := dialer.DialContext(ctx, network, addr)
-					if err != nil {
-						return nil, err
-					}
-					return newTimeoutConn(conn, defaultReadWriteTimeout), nil
-				},
+				Proxy:               http.ProxyFromEnvironment,
+				DialContext:         dialer.DialContext,
 				ForceAttemptHTTP2:   true,
 				MaxIdleConns:        defaultMaxIdleConns,
 				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,

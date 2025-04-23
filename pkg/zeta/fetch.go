@@ -215,16 +215,17 @@ func (r *Repository) prepareFetch(ctx context.Context, current *plumbing.Referen
 	if len(basePoint.Parents) == 0 {
 		// Full history checkout
 		o.Have = current.Hash()
+		o.Deepen = transport.AnyDeepen
 		return o, nil
 	}
 	if opts.Unshallow {
 		// Incomplete checkout, --unshallow needs to get all commits.
-		o.Deepen = -1
+		o.Deepen = transport.AnyDeepen
 		return o, nil
 	}
 	// unshallow repo ,fetch all
 	if o.DeepenFrom.IsZero() {
-		o.Deepen = -1
+		o.Deepen = transport.AnyDeepen
 	}
 	// Incomplete history, keep shallow strategy
 	o.DeepenFrom = deepenFrom

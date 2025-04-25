@@ -28,6 +28,7 @@ type Log struct {
 	DateOrder       bool     `name:"date-order" help:"Order by committer date"`
 	AuthorDateOrder bool     `name:"author-date-order" help:"Order by author date"`
 	Reverse         bool     `name:"reverse" help:"Reverse order"`
+	FristParent     bool     `name:"first-parent" help:"Follow only the first parent commit upon seeing a merge commit"`
 	JSON            bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	paths           []string `kong:"-"`
 }
@@ -63,8 +64,11 @@ func (c *Log) Run(g *Globals) error {
 		Reverse:              c.Reverse,
 		FormatJSON:           c.JSON,
 	}
-	if c.DateOrder || c.AuthorDateOrder {
+	switch {
+	case c.DateOrder || c.AuthorDateOrder:
 		opts.Order = zeta.LogOrderBFS // order --> DATE: switch to BFS and sort by committer time
+	case c.FristParent:
+		opts.Order = zeta.LogOrderDFSPostFirstParent
 	}
 	if err := r.Log(context.Background(), opts); err != nil {
 		return err

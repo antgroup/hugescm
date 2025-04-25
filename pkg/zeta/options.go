@@ -361,6 +361,7 @@ const (
 	LogOrderBFS
 	LogOrderCommitterTime
 	LogOrderAuthorTime
+	LogOrderDFSPostFirstParent
 )
 
 // LogOptions describes how a log action should be performed.

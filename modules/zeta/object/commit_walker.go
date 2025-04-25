@@ -6,6 +6,7 @@ package object
 import (
 	"container/list"
 	"context"
+	"errors"
 	"io"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -374,3 +375,76 @@ func (it *commitAllIterator) ForEach(ctx context.Context, cb func(*Commit) error
 func (it *commitAllIterator) Close() {
 	it.currCommit = nil
 }
+
+type commitPostIteratorFirstParent struct {
+	stack []*Commit
+	seen  map[plumbing.Hash]bool
+}
+
+// NewCommitPostorderIterFirstParent returns a CommitIter that walks the commit
+// history like WalkCommitHistory but in post-order.
+//
+// This option gives a better overview when viewing the evolution of a particular
+// topic branch, because merges into a topic branch tend to be only about
+// adjusting to updated upstream from time to time, and this option allows
+// you to ignore the individual commits brought in to your history by such
+// a merge.
+//
+// Ignore allows to skip some commits from being iterated.
+func NewCommitPostorderIterFirstParent(c *Commit, ignore []plumbing.Hash) CommitIter {
+	seen := make(map[plumbing.Hash]bool)
+	for _, h := range ignore {
+		seen[h] = true
+	}
+
+	return &commitPostIteratorFirstParent{
+		stack: []*Commit{c},
+		seen:  seen,
+	}
+}
+
+func (w *commitPostIteratorFirstParent) Next(ctx context.Context) (*Commit, error) {
+	for {
+		if len(w.stack) == 0 {
+			return nil, io.EOF
+		}
+
+		c := w.stack[len(w.stack)-1]
+		w.stack = w.stack[:len(w.stack)-1]
+
+		if w.seen[c.Hash] {
+			continue
+		}
+
+		w.seen[c.Hash] = true
+		return c, c.MakeParents().ForEach(ctx, func(p *Commit) error {
+			if len(c.Parents) > 0 && p.Hash == c.Parents[0] {
+				w.stack = append(w.stack, p)
+			}
+			return nil
+		})
+	}
+}
+
+func (w *commitPostIteratorFirstParent) ForEach(ctx context.Context, cb func(*Commit) error) error {
+	for {
+		c, err := w.Next(ctx)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		err = cb(c)
+		if err == plumbing.ErrStop {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *commitPostIteratorFirstParent) Close() {}

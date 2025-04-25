@@ -177,6 +177,7 @@
 "Order by committer date" = "按提交时间排序，不遵循拓扑关系"
 "Order by author date" = "按作者时间排序，不遵循拓扑关系"
 "Reverse order" = "以相反的顺序输出"
+"Follow only the first parent commit upon seeing a merge commit" = "看到合并提交后，仅关注第一个父提交"
 # status
 "(use \"zeta restore --staged <file>...\" to unstage)" = "（使用 \"zeta restore --staged <文件>...\" 以取消暂存）"
 "Changes not staged for commit" = "尚未暂存以备提交的变更"

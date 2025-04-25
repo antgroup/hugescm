@@ -462,6 +462,10 @@ func commitIterFunc(order LogOrder, ignore []plumbing.Hash) func(c *object.Commi
 		return func(c *object.Commit) object.CommitIter {
 			return object.NewCommitIterATime(c, nil, ignore)
 		}
+	case LogOrderDFSPostFirstParent:
+		return func(c *object.Commit) object.CommitIter {
+			return object.NewCommitPostorderIterFirstParent(c, ignore)
+		}
 	}
 	return nil
 }

@@ -379,7 +379,7 @@ type PassthroughProvider interface {
 }
 
 func (c *Context) endPassthroughParsing(n *Node) {
-	if provider, ok := n.Target.Addr().Interface().(PassthroughProvider); ok {
+	if p, ok := n.Target.Addr().Interface().(PassthroughProvider); ok {
 		c.scan.Pop() //pop --
 		args := []string{}
 		for {
@@ -389,7 +389,7 @@ func (c *Context) endPassthroughParsing(n *Node) {
 			}
 			args = append(args, token.String())
 		}
-		provider.Passthrough(args)
+		p.Passthrough(args)
 		return
 	}
 	c.endParsing()
@@ -583,8 +583,8 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 			}
 			// FIXME: Please note that kong's passthrough mechanism has some quirks, for example,
 			// if the user runs ls -la a -v b, if -v is a bool type, b will not be saved to the passthrough variable.
-			if provider, ok := node.Target.Addr().Interface().(PassthroughProvider); ok {
-				provider.Passthrough([]string{token.String()})
+			if p, ok := node.Target.Addr().Interface().(PassthroughProvider); ok {
+				p.Passthrough([]string{token.String()})
 				return
 			}
 			return findPotentialCandidates(token.String(), candidates, "unexpected argument %s", token)

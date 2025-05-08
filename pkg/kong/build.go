@@ -55,7 +55,7 @@ func flattenedFields(v reflect.Value, ptag *Tag) (out []flattenedField, err erro
 		return out, nil
 	}
 	ignored := map[string]bool{}
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		ft := v.Type().Field(i)
 		fv := v.Field(i)
 		tag, err := parseTag(v, ft)
@@ -93,7 +93,7 @@ func flattenedFields(v reflect.Value, ptag *Tag) (out []flattenedField, err erro
 		if fv.Kind() == reflect.Interface {
 			fv = fv.Elem()
 		} else if fv.Type() == reflect.TypeOf(Plugins{}) {
-			for i := 0; i < fv.Len(); i++ {
+			for i := range fv.Len() {
 				fields, ferr := flattenedFields(fv.Index(i).Elem(), tag)
 				if ferr != nil {
 					return nil, ferr
@@ -114,7 +114,7 @@ func flattenedFields(v reflect.Value, ptag *Tag) (out []flattenedField, err erro
 
 func removeIgnored(fields []flattenedField, ignored map[string]bool) []flattenedField {
 	j := 0
-	for i := 0; i < len(fields); i++ {
+	for i := range fields {
 		if ignored[fields[i].field.Name] {
 			continue
 		}

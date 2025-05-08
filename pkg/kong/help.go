@@ -478,10 +478,7 @@ func writeFlags(w *helpWriter, groups [][]*Flag) {
 }
 
 func writeTwoColumns(w *helpWriter, rows [][2]string) {
-	maxLeft := 375 * w.width / 1000
-	if maxLeft < 30 {
-		maxLeft = 30
-	}
+	maxLeft := max(375*w.width/1000, 30)
 	// Find size of first column.
 	leftSize := 0
 	for _, row := range rows {

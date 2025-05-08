@@ -2,6 +2,7 @@ package kong
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -68,12 +69,7 @@ func (t Token) IsEOL() bool {
 
 // IsAny returns true if the token's type is any of those provided.
 func (t TokenType) IsAny(types ...TokenType) bool {
-	for _, typ := range types {
-		if t == typ {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(types, t)
 }
 
 // InferredType tries to infer the type of a token.

@@ -2,6 +2,7 @@ package kong
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 )
@@ -104,16 +105,12 @@ func (b bindings) addProvider(provider any, singleton bool) error {
 // Clone and add values.
 func (b bindings) clone() bindings {
 	out := make(bindings, len(b))
-	for k, v := range b {
-		out[k] = v
-	}
+	maps.Copy(out, b)
 	return out
 }
 
 func (b bindings) merge(other bindings) bindings {
-	for k, v := range other {
-		b[k] = v
-	}
+	maps.Copy(b, other)
 	return b
 }
 
@@ -152,7 +149,7 @@ func getMethods(value reflect.Value, name string) (methods []reflect.Value) {
 	//   - standard Go embedded fields
 	//   - fields tagged with `embed:""`
 	t := value.Type()
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		fieldValue := value.Field(i)
 		field := t.Field(i)
 
@@ -196,7 +193,7 @@ func callAnyFunction(f reflect.Value, bindings bindings) (out []any, err error) 
 	}
 	in := []reflect.Value{}
 	t := f.Type()
-	for i := 0; i < t.NumIn(); i++ {
+	for i := range t.NumIn() {
 		pt := t.In(i)
 		binding, ok := bindings[pt]
 		if !ok {

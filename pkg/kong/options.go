@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -29,21 +31,15 @@ type Vars map[string]string
 
 // Apply lets Vars act as an Option.
 func (v Vars) Apply(k *Kong) error {
-	for key, value := range v {
-		k.vars[key] = value
-	}
+	maps.Copy(k.vars, v)
 	return nil
 }
 
 // CloneWith clones the current Vars and merges "vars" onto the clone.
 func (v Vars) CloneWith(vars Vars) Vars {
 	out := make(Vars, len(v)+len(vars))
-	for key, value := range v {
-		out[key] = value
-	}
-	for key, value := range vars {
-		out[key] = value
-	}
+	maps.Copy(out, v)
+	maps.Copy(out, vars)
 	return out
 }
 
@@ -119,6 +115,40 @@ func NoDefaultHelp() Option {
 func PostBuild(fn func(*Kong) error) Option {
 	return OptionFunc(func(k *Kong) error {
 		k.postBuildOptions = append(k.postBuildOptions, OptionFunc(fn))
+		return nil
+	})
+}
+
+// WithBeforeReset registers a hook to run before fields values are reset to their defaults
+// (as specified in the grammar) or to zero values.
+func WithBeforeReset(fn any) Option {
+	return withHook("BeforeReset", fn)
+}
+
+// WithBeforeResolve registers a hook to run before resolvers are applied.
+func WithBeforeResolve(fn any) Option {
+	return withHook("BeforeResolve", fn)
+}
+
+// WithBeforeApply registers a hook to run before command line arguments are applied to the grammar.
+func WithBeforeApply(fn any) Option {
+	return withHook("BeforeApply", fn)
+}
+
+// WithAfterApply registers a hook to run after values are applied to the grammar and validated.
+func WithAfterApply(fn any) Option {
+	return withHook("AfterApply", fn)
+}
+
+// withHook registers a named hook.
+func withHook(name string, fn any) Option {
+	value := reflect.ValueOf(fn)
+	if value.Kind() != reflect.Func {
+		panic(fmt.Errorf("expected function, got %s", value.Type()))
+	}
+
+	return OptionFunc(func(k *Kong) error {
+		k.hooks[name] = append(k.hooks[name], value)
 		return nil
 	})
 }
@@ -458,7 +488,7 @@ func ExpandPath(path string) string {
 
 func siftStrings(ss []string, filter func(s string) bool) []string {
 	i := 0
-	ss = append([]string(nil), ss...)
+	ss = slices.Clone(ss)
 	for _, s := range ss {
 		if filter(s) {
 			ss[i] = s
@@ -488,7 +518,7 @@ func DefaultEnvars(prefix string) Option {
 		}
 		replacer := strings.NewReplacer("-", "_", ".", "_")
 		names := append([]string{prefix}, camelCase(replacer.Replace(flag.Name))...)
-		names = siftStrings(names, func(s string) bool { return !(s == "_" || strings.TrimSpace(s) == "") })
+		names = siftStrings(names, func(s string) bool { return (s != "_" && strings.TrimSpace(s) != "") })
 		name := strings.ToUpper(strings.Join(names, "_"))
 		flag.Envs = append(flag.Envs, name)
 		flag.Value.Tag.Envs = append(flag.Value.Tag.Envs, name)

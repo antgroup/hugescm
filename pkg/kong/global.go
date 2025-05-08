@@ -15,6 +15,7 @@ func Parse(cli any, options ...Option) *Context {
 	return ctx
 }
 
+// ParseArgs constructs a new parser and parses the args.
 func ParseArgs(cli any, args []string, options ...Option) *Context {
 	parser, err := New(cli, options...)
 	if err != nil {

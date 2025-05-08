@@ -198,6 +198,17 @@ func parseTagString(s string) (*Tag, error) {
 	return t, nil
 }
 
+func isScalarType(t reflect.Type) bool {
+	if t == nil {
+		return true
+	}
+	switch t.Kind() {
+	case reflect.Slice, reflect.Map, reflect.Ptr:
+		return false
+	}
+	return true
+}
+
 func parseTag(parent reflect.Value, ft reflect.StructField) (*Tag, error) {
 	if ft.Tag.Get("kong") == "-" {
 		t := newEmptyTag()
@@ -295,8 +306,8 @@ func hydrateTag(t *Tag, typ reflect.Type) error { //nolint: gocyclo
 	}
 	t.PlaceHolder = t.Get("placeholder")
 	t.Enum = t.Get("enum")
-	scalarType := typ == nil || !(typ.Kind() == reflect.Slice || typ.Kind() == reflect.Map || typ.Kind() == reflect.Ptr)
-	if t.Enum != "" && !(t.Required || t.HasDefault) && scalarType {
+	scalarType := isScalarType(typ)
+	if t.Enum != "" && !t.Required && !t.HasDefault && scalarType {
 		return fmt.Errorf("enum value is only valid if it is either required or has a valid default value")
 	}
 	passthrough := t.Has("passthrough")
@@ -372,15 +383,18 @@ func (t *Tag) GetRune(k string) (rune, error) {
 // tag value is more than one rune, the first rune is returned as well as an error.
 func (t *Tag) GetSep(k string, dflt rune) (rune, error) {
 	tv := t.Get(k)
-	if tv == "none" {
+	switch tv {
+	case "none":
 		return -1, nil
-	} else if tv == "" {
+	case "":
 		return dflt, nil
+	default:
 	}
 	r, size := utf8.DecodeRuneInString(tv)
 	if r == utf8.RuneError {
 		return dflt, fmt.Errorf(`%v:"%v" has a rune error`, k, tv)
-	} else if size != len(tv) {
+	}
+	if size != len(tv) {
 		return r, fmt.Errorf(`%v:"%v" is more than a single rune`, k, tv)
 	}
 	return r, nil

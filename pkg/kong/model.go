@@ -494,7 +494,7 @@ func reflectValueIsZero(v reflect.Value) bool {
 		c := v.Complex()
 		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
 	case reflect.Array:
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			if !reflectValueIsZero(v.Index(i)) {
 				return false
 			}
@@ -505,7 +505,7 @@ func reflectValueIsZero(v reflect.Value) bool {
 	case reflect.String:
 		return v.Len() == 0
 	case reflect.Struct:
-		for i := 0; i < v.NumField(); i++ {
+		for i := range v.NumField() {
 			if !reflectValueIsZero(v.Field(i)) {
 				return false
 			}

@@ -131,6 +131,15 @@ func NewBucket(opts *NewBucketOptions) (Bucket, error) {
 	return b, nil
 }
 
+func (b *bucket) NewRequestWithContext(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("User-Agent", "HugeSCM/1.0")
+	return req, nil
+}
+
 type Stat struct {
 	Size  int64
 	Mime  string

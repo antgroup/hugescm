@@ -76,7 +76,7 @@ func (b *bucket) ListObjects(ctx context.Context, prefix, continuationToken stri
 		Host:     b.bucketEndpoint,
 		RawQuery: qs,
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	req, err := b.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, "", err
 	}

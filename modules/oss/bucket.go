@@ -26,7 +26,7 @@ func (b *bucket) Stat(ctx context.Context, resourcePath string) (*Stat, error) {
 		Host:   b.bucketEndpoint,
 		Path:   resourcePath,
 	}
-	req, err := http.NewRequestWithContext(ctx, "HEAD", u.String(), nil)
+	req, err := b.NewRequestWithContext(ctx, "HEAD", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (b *bucket) Open(ctx context.Context, resourcePath string, start, length in
 		Host:   b.bucketEndpoint,
 		Path:   resourcePath,
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	req, err := b.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (b *bucket) Put(ctx context.Context, resourcePath string, r io.Reader, mime
 		Host:   b.bucketEndpoint,
 		Path:   resourcePath,
 	}
-	req, err := http.NewRequestWithContext(ctx, "PUT", u.String(), r)
+	req, err := b.NewRequestWithContext(ctx, "PUT", u.String(), r)
 	if err != nil {
 		return err
 	}

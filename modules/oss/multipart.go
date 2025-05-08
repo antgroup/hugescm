@@ -130,7 +130,7 @@ func (b *bucket) initiateMultipartUpload(ctx context.Context, resourcePath strin
 		Path:     resourcePath,
 		RawQuery: q,
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), nil)
+	req, err := b.NewRequestWithContext(ctx, "POST", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (b *bucket) abortMultipartUpload(resourcePath string, mur *InitiateMultipar
 		Path:     resourcePath,
 		RawQuery: q,
 	}
-	req, err := http.NewRequestWithContext(ctx, "DELETE", u.String(), nil)
+	req, err := b.NewRequestWithContext(ctx, "DELETE", u.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func (b *bucket) completeMultipartUpload(ctx context.Context, resourcePath strin
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), bytes.NewReader(body))
+	req, err := b.NewRequestWithContext(ctx, "POST", u.String(), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func (b *bucket) uploadPart(ctx context.Context, resourcePath string, reader io.
 		Path:     resourcePath,
 		RawQuery: q,
 	}
-	req, err := http.NewRequestWithContext(ctx, "PUT", u.String(), reader)
+	req, err := b.NewRequestWithContext(ctx, "PUT", u.String(), reader)
 	if err != nil {
 		return result, err
 	}

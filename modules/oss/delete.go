@@ -177,7 +177,7 @@ func (b *bucket) Delete(ctx context.Context, resourcePath string) error {
 		Host:   b.bucketEndpoint,
 		Path:   resourcePath,
 	}
-	req, err := http.NewRequestWithContext(ctx, "DELETE", u.String(), nil)
+	req, err := b.NewRequestWithContext(ctx, "DELETE", u.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func (b *bucket) deleteMultipleObjects(ctx context.Context, objectKeys []string)
 		RawQuery: q,
 	}
 	md5sum := md5.Sum([]byte(xmlData))
-	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), strings.NewReader(xmlData))
+	req, err := b.NewRequestWithContext(ctx, "POST", u.String(), strings.NewReader(xmlData))
 	if err != nil {
 		return err
 	}

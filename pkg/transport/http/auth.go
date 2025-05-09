@@ -179,13 +179,13 @@ func (c *client) checkAuthRedirect(ctx context.Context, cred *Credentials, opera
 	}
 	c.DbgPrint("%s %s", req.Method, req.URL.String())
 	if cred != nil {
-		req.Header.Add(AUTHORIZATION, cred.BasicAuth())
+		req.Header.Set(AUTHORIZATION, cred.BasicAuth())
 	}
 	for h, v := range c.extraHeader {
 		req.Header.Set(h, v)
 	}
-	req.Header.Add(ZETA_PROTOCOL, Z1)
-	req.Header.Add("User-Agent", c.userAgent)
+	req.Header.Set(ZETA_PROTOCOL, Z1)
+	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept-Language", c.language)
 	if len(c.termEnv) != 0 {
 		req.Header.Set(ZETA_TERMINAL, c.termEnv)

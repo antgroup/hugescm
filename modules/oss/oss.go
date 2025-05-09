@@ -136,7 +136,7 @@ func (b *bucket) NewRequestWithContext(ctx context.Context, method string, url s
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("User-Agent", "HugeSCM/1.0")
+	req.Header.Set("User-Agent", "HugeSCM/1.0")
 	return req, nil
 }
 

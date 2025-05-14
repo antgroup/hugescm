@@ -22,7 +22,7 @@ require (
 	github.com/rivo/uniseg v0.4.7
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/vbauerster/mpb/v8 v8.10.0
+	github.com/vbauerster/mpb/v8 v8.10.1
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.38.0
 	golang.org/x/net v0.40.0

@@ -1,0 +1,258 @@
+package scan
+
+import (
+	"bufio"
+	"strings"
+	"testing"
+)
+
+func TestPeek(t *testing.T) {
+	tcases := []struct {
+		name   string
+		in     string
+		peeked byte
+	}{{
+		"empty", "", 0,
+	}, {
+		"123", "123", '1',
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			peeked := b.Peek()
+			if string(b) != tc.in {
+				t.Errorf("left: got: %s, want: %s", string(b), tc.in)
+			}
+			if peeked != tc.peeked {
+				t.Errorf("peeked: got: %c, want: %c", peeked, tc.peeked)
+			}
+		})
+	}
+}
+
+func TestPop(t *testing.T) {
+	tcases := []struct {
+		name   string
+		in     string
+		popped byte
+		left   string
+	}{{
+		"empty", "", 0, "",
+	}, {
+		"123", "123", '1', "23",
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			popped := b.Pop()
+			if string(b) != tc.left {
+				t.Errorf("left: got: %s, want: %s", string(b), tc.left)
+			}
+			if popped != tc.popped {
+				t.Errorf("popped: got: %c, want: %c", popped, tc.popped)
+			}
+		})
+	}
+}
+func TestTrim(t *testing.T) {
+	tcases := []struct {
+		name  string
+		in    string
+		left  string
+		right string
+	}{{
+		"empty", "", "", "",
+	}, {
+		"one space", " ", "", "",
+	}, {
+		"all spaces", " \r\n\t\x0c", "", "",
+	}, {
+		"one char and spaces", " \r\n\t\x0ca \r\n\t\x0c", "a \r\n\t\x0c", " \r\n\t\x0ca",
+	}, {
+		"one char", "a", "a", "a",
+	}, {
+		// Unicode Ogham space mark
+		"unicode space ogham", " ", " ", " ",
+	}, {
+		// Unicode Em space mark
+		"unicode em space", "\u2003", "\u2003", "\u2003",
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			b.TrimLWS()
+			if string(b) != tc.left {
+				t.Errorf("left: got: %s, want: %s", string(b), tc.left)
+			}
+
+			b = Bytes(tc.in)
+			b.TrimRWS()
+			if string(b) != tc.right {
+				t.Errorf("right: got: %s, want: %s", string(b), tc.right)
+			}
+		})
+	}
+}
+
+func TestAdvance(t *testing.T) {
+	tcases := []struct {
+		name     string
+		in       string
+		advance  int
+		want     string
+		shouldDo bool
+	}{{
+		"empty 0", "", 0, "", true,
+	}, {
+		"empty 1", "", 1, "", false,
+	}, {
+		"empty -1", "", -1, "", false,
+	}, {
+		"123 0", "123", 0, "123", true,
+	}, {
+		"123 -1", "123", -1, "123", false,
+	}, {
+		"123 1", "123", 1, "23", true,
+	}, {
+		"123 4", "123", 4, "123", false,
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			did := b.Advance(tc.advance)
+			if did != tc.shouldDo {
+				t.Errorf("got: %t, want: %t", did, tc.shouldDo)
+			}
+			if string(b) != tc.want {
+				t.Errorf("got: %s, want: %s", string(b), tc.want)
+			}
+		})
+	}
+}
+
+func TestLine(t *testing.T) {
+	tcases := []struct {
+		name     string
+		in       string
+		line     string
+		leftover string
+	}{{
+		"empty", "", "", "",
+	}, {
+		"one line", "abc", "abc", "",
+	}, {
+		"just a \\n", "\n", "", "",
+	}, {
+		"just two \\n", "\n\n", "", "\n",
+	}, {
+		"one line with \\n", "abc\n", "abc", "",
+	}, {
+		"two lines", "abc\ndef", "abc", "def",
+	}, {
+		"two lines with \\n", "abc\ndef\n", "abc", "def\n",
+	}, {
+		"drops final cr", "abc\r", "abc", "",
+	}, {
+		"cr inside line", "abc\rdef", "abc\rdef", "",
+	}, {
+		"nl and cr", "\n\r", "", "\r",
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			line := b.Line()
+			if string(line) != tc.line {
+				t.Errorf("line: got: %s, want: %s", line, []byte(tc.line))
+			}
+			if string(b) != tc.leftover {
+				t.Errorf("leftover: got: %s, want: %s", b, []byte(tc.leftover))
+			}
+
+			// Test if it behaves like bufio.Scanner as well.
+			s := bufio.NewScanner(strings.NewReader(tc.in))
+			s.Scan()
+			if string(line) != s.Text() {
+				t.Errorf("Bytes.Line not like bufio.Scanner")
+			}
+		})
+	}
+}
+
+func TestPopUntil(t *testing.T) {
+	tcases := []struct {
+		name     string
+		in       string
+		untilAny string
+		popped   string
+		leftover string
+	}{{
+		"empty", "", "", "", "",
+	}, {
+		"empty with until", "", "123", "", "",
+	}, {
+		"until empty", "123", "", "123", "",
+	}, {
+		"until 1", "123", "1", "", "123",
+	}, {
+		"until 2", "123", "2", "1", "23",
+	}, {
+		"until 3", "123", "3", "12", "3",
+	}, {
+		"until 4", "123", "4", "123", "",
+	}, {
+		"multiple untilAny", "123", "32", "1", "23",
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			popped := b.PopUntil([]byte(tc.untilAny)...)
+			if string(popped) != tc.popped {
+				t.Errorf("popped: got: %s, want: %s", popped, []byte(tc.popped))
+			}
+			if string(b) != tc.leftover {
+				t.Errorf("leftover: got: %s, want: %s", b, []byte(tc.leftover))
+			}
+		})
+	}
+}
+
+func TestIs(t *testing.T) {
+	tcases := []struct {
+		name    string
+		in      string
+		allowed string
+		want    bool
+	}{{
+		"both empty", "", "", true,
+	}, {
+		"allowed empty", "123", "", false,
+	}, {
+		"in empty", "", "1", true,
+	}, {
+		"123 4", "123", "4", false,
+	}, {
+		"123 456", "123", "456", false,
+	}, {
+		"123 23", "123", "23", false,
+	}, {
+		"123 234", "123", "234", false,
+	}, {
+		"123 1234", "123", "1234", true,
+	}}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Bytes(tc.in)
+			got := b.Is([]byte(tc.allowed))
+			if tc.want != got {
+				t.Errorf("got: %t, want: %t", got, tc.want)
+			}
+		})
+	}
+}

@@ -3,6 +3,8 @@ package mime
 import (
 	"mime"
 
+	"slices"
+
 	"github.com/antgroup/hugescm/modules/mime/internal/charset"
 	"github.com/antgroup/hugescm/modules/mime/internal/magic"
 )
@@ -57,13 +59,7 @@ func (m *MIME) Is(expectedMIME string) bool {
 		return true
 	}
 
-	for _, alias := range m.aliases {
-		if alias == expectedMIME {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(m.aliases, expectedMIME)
 }
 
 func newMIME(
@@ -153,10 +149,8 @@ func (m *MIME) cloneHierarchy(ps map[string]string) *MIME {
 }
 
 func (m *MIME) lookup(mime string) *MIME {
-	for _, n := range append(m.aliases, m.mime) {
-		if n == mime {
-			return m
-		}
+	if slices.Contains(append(m.aliases, m.mime), mime) {
+		return m
 	}
 
 	for _, c := range m.children {

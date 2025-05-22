@@ -48,6 +48,5 @@ func DetectAny(in []byte) *MIME {
 }
 
 func (m *MIME) Sanitize() string {
-
 	return m.mime
 }

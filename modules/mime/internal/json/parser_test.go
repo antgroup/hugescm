@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/antgroup/hugescm/modules/mime/internal/scan"
 )
 
 var sample = []byte(` { "type": "Feature", "fruit": "Apple", "size": "Large", "color": "Red" } `)
@@ -610,12 +612,13 @@ func testTruncating(t *testing.T, jsonString string) {
 	t.Helper()
 	p := &parserState{}
 	for i := 1; i <= len(jsonString); i++ {
-		trunc := trimRWS([]byte(jsonString)[:i])
+		b := scan.Bytes(jsonString[:i])
+		b.TrimRWS()
 		p.reset()
-		_ = p.consumeAny(trunc, nil, 0)
-		if p.ib != len(trunc) {
+		_ = p.consumeAny(b, nil, 0)
+		if p.ib != len(b) {
 			t.Errorf("truncated positives should be fully parsed %v \n"+
-				"got: %d want: %d", string(trunc), p.ib, len(trunc))
+				"got: %d want: %d", string(b), p.ib, len(b))
 		}
 	}
 }
@@ -746,7 +749,7 @@ func TestStack(t *testing.T) {
 	for _, tt := range tCases {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &parserState{}
-			p.consumeAny([]byte(tt.data), nil, 0)
+			p.consumeAny([]byte(tt.data), []query{{}}, 0)
 			if got := join(p.currPath); got != tt.expected {
 				t.Errorf("expected: %s, got: %s", tt.expected, got)
 			}
@@ -799,16 +802,4 @@ func FuzzJson(f *testing.F) {
 		p.consumeObject(data, nil, 1)
 		p.consumeAny(data, nil, 1)
 	})
-}
-
-// trimRWS trims whitespace from the end of the input.
-func trimRWS(in []byte) []byte {
-	lastNonWS := len(in) - 1
-	for ; lastNonWS > 0 && isWS(in[lastNonWS]); lastNonWS-- {
-	}
-
-	return in[:lastNonWS+1]
-}
-func isWS(b byte) bool {
-	return b == '\t' || b == '\n' || b == '\x0c' || b == '\r' || b == ' '
 }

@@ -1,0 +1,91 @@
+import React from 'react';
+import Beric from './Beric';
+import Straight from './Straight';
+import Default from './Default';
+import type { Position, ConnectLineMethod } from './interface';
+import './index.less';
+
+export interface ConnectLineProps {
+  connectLineMethod?: ConnectLineMethod;
+  columnSpacing: number;
+  currentPosition: Position;
+  radius: number;
+  space: number;
+  strokeWidth: number;
+  stageTopToTopDistance: number;
+  style?: React.CSSProperties;
+  targetPositions: Position[];
+}
+
+const Index: React.FC<ConnectLineProps> = ({
+  connectLineMethod = 'default',
+  columnSpacing,
+  currentPosition,
+  radius,
+  space,
+  stageTopToTopDistance,
+  strokeWidth,
+  style,
+  targetPositions = [],
+}) => {
+  // todo:移除初始值会报错，问题排查中
+  const { top = 0, right = 0 } = currentPosition ?? {};
+  const dys = targetPositions.map((s) => s.top - top) ?? [0];
+  const dyMax = Math.max(...dys);
+  const dyMin = Math.min(...dys);
+  const height = Math.max(dyMax - dyMin, Math.abs(dyMax), Math.abs(dyMin)) + strokeWidth;
+  const translateTop = dyMin > 0 ? -strokeWidth / 2 : dyMin - strokeWidth / 2;
+
+  const dxes = targetPositions.map((s) => s.left - right) ?? [0];
+  const width = Math.max(...dxes);
+
+  return targetPositions.length ? (
+    <svg
+      className="linke-pipeline-connect-line"
+      style={{
+        transform: `translate(${width}px,${translateTop}px)`,
+        ...style,
+      }}
+      role="connectline"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {connectLineMethod === 'beric' && (
+        <Beric
+          columnSpacing={columnSpacing}
+          currentPosition={currentPosition}
+          space={space}
+          strokeWidth={strokeWidth}
+          stageTopToTopDistance={stageTopToTopDistance}
+          targetPositions={targetPositions}
+          translateTop={translateTop}
+        />
+      )}
+      {connectLineMethod === 'straight' && (
+        <Straight
+          columnSpacing={columnSpacing}
+          currentPosition={currentPosition}
+          space={space}
+          strokeWidth={strokeWidth}
+          targetPositions={targetPositions}
+          translateTop={translateTop}
+        />
+      )}
+      {connectLineMethod === 'default' && (
+        <Default
+          columnSpacing={columnSpacing}
+          currentPosition={currentPosition}
+          radius={radius}
+          space={space}
+          strokeWidth={strokeWidth}
+          targetPositions={targetPositions}
+          translateTop={translateTop}
+        />
+      )}
+    </svg>
+  ) : null;
+};
+
+export default Index;

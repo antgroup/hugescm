@@ -83,6 +83,9 @@ func (d *Database) Exists(oid plumbing.Hash, metadata bool) error {
 // Object: find object and set backend
 // decode and set backend
 func (d *Database) Object(_ context.Context, oid plumbing.Hash) (any, error) {
+	if oid == plumbing.EmptyTree {
+		return object.NewEmptyTree(d.backend), nil
+	}
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	if d.enableLRU {

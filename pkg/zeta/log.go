@@ -270,21 +270,36 @@ func (r *Repository) logFromMergeBase(ctx context.Context, a, b plumbing.Hash, o
 // logRevFromTo: a..b shows the change from a to b.
 // if a not b ancestor, show both merge-base to b.
 func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, opts *LogCommandOptions) error {
-	oldRev, err := r.odb.ParseRevExhaustive(ctx, from)
-	if err != nil {
-		die_error("open commit '%s' error: %v", from, err)
-		return err
+	var oldRev, newRev *object.Commit
+	var err error
+	if from != plumbing.EmptyTree {
+		if oldRev, err = r.odb.ParseRevExhaustive(ctx, from); err != nil {
+			die_error("open commit '%s' error: %v", from, err)
+			return err
+		}
 	}
-	newRev, err := r.odb.ParseRevExhaustive(ctx, to)
-	if err != nil {
-		die_error("open commit '%s' error: %v", to, err)
-		return err
+	if to != plumbing.EmptyTree {
+		if newRev, err = r.odb.ParseRevExhaustive(ctx, to); err != nil {
+			die_error("open commit '%s' error: %v", to, err)
+			return err
+		}
 	}
-	// Equal
-	if newRev.Hash == oldRev.Hash {
+	switch {
+	case oldRev == nil && newRev == nil:
+		// no changes
 		return nil
+	case oldRev == nil: // start --> e448b21e70d321c1ee07c7b3ca6effa275aee59cdba662afb7152182a3706eb7
+		return r.logPrint(ctx, &LogOptions{
+			From:       newRev.Hash,
+			Order:      opts.Order,
+			PathFilter: newLogPathFilter(opts.Paths),
+			Reverse:    opts.Reverse,
+		}, nil, opts.SortFunc(), opts.FormatJSON)
+	case newRev == nil:
+		return nil
+	default:
 	}
-	bases, err := newRev.MergeBase(ctx, oldRev)
+	bases, err := oldRev.MergeBase(ctx, newRev)
 	if err != nil {
 		die_error("resolve merge-base error: %v", err)
 		return err

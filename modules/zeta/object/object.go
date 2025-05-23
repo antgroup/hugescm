@@ -276,3 +276,10 @@ func NewSnapshotTree(t *Tree, b Backend) *Tree {
 		b:       b,
 	}
 }
+
+func NewEmptyTree(b Backend) *Tree {
+	return &Tree{
+		Hash: plumbing.EmptyTree,
+		b:    b,
+	}
+}

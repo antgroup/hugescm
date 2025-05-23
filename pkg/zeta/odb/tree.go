@@ -149,5 +149,5 @@ func (h *treeMaker) makeTrees(entries []*TreeEntry) (plumbing.Hash, error) {
 }
 
 func (d *ODB) EmptyTree() *object.Tree {
-	return object.NewSnapshotTree(&object.Tree{}, d)
+	return object.NewEmptyTree(d)
 }

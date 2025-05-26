@@ -63,7 +63,7 @@ func (w *Worktree) checkoutSlow(ctx context.Context, opts *CheckoutOptions, bar 
 	if err != nil {
 		return err
 	}
-	if err := w.resetIndex(ctx, t); err != nil {
+	if _, err := w.resetIndex(ctx, t); err != nil {
 		return err
 	}
 	if err := w.checkoutWorktree(ctx, t, bar); err != nil {
@@ -356,7 +356,7 @@ func (w *Worktree) checkoutFirstTimeInternal(ctx context.Context, opts *Checkout
 	if err != nil {
 		return err
 	}
-	if err := w.resetIndex(ctx, t); err != nil {
+	if _, err := w.resetIndex(ctx, t); err != nil {
 		return err
 	}
 	if err := w.resetWorktreeFast(ctx, t, bar); err != nil {

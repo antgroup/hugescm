@@ -171,7 +171,7 @@ func TestIndex(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "open tree error: %v\n", err)
 		return
 	}
-	err = w.resetIndex(t.Context(), tree)
+	_, err = w.resetIndex(t.Context(), tree)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "reset index error: %v\n", err)
 	}

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -340,14 +341,20 @@ func (w *Worktree) ResetSparsely(ctx context.Context, opts *ResetOptions, bar Pr
 	if err != nil {
 		return err
 	}
-
+	var removedFiles []string
 	if opts.Mode == MixedReset || opts.Mode == MergeReset || opts.Mode == HardReset {
-		if err := w.resetIndex(ctx, t); err != nil {
+		if removedFiles, err = w.resetIndex(ctx, t); err != nil {
 			return err
 		}
 	}
-	if opts.Mode == MergeReset || opts.Mode == HardReset {
-		if err := w.resetWorktree(ctx, t, bar); err != nil {
+	if opts.Mode == MergeReset && len(removedFiles) > 0 {
+		if err := w.resetWorktree(ctx, t, removedFiles, bar); err != nil {
+			return err
+		}
+	}
+
+	if opts.Mode == HardReset {
+		if err := w.resetWorktree(ctx, t, nil, bar); err != nil {
 			return err
 		}
 	}
@@ -370,23 +377,23 @@ func (w *Worktree) ResetSpec(ctx context.Context, oid plumbing.Hash, pathSpec []
 	return nil
 }
 
-func (w *Worktree) resetIndex(ctx context.Context, t *object.Tree) error {
+func (w *Worktree) resetIndex(ctx context.Context, t *object.Tree) ([]string, error) {
 	idx, err := w.odb.Index()
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 	b := newIndexBuilder(idx)
 
 	changes, err := w.diffTreeWithStaging(ctx, t, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
+	var removedFiles []string
 	for _, ch := range changes {
 		a, err := ch.Action()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		var name string
@@ -397,13 +404,14 @@ func (w *Worktree) resetIndex(ctx context.Context, t *object.Tree) error {
 			name = ch.To.String()
 			e, err = t.FindEntry(ctx, name)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		case merkletrie.Delete:
 			name = ch.From.String()
 		}
 
 		b.Remove(name)
+		removedFiles = append(removedFiles, name)
 		if e == nil {
 			continue
 		}
@@ -416,7 +424,7 @@ func (w *Worktree) resetIndex(ctx context.Context, t *object.Tree) error {
 	}
 
 	b.Write(idx)
-	return w.odb.SetIndex(idx)
+	return removedFiles, w.odb.SetIndex(idx)
 }
 
 var windowsPathReplacer *strings.Replacer
@@ -493,10 +501,8 @@ func validPath(paths ...string) error {
 			}
 		}
 
-		for _, part := range parts {
-			if part == ".." {
-				return fmt.Errorf("invalid path %q: cannot use '..'", p)
-			}
+		if slices.Contains(parts, "..") {
+			return fmt.Errorf("invalid path %q: cannot use '..'", p)
 		}
 	}
 	return nil
@@ -520,7 +526,16 @@ func (w *Worktree) validChange(ch merkletrie.Change) error {
 	return nil
 }
 
-func (w *Worktree) resetWorktree(ctx context.Context, t *object.Tree, bar ProgressBar) error {
+func cleanFiles(ss []string) []string {
+	ns := make([]string, 0, len(ss))
+	for _, s := range ss {
+		ns = append(ns, filepath.Clean(s))
+	}
+	return ns
+}
+
+func (w *Worktree) resetWorktree(ctx context.Context, t *object.Tree, files []string, bar ProgressBar) error {
+	files = cleanFiles(files)
 	changes, err := w.diffStagingWithWorktree(ctx, true, false)
 	if err != nil {
 		return err
@@ -535,6 +550,23 @@ func (w *Worktree) resetWorktree(ctx context.Context, t *object.Tree, bar Progre
 	for _, ch := range changes {
 		if err := w.validChange(ch); err != nil {
 			return err
+		}
+		if len(files) > 0 {
+			file := ""
+			if ch.From != nil {
+				file = ch.From.String()
+			} else if ch.To != nil {
+				file = ch.To.String()
+			}
+
+			if file == "" {
+				continue
+			}
+			if !slices.ContainsFunc(files, func(s string) bool {
+				return systemCaseEqual(s, file)
+			}) {
+				continue
+			}
 		}
 		if err := w.checkoutChange(ctx, ch, t, b, bar); err != nil {
 			return err

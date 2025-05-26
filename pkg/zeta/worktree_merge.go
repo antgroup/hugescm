@@ -311,7 +311,7 @@ func (w *Worktree) mergeInternal(ctx context.Context, into, from plumbing.Hash, 
 }
 
 func (w *Worktree) checkoutConflicts(ctx context.Context, tree, newTree *object.Tree, conflicts []*odb.Conflict) error {
-	if err := w.resetIndex(ctx, tree); err != nil {
+	if _, err := w.resetIndex(ctx, tree); err != nil {
 		return err
 	}
 	conflictPaths := make(map[string]bool)

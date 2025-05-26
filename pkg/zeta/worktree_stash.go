@@ -79,7 +79,8 @@ func (w *Worktree) restoreIndex(ctx context.Context, treeOID plumbing.Hash) erro
 	if err != nil {
 		return err
 	}
-	return w.resetIndex(ctx, tree)
+	_, err = w.resetIndex(ctx, tree)
+	return err
 }
 
 type stashStoreResult struct {
@@ -179,7 +180,7 @@ func (w *Worktree) StashPush(ctx context.Context, opts *StashPushOptions) error 
 		die("update-ref refs/stash: %v", err)
 		return err
 	}
-	if err := w.Reset(ctx, &ResetOptions{Commit: cc.Hash, Mode: HardReset, Quiet: w.quiet}); err != nil {
+	if err := w.Reset(ctx, &ResetOptions{Commit: cc.Hash, Mode: MergeReset, Quiet: w.quiet}); err != nil {
 		die_error("reset worktree error: %v", err)
 		return err
 	}
@@ -240,7 +241,7 @@ func (w *Worktree) stashApplyTree(ctx context.Context, I, W plumbing.Hash) error
 	if err != nil {
 		return err
 	}
-	if err := w.resetIndex(ctx, treeI); err != nil {
+	if _, err := w.resetIndex(ctx, treeI); err != nil {
 		return err
 	}
 	treeW, err := w.odb.Tree(ctx, W)

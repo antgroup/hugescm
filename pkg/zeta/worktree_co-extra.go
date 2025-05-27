@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/merkletrie"
@@ -277,7 +278,7 @@ func (w *Worktree) checkoutDotWorktreeOnly(ctx context.Context, bar ProgressBar)
 	return nil
 }
 
-func (w *Worktree) checkoutWorktreeOnly(ctx context.Context, root *object.Tree, bar ProgressBar) error {
+func (w *Worktree) checkoutWorktreeOnly(ctx context.Context, root *object.Tree, removedFiles []string, bar ProgressBar) error {
 	changes, err := w.diffTreeWithWorktree(ctx, root, false)
 	if err != nil {
 		return err
@@ -288,16 +289,23 @@ func (w *Worktree) checkoutWorktreeOnly(ctx context.Context, root *object.Tree, 
 			return err
 		}
 		name := nameFromAction(&ch)
-		// only checkout deleted and modified file
-		if action == merkletrie.Insert {
-			continue
-		}
-		e, err := w.resolveTreeEntry(ch.From)
-		if err != nil {
-			return err
-		}
-		if err = w.checkoutFile(ctx, name, e, bar); err != nil {
-			return err
+
+		switch action {
+		case merkletrie.Insert:
+			//only remove files what index tracked before
+			if !slices.ContainsFunc(removedFiles, func(s string) bool { return systemCaseEqual(s, name) }) {
+				continue
+			}
+			w.fs.Remove(name)
+		default:
+			//checkout deleted and modified file
+			e, err := w.resolveTreeEntry(ch.From)
+			if err != nil {
+				return err
+			}
+			if err = w.checkoutFile(ctx, name, e, bar); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

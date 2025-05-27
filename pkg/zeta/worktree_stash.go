@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
@@ -248,7 +249,24 @@ func (w *Worktree) stashApplyTree(ctx context.Context, I, W plumbing.Hash) error
 	if err != nil {
 		return err
 	}
-	if err := w.checkoutWorktreeOnly(ctx, treeW, nonProgressBar{}); err != nil {
+
+	removedFiles := []string{}
+	changes, err := w.diffTreeWithTree(ctx, treeI, treeW, false)
+	if err != nil {
+		return err
+	}
+	for _, ch := range changes {
+		action, err := ch.Action()
+		if err != nil {
+			return err
+		}
+		name := nameFromAction(&ch)
+		if action == merkletrie.Delete {
+			removedFiles = append(removedFiles, name)
+		}
+	}
+
+	if err := w.checkoutWorktreeOnly(ctx, treeW, removedFiles, nonProgressBar{}); err != nil {
 		return err
 	}
 	return nil

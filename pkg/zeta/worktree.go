@@ -552,13 +552,7 @@ func (w *Worktree) resetWorktree(ctx context.Context, t *object.Tree, files []st
 			return err
 		}
 		if len(files) > 0 {
-			file := ""
-			if ch.From != nil {
-				file = ch.From.String()
-			} else if ch.To != nil {
-				file = ch.To.String()
-			}
-
+			file := nameFromAction(&ch)
 			if file == "" {
 				continue
 			}

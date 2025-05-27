@@ -220,22 +220,6 @@ func (w *Worktree) diffTreeWithWorktree(ctx context.Context, t *object.Tree, rev
 	return merkletrie.DiffTreeContext(ctx, from, to, diffTreeIsEquals)
 }
 
-func (w *Worktree) diffTreeWithTree(ctx context.Context, fromTree *object.Tree, toTree *object.Tree, reverse bool) (merkletrie.Changes, error) {
-	var from, to noder.Noder
-	if fromTree != nil {
-		from = object.NewTreeRootNode(fromTree, noder.NewSparseTreeMatcher(w.Core.SparseDirs), true)
-	}
-	if toTree != nil {
-		to = object.NewTreeRootNode(toTree, noder.NewSparseTreeMatcher(w.Core.SparseDirs), true)
-	}
-
-	if reverse {
-		return merkletrie.DiffTreeContext(ctx, to, from, diffTreeIsEquals)
-	}
-
-	return merkletrie.DiffTreeContext(ctx, from, to, diffTreeIsEquals)
-}
-
 var emptyNoderHash = make([]byte, plumbing.HASH_DIGEST_SIZE+4)
 
 // diffTreeIsEquals is a implementation of noder.Equals, used to compare

@@ -251,7 +251,11 @@ func (w *Worktree) stashApplyTree(ctx context.Context, I, W plumbing.Hash) error
 	}
 
 	removedFiles := []string{}
-	changes, err := w.diffTreeWithTree(ctx, treeI, treeW, false)
+	o := &object.DiffTreeOptions{
+		DetectRenames:    true,
+		OnlyExactRenames: true,
+	}
+	changes, err := object.DiffTreeWithOptions(ctx, treeI, treeW, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
 	if err != nil {
 		return err
 	}
@@ -260,9 +264,8 @@ func (w *Worktree) stashApplyTree(ctx context.Context, I, W plumbing.Hash) error
 		if err != nil {
 			return err
 		}
-		name := nameFromAction(&ch)
 		if action == merkletrie.Delete {
-			removedFiles = append(removedFiles, name)
+			removedFiles = append(removedFiles, ch.Name())
 		}
 	}
 

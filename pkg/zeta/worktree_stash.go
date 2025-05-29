@@ -316,10 +316,6 @@ func (w *Worktree) cherryPickStash(ctx context.Context, stashIndex, stashWorktre
 		return nil, ErrHasConflicts
 	}
 
-	o1, err := base.Root(ctx)
-	if err != nil {
-		return nil, err
-	}
 	a1, err := currentWorktree.Root(ctx)
 	if err != nil {
 		return nil, err
@@ -328,7 +324,7 @@ func (w *Worktree) cherryPickStash(ctx context.Context, stashIndex, stashWorktre
 	if err != nil {
 		return nil, err
 	}
-	mr1, err := w.odb.MergeTree(ctx, o1, a1, b1, &odb.MergeOptions{
+	mr1, err := w.odb.MergeTree(ctx, o, a1, b1, &odb.MergeOptions{
 		Branch1:       "CurrentWorktree",
 		Branch2:       "StashWorktree",
 		DetectRenames: true,

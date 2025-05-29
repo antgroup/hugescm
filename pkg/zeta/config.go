@@ -31,7 +31,7 @@ type ListConfigOptions struct {
 func (opts *ListConfigOptions) displayInput() {
 	if !opts.Z {
 		for _, v := range opts.Values {
-			fmt.Fprintln(os.Stdout, v)
+			_, _ = fmt.Fprintln(os.Stdout, v)
 		}
 		return
 	}
@@ -41,7 +41,7 @@ func (opts *ListConfigOptions) displayInput() {
 		if i == -1 {
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s\n%s%c", v[0:i], v[i+1:], NUL)
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n%s%c", v[0:i], v[i+1:], NUL)
 	}
 }
 
@@ -132,7 +132,7 @@ func (opts *GetConfigOptions) getFromInputs() bool {
 	for _, k := range opts.Keys {
 		if av, ok := m[strings.ToLower(k)]; ok {
 			for _, a := range av {
-				fmt.Fprintf(os.Stdout, "%v%c", a, newLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%v%c", a, newLine)
 				if !opts.ALL {
 					return true
 				}

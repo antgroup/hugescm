@@ -241,7 +241,7 @@ func error_red(format string, args ...any) {
 	message := strings.TrimSuffix(fmt.Sprintf(W(format), args...), "\n")
 	var b bytes.Buffer
 	if term.StderrLevel != term.LevelNone {
-		for _, s := range strings.Split(message, "\n") {
+		for s := range strings.SplitSeq(message, "\n") {
 			_, _ = b.WriteString("\x1b[31m")
 			_, _ = b.WriteString(prefix)
 			_, _ = b.WriteString(s)
@@ -250,7 +250,7 @@ func error_red(format string, args ...any) {
 		_, _ = os.Stderr.Write(b.Bytes())
 		return
 	}
-	for _, s := range strings.Split(message, "\n") {
+	for s := range strings.SplitSeq(message, "\n") {
 		_, _ = b.WriteString(prefix)
 		_, _ = b.WriteString(s)
 		_ = b.WriteByte('\n')

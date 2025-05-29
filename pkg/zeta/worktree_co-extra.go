@@ -12,7 +12,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/merkletrie"
@@ -278,36 +277,43 @@ func (w *Worktree) checkoutDotWorktreeOnly(ctx context.Context, bar ProgressBar)
 	return nil
 }
 
-func (w *Worktree) checkoutWorktreeOnly(ctx context.Context, root *object.Tree, removedFiles []string, bar ProgressBar) error {
-	changes, err := w.diffTreeWithWorktree(ctx, root, false)
+func (w *Worktree) checkoutWorktreeOnly(ctx context.Context, root *object.Tree, bar ProgressBar) error {
+	head, err := w.resolveRevision(ctx, "HEAD")
 	if err != nil {
 		return err
 	}
+	currTree, err := w.getTreeFromCommitHash(ctx, head)
+	if err != nil {
+		return err
+	}
+
+	o := &object.DiffTreeOptions{
+		DetectRenames:    true,
+		OnlyExactRenames: true,
+	}
+	changes, err := object.DiffTreeWithOptions(ctx, currTree, root, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
+	if err != nil {
+		return err
+	}
+
 	for _, ch := range changes {
 		action, err := ch.Action()
 		if err != nil {
 			return err
 		}
-		name := nameFromAction(&ch)
+		name := ch.Name()
 
 		switch action {
-		case merkletrie.Insert:
-			//only remove files what index tracked before
-			if !slices.ContainsFunc(removedFiles, func(s string) bool { return systemCaseEqual(s, name) }) {
-				continue
-			}
+		case merkletrie.Delete:
 			w.fs.Remove(name)
 		default:
 			//checkout deleted and modified file
-			e, err := w.resolveTreeEntry(ch.From)
-			if err != nil {
-				return err
-			}
-			if err = w.checkoutFile(ctx, name, e, bar); err != nil {
+			if err = w.checkoutFile(ctx, name, &ch.To.TreeEntry, bar); err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }
 

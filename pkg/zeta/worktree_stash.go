@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
@@ -237,12 +236,8 @@ func (w *Worktree) StashShow(ctx context.Context, stashRev string) error {
 }
 
 func (w *Worktree) stashApplyTree(ctx context.Context, I, W plumbing.Hash) error {
-	// restore index
 	treeI, err := w.odb.Tree(ctx, I)
 	if err != nil {
-		return err
-	}
-	if _, err := w.resetIndex(ctx, treeI); err != nil {
 		return err
 	}
 	treeW, err := w.odb.Tree(ctx, W)
@@ -250,26 +245,12 @@ func (w *Worktree) stashApplyTree(ctx context.Context, I, W plumbing.Hash) error
 		return err
 	}
 
-	removedFiles := []string{}
-	o := &object.DiffTreeOptions{
-		DetectRenames:    true,
-		OnlyExactRenames: true,
-	}
-	changes, err := object.DiffTreeWithOptions(ctx, treeI, treeW, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
-	if err != nil {
+	// restore index
+	if _, err := w.resetIndex(ctx, treeI); err != nil {
 		return err
 	}
-	for _, ch := range changes {
-		action, err := ch.Action()
-		if err != nil {
-			return err
-		}
-		if action == merkletrie.Delete {
-			removedFiles = append(removedFiles, ch.Name())
-		}
-	}
 
-	if err := w.checkoutWorktreeOnly(ctx, treeW, removedFiles, nonProgressBar{}); err != nil {
+	if err := w.checkoutWorktreeOnly(ctx, treeW, nonProgressBar{}); err != nil {
 		return err
 	}
 	return nil
@@ -279,13 +260,13 @@ var (
 	ErrNotAStashLikeCommit = errors.New("not a stash-like commit")
 )
 
-type mergeStashResult struct {
+type cherryPickResult struct {
 	newIndexTree    plumbing.Hash
 	newWorktreeTree plumbing.Hash
 	conflicts       []*odb.Conflict
 }
 
-func (r *mergeStashResult) format() {
+func (r *cherryPickResult) format() {
 	for _, e := range r.conflicts {
 		if e.Ancestor.Path != "" {
 			fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Ancestor.Path)
@@ -302,15 +283,12 @@ func (r *mergeStashResult) format() {
 	}
 }
 
-func (w *Worktree) mergeStash(ctx context.Context, stashIndex, stashWorktree, currentIndex, currentWorktree *object.Commit) (*mergeStashResult, error) {
-	indexBases, err := currentIndex.MergeBase(ctx, stashIndex)
+func (w *Worktree) cherryPickStash(ctx context.Context, stashIndex, stashWorktree, currentIndex, currentWorktree *object.Commit) (*cherryPickResult, error) {
+	base, err := w.odb.Commit(ctx, stashIndex.Parents[0])
 	if err != nil {
 		return nil, err
 	}
-	if len(indexBases) == 0 {
-		return nil, ErrUnrelatedHistories
-	}
-	o, err := indexBases[0].Root(ctx)
+	o, err := base.Root(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +307,7 @@ func (w *Worktree) mergeStash(ctx context.Context, stashIndex, stashWorktree, cu
 		DetectRenames: true,
 		Textconv:      false,
 		MergeDriver:   mergeDriver,
+		TextGetter:    w.readMissingText,
 	})
 	if err != nil {
 		return nil, err
@@ -336,36 +315,32 @@ func (w *Worktree) mergeStash(ctx context.Context, stashIndex, stashWorktree, cu
 	if len(mr.Conflicts) != 0 {
 		return nil, ErrHasConflicts
 	}
-	worktreeBases, err := currentWorktree.MergeBase(ctx, stashWorktree)
+
+	o1, err := base.Root(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(worktreeBases) == 0 {
-		return nil, ErrUnrelatedHistories
-	}
-	o2, err := worktreeBases[0].Root(ctx)
+	a1, err := currentWorktree.Root(ctx)
 	if err != nil {
 		return nil, err
 	}
-	a2, err := currentWorktree.Root(ctx)
+	b1, err := stashWorktree.Root(ctx)
 	if err != nil {
 		return nil, err
 	}
-	b2, err := stashWorktree.Root(ctx)
-	if err != nil {
-		return nil, err
-	}
-	mr1, err := w.odb.MergeTree(ctx, o2, a2, b2, &odb.MergeOptions{
+	mr1, err := w.odb.MergeTree(ctx, o1, a1, b1, &odb.MergeOptions{
 		Branch1:       "CurrentWorktree",
 		Branch2:       "StashWorktree",
 		DetectRenames: true,
 		Textconv:      false,
 		MergeDriver:   mergeDriver,
+		TextGetter:    w.readMissingText,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &mergeStashResult{newIndexTree: mr.NewTree, newWorktreeTree: mr1.NewTree, conflicts: mr1.Conflicts}, nil
+
+	return &cherryPickResult{newIndexTree: mr.NewTree, newWorktreeTree: mr1.NewTree, conflicts: mr1.Conflicts}, nil
 }
 
 func (w *Worktree) stashApply(ctx context.Context, e *reflog.Entry) error {
@@ -411,7 +386,7 @@ func (w *Worktree) stashApply(ctx context.Context, e *reflog.Entry) error {
 		return err
 	}
 	if status.IsClean() {
-		result, err := w.mergeStash(ctx, stashIndex, stashWorktree, cc, cc)
+		result, err := w.cherryPickStash(ctx, stashIndex, stashWorktree, cc, cc)
 		if err != nil {
 			if err == ErrHasConflicts {
 				die_error("conflicts in index.")
@@ -446,7 +421,8 @@ func (w *Worktree) stashApply(ctx context.Context, e *reflog.Entry) error {
 		die_error("unable open commit: %v", err)
 		return err
 	}
-	result, err := w.mergeStash(ctx, stashIndex, stashWorktree, currentIndex, currentWorktree)
+
+	result, err := w.cherryPickStash(ctx, stashIndex, stashWorktree, currentIndex, currentWorktree)
 	if err != nil {
 		_ = w.stashApplyTree(ctx, storeResult.stashIndexTree, storeResult.stashWorktreeTree)
 		if err == ErrHasConflicts {

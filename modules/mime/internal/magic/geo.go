@@ -3,7 +3,6 @@ package magic
 import (
 	"bytes"
 	"encoding/binary"
-	"slices"
 )
 
 // Shp matches a shape format file.
@@ -40,7 +39,13 @@ func Shp(raw []byte, limit uint32) bool {
 		31, // MultiPatch
 	}
 
-	return slices.Contains(shapeTypes, int(binary.LittleEndian.Uint32(raw[108:112])))
+	for _, st := range shapeTypes {
+		if st == int(binary.LittleEndian.Uint32(raw[108:112])) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Shx matches a shape index format file.

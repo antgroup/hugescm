@@ -157,26 +157,11 @@ func (c *client) prepareAuthMethod() ([]ssh.AuthMethod, error) {
 	return auth, nil
 }
 
-var supportedHostKeyAlgos = []string{
-	ssh.CertAlgoRSASHA256v01,
-	ssh.CertAlgoRSASHA512v01,
-	ssh.CertAlgoECDSA256v01,
-	ssh.CertAlgoECDSA384v01,
-	ssh.CertAlgoECDSA521v01,
-	ssh.CertAlgoED25519v01,
-	ssh.KeyAlgoRSASHA256,
-	ssh.KeyAlgoRSASHA512,
-	ssh.KeyAlgoECDSA256,
-	ssh.KeyAlgoECDSA384,
-	ssh.KeyAlgoECDSA521,
-	ssh.KeyAlgoED25519,
-}
-
 func (c *client) supportedHostKeyAlgos() []string {
 	if hostKeyAlgorithms := c.hostKeyDB.HostKeyAlgorithms(net.JoinHostPort(c.Hostname, c.Port)); len(hostKeyAlgorithms) != 0 {
 		return hostKeyAlgorithms
 	}
-	return supportedHostKeyAlgos
+	return ssh.SupportedAlgorithms().HostKeys
 }
 
 func (c *client) openPrivateKey(name string) (ssh.Signer, error) {

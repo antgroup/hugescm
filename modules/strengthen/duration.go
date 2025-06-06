@@ -5,28 +5,28 @@ import (
 	"time"
 )
 
-var unitMap = map[string]int64{
-	"ns": int64(time.Nanosecond),
-	"us": int64(time.Microsecond),
-	"µs": int64(time.Microsecond), // U+00B5 = micro symbol
-	"μs": int64(time.Microsecond), // U+03BC = Greek letter mu
-	"ms": int64(time.Millisecond),
-	"s":  int64(time.Second),
-	"m":  int64(time.Minute),
-	"h":  int64(time.Hour),
-	"d":  int64(time.Hour) * 24,
-	"w":  int64(time.Hour) * 168,
+var unitMap = map[string]uint64{
+	"ns": uint64(time.Nanosecond),
+	"us": uint64(time.Microsecond),
+	"µs": uint64(time.Microsecond), // U+00B5 = micro symbol
+	"μs": uint64(time.Microsecond), // U+03BC = Greek letter mu
+	"ms": uint64(time.Millisecond),
+	"s":  uint64(time.Second),
+	"m":  uint64(time.Minute),
+	"h":  uint64(time.Hour),
+	"d":  uint64(time.Hour) * 24,
+	"w":  uint64(time.Hour) * 168,
 }
 
 // ParseDuration parses a duration string.
 // A duration string is a possibly signed sequence of
 // decimal numbers, each with optional fraction and a unit suffix,
 // such as "300ms", "-1.5h" or "2h45m".
-// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h", "d", "w".
+// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 func ParseDuration(s string) (time.Duration, error) {
 	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
 	orig := s
-	var d int64
+	var d uint64
 	neg := false
 
 	// Consume [-+]?
@@ -46,14 +46,14 @@ func ParseDuration(s string) (time.Duration, error) {
 	}
 	for s != "" {
 		var (
-			v, f  int64       // integers before, after decimal point
+			v, f  uint64      // integers before, after decimal point
 			scale float64 = 1 // value = v + f/scale
 		)
 
 		var err error
 
 		// The next character must be [0-9.]
-		if !(s[0] == '.' || '0' <= s[0] && s[0] <= '9') { // nolint
+		if !(s[0] == '.' || '0' <= s[0] && s[0] <= '9') {
 			return 0, errors.New("time: invalid duration " + quote(orig))
 		}
 		// Consume [0-9]*
@@ -94,7 +94,7 @@ func ParseDuration(s string) (time.Duration, error) {
 		if !ok {
 			return 0, errors.New("time: unknown unit " + quote(u) + " in duration " + quote(orig))
 		}
-		if v > (1<<63-1)/unit {
+		if v > 1<<63/unit {
 			// overflow
 			return 0, errors.New("time: invalid duration " + quote(orig))
 		}
@@ -102,21 +102,22 @@ func ParseDuration(s string) (time.Duration, error) {
 		if f > 0 {
 			// float64 is needed to be nanosecond accurate for fractions of hours.
 			// v >= 0 && (f*unit/scale) <= 3.6e+12 (ns/h, h is the largest unit)
-			v += int64(float64(f) * (float64(unit) / scale))
-			if v < 0 {
+			v += uint64(float64(f) * (float64(unit) / scale))
+			if v > 1<<63 {
 				// overflow
 				return 0, errors.New("time: invalid duration " + quote(orig))
 			}
 		}
 		d += v
-		if d < 0 {
-			// overflow
+		if d > 1<<63 {
 			return 0, errors.New("time: invalid duration " + quote(orig))
 		}
 	}
-
 	if neg {
-		d = -d
+		return -time.Duration(d), nil
+	}
+	if d > 1<<63-1 {
+		return 0, errors.New("time: invalid duration " + quote(orig))
 	}
 	return time.Duration(d), nil
 }
@@ -128,21 +129,21 @@ func quote(s string) string {
 var errLeadingInt = errors.New("time: bad [0-9]*") // never printed
 
 // leadingInt consumes the leading [0-9]* from s.
-func leadingInt(s string) (x int64, rem string, err error) {
+func leadingInt[bytes []byte | string](s bytes) (x uint64, rem bytes, err error) {
 	i := 0
 	for ; i < len(s); i++ {
 		c := s[i]
 		if c < '0' || c > '9' {
 			break
 		}
-		if x > (1<<63-1)/10 {
+		if x > 1<<63/10 {
 			// overflow
-			return 0, "", errLeadingInt
+			return 0, rem, errLeadingInt
 		}
-		x = x*10 + int64(c) - '0'
-		if x < 0 {
+		x = x*10 + uint64(c) - '0'
+		if x > 1<<63 {
 			// overflow
-			return 0, "", errLeadingInt
+			return 0, rem, errLeadingInt
 		}
 	}
 	return x, s[i:], nil
@@ -151,7 +152,7 @@ func leadingInt(s string) (x int64, rem string, err error) {
 // leadingFraction consumes the leading [0-9]* from s.
 // It is used only for fractions, so does not return an error on overflow,
 // it just stops accumulating precision.
-func leadingFraction(s string) (x int64, scale float64, rem string) {
+func leadingFraction(s string) (x uint64, scale float64, rem string) {
 	i := 0
 	scale = 1
 	overflow := false
@@ -168,8 +169,8 @@ func leadingFraction(s string) (x int64, scale float64, rem string) {
 			overflow = true
 			continue
 		}
-		y := x*10 + int64(c) - '0'
-		if y < 0 {
+		y := x*10 + uint64(c) - '0'
+		if y > 1<<63 {
 			overflow = true
 			continue
 		}

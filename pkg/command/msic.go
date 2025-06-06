@@ -68,7 +68,7 @@ func parseTime(str string) (int64, error) {
 		d := time.Until(tt)
 		return int64(d.Seconds()), nil
 	}
-	if d, err := time.ParseDuration(str); err == nil {
+	if d, err := strengthen.ParseDuration(str); err == nil {
 		return int64(d.Seconds()), nil
 	}
 	vv := strings.FieldsFunc(str, func(r rune) bool {

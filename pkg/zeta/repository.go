@@ -229,7 +229,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		fmt.Fprintf(os.Stderr, "bad remote: %v\n", err)
 		return nil, err
 	}
-	repoName := filepath.Base(strings.TrimSuffix(endpoint.Path, "/"))
+	repoName := strings.TrimSuffix(filepath.Base(strings.TrimSuffix(endpoint.Path, "/")), ".zeta")
 	destination, exists, err := checkDestination(repoName, opts.Destination, true)
 	if err != nil {
 		return nil, err

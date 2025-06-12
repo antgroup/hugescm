@@ -184,6 +184,7 @@ func (w *Worktree) StashPush(ctx context.Context, opts *StashPushOptions) error 
 		die_error("reset worktree error: %v", err)
 		return err
 	}
+	fmt.Fprintf(os.Stdout, "Saved working directory and index state %s", messageWorktree)
 	return nil
 }
 

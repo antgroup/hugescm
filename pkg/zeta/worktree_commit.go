@@ -226,12 +226,10 @@ func (w *Worktree) Commit(ctx context.Context, opts *CommitOptions) (plumbing.Ha
 		}
 
 		if opts.Amend {
-			newTree = cc.Tree
 			opts.Parents = cc.Parents
-		} else {
-			if newTree, err = w.writeIndexAsTree(ctx, cc.Tree, opts.AllowEmptyCommits); err != nil {
-				return plumbing.ZeroHash, err
-			}
+		}
+		if newTree, err = w.writeIndexAsTree(ctx, cc.Tree, opts.AllowEmptyCommits); err != nil {
+			return plumbing.ZeroHash, err
 		}
 	}
 

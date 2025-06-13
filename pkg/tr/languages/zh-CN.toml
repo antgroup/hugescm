@@ -42,6 +42,10 @@
 "Checkout one after another, total: %d\n" = "一个接着另一个的检出文件，总计：%d\n"
 "The repository filesystem is '%s', which may affect zeta's operation." = "存储库文件系统为 '%s'，可能会影响 zeta 运行。"
 # switch
+"branch" = "分支"
+"set up to track" = "设置为追踪"
+"Switched to branch" = "切换至分支"
+"Switched to a new branch" = "切换到一个新分支"
 "Switch branches" = "切换分支"
 "Branch to switch to and start-point" = "要切换的分支和 start-point"
 "Create a new branch named <branch> starting at <start-point> before switching to the branch" = "在切换到分支之前，从 <start-point> 开始创建一个名为 <branch> 的新分支"

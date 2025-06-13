@@ -6,6 +6,8 @@ package zeta
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/object"
@@ -62,6 +64,8 @@ func (r *Repository) switchBranchFromRemote(ctx context.Context, branch string, 
 		switchError(branch, err)
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "%s '%s' %s 'origin/%s'", W("branch"), W("set up to track"), branch, branch)
+	fmt.Fprintf(os.Stderr, "%s '%s'\n", W("Switched to branch"), branch)
 	return nil
 }
 
@@ -90,6 +94,7 @@ func (r *Repository) SwitchBranch(ctx context.Context, branch string, so *Switch
 		switchError(branch, err)
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "%s '%s'\n", W("Switched to branch"), branch)
 	return nil
 }
 
@@ -104,6 +109,12 @@ func (r *Repository) SwitchDetach(ctx context.Context, basePoint string, so *Swi
 		switchError(basePoint, err)
 		return err
 	}
+	cc, err := w.ODB().ParseRevExhaustive(ctx, plumbing.NewHash(basePoint))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve HEAD commit error: %v\n", err)
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "HEAD %s %s %s\n", W("is now at"), shortHash(cc.Hash), cc.Subject())
 	return nil
 }
 
@@ -144,6 +155,7 @@ func (r *Repository) SwitchOrphan(ctx context.Context, newBranch string, so *Swi
 		switchError(newBranch, err)
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "%s '%s'\n", W("Switched to a new branch"), newOID.String())
 	return nil
 }
 
@@ -156,5 +168,6 @@ func (r *Repository) SwitchNewBranch(ctx context.Context, newBranch string, base
 		switchError(newBranch, err)
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "%s '%s'\n", W("Switched to a new branch"), newBranch)
 	return nil
 }

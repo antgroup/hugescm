@@ -109,7 +109,7 @@ func (r *Repository) SwitchDetach(ctx context.Context, basePoint string, so *Swi
 		switchError(basePoint, err)
 		return err
 	}
-	cc, err := w.ODB().ParseRevExhaustive(ctx, plumbing.NewHash(basePoint))
+	cc, err := w.parseRevExhaustive(ctx, basePoint)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve HEAD commit error: %v\n", err)
 		return err

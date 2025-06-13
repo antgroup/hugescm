@@ -112,12 +112,12 @@ func (w *Worktree) Pull(ctx context.Context, opts *PullOptions) error {
 	}
 	remoteRefName := plumbing.NewRemoteReferenceName("origin", branchName)
 	if opts.Rebase {
-		messagePrefix := fmt.Sprintf("Rebase branch '%s of %s' into %s", branchName, w.cleanedRemote(), branchName)
+		messagePrefix := fmt.Sprintf("Rebase branch '%s' onto %s (branch '%s of %s'))", branchName, branchName, w.cleanedRemote(), fo.FETCH_HEAD)
 		newRev, err := w.rebaseInternal(ctx, current.Hash(), fo.FETCH_HEAD, currentName, remoteRefName, false)
 		if err != nil {
 			return err
 		}
-		if err := w.DoUpdate(ctx, current.Name(), current.Hash(), newRev, w.NewCommitter(), "pull: "+messagePrefix); err != nil {
+		if err := w.DoUpdate(ctx, current.Name(), current.Hash(), newRev, w.NewCommitter(), "pull --rebase: "+messagePrefix); err != nil {
 			die_error("update rebase: %v", err)
 			return err
 		}

@@ -45,7 +45,7 @@ func (w *Worktree) Rebase(ctx context.Context, opts *RebaseOptions) error {
 		die_error("unable resolve onto %v", err)
 		return err
 	}
-	messagePrefix := fmt.Sprintf("Rebase branch '%s' onto %s", branchName, ontoRev.String())
+	messagePrefix := fmt.Sprintf("Rebase branch '%s' onto %s", branchName, ontoRev)
 	newRev, err := w.rebaseInternal(ctx, current.Hash(), ontoRev, currentName, plumbing.ReferenceName(opts.Onto), false)
 	if err != nil {
 		return err
@@ -369,7 +369,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		lastCommitID = newRev
 	}
 	branchName := md.HEAD.BranchName()
-	messagePrefix := fmt.Sprintf("Rebase branch '%s' onto %s", branchName, md.ONTO.String())
+	messagePrefix := fmt.Sprintf("Rebase branch '%s' onto %s", branchName, md.ONTO)
 	if err := w.DoUpdate(ctx, md.HEAD, md.REBASE_HEAD, lastCommitID, w.NewCommitter(), "rebase: "+messagePrefix); err != nil {
 		die_error("update rebase: %v", err)
 		return err

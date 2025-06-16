@@ -5,14 +5,17 @@ package command
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
 type Rebase struct {
-	Onto     string `name:"onto" help:"Rebase onto given branch" placeholder:"<revision>"`
-	Abort    bool   `name:"abort" help:"Abort and checkout the original branch"`
-	Continue bool   `name:"continue" help:"Continue"`
+	Args     []string `arg:"" help:"Upstream and branch to rebase (upstream branch to compare against and branch to rebase)"`
+	Onto     string   `name:"onto" help:"Rebase onto given branch" placeholder:"<revision>"`
+	Abort    bool     `name:"abort" help:"Abort and checkout the original branch"`
+	Continue bool     `name:"continue" help:"Continue"`
 }
 
 func (c *Rebase) Run(g *Globals) error {
@@ -20,6 +23,11 @@ func (c *Rebase) Run(g *Globals) error {
 		diev("--abort is not compatible with --continue")
 		return ErrFlagsIncompatible
 	}
+	if !(c.Abort || c.Continue) && len(c.Args) == 0 {
+		fmt.Fprintf(os.Stderr, "Please specify which branch you want to rebase against.\n")
+		return ErrArgRequired
+	}
+
 	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
@@ -30,11 +38,20 @@ func (c *Rebase) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.Rebase(context.Background(), &zeta.RebaseOptions{
+
+	opts := &zeta.RebaseOptions{
+		Branch:   "HEAD",
 		Onto:     c.Onto,
 		Abort:    c.Abort,
 		Continue: c.Continue,
-	}); err != nil {
+	}
+	if len(c.Args) > 0 {
+		opts.Upstream = c.Args[0]
+	}
+	if len(c.Args) > 1 {
+		opts.Branch = c.Args[1]
+	}
+	if err := w.Rebase(context.Background(), opts); err != nil {
 		return err
 	}
 	return nil

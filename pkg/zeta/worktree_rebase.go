@@ -17,6 +17,8 @@ import (
 )
 
 type RebaseOptions struct {
+	Branch   string
+	Upstream string
 	Onto     string
 	Abort    bool
 	Continue bool
@@ -40,20 +42,51 @@ func (w *Worktree) Rebase(ctx context.Context, opts *RebaseOptions) error {
 		return errors.New("reference not branch")
 	}
 	branchName := currentName.BranchName()
-	ontoRev, err := w.Revision(ctx, opts.Onto)
-	if err != nil {
-		die_error("unable resolve onto %v", err)
-		return err
+
+	if opts.Branch != "HEAD" && opts.Branch != branchName {
+		if err := w.SwitchBranch(ctx, opts.Branch, &SwitchOptions{Force: false}); err != nil {
+			die_error("can not switch branch %s", err)
+			return err
+		}
 	}
-	messagePrefix := fmt.Sprintf("Rebase branch '%s' onto %s", branchName, ontoRev)
-	newRev, err := w.rebaseInternal(ctx, current.Hash(), ontoRev, currentName, plumbing.ReferenceName(opts.Onto), false)
-	if err != nil {
-		return err
+
+	var newRev plumbing.Hash
+	var messagePrefix string
+	if opts.Onto != "" {
+		ontoRev, err := w.Revision(ctx, opts.Onto)
+		if err != nil {
+			die_error("unable resolve onto %v", err)
+			return err
+		}
+		upsRev, err := w.Revision(ctx, opts.Upstream)
+		if err != nil {
+			die_error("unable resolve upstream %v", err)
+			return err
+		}
+		messagePrefix = fmt.Sprintf("Rebase branch '%s' with upstream %s onto %s", branchName, opts.Branch, ontoRev)
+		newRev, err = w.rebaseWithUpstream(ctx, current.Hash(), upsRev, ontoRev, currentName, plumbing.ReferenceName(opts.Onto), false)
+		if err != nil {
+			die_error("rebase: %v", err)
+			return err
+		}
+	} else {
+		ontoRev, err := w.Revision(ctx, opts.Upstream)
+		if err != nil {
+			die_error("unable resolve onto %v", err)
+			return err
+		}
+		messagePrefix = fmt.Sprintf("Rebase branch '%s' onto %s", branchName, ontoRev)
+		newRev, err = w.rebaseInternal(ctx, current.Hash(), ontoRev, currentName, plumbing.ReferenceName(opts.Onto), false)
+		if err != nil {
+			return err
+		}
 	}
+
 	if err := w.DoUpdate(ctx, current.Name(), current.Hash(), newRev, w.NewCommitter(), "rebase: "+messagePrefix); err != nil {
 		die_error("update rebase: %v", err)
 		return err
 	}
+
 	if err := w.Reset(ctx, &ResetOptions{Commit: newRev, Mode: MergeReset}); err != nil {
 		die_error("reset worktree: %v", err)
 		return err
@@ -75,7 +108,7 @@ func (w *Worktree) Rebase(ctx context.Context, opts *RebaseOptions) error {
 //	merge K & C  merge-base; B, parent K;    A-->B-->G-->H-->K-->C(n)
 //	merge K & D  merge-base: B, parent C(n); A-->B-->G-->H-->K-->C(n)-->D(n)
 //	merge K & E  merge-base: B, parent D(n); A-->B-->G-->H-->K-->C(n)-->D(n)-->E(n)
-func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, branch1, branch2 plumbing.ReferenceName, textconv bool) (plumbing.Hash, error) {
+func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, ourBranch, ontoBranch plumbing.ReferenceName, textconv bool) (plumbing.Hash, error) {
 	oursCommit, err := w.odb.Commit(ctx, our)
 	if err != nil {
 		return plumbing.ZeroHash, err
@@ -127,8 +160,8 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 			return plumbing.ZeroHash, err
 		}
 		result, err := w.odb.MergeTree(ctx, baseTree, t, ontoTree, &odb.MergeOptions{
-			Branch1:       branch1.BranchName(),
-			Branch2:       branch2.Short(),
+			Branch1:       ourBranch.BranchName(),
+			Branch2:       ontoBranch.Short(),
 			DetectRenames: true,
 			Textconv:      textconv,
 			MergeDriver:   mergeDriver,
@@ -145,7 +178,7 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 				STOPPED:     c.Hash,
 				LAST:        lastCommitID,
 				MERGE_TREE:  result.NewTree,
-				HEAD:        branch1,
+				HEAD:        ourBranch,
 			}, result.Conflicts)
 			// TODO bu
 			return plumbing.ZeroHash, ErrHasConflicts
@@ -159,6 +192,178 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 			Message:      c.Message,
 		}
 		newRev, err := w.odb.WriteEncoded(cc)
+		if err != nil {
+			die_error("unable encode commit: %v", err)
+			return plumbing.ZeroHash, err
+		}
+		lastCommitID = newRev
+	}
+	return lastCommitID, nil
+}
+
+/*
+First let’s assume your topic is based on branch next. For example, a feature developed
+in topic depends on some functionality which is found in next.
+
+	o---o---o---o---o  master
+		\
+			o---o---o---o---o  next
+							\
+							o---o---o  topic
+
+We want to make topic forked from branch master; for example, because the functionality
+on which topic depends was merged into the more stable master branch. We want our tree to
+look like this:
+
+	o---o---o---o---o  master
+		|            \
+		|             o'--o'--o'  topic
+		\
+			o---o---o---o---o  next
+
+We can get this using the following command:
+
+	git rebase --onto master next topic
+
+Another example of --onto option is to rebase part of a branch. If we have the following
+situation:
+
+							H---I---J topicB
+							/
+					E---F---G  topicA
+				/
+	A---B---C---D  master
+
+then the command
+
+	git rebase --onto master topicA topicB
+
+would result in:
+
+				H'--I'--J'  topicB
+				/
+				| E---F---G  topicA
+				|/
+	A---B---C---D  master
+
+This is useful when topicB does not depend on topicA.
+
+A range of commits could also be removed with rebase. If we have the following situation:
+
+	E---F---G---H---I---J  topicA
+
+then the command
+
+	git rebase --onto topicA~5 topicA~3 topicA
+
+would result in the removal of commits F and G:
+
+	E---H'---I'---J'  topicA
+
+This is useful if F and G were flawed in some way, or should not be part of topicA. Note
+that the argument to --onto and the <upstream> parameter can be any valid commit-ish.
+*/
+func (w *Worktree) rebaseWithUpstream(ctx context.Context, our, upstream, onto plumbing.Hash, ourBranch, ontoBranch plumbing.ReferenceName, textconv bool) (plumbing.Hash, error) {
+	oursCommit, err := w.ODB().Commit(ctx, our)
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+	upsCommit, err := w.ODB().Commit(ctx, upstream)
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+	ontoCommit, err := w.ODB().Commit(ctx, onto)
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	ourBases, err := oursCommit.MergeBase(ctx, upsCommit)
+	if err != nil {
+		die_error("calc base of upstream with branch error: %v", err)
+		return plumbing.ZeroHash, err
+	}
+	if len(ourBases) == 0 {
+		fmt.Fprintln(os.Stderr, "rebase: refusing to use unrelated histories upstream")
+		return plumbing.ZeroHash, err
+	}
+	ontoBases, err := ontoCommit.MergeBase(ctx, ourBases[0])
+	if err != nil {
+		die_error("calc base of branch with onto error: %v", err)
+		return plumbing.ZeroHash, err
+	}
+	if len(ontoBases) == 0 {
+		fmt.Fprintln(os.Stderr, "rebase: refusing to use unrelated histories onto")
+		return plumbing.ZeroHash, err
+	}
+
+	ontoBaseTree, err := ontoBases[0].Root(ctx)
+	if err != nil {
+		die_error("unable resolve root tree: %v", err)
+		return plumbing.ZeroHash, err
+
+	}
+	ontoTree, err := ontoCommit.Root(ctx)
+	if err != nil {
+		die_error("resolve onto tree: %v", err)
+		return plumbing.ZeroHash, err
+	}
+
+	ignore := make([]plumbing.Hash, 0, 2)
+	for _, c := range ourBases {
+		ignore = append(ignore, c.Hash)
+	}
+	// TODO: rebase: merge commits should be avoided as much as possible
+	commits, err := w.revList(ctx, our, ignore, LogOrderTopo, nil)
+	if err != nil {
+		die_error("log range base error: %v", err)
+		return plumbing.ZeroHash, err
+	}
+	lastCommitID := onto
+	mergeDriver := w.resolveMergeDriver()
+	for i := len(commits) - 1; i >= 0; i-- {
+		c := commits[i]
+		if len(c.Parents) == 2 {
+			// skip merge commit
+			continue
+		}
+		t, err := c.Root(ctx)
+		if err != nil {
+			die_error("resolve %s tree: %v", c.Hash, err)
+			return plumbing.ZeroHash, err
+
+		}
+		result, err := w.ODB().MergeTree(ctx, ontoBaseTree, t, ontoTree, &odb.MergeOptions{
+			Branch1:       ourBranch.BranchName(),
+			Branch2:       ontoBranch.Short(),
+			DetectRenames: true,
+			Textconv:      textconv,
+			MergeDriver:   mergeDriver,
+			TextGetter:    w.readMissingText,
+		})
+		if err != nil {
+			die_error("merge-tree: %v", err)
+			return plumbing.ZeroHash, err
+		}
+		if len(result.Conflicts) != 0 {
+			err = w.checkoutRebaseConflicts(ctx, &RebaseMD{
+				REBASE_HEAD: our,
+				ONTO:        onto,
+				STOPPED:     c.Hash,
+				LAST:        lastCommitID,
+				MERGE_TREE:  result.NewTree,
+				HEAD:        ourBranch,
+			}, result.Conflicts)
+			return plumbing.ZeroHash, fmt.Errorf("unable checkout conflicts: %v", err)
+		}
+		cc := &object.Commit{
+			Author:       c.Author,
+			Committer:    c.Committer,
+			Parents:      []plumbing.Hash{lastCommitID},
+			Tree:         result.NewTree,
+			ExtraHeaders: c.ExtraHeaders,
+			Message:      c.Message,
+		}
+		newRev, err := w.ODB().WriteEncoded(cc)
 		if err != nil {
 			die_error("unable encode commit: %v", err)
 			return plumbing.ZeroHash, err

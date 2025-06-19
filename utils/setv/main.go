@@ -42,7 +42,7 @@ func parseKeyValue(str string, result any) error {
 
 	for _, key := range keys {
 		found := false
-		for i := 0; i < v.NumField(); i++ {
+		for i := range v.NumField() {
 			typeField := v.Type().Field(i)
 			tag := typeField.Tag.Get("name")
 			if tag == key {

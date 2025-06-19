@@ -124,7 +124,7 @@ func (p *ParseArgs) Parse(args []string, fn ParseOptionHandler) error {
 	for ; p.index < len(args); p.index++ {
 		arg := args[p.index]
 		if arg == "--" {
-			p.unresolvedArgs = append(p.unresolvedArgs, args[p.index:]...)
+			p.unresolvedArgs = append(p.unresolvedArgs, args[p.index+1:]...)
 			break
 		}
 		if !strings.HasPrefix(arg, "-") {

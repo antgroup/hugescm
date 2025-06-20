@@ -90,13 +90,24 @@ Source: "..\build\share\zeta\LEGAL.md"; DestDir: "{app}\share"; DestName: "LEGAL
 Name: "addtopath"; Description: "Add to PATH (requires shell restart)"; GroupDescription: "Other:"
 
 [Registry]
+#if "user" == InstallTarget
+#define SoftwareClassesRootKey "HKCU"
+#else
 #define SoftwareClassesRootKey "HKLM"
+#endif
 
 ; Environment
+#if "user" == InstallTarget
+#define EnvironmentRootKey "HKCU"
+#define EnvironmentKey "Environment"
+#define Uninstall64RootKey "HKCU64"
+#define Uninstall32RootKey "HKCU32"
+#else
 #define EnvironmentRootKey "HKLM"
 #define EnvironmentKey "System\CurrentControlSet\Control\Session Manager\Environment"
 #define Uninstall64RootKey "HKLM64"
 #define Uninstall32RootKey "HKLM32"
+#endif
 
 Root: {#EnvironmentRootKey}; Subkey: "{#EnvironmentKey}"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Tasks: addtopath; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
 

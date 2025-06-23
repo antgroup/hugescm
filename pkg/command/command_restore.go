@@ -49,7 +49,7 @@ func (c *Restore) Run(g *Globals) error {
 		Paths:    slashPaths(c.Paths),
 	}
 	if !opts.Staged && !c.Worktree {
-		c.Worktree = true
+		opts.Worktree = true
 	}
 	if err := w.Restore(context.Background(), opts); err != nil {
 		return err

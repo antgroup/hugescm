@@ -1,5 +1,7 @@
 package mime
 
+import "slices"
+
 // https://github.com/chromium/chromium/blob/main/third_party/blink/common/mime_util/mime_util.cc
 var (
 	// These types are excluded from the logic that allows all text/ types because
@@ -44,7 +46,10 @@ var (
 )
 
 func DetectAny(in []byte) *MIME {
-	return root.match(in, uint32(len(in)))
+	// Please do not modify!!!
+	// mimetype may corrupt the passed byte array
+	data := slices.Clone(in)
+	return root.match(data, uint32(len(data)))
 }
 
 func (m *MIME) Sanitize() string {

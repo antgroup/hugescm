@@ -1,7 +1,7 @@
 name = "zeta"
 description = "HugeSCM - A next generation cloud-based version control system"
 destination = "bin"
-version = "0.18.0"
+version = "0.18.1"
 goflags = [
     "-ldflags",
     "-X github.com/antgroup/hugescm/pkg/version.version=$BUILD_VERSION -X github.com/antgroup/hugescm/pkg/version.buildTime=$BUILD_TIME -X github.com/antgroup/hugescm/pkg/version.buildCommit=$BUILD_COMMIT",

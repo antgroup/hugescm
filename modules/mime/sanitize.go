@@ -46,8 +46,8 @@ var (
 )
 
 func DetectAny(in []byte) *MIME {
-	// Please do not modify!!!
-	// mimetype may corrupt the passed byte array
+	// Frozen: Do not restore this code yet.
+	// https://github.com/gabriel-vasile/mimetype/issues/680
 	data := slices.Clone(in)
 	return root.match(data, uint32(len(data)))
 }

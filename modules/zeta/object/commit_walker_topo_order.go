@@ -106,16 +106,19 @@ func NewCommitIterTopoOrder(c *Commit, seenExternal map[plumbing.Hash]bool, igno
 			return b.(*Commit).Committer.When.Compare(a.(*Commit).Committer.When)
 		}),
 	}
-	heap.Push(c)
 	stack := &commitStack{
 		stack: make([]*Commit, 0, 8),
 	}
-	stack.Push(c)
+	seen := composeIgnores(ignore, seenExternal)
+	if !seen[c.Hash] {
+		heap.Push(c)
+		stack.Push(c)
+	}
 	return &commitTopoOrderIterator{
 		explorerStack: heap,
 		visitStack:    stack,
 		inCounts:      make(map[plumbing.Hash]int),
-		seen:          composeIgnores(ignore, seenExternal),
+		seen:          seen,
 	}
 }
 

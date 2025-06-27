@@ -34,3 +34,29 @@ func TestLog(t *testing.T) {
 	}
 
 }
+
+func TestRevList(t *testing.T) {
+	r, err := Open(t.Context(), &OpenOptions{
+		Worktree: "/tmp/hugescm-dev",
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "log error: %v\n", err)
+		return
+	}
+	defer r.Close() // nolint
+
+	commits, err := r.revList(t.Context(),
+		plumbing.NewHash("d47a4ad65b14c16f79a39a468ff5c68e98b89ac9e81a250f52c0280a72ac65e5"),
+		[]plumbing.Hash{
+			plumbing.NewHash("d47a4ad65b14c16f79a39a468ff5c68e98b89ac9e81a250f52c0280a72ac65e5"),
+		}, LogOrderTopo, nil)
+	if err != nil {
+		die_error("log range base error: %v", err)
+		return
+	}
+	slices.Reverse(commits)
+	for _, c := range commits {
+		fmt.Fprintf(os.Stderr, "%s: %s\n", c.Hash, c.Subject())
+	}
+
+}

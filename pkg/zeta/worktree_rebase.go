@@ -172,7 +172,7 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 			return plumbing.ZeroHash, err
 		}
 		if len(result.Conflicts) != 0 {
-			_ = w.checkoutRebaseConflicts(ctx, &RebaseMD{
+			err = w.checkoutRebaseConflicts(ctx, &RebaseMD{
 				REBASE_HEAD: our,
 				ONTO:        onto,
 				STOPPED:     c.Hash,
@@ -180,7 +180,9 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 				MERGE_TREE:  result.NewTree,
 				HEAD:        ourBranch,
 			}, result.Conflicts)
-			// TODO bu
+			if err != nil {
+				die_error("unable checkout conflicts: %v", err)
+			}
 			return plumbing.ZeroHash, ErrHasConflicts
 		}
 		cc := &object.Commit{
@@ -353,7 +355,10 @@ func (w *Worktree) rebaseWithUpstream(ctx context.Context, our, upstream, onto p
 				MERGE_TREE:  result.NewTree,
 				HEAD:        ourBranch,
 			}, result.Conflicts)
-			return plumbing.ZeroHash, fmt.Errorf("unable checkout conflicts: %v", err)
+			if err != nil {
+				die_error("unable checkout conflicts: %v", err)
+			}
+			return plumbing.ZeroHash, ErrHasConflicts
 		}
 		cc := &object.Commit{
 			Author:       c.Author,
@@ -547,7 +552,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 			return err
 		}
 		if len(result.Conflicts) != 0 {
-			_ = w.checkoutRebaseConflicts(ctx, &RebaseMD{
+			err = w.checkoutRebaseConflicts(ctx, &RebaseMD{
 				REBASE_HEAD: md.REBASE_HEAD,
 				ONTO:        md.ONTO,
 				STOPPED:     c.Hash,
@@ -555,7 +560,9 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 				MERGE_TREE:  result.NewTree,
 				HEAD:        md.HEAD,
 			}, result.Conflicts)
-			// TODO bu
+			if err != nil {
+				die_error("unable checkout conflicts: %v", err)
+			}
 			return ErrHasConflicts
 		}
 		cc := &object.Commit{
@@ -579,10 +586,18 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		die_error("update rebase: %v", err)
 		return err
 	}
+	//Reset HEAD
+	w.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
+	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
+	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+		return err
+	}
+
 	if err := w.Reset(ctx, &ResetOptions{Commit: lastCommitID, Mode: MergeReset}); err != nil {
 		die_error("reset worktree: %v", err)
 		return err
 	}
+	_ = os.Remove(filepath.Join(w.ODB().Root(), REBASE_MD))
 	fmt.Fprintf(os.Stderr, "%s %s..%s\n", W("Updating"), shortHash(md.REBASE_HEAD), shortHash(lastCommitID))
 	fmt.Fprintf(os.Stderr, W("Successfully rebased and updated %s.\n"), md.HEAD)
 	return nil

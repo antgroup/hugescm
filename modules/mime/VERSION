@@ -1,3 +1,3 @@
 https://github.com/gabriel-vasile/mimetype
-4b08d36f22dfde03bec6343c83f9ec71cba4207e
-# csv: stop mutating input byte slices; for #680 (#681)
+b4245c3e46f9ccc0bdff95054e8e086c48801306
+# CSV fix fuzzing tests (#683)

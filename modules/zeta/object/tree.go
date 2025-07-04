@@ -60,7 +60,7 @@ func IsErrEntryNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ErrDirectoryNotFound)
+	_, ok := err.(*ErrEntryNotFound)
 	return ok
 }
 

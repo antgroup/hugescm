@@ -28,7 +28,7 @@ type PushOptions struct {
 	//  zeta push rev:dev  // update reference to rev
 	//  zeta push          // update current branch
 	Refspec     string
-	PushObjects []string
+	PushOptions []string
 	Tag         bool
 	Force       bool
 }
@@ -146,7 +146,7 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 		NewRev:      plumbing.ZeroHash.String(),
 		Metadata:    0,
 		Objects:     0,
-		PushOptions: o.PushObjects,
+		PushOptions: o.PushOptions,
 	}
 	rc, err := t.Push(ctx, pipeReader, cmd)
 	if err != nil {
@@ -256,7 +256,7 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 		NewRev:      newRev.String(),
 		Metadata:    len(po.Metadata),
 		Objects:     len(po.Objects),
-		PushOptions: o.PushObjects,
+		PushOptions: o.PushOptions,
 	}
 	if ref != nil {
 		cmd.OldRev = ref.Hash

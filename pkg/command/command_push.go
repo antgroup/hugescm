@@ -33,7 +33,7 @@ func (c *Push) Run(g *Globals) error {
 	defer r.Close() // nolint
 	if err := r.Push(context.Background(), &zeta.PushOptions{
 		Refspec:     c.Refspec,
-		PushObjects: c.PushOptions,
+		PushOptions: c.PushOptions,
 		Tag:         c.Tag,
 		Force:       c.Force,
 	}); err != nil {

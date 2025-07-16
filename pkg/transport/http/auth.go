@@ -143,7 +143,7 @@ func (c *client) authorize(ctx context.Context, operation transport.Operation) e
 			return err
 		}
 	}
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		cred, err := c.credentialAskOne()
 		if err != nil {
 			return err

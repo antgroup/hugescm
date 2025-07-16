@@ -8,11 +8,11 @@ import (
 
 // Detect will detect current env's language.
 func Detect() (tag language.Tag, err error) {
-	tags, err := DetectAll()
+	lang, err := detect()
 	if err != nil {
 		return language.Und, err
 	}
-	return tags[0], nil
+	return language.Make(lang[0]), nil
 }
 
 // DetectAll will detect current env's all available language.

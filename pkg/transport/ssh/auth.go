@@ -4,12 +4,12 @@
 package ssh
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/strengthen"
@@ -96,7 +96,7 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 		fmt.Fprintf(os.Stderr, "error: unable search user homeDir: %v", err)
 		return err
 	}
-	fd, ferr := os.OpenFile(filepath.Join(homeDir, ".ssh/known_hosts"), os.O_APPEND|os.O_WRONLY, 0600)
+	fd, ferr := os.OpenFile(filepath.Join(homeDir, ".ssh/known_hosts"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if ferr != nil {
 		fmt.Fprintf(os.Stderr, "error: unable open ~/.ssh/known_hosts: %v", ferr)
 		return err
@@ -128,10 +128,6 @@ func filterKnownHostsFiles(files ...string) ([]string, error) {
 			return nil, err
 		}
 	}
-
-	if len(out) == 0 {
-		return nil, errors.New("unable to find any valid known_hosts file, set SSH_KNOWN_HOSTS env variable")
-	}
 	return out, nil
 }
 
@@ -157,11 +153,25 @@ func (c *client) prepareAuthMethod() ([]ssh.AuthMethod, error) {
 	return auth, nil
 }
 
+var (
+	supportedHostKeys = sync.OnceValue(func() []string {
+		keys := ssh.SupportedAlgorithms().HostKeys
+		reorderedKeys := make([]string, 0, len(keys))
+		reorderedKeys = append(reorderedKeys, ssh.KeyAlgoED25519)
+		for _, k := range keys {
+			if k != ssh.KeyAlgoED25519 {
+				reorderedKeys = append(reorderedKeys, k)
+			}
+		}
+		return reorderedKeys
+	})
+)
+
 func (c *client) supportedHostKeyAlgos() []string {
 	if hostKeyAlgorithms := c.hostKeyDB.HostKeyAlgorithms(net.JoinHostPort(c.Hostname, c.Port)); len(hostKeyAlgorithms) != 0 {
 		return hostKeyAlgorithms
 	}
-	return ssh.SupportedAlgorithms().HostKeys
+	return supportedHostKeys()
 }
 
 func (c *client) openPrivateKey(name string) (ssh.Signer, error) {

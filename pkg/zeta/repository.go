@@ -19,6 +19,7 @@ import (
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/vfs"
+	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/config"
 	"github.com/antgroup/hugescm/modules/zeta/object"
@@ -277,7 +278,9 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	}
 	ref, err := tr.FetchReference(ctx, refname)
 	if err != nil {
-		die_error("Fetch reference '%s': %v", refname, err)
+		if !zeta.IsErrExitCode(err) {
+			die_error("Fetch reference '%s': %v", refname, err)
+		}
 		return nil, err
 	}
 	if target.IsZero() {
@@ -364,7 +367,9 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		fmt.Fprintf(os.Stderr, "")
 	}
 	if err := r.fetch(ctx, tr, fetchOpts); err != nil {
-		fmt.Fprintf(os.Stderr, "fetch objects error: %v\n", err)
+		if !zeta.IsErrExitCode(err) {
+			fmt.Fprintf(os.Stderr, "fetch objects error: %v\n", err)
+		}
 		return nil, err
 	}
 	commit := target

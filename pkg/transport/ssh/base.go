@@ -171,7 +171,10 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 		return nil, err
 	}
 	cmd := &Command{client: client, Session: session, Reader: bytes.NewReader(nil), DbgPrint: c.DbgPrint}
-	session.Stderr = os.Stderr // bind stderr
+	if cmd.stderr, err = session.StderrPipe(); err != nil {
+		// always success
+		return nil, err
+	}
 	_ = cmd.Setenv("LANG", os.Getenv("LANG"))
 	_ = cmd.Setenv("TERM", os.Getenv("TERM"))
 	_ = cmd.Setenv("SERVER_NAME", c.Host)

@@ -20,7 +20,7 @@ func TestEscapeArgs(t *testing.T) {
 }
 
 type LastErrorCode struct {
-	lastError *zeta.ErrStatusCode
+	lastError *zeta.ErrExitCode
 	err       error
 }
 

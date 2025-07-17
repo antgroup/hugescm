@@ -78,3 +78,20 @@ func IsErrStatusCode(err error) bool {
 func NewErrStatusCode(statusCode int, format string, a ...any) error {
 	return &ErrStatusCode{Code: statusCode, Message: fmt.Sprintf(format, a...)}
 }
+
+type ErrExitCode struct {
+	Code    int
+	Message string
+}
+
+func (err *ErrExitCode) Error() string {
+	return err.Message
+}
+
+func IsErrExitCode(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(*ErrExitCode)
+	return ok
+}

@@ -4,7 +4,10 @@
 package ssh
 
 import (
+	"bufio"
+	"fmt"
 	"io"
+	"os"
 	"sync"
 
 	"github.com/antgroup/hugescm/modules/zeta"
@@ -15,6 +18,7 @@ type Command struct {
 	client *ssh.Client
 	*ssh.Session
 	io.Reader
+	stderr    io.Reader
 	DbgPrint  func(format string, args ...any)
 	once      sync.Once
 	closer    []io.Closer
@@ -30,7 +34,15 @@ func (c *Command) Setenv(name string, value string) error {
 	return c.Session.Setenv(name, value)
 }
 
+func (c *Command) readStderr() {
+	br := bufio.NewScanner(c.stderr)
+	for br.Scan() {
+		fmt.Fprintf(os.Stderr, "remote: %s\n", br.Text())
+	}
+}
+
 func (c *Command) Start(cmd string) error {
+	go c.readStderr()
 	c.DbgPrint("Sending command: %s", cmd)
 	return c.Session.Start(cmd)
 }
@@ -50,12 +62,14 @@ func (c *Command) Close() error {
 	if err := c.Wait(); err != nil {
 		switch a := err.(type) {
 		case *ssh.ExitError:
-			c.lastError = &zeta.ErrStatusCode{
-				Code:    a.ExitStatus(),
+			exitStatus := a.ExitStatus()
+			c.DbgPrint("Exit status %v", exitStatus)
+			c.lastError = &zeta.ErrExitCode{
+				Code:    exitStatus,
 				Message: a.String(),
 			}
 		case *ssh.ExitMissingError:
-			c.lastError = &zeta.ErrStatusCode{
+			c.lastError = &zeta.ErrExitCode{
 				Code:    500,
 				Message: a.Error(),
 			}

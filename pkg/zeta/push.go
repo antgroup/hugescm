@@ -15,6 +15,7 @@ import (
 	"github.com/antgroup/hugescm/modules/progressbar"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -124,7 +125,9 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 		return err
 	}
 	if err != nil {
-		die("ls-remote failed: %s", err)
+		if !zeta.IsErrExitCode(err) {
+			die("ls-remote failed: %s", err)
+		}
 		error_red("failed to push some refs to '%s'", cleanedRemote)
 		return err
 	}
@@ -207,7 +210,9 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 			theirs = plumbing.NewHash(current.Hash)
 		}
 	case err != nil:
-		die("ls-remote '%s' error: %v", target, err)
+		if !zeta.IsErrExitCode(err) {
+			die("ls-remote '%s' error: %v", target, err)
+		}
 		return err
 	default:
 		oldRev = plumbing.NewHash(ref.Hash)

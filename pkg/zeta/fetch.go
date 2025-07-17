@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -94,7 +95,9 @@ func (r *Repository) fetchAny(ctx context.Context, opts *FetchOptions) error {
 		return err
 	}
 	if err := r.fetch(ctx, t, opts); err != nil {
-		fmt.Fprintf(os.Stderr, "fetch metadata error: %v\n", err)
+		if !zeta.IsErrExitCode(err) {
+			fmt.Fprintf(os.Stderr, "fetch metadata error: %v\n", err)
+		}
 		return err
 	}
 	return nil

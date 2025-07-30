@@ -1,37 +1,54 @@
 package strengthen
 
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+// Port from: https://github.com/docker/go-units/blob/master/size.go
+
 import (
 	"fmt"
-	"math"
+)
+
+const (
+	sizeByteBase = 1024.0
 )
 
 var (
-	sizeList = []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
+	sizeLists = []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"}
 )
 
-func logN(n, b float64) float64 {
-	return math.Log(n) / math.Log(b)
+func getSizeAndUnit(size float64) (float64, string) {
+	i := 0
+	unitsLimit := len(sizeLists) - 1
+	for size >= sizeByteBase && i < unitsLimit {
+		size = size / sizeByteBase
+		i++
+	}
+	return size, sizeLists[i]
 }
 
-func formatBytes(s uint64, base float64) string {
-	if s < 10 {
-		return fmt.Sprintf("%d B", s)
-	}
-	e := math.Floor(logN(float64(s), base))
-	suffix := sizeList[int(e)]
-	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
-	f := "%.0f %s"
-	if val < 10 {
-		f = "%.1f %s"
-	}
-
-	return fmt.Sprintf(f, val, suffix)
+func formatBytes(size float64, precision int) string {
+	size, unit := getSizeAndUnit(size)
+	return fmt.Sprintf("%.*g %s", precision, size, unit)
 }
 
 func FormatSize(s int64) string {
-	return formatBytes(uint64(s), 1024)
+	return formatBytes(float64(s), 4)
 }
 
 func FormatSizeU(s uint64) string {
-	return formatBytes(s, 1024)
+	return formatBytes(float64(s), 4)
 }

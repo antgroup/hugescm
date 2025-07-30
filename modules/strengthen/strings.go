@@ -7,11 +7,6 @@ import (
 	"strings"
 )
 
-var (
-	ErrNotUserID = errors.New("not user id")
-	ErrNotKeyID  = errors.New("not key id")
-)
-
 // StrSplitSkipEmpty skip empty string
 func StrSplitSkipEmpty(s string, sep byte, cap int) []string {
 	sv := make([]string, 0, cap)

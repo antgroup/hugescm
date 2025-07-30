@@ -40,15 +40,15 @@ func getSizeAndUnit(size float64) (float64, string) {
 	return size, sizeLists[i]
 }
 
-func formatBytes(size float64, precision int) string {
+func formatBytes(size float64) string {
 	size, unit := getSizeAndUnit(size)
-	return fmt.Sprintf("%.*g %s", precision, size, unit)
+	return fmt.Sprintf("%.4g %s", size, unit)
 }
 
 func FormatSize(s int64) string {
-	return formatBytes(float64(s), 4)
+	return formatBytes(float64(s))
 }
 
 func FormatSizeU(s uint64) string {
-	return formatBytes(float64(s), 4)
+	return formatBytes(float64(s))
 }

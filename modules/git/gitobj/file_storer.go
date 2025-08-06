@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/antgroup/hugescm/modules/git/gitobj/errors"
+	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
 // fileStorer implements the storer interface by writing to the .git/objects
@@ -59,7 +60,7 @@ func (fs *fileStorer) Store(sha []byte, r io.Reader) (n int64, err error) {
 			return n, err
 		}
 
-		if err = os.Rename(fd.Name(), path); err != nil {
+		if err = strengthen.FinalizeObject(fd.Name(), path); err != nil {
 			return n, err
 		}
 
@@ -95,7 +96,7 @@ func (fs *fileStorer) Store(sha []byte, r io.Reader) (n int64, err error) {
 		return n, err
 	}
 
-	if err = os.Rename(tmp.Name(), path); err != nil {
+	if err = strengthen.FinalizeObject(tmp.Name(), path); err != nil {
 		return n, err
 	}
 

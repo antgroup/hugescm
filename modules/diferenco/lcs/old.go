@@ -203,6 +203,7 @@ func (e *editGraph) bdone(D, k int) (bool, lcs) {
 }
 
 // run the backward algorithm, until success or up to the limit on D.
+// (used only by tests)
 func backward(e *editGraph) lcs {
 	e.setBackward(0, 0, e.ux)
 	if ok, ans := e.bdone(0, 0); ok {
@@ -303,7 +304,7 @@ func twosided(e *editGraph) lcs {
 	e.setBackward(0, 0, e.ux)
 
 	// from D to D+1
-	for D := 0; D < e.limit; D++ {
+	for D := range e.limit {
 		// just finished a backwards pass, so check
 		if got, ok := e.twoDone(D, D); ok {
 			return e.twolcs(D, D, got)

@@ -8,7 +8,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/creack/pty v1.1.24
 	github.com/danieljoos/wincred v1.2.2
-	github.com/dgraph-io/ristretto/v2 v2.2.0
+	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/emirpasic/gods v1.18.1
 	github.com/gliderlabs/ssh v0.3.8
 	github.com/go-sql-driver/mysql v1.9.3

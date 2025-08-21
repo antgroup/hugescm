@@ -44,7 +44,7 @@ func searchEditor() string {
 			}
 		}
 	}
-	return "vi"
+	return defaultEditor
 }
 
 func fallbackEditor() string {

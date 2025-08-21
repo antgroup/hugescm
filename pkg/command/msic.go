@@ -75,7 +75,7 @@ func parseTime(str string) (int64, error) {
 		return r == '.' || r == ' '
 	})
 	if len(vv) != 3 {
-		return 0, fmt.Errorf("bad expiry-date %s", str)
+		return 0, fmt.Errorf("bad expire %s", str)
 	}
 	x, err := strconv.ParseInt(vv[0], 10, 64)
 	if err != nil {
@@ -83,13 +83,13 @@ func parseTime(str string) (int64, error) {
 	}
 	l := typeLen[vv[1]]
 	if l == 0 {
-		return 0, fmt.Errorf("bad expiry-date %s", vv[1])
+		return 0, fmt.Errorf("bad expire %s", vv[1])
 	}
 	return x * l, nil
 }
 
-// expiry-date
-func ExpiryDateDecoder() kong.MapperFunc {
+// expire
+func ExpireDecoder() kong.MapperFunc {
 	return func(ctx *kong.DecodeContext, target reflect.Value) error {
 		t, err := ctx.Scan.PopValue("string")
 		if err != nil {
@@ -112,7 +112,7 @@ func ExpiryDateDecoder() kong.MapperFunc {
 			if err != nil {
 				return err
 			}
-			target.SetInt(t)
+			target.SetInt(t * int64(time.Second))
 		}
 		return nil
 	}

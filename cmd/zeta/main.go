@@ -98,7 +98,7 @@ func main() {
 	var app App
 	ctx := kong.Parse(&app,
 		kong.NamedMapper("size", command.SizeDecoder()),
-		kong.NamedMapper("expiry-date", command.ExpiryDateDecoder()),
+		kong.NamedMapper("expire", command.ExpireDecoder()),
 		kong.Name("zeta"),
 		kong.Description(tr.W("HugeSCM - A next generation cloud-based version control system")),
 		kong.UsageOnError(),

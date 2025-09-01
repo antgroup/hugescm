@@ -108,11 +108,20 @@ func (c *Config) SetOption(section string, subsection string, key string, value 
 	return c
 }
 
-func (c *Config) HashAlgo() string {
+func (c *Config) HashFormat() string {
 	if c.HasSection("extensions") {
-		if hashAlgo := c.Section("extensions").Option("objectformat"); len(hashAlgo) != 0 {
-			return hashAlgo
+		if shaFormat := c.Section("extensions").Option("objectformat"); len(shaFormat) != 0 {
+			return shaFormat
 		}
 	}
 	return "sha1"
+}
+
+func (c *Config) ReferencesFormat() string {
+	if c.HasSection("extensions") {
+		if refFormat := c.Section("extensions").Option("refstorage"); len(refFormat) != 0 {
+			return refFormat
+		}
+	}
+	return "files"
 }

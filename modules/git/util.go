@@ -18,7 +18,7 @@ const (
 	Sundries = "sundries"
 )
 
-func RevParseHashALG(ctx context.Context, repoPath string) (string, error) {
+func RevParseHashFormat(ctx context.Context, repoPath string) (string, error) {
 	cmd := command.New(ctx, repoPath, "git", "rev-parse", "--show-object-format")
 	format, err := cmd.OneLine()
 	if err != nil {
@@ -27,19 +27,28 @@ func RevParseHashALG(ctx context.Context, repoPath string) (string, error) {
 	return format, nil
 }
 
-func HashAlgoFast(repoPath string) (HashAlgo, error) {
+func HashFormatResult(repoPath string) (HashFormat, error) {
 	cfg, err := config.BareDecode(repoPath)
 	if err != nil {
-		return HashAlgoUNKNOWN, err
+		return HashUNKNOWN, err
 	}
-	return HashAlgoFromName(cfg.HashAlgo()), nil
+	return HashFormatFromName(cfg.HashFormat()), nil
 }
 
-func HashAlgoAlwaysOK(repoPath string) HashAlgo {
-	if h, err := HashAlgoFast(repoPath); err == nil {
+func HashFormatOK(repoPath string) HashFormat {
+	if h, err := HashFormatResult(repoPath); err == nil {
 		return h
 	}
-	return HashAlgoSHA1
+	return HashSHA1
+}
+
+// ExtensionsFormat: return objectFormat, refFormat
+func ExtensionsFormat(repoPath string) (HashFormat, string) {
+	cfg, err := config.BareDecode(repoPath)
+	if err != nil {
+		return HashSHA1, "files"
+	}
+	return HashFormatFromName(cfg.HashFormat()), cfg.ReferencesFormat()
 }
 
 // RevParseRepoPath parse repo dir

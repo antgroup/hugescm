@@ -4,13 +4,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
-	"runtime/pprof"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/env"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/pkg/command"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -58,38 +56,6 @@ type App struct {
 	Debug       bool                `name:"debug" help:"Enable debug mode; analyze timing"`
 }
 
-type Tracer struct {
-	closeFn func()
-}
-
-func NewTracer(debugMode bool) *Tracer {
-	d := &Tracer{}
-	if !debugMode {
-		return d
-	}
-	pprofName := filepath.Join(os.TempDir(), fmt.Sprintf("zeta-%d.pprof", os.Getpid()))
-	fd, err := os.Create(pprofName)
-	if err != nil {
-		return d
-	}
-	if err = pprof.StartCPUProfile(fd); err != nil {
-		_ = fd.Close()
-		return d
-	}
-	d.closeFn = func() {
-		pprof.StopCPUProfile()
-		_ = fd.Close()
-		fmt.Fprintf(os.Stderr, "Task operation completed\ngo tool pprof -http=\":8080\" %s\n", pprofName)
-	}
-	return d
-}
-
-func (d *Tracer) Close() {
-	if d.closeFn != nil {
-		d.closeFn()
-	}
-}
-
 func main() {
 	_ = env.InitializeEnv()
 	// initialize locale
@@ -111,9 +77,9 @@ func main() {
 		},
 	)
 	now := time.Now()
-	t := NewTracer(app.Debug)
+	m := strengthen.NewMeasurer("zeta", app.Debug)
 	err := ctx.Run(&app.Globals)
-	t.Close()
+	m.Close()
 	if app.Verbose {
 		app.DbgPrint("time spent: %v", time.Since(now))
 	}

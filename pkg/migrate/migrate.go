@@ -81,7 +81,7 @@ func NewMigrator(ctx context.Context, opts *MigrateOptions) (*Migrator, error) {
 		return nil, err
 	}
 
-	odb, err := git.NewODB(fromPath, git.HashAlgoAlwaysOK(opts.From))
+	odb, err := git.NewODB(fromPath, git.HashFormatOK(opts.From))
 	if err != nil {
 		return nil, err
 	}

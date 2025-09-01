@@ -28,7 +28,7 @@ var (
 	ErrInvalidBranchName = errors.New("invalid initial branch name")
 )
 
-func NewRepo(ctx context.Context, repoPath, branch string, bare bool, hashAlgo HashAlgo) error {
+func NewRepo(ctx context.Context, repoPath, branch string, bare bool, hashAlgo HashFormat) error {
 	branch = strings.TrimPrefix(branch, BranchPrefix)
 	stderr := command.NewStderr()
 	psArgs := []string{"init", "--initial-branch=" + branch, "--object-format=" + hashAlgo.String()}

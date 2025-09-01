@@ -4,51 +4,16 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
-	"runtime/pprof"
 
 	"github.com/antgroup/hugescm/modules/env"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/version"
 )
 
-type Debugger struct {
-	closeFn func()
-}
-
-func NewDebugger(debugMode bool) *Debugger {
-	d := &Debugger{}
-	if !debugMode {
-		return d
-	}
-	pprofName := filepath.Join(os.TempDir(), fmt.Sprintf("zeta-%d.pprof", os.Getpid()))
-	fd, err := os.Create(pprofName)
-	if err != nil {
-		return d
-	}
-	if err = pprof.StartCPUProfile(fd); err != nil {
-		_ = fd.Close()
-		return d
-	}
-	d.closeFn = func() {
-		pprof.StopCPUProfile()
-		_ = fd.Close()
-		fmt.Fprintf(os.Stderr, "Task operation completed\ngo tool pprof -http=\":8080\" %s\n", pprofName)
-	}
-	return d
-}
-
-func (d *Debugger) Close() {
-	if d.closeFn != nil {
-		d.closeFn()
-	}
-}
-
 func main() {
-
 	// delay initialize git env
 	_ = env.InitializeEnv()
 	// initialize locale
@@ -66,8 +31,8 @@ func main() {
 			"version": version.GetVersionString(),
 		},
 	)
-	d := NewDebugger(app.Debug)
-	defer d.Close()
+	m := strengthen.NewMeasurer("zeta-mc", app.Debug)
+	defer m.Close()
 	err := ctx.Run(&app.Globals)
 	if err != nil {
 		os.Exit(1)

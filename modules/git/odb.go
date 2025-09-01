@@ -21,9 +21,9 @@ func (o *ODB) Close() error {
 }
 
 // NewODB open repo default odb
-func NewODB(repoPath string, hashAlgo HashAlgo) (*ODB, error) {
+func NewODB(repoPath string, hashAlgo HashFormat) (*ODB, error) {
 	var options []gitobj.Option
-	if hashAlgo != HashAlgoUNKNOWN {
+	if hashAlgo != HashUNKNOWN {
 		options = append(options, gitobj.ObjectFormat(gitobj.ObjectFormatAlgorithm(hashAlgo.String())))
 	}
 	objdir := filepath.Join(repoPath, "objects")

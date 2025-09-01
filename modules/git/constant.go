@@ -29,117 +29,6 @@ const (
 	ReferenceNameDefault  = "refs/heads/master"
 )
 
-// HashAlgo: https://git-scm.com/docs/hash-function-transition/
-type HashAlgo int
-
-const (
-	HashAlgoUNKNOWN HashAlgo = iota // UNKNOWN
-	HashAlgoSHA1                    // SHA1
-	HashAlgoSHA256                  // SHA256
-)
-
-func (h HashAlgo) String() string {
-	switch h {
-	case HashAlgoSHA1:
-		return GIT_SHA1_NAME
-	case HashAlgoSHA256:
-		return GIT_SHA256_NAME
-	}
-	return "unknown"
-}
-
-// RawSize: raw length
-func (h HashAlgo) RawSize() int {
-	switch h {
-	case HashAlgoSHA1:
-		return GIT_SHA1_RAWSZ
-	case HashAlgoSHA256:
-		return GIT_SHA256_RAWSZ
-	}
-	return 0
-}
-
-// HexSize: hex size
-func (h HashAlgo) HexSize() int {
-	switch h {
-	case HashAlgoSHA1:
-		return GIT_SHA1_HEXSZ
-	case HashAlgoSHA256:
-		return GIT_SHA256_HEXSZ
-	}
-	return 0
-}
-
-func (h HashAlgo) EmptyTreeID() string {
-	switch h {
-	case HashAlgoSHA1:
-		return GIT_SHA1_EMPTY_TREE
-	case HashAlgoSHA256:
-		return GIT_SHA256_EMPTY_TREE
-	}
-	return ""
-}
-
-func (h HashAlgo) EmptyBlobID() string {
-	switch h {
-	case HashAlgoSHA1:
-		return GIT_SHA1_EMPTY_BLOB
-	case HashAlgoSHA256:
-		return GIT_SHA256_EMPTY_BLOB
-	}
-	return ""
-}
-
-func (h HashAlgo) ZeroOID() string {
-	switch h {
-	case HashAlgoSHA1:
-		return GIT_SHA1_ZERO_HEX
-	case HashAlgoSHA256:
-		return GIT_SHA256_ZERO_HEX
-	}
-	return ""
-}
-
-func (h HashAlgo) Hasher() hash.Hash {
-	switch h {
-	case HashAlgoSHA1:
-		return sha1.New()
-	case HashAlgoSHA256:
-		return sha256.New()
-	}
-	return sha1.New()
-}
-
-func HashAlgoFromName(algo string) HashAlgo {
-	switch algo {
-	case GIT_SHA1_NAME:
-		return HashAlgoSHA1
-	case GIT_SHA256_NAME:
-		return HashAlgoSHA256
-	}
-	return HashAlgoSHA1
-}
-
-func HashAlgoFromHexSize(hlen int) HashAlgo {
-	switch hlen {
-	case GIT_SHA1_HEXSZ:
-		return HashAlgoSHA1
-	case GIT_SHA256_HEXSZ:
-		return HashAlgoSHA256
-	}
-	return HashAlgoUNKNOWN
-}
-
-func HashAlgoFromRawSize(rlen int) HashAlgo {
-	switch rlen {
-	case GIT_SHA1_RAWSZ:
-		return HashAlgoSHA1
-	case GIT_SHA256_RAWSZ:
-		return HashAlgoSHA256
-	}
-	return HashAlgoUNKNOWN
-}
-
 const (
 	reverseHexTable = "" +
 		"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" +
@@ -227,4 +116,115 @@ func ConformingEmptyBlob(hexOID string) string {
 		return GIT_SHA256_EMPTY_BLOB
 	}
 	return GIT_SHA1_EMPTY_BLOB
+}
+
+// HashFormat: https://git-scm.com/docs/hash-function-transition/
+type HashFormat int
+
+const (
+	HashUNKNOWN HashFormat = iota // UNKNOWN
+	HashSHA1                      // SHA1
+	HashSHA256                    // SHA256
+)
+
+func (h HashFormat) String() string {
+	switch h {
+	case HashSHA1:
+		return GIT_SHA1_NAME
+	case HashSHA256:
+		return GIT_SHA256_NAME
+	}
+	return "unknown"
+}
+
+// RawSize: raw length
+func (h HashFormat) RawSize() int {
+	switch h {
+	case HashSHA1:
+		return GIT_SHA1_RAWSZ
+	case HashSHA256:
+		return GIT_SHA256_RAWSZ
+	}
+	return 0
+}
+
+// HexSize: hex size
+func (h HashFormat) HexSize() int {
+	switch h {
+	case HashSHA1:
+		return GIT_SHA1_HEXSZ
+	case HashSHA256:
+		return GIT_SHA256_HEXSZ
+	}
+	return 0
+}
+
+func (h HashFormat) EmptyTreeID() string {
+	switch h {
+	case HashSHA1:
+		return GIT_SHA1_EMPTY_TREE
+	case HashSHA256:
+		return GIT_SHA256_EMPTY_TREE
+	}
+	return ""
+}
+
+func (h HashFormat) EmptyBlobID() string {
+	switch h {
+	case HashSHA1:
+		return GIT_SHA1_EMPTY_BLOB
+	case HashSHA256:
+		return GIT_SHA256_EMPTY_BLOB
+	}
+	return ""
+}
+
+func (h HashFormat) ZeroOID() string {
+	switch h {
+	case HashSHA1:
+		return GIT_SHA1_ZERO_HEX
+	case HashSHA256:
+		return GIT_SHA256_ZERO_HEX
+	}
+	return ""
+}
+
+func (h HashFormat) Hasher() hash.Hash {
+	switch h {
+	case HashSHA1:
+		return sha1.New()
+	case HashSHA256:
+		return sha256.New()
+	}
+	return sha1.New()
+}
+
+func HashFormatFromName(algo string) HashFormat {
+	switch algo {
+	case GIT_SHA1_NAME:
+		return HashSHA1
+	case GIT_SHA256_NAME:
+		return HashSHA256
+	}
+	return HashSHA1
+}
+
+func HashFormatFromSize(size int) HashFormat {
+	switch size {
+	case GIT_SHA1_HEXSZ:
+		return HashSHA1
+	case GIT_SHA256_HEXSZ:
+		return HashSHA256
+	}
+	return HashUNKNOWN
+}
+
+func HashFormatFromBinarySize(bsize int) HashFormat {
+	switch bsize {
+	case GIT_SHA1_RAWSZ:
+		return HashSHA1
+	case GIT_SHA256_RAWSZ:
+		return HashSHA256
+	}
+	return HashUNKNOWN
 }

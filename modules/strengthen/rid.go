@@ -6,7 +6,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"time"
 
 	"github.com/antgroup/hugescm/modules/base58"
 )
@@ -79,4 +81,15 @@ func NewRandomString(length int) string {
 	buf := make([]byte, length)
 	_, _ = io.ReadFull(rd, buf[:])
 	return base64.URLEncoding.EncodeToString(buf)[0:length]
+}
+
+const (
+	DateOnly = "20060102"
+)
+
+func NewSessionID() string {
+	now := time.Now()
+	buf := make([]byte, 16)
+	_, _ = io.ReadFull(rd, buf[:])
+	return fmt.Sprintf("%s-%s", now.Format(DateOnly), base58.Encode(buf))
 }

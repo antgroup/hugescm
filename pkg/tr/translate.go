@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/antgroup/hugescm/pkg/tr/locale"
+	"github.com/antgroup/hugescm/modules/locale"
 )
 
 //go:embed languages

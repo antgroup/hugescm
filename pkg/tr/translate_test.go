@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/antgroup/hugescm/pkg/tr/locale"
+	"github.com/antgroup/hugescm/modules/locale"
 	"golang.org/x/text/language"
 )
 

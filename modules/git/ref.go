@@ -332,7 +332,7 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 	}
 	defer d.Close() // nolint
 
-	cc, err := d.ResolveCommit(br.Hash)
+	cc, err := d.ParseRev(br.Hash)
 	if IsErrNotExist(err) {
 		return nil, NewBranchNotFound(refname)
 	}

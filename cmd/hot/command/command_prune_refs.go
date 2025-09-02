@@ -59,11 +59,12 @@ var (
 )
 
 var statReferencesFormatFields = []string{
-	"%(refname)", "%(objectname)", "%(committername)", "%(committerdate:iso-strict)",
+	"%(refname)", "%(refname:short)", "%(objectname)", "%(committername)", "%(committerdate:iso-strict)",
 }
 
 type Reference struct {
 	Name       string    `json:"name"`
+	ShortName  string    `json:"short_name"`
 	Hash       string    `json:"hash"`
 	Committer  string    `json:"committer"`
 	LastUpdate time.Time `json:"last_update"`
@@ -76,9 +77,10 @@ func parseReferenceLine(referenceLine string) (*Reference, error) {
 	}
 	return &Reference{
 		Name:       elements[0],
-		Hash:       elements[1],
-		Committer:  elements[2],
-		LastUpdate: git.PareTimeFallback(elements[3]),
+		ShortName:  elements[1],
+		Hash:       elements[2],
+		Committer:  elements[3],
+		LastUpdate: git.PareTimeFallback(elements[4]),
 	}, nil
 }
 
@@ -180,7 +182,7 @@ func (c *PruneRefs) pruneRefs(ctx context.Context, repoPath string, references [
 				return err
 			}
 		}
-		fmt.Fprintf(os.Stderr, "\x1b[2K\rDELETE '%s' (OID: %s Date: %s Committer: %s)", ref.Name, ref.Hash, ref.LastUpdate.Format(time.RFC3339), ref.Committer)
+		fmt.Fprintf(os.Stderr, "\x1b[2K\rDELETE '%s' (OID: %s Date: %s Committer: %s)", ref.ShortName, ref.Hash, ref.LastUpdate.Format(time.RFC3339), ref.Committer)
 	}
 	if c.DryRun {
 		return nil

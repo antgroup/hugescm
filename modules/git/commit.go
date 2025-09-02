@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/command"
@@ -224,4 +225,32 @@ func RevUniqueList(ctx context.Context, repoPath string, ours, theirs string) ([
 		return nil, fmt.Errorf("scanning rev-list output: %w", err)
 	}
 	return todoList, nil
+}
+
+func RevDivergingCount(ctx context.Context, repoPath string, from, to string) (int, int, error) {
+	psArgs := []string{"rev-list", "--count", "--left-right"}
+	psArgs = append(psArgs, fmt.Sprintf("%s...%s", from, to))
+	stderr := command.NewStderr()
+	cmd := command.NewFromOptions(ctx, &command.RunOpts{
+		Stderr:   stderr,
+		RepoPath: repoPath,
+	}, "git", psArgs...)
+	line, err := cmd.OneLine()
+	if err != nil {
+		return 0, 0, err
+	}
+	counts := strings.Fields(string(line))
+	if len(counts) != 2 {
+		return 0, 0, fmt.Errorf("invalid output from git rev-list --left-right: %v", line)
+	}
+
+	left, err := strconv.ParseInt(counts[0], 10, 32)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid left count value: %v", counts[0])
+	}
+	right, err := strconv.ParseInt(counts[1], 10, 32)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid right count value: %v", counts[1])
+	}
+	return int(left), int(right), nil
 }

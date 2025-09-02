@@ -272,8 +272,8 @@ func (d *Decoder) ReadEntry(revision string, path string) (*Object, error) {
 	return d.ObjectReader(revision + ":" + path)
 }
 
-// ResolveCommit resolve peeled commit
-func (d *Decoder) ResolveCommit(objectKey string) (*Commit, error) {
+// ParseRev resolve peeled commit
+func (d *Decoder) ParseRev(objectKey string) (*Commit, error) {
 	oid := objectKey
 	for {
 		obj, err := d.object(oid)
@@ -346,4 +346,13 @@ func (d *Decoder) ExhaustiveObjectReader(location string) (*Object, error) {
 		i += pos + 1
 	}
 	return nil, NewObjectNotFound(location)
+}
+
+func ParseRev(ctx context.Context, repoPath string, revision string) (*Commit, error) {
+	d, err := NewDecoder(ctx, repoPath)
+	if err != nil {
+		return nil, err
+	}
+	defer d.Close()
+	return d.ParseRev(revision)
 }

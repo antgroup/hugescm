@@ -16,16 +16,18 @@ import (
 
 type App struct {
 	command.Globals
-	Size      command.Size      `cmd:"size" help:"Show repositories size and large files"`
-	Remove    command.Remove    `cmd:"remove" help:"Remove files in repository and rewrite history"`
-	Smart     command.Smart     `cmd:"smart" help:"Interactive mode to clean repository large files"`
-	Graft     command.Graft     `cmd:"graft" help:"Interactive mode to clean repository large files (Grafting mode)"`
-	Mc        command.Mc        `cmd:"mc" help:"Migrate a repository to the specified object format"`
-	Unbranch  command.Unbranch  `cmd:"unbranch " help:"Linearize repository history"`
-	PruneRefs command.PruneRefs `cmd:"prune-refs" help:"Prune refs by prefix"`
-	Snapshot  command.Snapshot  `cmd:"snapshot" help:"Create a snapshot commit for the worktree"`
-	Az        command.Az        `cmd:"az" help:"Analyze repository large files"`
-	Debug     bool              `name:"debug" help:"Enable debug mode; analyze timing"`
+	Size       command.Size       `cmd:"size" help:"Show repositories size and large files"`
+	Remove     command.Remove     `cmd:"remove" help:"Remove files in repository and rewrite history"`
+	Smart      command.Smart      `cmd:"smart" help:"Interactive mode to clean repository large files"`
+	Graft      command.Graft      `cmd:"graft" help:"Interactive mode to clean repository large files (Grafting mode)"`
+	Mc         command.Mc         `cmd:"mc" help:"Migrate a repository to the specified object format"`
+	Unbranch   command.Unbranch   `cmd:"unbranch " help:"Linearize repository history"`
+	PruneRefs  command.PruneRefs  `cmd:"prune-refs" help:"Prune refs by prefix"`
+	ScanRefs   command.ScanRefs   `cmd:"scan-refs" help:"Scan references in a local repository"`
+	ExpireRefs command.ExpireRefs `cmd:"expire-refs" help:"Clean up expired references"`
+	Snapshot   command.Snapshot   `cmd:"snapshot" help:"Create a snapshot commit for the worktree"`
+	Az         command.Az         `cmd:"az" help:"Analyze repository large files"`
+	Debug      bool               `name:"debug" help:"Enable debug mode; analyze timing"`
 }
 
 func main() {

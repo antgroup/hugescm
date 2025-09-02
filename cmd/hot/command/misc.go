@@ -3,9 +3,11 @@
 package command
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -148,4 +150,12 @@ func ExpireDecoder() kong.MapperFunc {
 
 func W(a string) string {
 	return tr.W(a)
+}
+
+func die(format string, a ...any) {
+	var b bytes.Buffer
+	_, _ = b.WriteString(W("fatal: "))
+	fmt.Fprintf(&b, format, a...)
+	_ = b.WriteByte('\n')
+	_, _ = os.Stderr.Write(b.Bytes())
 }

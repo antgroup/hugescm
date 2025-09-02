@@ -23,6 +23,7 @@ type App struct {
 	Mc        command.Mc        `cmd:"mc" help:"Migrate a repository to the specified object format"`
 	Unbranch  command.Unbranch  `cmd:"unbranch " help:"Linearize repository history"`
 	PruneRefs command.PruneRefs `cmd:"prune-refs" help:"Prune refs by prefix"`
+	Snapshot  command.Snapshot  `cmd:"snapshot" help:"Create a snapshot commit for the worktree"`
 	Az        command.Az        `cmd:"az" help:"Analyze repository large files"`
 	Debug     bool              `name:"debug" help:"Enable debug mode; analyze timing"`
 }

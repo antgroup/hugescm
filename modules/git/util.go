@@ -69,6 +69,24 @@ func RevParseRepoPath(ctx context.Context, p string) string {
 	return filepath.Join(p, repoPath)
 }
 
+// --show-toplevel
+func RevParseWorktree(ctx context.Context, p string) (string, error) {
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{
+			Environ:  os.Environ(),
+			RepoPath: p,
+		},
+		"git", "rev-parse", "--show-toplevel")
+	repoPath, err := cmd.OneLine()
+	if err != nil {
+		return "", err
+	}
+	if filepath.IsAbs(repoPath) {
+		return repoPath, nil
+	}
+	return filepath.Join(p, repoPath), nil
+}
+
 var (
 	ErrBlankRevision = errors.New("empty revision")
 	ErrBadRevision   = errors.New("revision can't start with '-'")

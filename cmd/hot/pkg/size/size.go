@@ -80,7 +80,7 @@ func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error
 	sum := newSummer()
 	psArgs := []string{"rev-list", "--objects", "--all"}
 	if err := sum.resolveName(ctx, repoPath, e.objects, psArgs, sum.printName); err != nil {
-		fmt.Fprintf(os.Stderr, "blat size: resolve file name error: %v", err)
+		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
 		return err
 	}
 	if len(sum.files) != 0 {
@@ -96,7 +96,7 @@ func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error
 	}
 	diskSize, err := strengthen.Du(filepath.Join(repoPath, "objects"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "blat size: check repo disk usage error: %v", err)
+		fmt.Fprintf(os.Stderr, "hot size: check repo disk usage error: %v", err)
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "%s: \x1b[38;2;32;225;215m%s\x1b[0m %s: \x1b[38;2;72;198;239m%s\x1b[0m\n", tr.W("Repository"), repoPath, tr.W("size"), strengthen.FormatSize(diskSize))
@@ -107,7 +107,7 @@ func (e *Executor) currentCheck(ctx context.Context, repoPath string, objects ma
 	sum := newSummer()
 	psArgs := []string{"rev-list", "--objects", "HEAD"}
 	if err := sum.resolveName(ctx, repoPath, objects, psArgs, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "blat size: resolve file name error: %v", err)
+		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
 		return
 	}
 	if len(sum.files) != 0 {

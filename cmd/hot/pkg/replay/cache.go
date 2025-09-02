@@ -1,3 +1,6 @@
+// Copyright (c) 2014- GitHub, Inc. and Git LFS contributors
+// Copyright ©️ Ant Group. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package replay
 
 import (

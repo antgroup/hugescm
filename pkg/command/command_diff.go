@@ -180,7 +180,7 @@ func (c *Diff) nameStatus() error {
 	return nil
 }
 
-func (c *Diff) diffNoIndex(g *Globals) error {
+func (c *Diff) diffNoIndex() error {
 	if len(c.From) == 0 || len(c.To) == 0 {
 		die("missing arg, example: zeta diff --no-index from to")
 		return ErrArgRequired
@@ -237,10 +237,10 @@ func (c *Diff) diffNoIndex(g *Globals) error {
 
 func (c *Diff) Run(g *Globals) error {
 	if c.NoIndex {
-		return c.diffNoIndex(g)
+		return c.diffNoIndex()
 	}
 	if _, _, err := zeta.FindZetaDir(g.CWD); err != nil {
-		return c.diffNoIndex(g)
+		return c.diffNoIndex()
 	}
 	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
 		Worktree: g.CWD,

@@ -38,7 +38,7 @@ func (c *MergeFile) labelName(i int, n string) string {
 	return n
 }
 
-func (c *MergeFile) mergeExtra(g *Globals) error {
+func (c *MergeFile) mergeExtra() error {
 	var a diferenco.Algorithm
 	var err error
 	if len(c.DiffAlgorithm) != 0 {
@@ -94,7 +94,7 @@ func (c *MergeFile) mergeExtra(g *Globals) error {
 
 func (c *MergeFile) Run(g *Globals) error {
 	if !c.ObjectID {
-		return c.mergeExtra(g)
+		return c.mergeExtra()
 	}
 	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
 		Worktree: g.CWD,

@@ -101,7 +101,7 @@ func (c *Checkout) revision() string {
 	return "HEAD"
 }
 
-func (c *Checkout) runCompatibleCheckout0(g *Globals, r *zeta.Repository, worktreeOnly bool, branchName plumbing.ReferenceName, oid plumbing.Hash, pathSpec []string) error {
+func (c *Checkout) runCompatibleCheckout0(r *zeta.Repository, worktreeOnly bool, branchName plumbing.ReferenceName, oid plumbing.Hash, pathSpec []string) error {
 	w := r.Worktree()
 	if len(pathSpec) != 0 {
 		if err := w.DoPathCo(context.Background(), worktreeOnly, oid, pathSpec); err != nil {
@@ -132,7 +132,7 @@ func (c *Checkout) runCompatibleCheckout0(g *Globals, r *zeta.Repository, worktr
 	return nil
 }
 
-func (c *Checkout) runCompatibleCheckout(g *Globals, r *zeta.Repository) error {
+func (c *Checkout) runCompatibleCheckout(r *zeta.Repository) error {
 	pathSpec := make([]string, 0, len(c.Args))
 	// zeta checkout <something> [<paths>]
 	if len(c.Args) == 0 {
@@ -142,7 +142,7 @@ func (c *Checkout) runCompatibleCheckout(g *Globals, r *zeta.Repository) error {
 			diev("checkout resolve HEAD error: %v", err)
 			return err
 		}
-		return c.runCompatibleCheckout0(g, r, true, head.Name(), head.Hash(), pathSpec)
+		return c.runCompatibleCheckout0(r, true, head.Name(), head.Hash(), pathSpec)
 	}
 	rev, refname, err := r.RevisionEx(context.Background(), c.Args[0])
 	if zeta.IsErrUnknownRevision(err) {
@@ -153,7 +153,7 @@ func (c *Checkout) runCompatibleCheckout(g *Globals, r *zeta.Repository) error {
 			return err
 		}
 		trace.DbgPrint("resolve HEAD: %s", head.Name())
-		return c.runCompatibleCheckout0(g, r, true, head.Name(), head.Hash(), slashPaths(pathSpec))
+		return c.runCompatibleCheckout0(r, true, head.Name(), head.Hash(), slashPaths(pathSpec))
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "zeta checkout: resolve revision error: %v\n", err)
@@ -167,7 +167,7 @@ func (c *Checkout) runCompatibleCheckout(g *Globals, r *zeta.Repository) error {
 	if len(pathSpec) != 0 {
 		worktreeOnly = r.IsCurrent(refname)
 	}
-	return c.runCompatibleCheckout0(g, r, worktreeOnly, refname, rev, slashPaths(pathSpec))
+	return c.runCompatibleCheckout0(r, worktreeOnly, refname, rev, slashPaths(pathSpec))
 }
 
 func (c *Checkout) Run(g *Globals) error {
@@ -199,7 +199,7 @@ func (c *Checkout) Run(g *Globals) error {
 		diev("--one is not compatible with checkout revision or files")
 		return ErrFlagsIncompatible
 	}
-	if err := c.runCompatibleCheckout(g, r); err != nil {
+	if err := c.runCompatibleCheckout(r); err != nil {
 		return err
 	}
 	return nil

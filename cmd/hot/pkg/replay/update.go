@@ -1,3 +1,4 @@
+// Copyright (c) 2014- GitHub, Inc. and Git LFS contributors
 // Copyright ©️ Ant Group. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 package replay
@@ -7,6 +8,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
@@ -45,13 +47,30 @@ func (r *refUpdater) UpdateRefs(ctx context.Context, b *bar.ProgressBar) error {
 	for _, ref := range r.References {
 		maxNameLen = max(maxNameLen, len(ref.Name))
 	}
+	u, err := git.NewRefUpdater(ctx, r.RepoPath, nil, false)
+	if err != nil {
+		return err
+	}
+	defer u.Close() // nolint
+	if err := u.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "RefUpdater: Start ref updater error: %v\n", err)
+		return err
+	}
 
-	seen := make(map[string]struct{})
+	seen := make(map[string]bool)
 	for _, ref := range r.References {
-		if err := r.updateOneRef(ctx, maxNameLen, seen, ref); err != nil {
+		if err := r.updateOneRef(u, maxNameLen, seen, ref); err != nil {
 			return err
 		}
 		b.Add(1)
+	}
+	if err := u.Prepare(); err != nil {
+		fmt.Fprintf(os.Stderr, "\x1b[2K\rRefUpdater: Prepare error: %v\n", err)
+		return err
+	}
+	if err := u.Commit(); err != nil {
+		fmt.Fprintf(os.Stderr, "\x1b[2K\rRefUpdater: Commit error: %v\n", err)
+		return err
 	}
 
 	return nil
@@ -94,15 +113,15 @@ func (r *refUpdater) rewriteTag(oid []byte) ([]byte, error) {
 	return oid, nil
 }
 
-func (r *refUpdater) updateOneRef(ctx context.Context, maxNameLen int, seen map[string]struct{}, ref *git.Reference) error {
+func (r *refUpdater) updateOneRef(u *git.RefUpdater, maxNameLen int, seen map[string]bool, ref *git.Reference) error {
 	sha, err := hex.DecodeString(ref.Hash)
 	if err != nil {
 		return fmt.Errorf("could not decode: %q", ref.Hash)
 	}
-	if _, ok := seen[ref.Name]; ok {
+	if seen[ref.Name] {
 		return nil
 	}
-	seen[ref.Name] = struct{}{}
+	seen[ref.Name] = true
 
 	to, ok := r.CacheFn(sha)
 
@@ -118,7 +137,7 @@ func (r *refUpdater) updateOneRef(ctx context.Context, maxNameLen int, seen map[
 	if !ok {
 		return nil
 	}
-	if err := git.ReferenceUpdate(ctx, r.RepoPath, ref.Name, "", hex.EncodeToString(to), true); err != nil {
+	if err := u.Update(ref.Name, hex.EncodeToString(to), ref.Hash); err != nil {
 		return err
 	}
 

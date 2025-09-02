@@ -44,7 +44,7 @@ Build = 0
 
 [StringFileInfo]
 Comments = ""
-CompanyName = "AntCode Team"
+CompanyName = "AntGroup Inc"
 FileDescription = "HugeSCM - A next generation cloud-based version control system"
 FileVersion = ""
 InternalName = "zeta-mc.exe"

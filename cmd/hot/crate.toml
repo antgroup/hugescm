@@ -1,0 +1,8 @@
+name = "hot"
+description = "HugeSCM - A next generation cloud-based version control system"
+destination = "bin"
+version = "0.18.3"
+goflags = [
+    "-ldflags",
+    "-X github.com/antgroup/hugescm/pkg/version.version=$BUILD_VERSION -X github.com/antgroup/hugescm/pkg/version.buildTime=$BUILD_TIME -X github.com/antgroup/hugescm/pkg/version.buildCommit=$BUILD_COMMIT -X github.com/antgroup/hugescm/pkg/version.telemetry=true",
+]

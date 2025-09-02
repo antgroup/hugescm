@@ -11,10 +11,10 @@ GO_LDFLAGS    := -ldflags '-X ${PKG}/pkg/version.version=${BUILD_VERSION} -X ${P
 
 
 .PHONY: all
-all: zeta zeta-mc
+all: zeta zeta-mc hot
 
 .PHONY: build
-build: zeta zeta-mc
+build: zeta zeta-mc hot
 
 .PHONY: zeta
 zeta:
@@ -23,6 +23,10 @@ zeta:
 .PHONY: zeta-mc
 zeta-mc:
 	GOOS=${BUILD_TARGET} GOARCH=${BUILD_ARCH} go build -C cmd/zeta-mc ${GO_LDFLAGS} -o ${CURDIR}/bin/zeta-mc
+
+.PHONY: hot
+hot:
+	GOOS=${BUILD_TARGET} GOARCH=${BUILD_ARCH} go build -C cmd/hot ${GO_LDFLAGS} -o ${CURDIR}/bin/hot
 
 .PHONY: zeta-serve
 zeta-serve:

@@ -13,6 +13,7 @@ authors = [""]
 crates = [
     "cmd/zeta",    # zeta client
     "cmd/zeta-mc", # zeta migrate tool
+    "cmd/hot",
 ]
 
 [[include]]

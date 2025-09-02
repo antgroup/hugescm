@@ -20,6 +20,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -151,7 +152,7 @@ func (w *Worktree) checkoutOneAfterAnother(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		w.DbgPrint("resolve entry: %v", e)
+		trace.DbgPrint("resolve entry: %v", e)
 		entries = append(entries, &odb.TreeEntry{Path: name, TreeEntry: e})
 	}
 	return w.checkoutOneAfterAnother0(ctx, entries)
@@ -437,7 +438,7 @@ func (w *Worktree) DoPathCo(ctx context.Context, worktreeOnly bool, oid plumbing
 		return err
 	}
 	if hasDot {
-		w.DbgPrint("checkout all files")
+		trace.DbgPrint("checkout all files")
 		return w.checkoutDot(ctx, worktreeOnly, root)
 	}
 	if worktreeOnly {
@@ -447,7 +448,7 @@ func (w *Worktree) DoPathCo(ctx context.Context, worktreeOnly bool, oid plumbing
 	if err != nil {
 		return err
 	}
-	w.DbgPrint("matched entries: %d", len(entries))
+	trace.DbgPrint("matched entries: %d", len(entries))
 	ci := newMissingFetcher()
 	largeSize := w.largeSize()
 	for _, e := range entries {

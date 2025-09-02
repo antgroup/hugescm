@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/term"
-	"github.com/antgroup/hugescm/modules/trace"
 )
 
 const (
@@ -151,18 +150,4 @@ func (c *downloader) Do(req *http.Request) (*http.Response, error) {
 		traceResponse(resp)
 	}
 	return resp, nil
-}
-
-func (c *client) DbgPrint(format string, args ...any) {
-	if !c.verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
-}
-
-func (c *downloader) DbgPrint(format string, args ...any) {
-	if !c.verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
 }

@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -77,7 +78,7 @@ func (r *Repository) SwitchBranch(ctx context.Context, branch string, so *Switch
 			die("couldn't find branch '%s', add '--remote' download and switch to this branch", refname)
 			return err
 		}
-		r.DbgPrint("switch branch from remote: %v", branch)
+		trace.DbgPrint("switch branch from remote: %v", branch)
 		return r.switchBranchFromRemote(ctx, branch, so)
 	}
 	if err != nil {
@@ -88,7 +89,7 @@ func (r *Repository) SwitchBranch(ctx context.Context, branch string, so *Switch
 		die("reference %s not branch", branch)
 		return err
 	}
-	r.DbgPrint("switch branch from local: %v", branch)
+	trace.DbgPrint("switch branch from local: %v", branch)
 	w := r.Worktree()
 	if err := w.Checkout(ctx, &CheckoutOptions{Branch: refname, Merge: so.Merge, Force: so.Force, First: so.firstSwitch, One: so.one}); err != nil {
 		switchError(branch, err)

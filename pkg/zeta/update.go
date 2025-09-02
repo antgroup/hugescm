@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -17,7 +18,7 @@ func (r *Repository) DoUpdate(ctx context.Context, refname plumbing.ReferenceNam
 			return err
 		}
 		if err := r.rdb.Delete(refname); err != nil {
-			r.DbgPrint("delete reflog: %v", err)
+			trace.DbgPrint("delete reflog: %v", err)
 		}
 		return nil
 	}
@@ -37,7 +38,7 @@ func (r *Repository) DoUpdate(ctx context.Context, refname plumbing.ReferenceNam
 	}
 	ro.Push(newRev, committer, message)
 	if err = r.rdb.Write(ro); err != nil {
-		r.DbgPrint("reflog: %v", err)
+		trace.DbgPrint("reflog: %v", err)
 	}
 	return nil
 }
@@ -49,7 +50,7 @@ func (r *Repository) writeHEADReflog(newRev plumbing.Hash, committer *object.Sig
 	}
 	ro.Push(newRev, committer, message)
 	if err = r.rdb.Write(ro); err != nil {
-		r.DbgPrint("reflog: %v", err)
+		trace.DbgPrint("reflog: %v", err)
 	}
 	return nil
 }

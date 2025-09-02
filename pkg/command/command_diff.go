@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
@@ -195,7 +196,7 @@ func (c *Diff) diffNoIndex(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "zeta diff --no-index: parse options error: %v\n", err)
 		return err
 	}
-	g.DbgPrint("from %s to %s", c.From, c.To)
+	trace.DbgPrint("from %s to %s", c.From, c.To)
 	from, err := zeta.ReadContent(c.From, c.Textconv)
 	if err != nil {
 		diev("zeta diff --no-index hash error: %v", err)

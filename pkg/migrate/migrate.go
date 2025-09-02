@@ -25,15 +25,12 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
-
-type Debugger interface {
-	DbgPrint(format string, args ...any)
-}
 
 type blob struct {
 	oid       plumbing.Hash
@@ -42,16 +39,15 @@ type blob struct {
 }
 
 type MigrateOptions struct {
-	Environ  []string
-	From     string
-	To       string
-	StepEnd  int
-	Squeeze  bool
-	LFS      bool
-	Quiet    bool
-	Verbose  bool
-	Values   []string
-	Debugger Debugger
+	Environ []string
+	From    string
+	To      string
+	StepEnd int
+	Squeeze bool
+	LFS     bool
+	Quiet   bool
+	Verbose bool
+	Values  []string
 }
 
 type Migrator struct {
@@ -71,7 +67,6 @@ type Migrator struct {
 	stepEnd      int
 	stepCurrent  int
 	verbose      bool
-	Debugger
 }
 
 func NewMigrator(ctx context.Context, opts *MigrateOptions) (*Migrator, error) {
@@ -103,7 +98,6 @@ func NewMigrator(ctx context.Context, opts *MigrateOptions) (*Migrator, error) {
 		gitODB:       odb,
 		r:            repo,
 		modification: time.Now().Unix(),
-		Debugger:     opts.Debugger,
 		stepEnd:      opts.StepEnd,
 		stepCurrent:  1,
 		verbose:      opts.Verbose,
@@ -327,7 +321,7 @@ func (m *Migrator) migrateBlobs(ctx context.Context) error {
 		errors: make(chan error, batchLimit),
 		bar:    bar,
 	}
-	for i := 0; i < batchLimit; i++ {
+	for range batchLimit {
 		cg.run(newCtx, m)
 	}
 	for {
@@ -416,7 +410,7 @@ func (m *Migrator) migrateCommits(ctx context.Context, ur *backend.Unpacker) err
 	}
 	bar := NewBar(tr.W("Rewrite commits"), len(commits), m.stepCurrent, m.stepEnd, m.verbose)
 	m.stepCurrent++
-	m.DbgPrint("commits: %v", len(commits))
+	trace.DbgPrint("commits: %v", len(commits))
 	for _, oid := range commits {
 		oc, err := m.gitODB.Commit(oid)
 		if err != nil {

@@ -18,6 +18,7 @@ import (
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -110,7 +111,7 @@ func (r *Repository) resolveTree0(ctx context.Context, branchOrTag string) (t *o
 	if oid, err = r.Revision(ctx, branchOrTag); err != nil {
 		return nil, err
 	}
-	r.DbgPrint("resolve object '%s'", oid)
+	trace.DbgPrint("resolve object '%s'", oid)
 	o, err := r.odb.Object(ctx, oid)
 	if err != nil {
 		return nil, err

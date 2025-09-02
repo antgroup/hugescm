@@ -8,6 +8,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/version"
@@ -31,6 +32,9 @@ func main() {
 			"version": version.GetVersionString(),
 		},
 	)
+	if app.Verbose {
+		trace.EnableDebugMode()
+	}
 	m := strengthen.NewMeasurer("zeta-mc", app.Debug)
 	defer m.Close()
 	err := ctx.Run(&app.Globals)

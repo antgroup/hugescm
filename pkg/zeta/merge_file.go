@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
 
@@ -17,16 +18,16 @@ func (r *Repository) resolveMergeDriver() odb.MergeDriver {
 		switch driverName {
 		case "git":
 			if _, err := exec.LookPath("git"); err == nil {
-				r.DbgPrint("Use git merge-file as text merge driver")
+				trace.DbgPrint("Use git merge-file as text merge driver")
 				return r.odb.ExternalMerge
 			}
 		case "diff3":
 			if _, err := exec.LookPath("diff3"); err == nil {
-				r.DbgPrint("Use diff3 as text merge driver")
+				trace.DbgPrint("Use diff3 as text merge driver")
 				return r.odb.Diff3Merge
 			}
 		default:
-			r.DbgPrint("unsupported merge driver '%s'", driverName)
+			trace.DbgPrint("unsupported merge driver '%s'", driverName)
 		}
 	}
 	var diffAlgorithm diferenco.Algorithm
@@ -78,7 +79,7 @@ func (opts *MergeFileOptions) diffAlgorithmFromName(defaultDiffAlgorithm string)
 
 func (r *Repository) MergeFile(ctx context.Context, opts *MergeFileOptions) error {
 	diffAlgorithm := opts.diffAlgorithmFromName(r.diffAlgorithm())
-	r.DbgPrint("algorithm: %s conflict style: %v", diffAlgorithm, opts.Style)
+	trace.DbgPrint("algorithm: %s conflict style: %v", diffAlgorithm, opts.Style)
 	o, err := r.Revision(ctx, opts.O)
 	if err != nil {
 		return err

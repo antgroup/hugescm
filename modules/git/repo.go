@@ -9,7 +9,7 @@ import (
 	"github.com/antgroup/hugescm/modules/command"
 )
 
-func RepoIsBare(ctx context.Context, repoPath string) bool {
+func IsBareRepository(ctx context.Context, repoPath string) bool {
 	cmd := command.New(ctx, command.NoDir, "git", "--git-dir", repoPath, "config", "--get", "core.bare")
 	v, err := cmd.OneLine()
 	if err != nil {

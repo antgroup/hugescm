@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/version"
 )
@@ -33,9 +34,12 @@ func main() {
 		},
 	)
 	now := time.Now()
+	if app.Verbose {
+		trace.EnableDebugMode()
+	}
 	err := ctx.Run(&app.Globals)
 	if app.Verbose {
-		app.DbgPrint("time spent: %v", time.Since(now))
+		trace.DbgPrint("time spent: %v", time.Since(now))
 	}
 	if err != nil {
 		//fmt.Fprintf(os.Stderr, "%v\n", err)

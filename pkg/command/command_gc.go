@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
@@ -16,7 +17,7 @@ type GC struct {
 }
 
 func (c *GC) Run(g *Globals) error {
-	g.DbgPrint("prune: %v", c.Prune)
+	trace.DbgPrint("prune: %v", c.Prune)
 	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,

@@ -15,6 +15,7 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -269,7 +270,7 @@ func (r *Repository) catBranchOrTag(ctx context.Context, opts *CatOptions, branc
 	if oid, err = r.Revision(ctx, branchOrTag); err != nil {
 		return catShowError(branchOrTag, err)
 	}
-	r.DbgPrint("resolve object '%s'", oid)
+	trace.DbgPrint("resolve object '%s'", oid)
 	return r.catObject(ctx, opts, &promiseObject{oid: oid})
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/modules/zeta/reflog"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -107,7 +108,7 @@ func (w *Worktree) stashStore(ctx context.Context, base *object.Commit, committe
 		die("create index commit: %v", err)
 		return nil, err
 	}
-	w.DbgPrint("new stash commit: %s", stash0)
+	trace.DbgPrint("new stash commit: %s", stash0)
 	if includeUntracked {
 		if _, err = w.doAdd(ctx, ".", w.Excludes, false, false); err != nil {
 			die("add all: %v", err)
@@ -209,7 +210,7 @@ func (w *Worktree) StashShow(ctx context.Context, stashRev string) error {
 	if err != nil {
 		return err
 	}
-	w.DbgPrint("new checksum %v", e.N)
+	trace.DbgPrint("new checksum %v", e.N)
 	cc, err := w.odb.Commit(ctx, e.N)
 	if err != nil {
 		die_error("open HEAD: %v", err)
@@ -359,7 +360,7 @@ func (w *Worktree) stashApply(ctx context.Context, e *reflog.Entry) error {
 		die("'%s' is not a stash-like commit", e.N)
 		return ErrNotAStashLikeCommit
 	}
-	w.DbgPrint("worktree %s index %s", stashWorktree.Hash, stashIndex.Hash)
+	trace.DbgPrint("worktree %s index %s", stashWorktree.Hash, stashIndex.Hash)
 	oid, err := w.resolveRevision(ctx, "HEAD")
 	if err != nil {
 		die_error("zeta stash apply: resolve 'HEAD': %v", err)
@@ -446,7 +447,7 @@ func (w *Worktree) StashApply(ctx context.Context, stashRev string) error {
 	if err != nil {
 		return err
 	}
-	w.DbgPrint("new checksum %v", e.N)
+	trace.DbgPrint("new checksum %v", e.N)
 	return w.stashApply(ctx, e)
 }
 

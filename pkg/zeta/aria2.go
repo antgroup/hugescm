@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/transport"
 )
 
@@ -73,7 +74,7 @@ func (r *Repository) aria2Get(ctx context.Context, objects []*transport.Represen
 		return nil
 	}
 	concurrent := r.ConcurrentTransfers()
-	r.DbgPrint("concurrent transfers %d", concurrent)
+	trace.DbgPrint("concurrent transfers %d", concurrent)
 	aria2c, err := LookupAria2c()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "lookup aria2c %s\n", err)

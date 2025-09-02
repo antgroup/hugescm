@@ -18,8 +18,7 @@ import (
 
 type DisplayOptions struct {
 	io.Writer
-	Z       bool
-	Verbose bool
+	Z bool
 }
 
 const (
@@ -57,13 +56,6 @@ func (opts *DisplayOptions) Show(a any, keys ...string) error {
 	return nil
 }
 
-func (opts *DisplayOptions) DbgPrint(format string, args ...any) {
-	if !opts.Verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
-}
-
 func displayTo(d Display, zfg string) error {
 	md := make(Sections)
 	if _, err := toml.DecodeFile(zfg, &md); err != nil {
@@ -82,7 +74,7 @@ func displayTo(d Display, zfg string) error {
 
 func DisplaySystem(opts *DisplayOptions) error {
 	zfg := configSystemPath()
-	opts.DbgPrint("load system config: %s", zfg)
+	trace.DbgPrint("load system config: %s", zfg)
 	if err := displayTo(opts, zfg); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -91,7 +83,7 @@ func DisplaySystem(opts *DisplayOptions) error {
 
 func DisplayGlobal(opts *DisplayOptions) error {
 	zfg := strengthen.ExpandPath("~/.zeta.toml")
-	opts.DbgPrint("load global config: %s", zfg)
+	trace.DbgPrint("load global config: %s", zfg)
 	if err := displayTo(opts, zfg); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -100,7 +92,7 @@ func DisplayGlobal(opts *DisplayOptions) error {
 
 func DisplayLocal(opts *DisplayOptions, zetaDir string) error {
 	zfg := filepath.Join(zetaDir, "zeta.toml")
-	opts.DbgPrint("load local config: %s", zfg)
+	trace.DbgPrint("load local config: %s", zfg)
 	return displayTo(opts, zfg)
 }
 
@@ -122,13 +114,6 @@ func (opts *GetOptions) show(vals []any) {
 	for _, v := range vals {
 		_, _ = fmt.Fprintln(opts, v)
 	}
-}
-
-func (opts *GetOptions) DbgPrint(format string, args ...any) {
-	if !opts.Verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
 }
 
 func getFromFile(opts *GetOptions, zfg string) error {
@@ -158,27 +143,27 @@ func getFromFile(opts *GetOptions, zfg string) error {
 
 func GetSystem(opts *GetOptions) error {
 	zfg := configSystemPath()
-	opts.DbgPrint("load system config: %s", zfg)
+	trace.DbgPrint("load system config: %s", zfg)
 	return getFromFile(opts, zfg)
 }
 
 func GetGlobal(opts *GetOptions) error {
 	zfg := strengthen.ExpandPath("~/.zeta.toml")
-	opts.DbgPrint("load global config: %s", zfg)
+	trace.DbgPrint("load global config: %s", zfg)
 	return getFromFile(opts, zfg)
 }
 
 func GetLocal(opts *GetOptions, zetaDir string) error {
 	zfg := filepath.Join(zetaDir, "zeta.toml")
-	opts.DbgPrint("load local config: %s", zfg)
+	trace.DbgPrint("load local config: %s", zfg)
 	return getFromFile(opts, zfg)
 }
 
 func Get(opts *GetOptions, zetaDir string, found bool) error {
-	opts.DbgPrint("zeta-dir: %s filter keys: %v", zetaDir, opts.Keys)
+	trace.DbgPrint("zeta-dir: %s filter keys: %v", zetaDir, opts.Keys)
 	if len(zetaDir) != 0 {
 		localPath := filepath.Join(zetaDir, "zeta.toml")
-		opts.DbgPrint("load local config: %s", localPath)
+		trace.DbgPrint("load local config: %s", localPath)
 		err := getFromFile(opts, localPath)
 		switch {
 		case err == nil:
@@ -191,7 +176,7 @@ func Get(opts *GetOptions, zetaDir string, found bool) error {
 		}
 	}
 	userPath := strengthen.ExpandPath("~/.zeta.toml")
-	opts.DbgPrint("load global config: %s", userPath)
+	trace.DbgPrint("load global config: %s", userPath)
 	err := getFromFile(opts, userPath)
 	switch {
 	case err == nil:
@@ -203,7 +188,7 @@ func Get(opts *GetOptions, zetaDir string, found bool) error {
 		return err
 	}
 	systemPath := configSystemPath()
-	opts.DbgPrint("load system config: %s", systemPath)
+	trace.DbgPrint("load system config: %s", systemPath)
 	if err = getFromFile(opts, systemPath); err == nil {
 		return nil
 	}

@@ -88,7 +88,7 @@ func (c *client) DialContext(ctx context.Context, network string, addr string) (
 	conn, err := c.dialer.DialContext(ctx, network, addr)
 	if err != nil {
 		if errors.Is(err, syscall.ECONNREFUSED) && direct != c.dialer {
-			c.DbgPrint("Connect proxy server error: %v", err)
+			trace.DbgPrint("Connect proxy server error: %v", err)
 			return direct.DialContext(ctx, network, addr)
 		}
 		return nil, err
@@ -105,7 +105,7 @@ func (c *client) traceConn(conn net.Conn) {
 	if err != nil {
 		return
 	}
-	c.DbgPrint("Connecting to %s [%s] port %s.", c.Host, addr, port)
+	trace.DbgPrint("Connecting to %s [%s] port %s.", c.Host, addr, port)
 }
 
 func (c *client) NewBaseCommand(ctx context.Context) (*Command, error) {
@@ -138,7 +138,7 @@ func (c *client) traceSSH(cc ssh.Conn) {
 	// SSH-2.0-HugeSCM-0.18.3
 	protocolVersion, softwareVersion, ok := strings.Cut(strings.TrimPrefix(string(cc.ServerVersion()), "SSH-"), "-")
 	if ok {
-		c.DbgPrint("Remote protocol version %s, remote software version %s", protocolVersion, softwareVersion)
+		trace.DbgPrint("Remote protocol version %s, remote software version %s", protocolVersion, softwareVersion)
 	}
 }
 
@@ -170,7 +170,7 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 		_ = client.Close()
 		return nil, err
 	}
-	cmd := &Command{client: client, Session: session, Reader: bytes.NewReader(nil), DbgPrint: c.DbgPrint}
+	cmd := &Command{client: client, Session: session, Reader: bytes.NewReader(nil), DbgPrint: trace.DbgPrint}
 	if cmd.stderr, err = session.StderrPipe(); err != nil {
 		// always success
 		return nil, err
@@ -190,10 +190,3 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 var (
 	_ transport.Transport = &client{}
 )
-
-func (c *client) DbgPrint(format string, args ...any) {
-	if !c.verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
-}

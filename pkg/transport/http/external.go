@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/antgroup/hugescm/modules/systemproxy"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/version"
@@ -171,7 +172,7 @@ func (c *downloader) Download(ctx context.Context, o *transport.Representation, 
 	if len(c.termEnv) != 0 {
 		req.Header.Set(ZETA_TERMINAL, c.termEnv)
 	}
-	c.DbgPrint("GET %s", o.Href)
+	trace.DbgPrint("GET %s", o.Href)
 	if c.verbose {
 		req = wrapRequest(req)
 	}

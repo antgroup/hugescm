@@ -27,6 +27,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing/format/index"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -628,7 +629,7 @@ func (w *Worktree) doAddFile(ctx context.Context, idx *index.Index, s Status, pa
 		return
 	}
 
-	w.DbgPrint("add '%s'", path)
+	trace.DbgPrint("add '%s'", path)
 	var asFragments bool
 	if h, asFragments, err = w.copyFileToStorage(ctx, path); err != nil {
 		return
@@ -991,7 +992,7 @@ func (w *Worktree) DoCheckIgnore(ctx context.Context, opts *CheckIgnoreOption) e
 		fmt.Fprintf(os.Stderr, "read input paths error: %v\n", err)
 		return &ErrExitCode{ExitCode: 128, Message: err.Error()}
 	}
-	w.DbgPrint("%v", paths)
+	trace.DbgPrint("%v", paths)
 	m, err := w.ignoreMatcher()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new ignore matcher error: %v\n", err)

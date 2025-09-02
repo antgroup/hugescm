@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/version"
 )
@@ -17,13 +16,6 @@ type Globals struct {
 	Version   VersionFlag `short:"v" name:"version" help:"Show version number and quit"`
 }
 
-func (g *Globals) DbgPrint(format string, args ...any) {
-	if !g.Verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
-}
-
 type VersionFlag bool
 
 func (v VersionFlag) Decode(ctx *kong.DecodeContext) error { return nil }
@@ -32,8 +24,4 @@ func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 	fmt.Println(version.GetVersionString())
 	app.Exit(0)
 	return nil
-}
-
-type Debugger interface {
-	DbgPrint(format string, args ...any)
 }

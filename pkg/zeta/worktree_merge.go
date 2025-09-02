@@ -18,6 +18,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -188,7 +189,7 @@ func (w *Worktree) Merge(ctx context.Context, opts *MergeOptions) error {
 				return err
 			}
 		}
-		w.DbgPrint("update-ref %s %s", current.Hash(), newRev)
+		trace.DbgPrint("update-ref %s %s", current.Hash(), newRev)
 		if err := w.DoUpdate(ctx, current.Name(), current.Hash(), newRev, w.NewCommitter(), "merge: Fast-forward"); err != nil {
 			die_error("update fast forward: %v", err)
 			return err
@@ -389,7 +390,7 @@ func (w *Worktree) mergeAbort(ctx context.Context) error {
 		die("zeta merge --abort: %v", err)
 		return err
 	}
-	w.DbgPrint("MERGE_HEAD: %s", mergeHEAD)
+	trace.DbgPrint("MERGE_HEAD: %s", mergeHEAD)
 	current, err := w.Current()
 	if err != nil {
 		die("resolve current %s", err)
@@ -418,7 +419,7 @@ func (w *Worktree) mergeContinue(ctx context.Context) error {
 		die("zeta merge --abort: %v", err)
 		return err
 	}
-	w.DbgPrint("MERGE_HEAD: %s", mergeHEAD)
+	trace.DbgPrint("MERGE_HEAD: %s", mergeHEAD)
 	current, err := w.Current()
 	if err != nil {
 		die("resolve current %s", err)

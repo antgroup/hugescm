@@ -2,9 +2,12 @@ package git
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/antgroup/hugescm/modules/command"
 )
 
 // ExtraHeader encapsulates a key-value pairing of header key to header value.
@@ -185,4 +188,40 @@ func (c *Commit) Subject() string {
 		return c.Message[0:i]
 	}
 	return c.Message
+}
+
+func RevUniqueList(ctx context.Context, repoPath string, ours, theirs string) ([]string, error) {
+	stderr := command.NewStderr()
+	cmd := command.NewFromOptions(ctx, &command.RunOpts{
+		RepoPath: repoPath,
+		Stderr:   stderr,
+	}, "git",
+		"rev-list",
+		"--cherry-pick",
+		"--right-only",
+		"--no-merges",
+		"--topo-order",
+		"--reverse",
+		fmt.Sprintf("%s...%s", ours, theirs),
+	)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	defer stdout.Close()
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	var todoList []string
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		todoList = append(todoList, strings.TrimSpace(scanner.Text()))
+	}
+	if err := cmd.Wait(); err != nil {
+		return nil, fmt.Errorf("rev-list error: %w stderr: %v", err, stderr.String())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scanning rev-list output: %w", err)
+	}
+	return todoList, nil
 }

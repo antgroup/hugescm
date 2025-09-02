@@ -86,7 +86,7 @@ func keyAlgoName(s string) string {
 // https://github.com/golang/go/issues/28870
 func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	innerCallback := c.hostKeyDB.HostKeyCallback()
-	c.DbgPrint("Server host key: %s %s", key.Type(), ssh.FingerprintSHA256(key))
+	trace.DbgPrint("Server host key: %s %s", key.Type(), ssh.FingerprintSHA256(key))
 	err := innerCallback(hostname, remote, key)
 	if !knownhosts.IsHostUnknown(err) {
 		return err
@@ -177,7 +177,7 @@ func (c *client) supportedHostKeyAlgos() []string {
 func (c *client) openPrivateKey(name string) (ssh.Signer, error) {
 	buf, err := os.ReadFile(name)
 	if err != nil {
-		c.DbgPrint("read private key %s error: %v", name, err)
+		trace.DbgPrint("read private key %s error: %v", name, err)
 		return nil, err
 	}
 	signer, err := ssh.ParsePrivateKey(buf)
@@ -185,7 +185,7 @@ func (c *client) openPrivateKey(name string) (ssh.Signer, error) {
 		return nil, err
 	}
 	pk := signer.PublicKey()
-	c.DbgPrint("Offering public key: %s %s", name, ssh.FingerprintSHA256(pk))
+	trace.DbgPrint("Offering public key: %s %s", name, ssh.FingerprintSHA256(pk))
 	return signer, nil
 }
 

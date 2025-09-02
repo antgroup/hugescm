@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/antgroup/hugescm/modules/plumbing/format/index"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
@@ -28,7 +29,7 @@ func (w *Worktree) lsRestoreEntriesFromTree(ctx context.Context, opts *RestoreOp
 		die("restore ls-tree %s error: %v", root.Hash, err)
 		return nil, err
 	}
-	w.DbgPrint("matched entries: %d", len(entries))
+	trace.DbgPrint("matched entries: %d", len(entries))
 	ci := newMissingFetcher()
 	largeSize := w.largeSize()
 	for _, e := range entries {

@@ -117,16 +117,15 @@ func (c *App) migrateFrom(g *Globals, from, to string) error {
 	}
 	now := time.Now()
 	r, err := migrate.NewMigrator(context.Background(), &migrate.MigrateOptions{
-		Environ:  os.Environ(),
-		From:     from,
-		To:       to,
-		Squeeze:  c.Squeeze,
-		LFS:      c.LFS,
-		StepEnd:  4,
-		Values:   c.Values,
-		Quiet:    c.Quiet,
-		Verbose:  g.Verbose,
-		Debugger: g,
+		Environ: os.Environ(),
+		From:    from,
+		To:      to,
+		Squeeze: c.Squeeze,
+		LFS:     c.LFS,
+		StepEnd: 4,
+		Values:  c.Values,
+		Quiet:   c.Quiet,
+		Verbose: g.Verbose,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewRewriter error: %v\n", err)

@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
@@ -113,7 +114,7 @@ func (c *Checkout) runCompatibleCheckout0(g *Globals, r *zeta.Repository, worktr
 		}
 		return nil
 	}
-	g.DbgPrint("compatible checkout")
+	trace.DbgPrint("compatible checkout")
 	opts := &zeta.CheckoutOptions{Branch: branchName, Merge: false, Force: false}
 	if len(branchName) == 0 {
 		opts.Hash = oid
@@ -151,7 +152,7 @@ func (c *Checkout) runCompatibleCheckout(g *Globals, r *zeta.Repository) error {
 		if err != nil {
 			return err
 		}
-		g.DbgPrint("resolve HEAD: %s", head.Name())
+		trace.DbgPrint("resolve HEAD: %s", head.Name())
 		return c.runCompatibleCheckout0(g, r, true, head.Name(), head.Hash(), slashPaths(pathSpec))
 	}
 	if err != nil {
@@ -159,7 +160,7 @@ func (c *Checkout) runCompatibleCheckout(g *Globals, r *zeta.Repository) error {
 		return err
 	}
 	// zeta checkout <something> [<paths>]
-	g.DbgPrint("resolve revision: %s", rev)
+	trace.DbgPrint("resolve revision: %s", rev)
 	pathSpec = append(pathSpec, c.Args[1:]...)
 	pathSpec = append(pathSpec, c.passthroughArgs...)
 	var worktreeOnly bool

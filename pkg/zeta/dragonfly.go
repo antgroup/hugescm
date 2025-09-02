@@ -17,6 +17,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
 )
@@ -124,7 +125,7 @@ func (r *Repository) dragonflyGet(ctx context.Context, objects []*transport.Repr
 		return nil
 	}
 	concurrent := r.ConcurrentTransfers()
-	r.DbgPrint("concurrent transfers %d", concurrent)
+	trace.DbgPrint("concurrent transfers %d", concurrent)
 	dfget, err := LookupDragonflyGet()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "lookup dfget %s\n", err)

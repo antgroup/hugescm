@@ -9,19 +9,18 @@ import (
 	"github.com/antgroup/hugescm/modules/term"
 )
 
-type Debugger interface {
-	DbgPrint(format string, args ...any)
-}
-
-func NewDebugger(verbose bool) Debugger {
-	return &debugger{verbose: verbose}
-}
-
-type debugger struct {
+var (
 	verbose bool
+)
+
+func EnableDebugMode() {
+	verbose = true
 }
 
 func DbgPrint(format string, args ...any) {
+	if !verbose {
+		return
+	}
 	message := fmt.Sprintf(format, args...)
 	var buffer bytes.Buffer
 	switch term.StderrLevel {
@@ -45,14 +44,3 @@ func DbgPrint(format string, args ...any) {
 	}
 	_, _ = os.Stderr.Write(buffer.Bytes())
 }
-
-func (d debugger) DbgPrint(format string, args ...any) {
-	if !d.verbose {
-		return
-	}
-	DbgPrint(format, args...)
-}
-
-var (
-	_ Debugger = &debugger{}
-)

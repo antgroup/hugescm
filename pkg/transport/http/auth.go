@@ -18,6 +18,7 @@ import (
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/keyring"
 	"github.com/antgroup/hugescm/modules/survey"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/version"
 )
@@ -68,7 +69,7 @@ func (c *client) readCredentialsFromNetrc() (*Credentials, error) {
 	}
 	for _, n := range netrc {
 		if n.machine == host {
-			c.DbgPrint("Got credentials from netrc, username: %s", n.login)
+			trace.DbgPrint("Got credentials from netrc, username: %s", n.login)
 			return &Credentials{UserName: n.login, Password: n.password}, nil
 		}
 	}
@@ -84,7 +85,7 @@ func (c *client) baseCredentialsURL() string {
 
 func (c *client) readCredentials0(ctx context.Context) (*Credentials, error) {
 	if cred, err := keyring.Find(ctx, c.baseCredentialsURL()); err == nil {
-		c.DbgPrint("Got credentials from keyring, username: %s", cred.UserName)
+		trace.DbgPrint("Got credentials from keyring, username: %s", cred.UserName)
 		return &Credentials{UserName: cred.UserName, Password: cred.Password}, nil
 	}
 	return c.readCredentialsFromNetrc()
@@ -96,7 +97,7 @@ func (c *client) storeCredentials(ctx context.Context, cred *Credentials) error 
 
 func (c *client) credentialAskOne() (*Credentials, error) {
 	if !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {
-		c.DbgPrint("terminal prompts disabled")
+		trace.DbgPrint("terminal prompts disabled")
 		return nil, errors.New("terminal prompts disabled")
 	}
 	var username string
@@ -123,7 +124,7 @@ func (c *client) credentialAskOne() (*Credentials, error) {
 func (c *client) readCredentials(ctx context.Context) (*Credentials, error) {
 	if u := c.baseURL.User; u != nil {
 		if password, ok := u.Password(); ok {
-			c.DbgPrint("Got credentials from userinfo, username: %s", u.Username())
+			trace.DbgPrint("Got credentials from userinfo, username: %s", u.Username())
 			return &Credentials{UserName: u.Username(), Password: password}, nil
 		}
 	}
@@ -177,7 +178,7 @@ func (c *client) checkAuthRedirect(ctx context.Context, cred *Credentials, opera
 	if c.verbose {
 		req = wrapRequest(req)
 	}
-	c.DbgPrint("%s %s", req.Method, req.URL.String())
+	trace.DbgPrint("%s %s", req.Method, req.URL.String())
 	if cred != nil {
 		req.Header.Set(AUTHORIZATION, cred.BasicAuth())
 	}

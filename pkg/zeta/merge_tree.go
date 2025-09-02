@@ -12,6 +12,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -114,7 +115,7 @@ func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *objec
 	switch len(bases) {
 	case 0:
 		if !allowUnrelatedHistories {
-			r.DbgPrint("merge: merge from %s to %s refusing to merge unrelated histories", from.Hash, into.Hash)
+			trace.DbgPrint("merge: merge from %s to %s refusing to merge unrelated histories", from.Hash, into.Hash)
 			fmt.Fprintf(os.Stderr, "merge: %s\n", W("refusing to merge unrelated histories"))
 			return nil, ErrUnrelatedHistories
 		}
@@ -151,7 +152,7 @@ func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *objec
 	if len(result.Conflicts) != 0 {
 		return nil, result
 	}
-	r.DbgPrint("make new merge-tree: %s", result.NewTree)
+	trace.DbgPrint("make new merge-tree: %s", result.NewTree)
 	return r.odb.Tree(ctx, result.NewTree)
 }
 
@@ -171,7 +172,7 @@ func (r *Repository) resolveAncestorTree(ctx context.Context, into, from, base *
 	}
 	if len(bases) == 0 {
 		if !allowUnrelatedHistories {
-			r.DbgPrint("merge: merge from %s to %s refusing to merge unrelated histories", from.Hash, into.Hash)
+			trace.DbgPrint("merge: merge from %s to %s refusing to merge unrelated histories", from.Hash, into.Hash)
 			fmt.Fprintf(os.Stderr, "merge: %s\n", W("refusing to merge unrelated histories"))
 			return nil, nil, ErrUnrelatedHistories
 		}
@@ -202,7 +203,7 @@ func (r *Repository) mergeTree(ctx context.Context, into, from, base *object.Com
 	if err != nil {
 		return nil, err
 	}
-	r.DbgPrint("merge from %s to %s base: %s", from.Hash, into.Hash, bases)
+	trace.DbgPrint("merge from %s to %s base: %s", from.Hash, into.Hash, bases)
 	a, err := into.Root(ctx)
 	if err != nil {
 		die_error("read tree '%s:' %v", from.Hash, err)

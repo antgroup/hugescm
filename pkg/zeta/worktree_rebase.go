@@ -12,6 +12,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -453,7 +454,7 @@ func (w *Worktree) rebaseAbort(ctx context.Context) error {
 		die_error("zeta rebase --continue: read 'REBASE-MD': %v", err)
 		return err
 	}
-	w.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
+	trace.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
 	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
 	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
 		return err
@@ -481,7 +482,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		die_error("zeta rebase --continue: read 'REBASE-MD': %v", err)
 		return err
 	}
-	w.DbgPrint("%s", md.REBASE_HEAD)
+	trace.DbgPrint("%s", md.REBASE_HEAD)
 	last, err := w.odb.Commit(ctx, md.LAST)
 	if err != nil {
 		die_error("unable open last tree: %v", err)
@@ -497,7 +498,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		die_error("unable write resolved tree: %v", err)
 		return err
 	}
-	w.DbgPrint("conflicts resolved: %s", resolvedTree)
+	trace.DbgPrint("conflicts resolved: %s", resolvedTree)
 	stoppedCC, err := w.odb.Commit(ctx, md.STOPPED)
 	if err != nil {
 		die_error("unable resolve stopped commit: %v", err)
@@ -587,7 +588,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		return err
 	}
 	//Reset HEAD
-	w.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
+	trace.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
 	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
 	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
 		return err

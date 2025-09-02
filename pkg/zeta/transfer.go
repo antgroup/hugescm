@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/config"
 	"github.com/antgroup/hugescm/pkg/progress"
 	"github.com/antgroup/hugescm/pkg/transport"
@@ -160,7 +161,7 @@ func (r *Repository) directMultiTransfer(ctx context.Context, t http.Downloader,
 func (r *Repository) directGet(ctx context.Context, objects []*transport.Representation) error {
 	t := http.NewDownloader(r.verbose, parseInsecureSkipTLS(r.Config, r.values), r.externalProxy())
 	concurrent := r.ConcurrentTransfers()
-	r.DbgPrint("concurrent transfers %d", concurrent)
+	trace.DbgPrint("concurrent transfers %d", concurrent)
 	if concurrent <= 1 || len(objects) == 1 {
 		mode := odb.SINGLE_BAR
 		if r.quiet {
@@ -310,7 +311,7 @@ func (r *Repository) transfer(ctx context.Context, t transport.Transport, larges
 		return errors.New("download large files failed")
 	}
 	concurrent := r.ConcurrentTransfers()
-	r.DbgPrint("concurrent transfers %d", concurrent)
+	trace.DbgPrint("concurrent transfers %d", concurrent)
 	if concurrent <= 1 || len(larges) == 1 {
 		mode := odb.SINGLE_BAR
 		if r.quiet {

@@ -15,6 +15,7 @@ import (
 	mindex "github.com/antgroup/hugescm/modules/merkletrie/index"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -306,7 +307,7 @@ func (w *Worktree) resolveTwoTree(ctx context.Context, opts *DiffOptions) (oldTr
 }
 
 func (w *Worktree) betweenThreeWay(ctx context.Context, opts *DiffOptions) error {
-	w.DbgPrint("from %s to %s", opts.From, opts.To)
+	trace.DbgPrint("from %s to %s", opts.From, opts.To)
 	oldTree, newTree, err := w.resolveTwoTree(ctx, opts)
 	if err != nil {
 		return err
@@ -315,7 +316,7 @@ func (w *Worktree) betweenThreeWay(ctx context.Context, opts *DiffOptions) error
 		DetectRenames:    true,
 		OnlyExactRenames: true,
 	}
-	w.DbgPrint("oldTree %s newTree %s", oldTree.Hash, newTree.Hash)
+	trace.DbgPrint("oldTree %s newTree %s", oldTree.Hash, newTree.Hash)
 	changes, err := object.DiffTreeWithOptions(ctx, oldTree, newTree, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "diff tree error: %v\n", err)
@@ -343,7 +344,7 @@ func (w *Worktree) blobDiff(ctx context.Context, opts *DiffOptions) error {
 		die_error("entry %s not file", opts.From)
 		return errors.New("not file")
 	}
-	w.DbgPrint("diff (blob) %s %s", b1.Hash, b2.Hash)
+	trace.DbgPrint("diff (blob) %s %s", b1.Hash, b2.Hash)
 	opts.NoRename = true
 	change := &object.Change{
 		From: object.ChangeEntry{
@@ -365,7 +366,7 @@ func (w *Worktree) blobDiff(ctx context.Context, opts *DiffOptions) error {
 }
 
 func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
-	w.DbgPrint("from %s to %s", opts.From, opts.To)
+	trace.DbgPrint("from %s to %s", opts.From, opts.To)
 	oldTree, err := w.parseTreeExhaustive(ctx, opts.From)
 	if err != nil {
 		if err == ErrNotTree {
@@ -383,7 +384,7 @@ func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
 		DetectRenames:    true,
 		OnlyExactRenames: true,
 	}
-	w.DbgPrint("oldTree %s newTree %s", oldTree.Hash, newTree.Hash)
+	trace.DbgPrint("oldTree %s newTree %s", oldTree.Hash, newTree.Hash)
 	changes, err := object.DiffTreeWithOptions(ctx, oldTree, newTree, o, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "diff tree error: %v\n", err)
@@ -420,7 +421,7 @@ func (w *Worktree) DiffContext(ctx context.Context, opts *DiffOptions) error {
 			}
 			return nil
 		}
-		w.DbgPrint("from %s to worktree", oid)
+		trace.DbgPrint("from %s to worktree", oid)
 		if err := w.DiffTreeWithWorktree(ctx, oid, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta diff error: %v\n", err)
 			return err

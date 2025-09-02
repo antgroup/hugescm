@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
@@ -53,7 +54,7 @@ func (c *MergeFile) mergeExtra(g *Globals) error {
 	case c.ZDiff3:
 		style = diferenco.STYLE_ZEALOUS_DIFF3
 	}
-	g.DbgPrint("algorithm: %s conflict style: %v", a, style)
+	trace.DbgPrint("algorithm: %s conflict style: %v", a, style)
 	textO, err := zeta.ReadText(c.O, false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "merge-file: open <orig-file> error: %v\n", err)

@@ -16,7 +16,6 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/term"
-	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/wildmatch"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -118,13 +117,6 @@ func FindZetaDir(cwd string) (string, string, error) {
 		}
 		current = parent
 	}
-}
-
-func (r *Repository) DbgPrint(format string, args ...any) {
-	if !r.verbose {
-		return
-	}
-	trace.DbgPrint(format, args...)
 }
 
 func (r *Repository) Debug(format string, args ...any) {

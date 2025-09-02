@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/transport"
 )
 
@@ -51,7 +52,7 @@ func (c *client) Push(ctx context.Context, r io.Reader, cmd *transport.Command) 
 }
 
 func (c *client) BatchCheck(ctx context.Context, refname plumbing.ReferenceName, haveObjects []*transport.HaveObject) ([]*transport.HaveObject, error) {
-	c.DbgPrint("check %d large objects", len(haveObjects))
+	trace.DbgPrint("check %d large objects", len(haveObjects))
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(&transport.BatchRequest{
 		Objects: haveObjects,

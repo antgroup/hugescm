@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta"
 	"golang.org/x/crypto/ssh"
 )
@@ -30,7 +31,7 @@ func (c *Command) LastError() error {
 }
 
 func (c *Command) Setenv(name string, value string) error {
-	c.DbgPrint("setting env %s = \"%s\"", name, value)
+	trace.DbgPrint("setting env %s = \"%s\"", name, value)
 	return c.Session.Setenv(name, value)
 }
 
@@ -43,7 +44,7 @@ func (c *Command) readStderr() {
 
 func (c *Command) Start(cmd string) error {
 	go c.readStderr()
-	c.DbgPrint("Sending command: %s", cmd)
+	trace.DbgPrint("Sending command: %s", cmd)
 	return c.Session.Start(cmd)
 }
 
@@ -63,7 +64,7 @@ func (c *Command) Close() error {
 		switch a := err.(type) {
 		case *ssh.ExitError:
 			exitStatus := a.ExitStatus()
-			c.DbgPrint("Exit status %v", exitStatus)
+			trace.DbgPrint("Exit status %v", exitStatus)
 			c.lastError = &zeta.ErrExitCode{
 				Code:    exitStatus,
 				Message: a.String(),

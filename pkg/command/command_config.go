@@ -33,61 +33,56 @@ func (c *Config) Run(g *Globals) error {
 			return errors.New("wrong number of arguments, should be 0")
 		}
 		return zeta.ListConfig(&zeta.ListConfigOptions{
-			System:  c.System,
-			Global:  c.Global,
-			Local:   c.Local,
-			Z:       c.Z,
-			CWD:     g.CWD,
-			Values:  g.Values,
-			Verbose: g.Verbose,
+			System: c.System,
+			Global: c.Global,
+			Local:  c.Local,
+			Z:      c.Z,
+			CWD:    g.CWD,
+			Values: g.Values,
 		})
 	}
 	if c.Get {
 		return zeta.GetConfig(&zeta.GetConfigOptions{
-			System:  c.System,
-			Global:  c.Global,
-			Local:   c.Local,
-			Z:       c.Z,
-			Keys:    c.Args,
-			CWD:     g.CWD,
-			Values:  g.Values,
-			Verbose: g.Verbose,
+			System: c.System,
+			Global: c.Global,
+			Local:  c.Local,
+			Z:      c.Z,
+			Keys:   c.Args,
+			CWD:    g.CWD,
+			Values: g.Values,
 		})
 	}
 	if c.GetALL {
 		return zeta.GetConfig(&zeta.GetConfigOptions{
-			System:  c.System,
-			Global:  c.Global,
-			Local:   c.Local,
-			ALL:     true,
-			Z:       c.Z,
-			Keys:    c.Args,
-			CWD:     g.CWD,
-			Values:  g.Values,
-			Verbose: g.Verbose,
+			System: c.System,
+			Global: c.Global,
+			Local:  c.Local,
+			ALL:    true,
+			Z:      c.Z,
+			Keys:   c.Args,
+			CWD:    g.CWD,
+			Values: g.Values,
 		})
 	}
 	if c.Unset {
 		return zeta.UnsetConfig(&zeta.UnsetConfigOptions{
-			System:  c.System,
-			Global:  c.Global,
-			Keys:    c.Args,
-			CWD:     g.CWD,
-			Verbose: g.Verbose,
+			System: c.System,
+			Global: c.Global,
+			Keys:   c.Args,
+			CWD:    g.CWD,
 		})
 	}
 	if len(c.Args) == 1 {
 		kv := c.Args[0]
 		if strings.IndexByte(kv, '=') == -1 {
 			return zeta.GetConfig(&zeta.GetConfigOptions{
-				System:  c.System,
-				Global:  c.Global,
-				Local:   c.Local,
-				Z:       c.Z,
-				Keys:    c.Args,
-				CWD:     g.CWD,
-				Values:  g.Values,
-				Verbose: g.Verbose,
+				System: c.System,
+				Global: c.Global,
+				Local:  c.Local,
+				Z:      c.Z,
+				Keys:   c.Args,
+				CWD:    g.CWD,
+				Values: g.Values,
 			})
 		}
 	}
@@ -98,6 +93,5 @@ func (c *Config) Run(g *Globals) error {
 		NameAndValues: c.Args,
 		Type:          c.Type,
 		CWD:           g.CWD,
-		Verbose:       g.Verbose,
 	})
 }

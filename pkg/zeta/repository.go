@@ -18,6 +18,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/vfs"
 	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
@@ -399,7 +400,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	branchSwitched := opts.Branch
 	if len(opts.Commit) == 0 && len(branchSwitched) == 0 && len(opts.TagName) == 0 {
 		branchSwitched = ref.Name.Short() // Switch to HEAD
-		r.DbgPrint("switch to %s", branchSwitched)
+		trace.DbgPrint("switch to %s", branchSwitched)
 	}
 	so := &SwitchOptions{Force: true, ForceCreate: true, firstSwitch: true, one: opts.One}
 	if len(branchSwitched) != 0 {

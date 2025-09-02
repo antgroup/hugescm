@@ -22,6 +22,7 @@ import (
 	"github.com/antgroup/hugescm/modules/streamio"
 	"github.com/antgroup/hugescm/modules/systemproxy"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/version"
@@ -167,7 +168,7 @@ func (c *client) newRequest(ctx context.Context, method string, url string, body
 	if len(c.termEnv) != 0 {
 		req.Header.Set(ZETA_TERMINAL, c.termEnv)
 	}
-	c.DbgPrint("%s %s", method, url)
+	trace.DbgPrint("%s %s", method, url)
 	if c.verbose {
 		return wrapRequest(req), nil
 	}

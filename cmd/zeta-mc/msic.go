@@ -23,13 +23,6 @@ type Globals struct {
 	Version VersionFlag `short:"v" name:"version" help:"Show version number and quit"`
 }
 
-func (g *Globals) DbgPrint(format string, a ...any) {
-	if !g.Verbose {
-		return
-	}
-	trace.DbgPrint(format, a...)
-}
-
 type VersionFlag bool
 
 func (v VersionFlag) Decode(ctx *kong.DecodeContext) error { return nil }
@@ -73,8 +66,6 @@ func (g *Globals) RunEx(repoPath string, cmdArg0 string, args ...string) error {
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	if g.Verbose {
-		g.DbgPrint("exec: %s spent: %v", cmd.String(), time.Since(now))
-	}
+	trace.DbgPrint("exec: %s spent: %v", cmd.String(), time.Since(now))
 	return nil
 }

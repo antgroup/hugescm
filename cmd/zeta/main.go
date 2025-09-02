@@ -9,6 +9,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/command"
 	"github.com/antgroup/hugescm/pkg/kong"
 	"github.com/antgroup/hugescm/pkg/tr"
@@ -78,10 +79,13 @@ func main() {
 	)
 	now := time.Now()
 	m := strengthen.NewMeasurer("zeta", app.Debug)
+	if app.Verbose {
+		trace.EnableDebugMode()
+	}
 	err := ctx.Run(&app.Globals)
 	m.Close()
 	if app.Verbose {
-		app.DbgPrint("time spent: %v", time.Since(now))
+		trace.DbgPrint("time spent: %v", time.Since(now))
 	}
 	if err == nil {
 		return

@@ -19,13 +19,12 @@ var (
 )
 
 type ListConfigOptions struct {
-	System  bool
-	Global  bool
-	Local   bool
-	Z       bool
-	CWD     string
-	Values  []string
-	Verbose bool
+	System bool
+	Global bool
+	Local  bool
+	Z      bool
+	CWD    string
+	Values []string
 }
 
 func (opts *ListConfigOptions) displayInput() {
@@ -50,7 +49,7 @@ func ListConfig(opts *ListConfigOptions) error {
 		die_error("only one config file at a time")
 		return ErrOnlyOneName
 	}
-	d := &config.DisplayOptions{Writer: os.Stdout, Z: opts.Z, Verbose: opts.Verbose}
+	d := &config.DisplayOptions{Writer: os.Stdout, Z: opts.Z}
 	if opts.System {
 		if err := config.DisplaySystem(d); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta config --list --system error: %v\n", err)
@@ -105,15 +104,14 @@ func ListConfig(opts *ListConfigOptions) error {
 }
 
 type GetConfigOptions struct {
-	System  bool
-	Global  bool
-	Local   bool
-	ALL     bool
-	Z       bool
-	Keys    []string
-	CWD     string
-	Values  []string
-	Verbose bool
+	System bool
+	Global bool
+	Local  bool
+	ALL    bool
+	Z      bool
+	Keys   []string
+	CWD    string
+	Values []string
 }
 
 func (opts *GetConfigOptions) subCommand() string {
@@ -153,11 +151,11 @@ func GetConfig(opts *GetConfigOptions) error {
 		return ErrMissingKeys
 	}
 	o := &config.GetOptions{
-		Writer:  os.Stdout,
-		Keys:    opts.Keys,
-		ALL:     opts.ALL,
-		Z:       opts.Z,
-		Verbose: opts.Verbose}
+		Writer: os.Stdout,
+		Keys:   opts.Keys,
+		ALL:    opts.ALL,
+		Z:      opts.Z,
+	}
 	if opts.System {
 		if err := config.GetSystem(o); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta config %s --system error: %v\n", opts.subCommand(), err)
@@ -220,7 +218,6 @@ type UpdateConfigOptions struct {
 	NameAndValues []string
 	Type          string
 	CWD           string
-	Verbose       bool
 }
 
 func UpdateConfig(opts *UpdateConfigOptions) error {
@@ -290,11 +287,10 @@ func UpdateConfig(opts *UpdateConfigOptions) error {
 }
 
 type UnsetConfigOptions struct {
-	System  bool
-	Global  bool
-	Keys    []string
-	CWD     string
-	Verbose bool
+	System bool
+	Global bool
+	Keys   []string
+	CWD    string
 }
 
 func UnsetConfig(opts *UnsetConfigOptions) error {

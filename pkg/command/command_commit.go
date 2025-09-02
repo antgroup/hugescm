@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
 
@@ -72,6 +73,6 @@ func (c *Commit) Run(g *Globals) error {
 			return err
 		}
 	}
-	w.DbgPrint("create commit: %s\n", oid.String())
+	trace.DbgPrint("create commit: %s\n", oid.String())
 	return w.Stats(context.Background())
 }

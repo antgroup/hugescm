@@ -620,7 +620,7 @@ func (w *Worktree) doAddFile(ctx context.Context, idx *index.Index, s Status, pa
 		}
 	}
 	if dryRun {
-		fmt.Fprintf(os.Stdout, "add '%s'\n", path)
+		_, _ = fmt.Fprintf(os.Stdout, "add '%s'\n", path)
 		return false, h, nil
 	}
 	if s.IsDeleted(path) {
@@ -1012,7 +1012,7 @@ func (w *Worktree) DoCheckIgnore(ctx context.Context, opts *CheckIgnoreOption) e
 	}
 	newLine := opts.newLine()
 	for _, p := range matched {
-		fmt.Fprintf(os.Stdout, "%s%c", p, newLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%c", p, newLine)
 	}
 	return nil
 }

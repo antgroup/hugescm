@@ -172,34 +172,34 @@ func (cs *changes) makePath(name string) string {
 
 func (cs *changes) show() {
 	if len(cs.Staging) != 0 {
-		fmt.Fprintf(os.Stdout, "%s\n", W("Changes to be committed:"))
-		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore --staged <file>...\" to unstage)"))
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n", W("Changes to be committed:"))
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore --staged <file>...\" to unstage)"))
 		for _, c := range cs.Staging {
 			_, _ = term.Fprintf(os.Stdout, "      \x1b[32m%s\t%s\x1b[0m\n", W(StatusName(c.Staging)), cs.makePath(c.path))
 		}
 
 	}
 	if len(cs.Unstaging) != 0 {
-		fmt.Fprintf(os.Stdout, "%s:\n", W("Changes not staged for commit"))
-		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to update what will be committed)"))
-		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore <file>...\" to discard changes in working directory)"))
+		_, _ = fmt.Fprintf(os.Stdout, "%s:\n", W("Changes not staged for commit"))
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to update what will be committed)"))
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta restore <file>...\" to discard changes in working directory)"))
 		for _, c := range cs.Unstaging {
 			_, _ = term.Fprintf(os.Stdout, "      \x1b[31m%s\t%s\x1b[0m\n", W(StatusName(c.Worktree)), cs.makePath(c.path))
 		}
 
 	}
 	if len(cs.Untracked) != 0 {
-		fmt.Fprintf(os.Stdout, "%s:\n", W("Untracked files"))
-		fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to include in what will be committed)"))
+		_, _ = fmt.Fprintf(os.Stdout, "%s:\n", W("Untracked files"))
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", W("(use \"zeta add <file>...\" to include in what will be committed)"))
 		for _, c := range cs.Untracked {
 			_, _ = term.Fprintf(os.Stdout, "      \x1b[31m%s\x1b[0m\n", cs.makePath(c.path))
 		}
 	}
 	if len(cs.Staging) == 0 && len(cs.Unstaging) == 0 {
-		fmt.Fprintf(os.Stdout, "%s\n", W("nothing added to commit but untracked files present (use \"zeta add\" to track)"))
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n", W("nothing added to commit but untracked files present (use \"zeta add\" to track)"))
 		return
 	}
-	fmt.Fprintf(os.Stdout, "%s\n", W("no changes added to commit (use \"zeta add\" and/or \"zeta commit -a\")"))
+	_, _ = fmt.Fprintf(os.Stdout, "%s\n", W("no changes added to commit (use \"zeta add\" and/or \"zeta commit -a\")"))
 }
 
 const (
@@ -240,11 +240,11 @@ func statusShow(status Status, root string, z bool) {
 		return
 	}
 	for _, c := range changes {
-		fmt.Fprintf(os.Stdout, "%c%c %s%c", c.Staging, c.Worktree, makePath(c.path), NUL)
+		_, _ = fmt.Fprintf(os.Stdout, "%c%c %s%c", c.Staging, c.Worktree, makePath(c.path), NUL)
 	}
 	sort.Sort(changeOrder(untracked))
 	for _, c := range untracked {
-		fmt.Fprintf(os.Stdout, "%c%c %s%c", c.Staging, c.Worktree, makePath(c.path), NUL)
+		_, _ = fmt.Fprintf(os.Stdout, "%c%c %s%c", c.Staging, c.Worktree, makePath(c.path), NUL)
 	}
 
 }

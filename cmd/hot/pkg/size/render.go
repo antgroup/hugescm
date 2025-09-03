@@ -104,7 +104,7 @@ func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[str
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer out.Close() // nolint
 	if err := cmd.Start(); err != nil {
 		return err
 	}

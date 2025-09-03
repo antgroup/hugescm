@@ -185,7 +185,7 @@ func (w *Worktree) StashPush(ctx context.Context, opts *StashPushOptions) error 
 		die_error("reset worktree error: %v", err)
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "Saved working directory and index state %s", messageWorktree)
+	_, _ = fmt.Fprintf(os.Stdout, "Saved working directory and index state %s", messageWorktree)
 	return nil
 }
 
@@ -200,7 +200,7 @@ func (w *Worktree) StashList(ctx context.Context) error {
 		return err
 	}
 	for i, e := range ro.Entries {
-		fmt.Fprintf(writer, "stash@{%d}: %s\n", i, e.Message)
+		_, _ = fmt.Fprintf(writer, "stash@{%d}: %s\n", i, e.Message)
 	}
 	return nil
 }
@@ -233,7 +233,7 @@ func (w *Worktree) StashShow(ctx context.Context, stashRev string) error {
 	p := NewPrinter(ctx)
 	defer p.Close() // nolint
 	object.StatsWriteTo(p, stats, p.ColorMode() != term.LevelNone)
-	fmt.Fprintf(p, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
+	_, _ = fmt.Fprintf(p, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
 	return nil
 }
 
@@ -271,15 +271,15 @@ type cherryPickResult struct {
 func (r *cherryPickResult) format() {
 	for _, e := range r.conflicts {
 		if e.Ancestor.Path != "" {
-			fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Ancestor.Path)
+			_, _ = fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Ancestor.Path)
 			continue
 		}
 		if e.Our.Path != "" {
-			fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Our.Path)
+			_, _ = fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Our.Path)
 			continue
 		}
 		if e.Their.Path != "" {
-			fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Their.Path)
+			_, _ = fmt.Fprintf(os.Stdout, "conflict: %s\n", e.Their.Path)
 			continue
 		}
 	}

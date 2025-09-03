@@ -15,7 +15,7 @@ func ReadDir(name string) ([]os.DirEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer f.Close() // nolint
 
 	dirs, err := f.ReadDir(-1)
 	return dirs, err

@@ -7,10 +7,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/hexview"
@@ -148,17 +150,17 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 		return err
 	}
 	defer b.Close() // nolint
-	fd, colorMode, err := opts.NewFD()
-	if err != nil {
-		return err
-	}
-	defer fd.Close() // nolint
 	if opts.Verify {
+		fd, _, err := opts.NewFD()
+		if err != nil {
+			return err
+		}
+		defer fd.Close() // nolint
 		h := plumbing.NewHasher()
 		if _, err := io.Copy(h, b.Contents); err != nil {
 			return err
 		}
-		fmt.Fprintln(fd, h.Sum())
+		_, _ = fmt.Fprintln(fd, h.Sum())
 		return nil
 	}
 	reader, charset, err := diferenco.NewUnifiedReaderEx(b.Contents, opts.Textconv)
@@ -168,13 +170,22 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}
-	if colorMode != term.LevelNone && charset == diferenco.BINARY {
+	if len(opts.Output) == 0 && term.StdoutLevel != term.LevelNone && charset == diferenco.BINARY {
+		p := NewPrinter(ctx)
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return hexview.Format(reader, fd, opts.Limit, colorMode)
+		if err := hexview.Format(reader, p, opts.Limit, p.ColorMode()); err != nil && !errors.Is(err, syscall.EPIPE) {
+			return err
+		}
+		return nil
 	}
+	fd, _, err := opts.NewFD()
+	if err != nil {
+		return err
+	}
+	defer fd.Close() // nolint
 	if _, err = io.Copy(fd, io.LimitReader(reader, opts.Limit)); err != nil {
 		return err
 	}
@@ -182,11 +193,6 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 }
 
 func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *object.Fragments) error {
-	fd, colorMode, err := opts.NewFD()
-	if err != nil {
-		return err
-	}
-	defer fd.Close() // nolint
 	objects := make([]*object.Blob, 0, len(ff.Entries))
 	defer func() {
 		for _, o := range objects {
@@ -207,13 +213,22 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 	}
 	// fragments ignore --textconv
 	reader := io.MultiReader(readers...)
-	if colorMode != term.LevelNone {
+	if len(opts.Output) == 0 && term.StdoutLevel != term.LevelNone {
+		p := NewPrinter(ctx)
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return hexview.Format(reader, fd, opts.Limit, colorMode)
+		if err := hexview.Format(reader, p, opts.Limit, p.ColorMode()); err != nil && !errors.Is(err, syscall.EPIPE) {
+			return err
+		}
+		return nil
 	}
+	fd, _, err := opts.NewFD()
+	if err != nil {
+		return err
+	}
+	defer fd.Close() // nolint
 	if _, err = io.Copy(fd, io.LimitReader(reader, opts.Limit)); err != nil {
 		return err
 	}
@@ -238,7 +253,7 @@ func (r *Repository) catObject(ctx context.Context, opts *CatOptions, o *promise
 		if w, ok := a.(object.Encoder); ok {
 			h := plumbing.NewHasher()
 			_ = w.Encode(h)
-			fmt.Fprintln(os.Stdout, h.Sum())
+			_, _ = fmt.Fprintln(os.Stdout, h.Sum())
 		}
 		return nil
 	}

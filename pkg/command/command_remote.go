@@ -40,7 +40,7 @@ func (c *ShowRemote) Run(g *Globals) error {
 		}
 		return json.NewEncoder(os.Stdout).Encode(m)
 	}
-	fmt.Fprintf(os.Stdout, "remote: %s\n", remote)
+	_, _ = fmt.Fprintf(os.Stdout, "remote: %s\n", remote)
 	return nil
 }
 
@@ -73,6 +73,6 @@ func (c *SetRemote) Run(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "zeta remote set remote to '%s' error: %v\n", newRemote, err)
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "remote: %s\n", newRemote)
+	_, _ = fmt.Fprintf(os.Stdout, "remote: %s\n", newRemote)
 	return nil
 }

@@ -34,7 +34,7 @@ func (c *Unbranch) Run(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if err := r.Unbranch(c.Branch, c.Confirm, c.Prune, c.Keep); err != nil {
 		fmt.Fprintf(os.Stderr, "Linearize repo history error: %v\n", err)
 		return err

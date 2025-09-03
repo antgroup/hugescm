@@ -87,6 +87,6 @@ func (c *HashObject) hashObject() error {
 		diev("hash-object error: %v", err)
 		return err
 	}
-	fmt.Fprintln(os.Stdout, h.Sum())
+	_, _ = fmt.Fprintln(os.Stdout, h.Sum())
 	return nil
 }

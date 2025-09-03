@@ -31,7 +31,7 @@ func (c *Remove) Run(g *Globals) error {
 			fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 			return err
 		}
-		defer r.Close()
+		defer r.Close() // nolint
 		if err := r.Graft(matcher, c.Confirm, c.Prune, c.HeadOnly); err != nil {
 			fmt.Fprintf(os.Stderr, "graft repo error: %v\n", err)
 			return err
@@ -43,7 +43,7 @@ func (c *Remove) Run(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if err := r.Drop(matcher, c.Confirm, c.Prune); err != nil {
 		fmt.Fprintf(os.Stderr, "replay repo error: %v\n", err)
 		return err

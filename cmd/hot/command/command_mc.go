@@ -65,7 +65,7 @@ func (c *Mc) cloneAndMigrate(g *Globals, uri string) error {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return err
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir) // nolint
 	if err := g.RunEx(context.Background(), command.NoDir, "git", "clone", "--bare", c.From, tempDir); err != nil {
 		fmt.Fprintf(os.Stderr, "clone error: %v", err)
 		return err
@@ -112,11 +112,11 @@ func (c *Mc) migrateFrom(g *Globals, from, to string) error {
 		fmt.Fprintf(os.Stderr, "mc %s to %s error: %v\n", from, to, err)
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if err := r.Execute(context.Background()); err != nil {
 		fmt.Fprintf(os.Stderr, "Execute error: %v\n", err)
 		return err
 	}
-	tr.Fprintf(os.Stderr, "migrate repository to %s success, spent: %v\n", c.Format, time.Since(now))
+	_, _ = tr.Fprintf(os.Stderr, "migrate repository to %s success, spent: %v\n", c.Format, time.Since(now))
 	return nil
 }

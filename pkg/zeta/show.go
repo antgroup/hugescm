@@ -2,10 +2,12 @@ package zeta
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
@@ -70,6 +72,9 @@ func (r *Repository) Show(ctx context.Context, opts *ShowOptions) error {
 	defer p.Close() // nolint
 	for _, o := range objects {
 		if err := r.showOne(ctx, p, opts, o); err != nil {
+			if errors.Is(err, syscall.EPIPE) {
+				break
+			}
 			return err
 		}
 	}
@@ -187,11 +192,11 @@ func (r *Repository) showTag(ctx context.Context, w *printer, opts *ShowOptions,
 	default:
 	}
 	if w.EnableColor() {
-		fmt.Fprintf(w, "\x1b[33mtag %s\x1b[0m\n", tag.Name)
+		_, _ = fmt.Fprintf(w, "\x1b[33mtag %s\x1b[0m\n", tag.Name)
 	} else {
-		fmt.Fprintf(w, "tag %s\n", tag.Name)
+		_, _ = fmt.Fprintf(w, "tag %s\n", tag.Name)
 	}
-	fmt.Fprintf(w, "Tagger: %s <%s>\nDate:   %s\n\n%s\n", tag.Tagger.Name, tag.Tagger.Email, tag.Tagger.When.Format(time.RFC3339), tag.Content)
+	_, _ = fmt.Fprintf(w, "Tagger: %s <%s>\nDate:   %s\n\n%s\n", tag.Tagger.Name, tag.Tagger.Email, tag.Tagger.When.Format(time.RFC3339), tag.Content)
 	var cc *object.Commit
 	var err error
 	switch tag.ObjectType {
@@ -215,20 +220,20 @@ func (r *Repository) showTree(ctx context.Context, w Printer, so *showObject, tr
 	default:
 	}
 	if w.EnableColor() {
-		fmt.Fprintf(w, "\x1b[33mtree %s\x1b[0m\n\n", so.name)
+		_, _ = fmt.Fprintf(w, "\x1b[33mtree %s\x1b[0m\n\n", so.name)
 	} else {
-		fmt.Fprintf(w, "tree %s\n\n", so.name)
+		_, _ = fmt.Fprintf(w, "tree %s\n\n", so.name)
 	}
 	for _, e := range tree.Entries {
 		t := e.Type()
 		if t == object.TreeObject {
-			fmt.Fprintf(w, "%s/\n", e.Name)
+			_, _ = fmt.Fprintf(w, "%s/\n", e.Name)
 			continue
 		}
 		if t == object.FragmentsObject && w.EnableColor() {
-			fmt.Fprintf(w, "\x1b[36m%s\x1b[0m\n", e.Name)
+			_, _ = fmt.Fprintf(w, "\x1b[36m%s\x1b[0m\n", e.Name)
 		}
-		fmt.Fprintln(w, e.Name)
+		_, _ = fmt.Fprintln(w, e.Name)
 	}
 	return nil
 }
@@ -240,12 +245,12 @@ func (r *Repository) showFragments(ctx context.Context, w Printer, so *showObjec
 	default:
 	}
 	if w.EnableColor() {
-		fmt.Fprintf(w, "\x1b[33mfragments %s\x1b[0m\nraw:  %s\nsize: %d\n\n", so.oid, ff.Origin, ff.Size)
+		_, _ = fmt.Fprintf(w, "\x1b[33mfragments %s\x1b[0m\nraw:  %s\nsize: %d\n\n", so.oid, ff.Origin, ff.Size)
 	} else {
-		fmt.Fprintf(w, "fragments %s\nraw:  %s\nsize: %d\n", so.oid, ff.Origin, ff.Size)
+		_, _ = fmt.Fprintf(w, "fragments %s\nraw:  %s\nsize: %d\n", so.oid, ff.Origin, ff.Size)
 	}
 	for _, e := range ff.Entries {
-		fmt.Fprintf(w, "%d\t%s %d\n", e.Index, e.Hash, e.Size)
+		_, _ = fmt.Fprintf(w, "%d\t%s %d\n", e.Index, e.Hash, e.Size)
 	}
 	return nil
 }

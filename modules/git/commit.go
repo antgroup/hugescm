@@ -248,7 +248,7 @@ func RevUniqueList(ctx context.Context, repoPath string, ours, theirs string) ([
 	if err != nil {
 		return nil, err
 	}
-	defer stdout.Close()
+	defer stdout.Close() // nolint
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}

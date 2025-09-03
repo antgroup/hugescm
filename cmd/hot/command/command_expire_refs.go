@@ -75,8 +75,8 @@ func (c *ExpireRefs) Run(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "open logs error: %v\n", err)
 		return err
 	}
-	defer fd.Close()
-	fmt.Fprintf(fd, "CLEANUP START TIME: %v\n", time.Now().Format(time.RFC3339))
+	defer fd.Close() // nolint
+	_, _ = fmt.Fprintf(fd, "CLEANUP START TIME: %v\n", time.Now().Format(time.RFC3339))
 
 	u, err := git.NewRefUpdater(context.Background(), repoPath, os.Environ(), false)
 	if err != nil {
@@ -106,7 +106,7 @@ func (c *ExpireRefs) Run(g *Globals) error {
 		}
 		total++
 		date := ref.Committer.When.Format(time.RFC3339)
-		fmt.Fprintf(fd, "%s %s %s removed\n", ref.Hash, date, ref.Name)
+		_, _ = fmt.Fprintf(fd, "%s %s %s removed\n", ref.Hash, date, ref.Name)
 		fmt.Fprintf(os.Stderr, "\x1b[2K\rDELETE '%s' (OID: %s)", ref.ShortName, ref.Hash)
 	}
 	if err := u.Prepare(); err != nil {

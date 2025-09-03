@@ -45,7 +45,7 @@ func (c *Version) Run(g *Globals) error {
 	if c.JSON {
 		return c.formatJSON()
 	}
-	fmt.Fprintf(os.Stdout, "zeta %s (%s), built %v\n", version.GetVersion(), version.GetBuildCommit(), version.GetBuildTime())
+	_, _ = fmt.Fprintf(os.Stdout, "zeta %s (%s), built %v\n", version.GetVersion(), version.GetBuildCommit(), version.GetBuildTime())
 	if !c.BuildOptions {
 		return nil
 	}
@@ -53,12 +53,12 @@ func (c *Version) Run(g *Globals) error {
 	if !ok {
 		return nil
 	}
-	fmt.Fprintf(os.Stdout, "arch: %s\nos:   %s\ngo:   %s\n", runtime.GOARCH, runtime.GOOS, strings.TrimPrefix(info.GoVersion, "go"))
+	_, _ = fmt.Fprintf(os.Stdout, "arch: %s\nos:   %s\ngo:   %s\n", runtime.GOARCH, runtime.GOOS, strings.TrimPrefix(info.GoVersion, "go"))
 	for _, s := range info.Settings {
 		if len(s.Value) == 0 {
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s:\n  %s\n", s.Key, s.Value)
+		_, _ = fmt.Fprintf(os.Stdout, "%s:\n  %s\n", s.Key, s.Value)
 	}
 	return nil
 }

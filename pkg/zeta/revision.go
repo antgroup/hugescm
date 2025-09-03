@@ -455,10 +455,10 @@ func (r *Repository) MergeBase(ctx context.Context, revisions []string, all bool
 	}
 	if all {
 		for _, b := range bases {
-			fmt.Fprintln(os.Stdout, b.Hash)
+			_, _ = fmt.Fprintln(os.Stdout, b.Hash)
 		}
 		return nil
 	}
-	fmt.Fprintln(os.Stdout, bases[0].Hash)
+	_, _ = fmt.Fprintln(os.Stdout, bases[0].Hash)
 	return nil
 }

@@ -28,10 +28,10 @@ func (c *RevParse) Run(g *Globals) error {
 	defer r.Close() // nolint
 	switch {
 	case c.ShowToplevel:
-		fmt.Fprintln(os.Stdout, r.BaseDir())
+		_, _ = fmt.Fprintln(os.Stdout, r.BaseDir())
 		return nil
 	case c.ZetaDir:
-		fmt.Fprintln(os.Stdout, r.ZetaDir())
+		_, _ = fmt.Fprintln(os.Stdout, r.ZetaDir())
 		return nil
 	}
 	return nil

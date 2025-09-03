@@ -3,10 +3,12 @@ package command
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/git"
@@ -39,7 +41,7 @@ func (c *Cat) Run(g *Globals) error {
 		die("new git decoder error: %v", err)
 		return err
 	}
-	defer d.Close()
+	defer d.Close() // nolint
 	o, err := d.Object(c.Object)
 	if err != nil {
 		die("open '%s' error: %v\n", c.Object, err)
@@ -121,11 +123,6 @@ func (c *Cat) formatObject(o *git.Object) error {
 	if c.Type {
 		return c.Println("blob")
 	}
-	fd, colorMode, err := c.NewFD()
-	if err != nil {
-		return err
-	}
-	defer fd.Close() // nolint
 	reader, charset, err := diferenco.NewUnifiedReaderEx(o, c.Textconv)
 	if err != nil {
 		return err
@@ -133,15 +130,23 @@ func (c *Cat) formatObject(o *git.Object) error {
 	if c.Limit < 0 {
 		c.Limit = o.Size
 	}
-	if colorMode != term.LevelNone {
-		if charset == diferenco.BINARY {
-			if c.Limit > MAX_SHOW_BINARY_BLOB {
-				reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
-				c.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
-			}
-			return hexview.Format(reader, fd, c.Limit, colorMode)
+	if len(c.Output) == 0 && term.StdoutLevel != term.LevelNone && charset == diferenco.BINARY {
+		p := NewPrinter(context.Background())
+		defer p.Close() // nolint
+		if c.Limit > MAX_SHOW_BINARY_BLOB {
+			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
+			c.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
+		if err := hexview.Format(reader, p, c.Limit, p.ColorMode()); err != nil && !errors.Is(err, syscall.EPIPE) {
+			return err
+		}
+		return nil
 	}
+	fd, _, err := c.NewFD()
+	if err != nil {
+		return err
+	}
+	defer fd.Close() // nolint
 	if _, err = io.Copy(fd, io.LimitReader(reader, c.Limit)); err != nil {
 		return err
 	}

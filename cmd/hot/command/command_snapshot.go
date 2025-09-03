@@ -82,7 +82,7 @@ func messageReadFromPath(p string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	return messageReadFrom(fd)
 }
 
@@ -270,7 +270,7 @@ func (c *Snapshot) Run(g *Globals) error {
 		return err
 	}
 	fmt.Fprintln(os.Stderr, W("new snapshot commit:"))
-	fmt.Fprintln(os.Stdout, commit)
+	_, _ = fmt.Fprintln(os.Stdout, commit)
 	if !c.Push {
 		return nil
 	}

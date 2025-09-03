@@ -119,7 +119,7 @@ func (m *Migrator) getAllCommits(ctx context.Context) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	sr := bufio.NewScanner(reader)
 	var commits [][]byte
 	for sr.Scan() {
@@ -137,7 +137,7 @@ func (m *Migrator) hashObject(oid []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer br.Close()
+	defer br.Close() // nolint
 	return m.newODB.WriteBlob(&gitobj.Blob{
 		Size:     br.Size,
 		Contents: br.Contents,
@@ -149,7 +149,7 @@ func countObjects(ctx context.Context, repoPath string) int {
 	if err != nil {
 		return -1
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	nums := make(map[string]int)
 	br := bufio.NewScanner(reader)
 	for br.Scan() {
@@ -174,7 +174,7 @@ func (m *Migrator) hashObjects(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("start git cat-file error %w", err)
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	br := bufio.NewScanner(reader)
 	objectsCount := countObjects(ctx, m.from)
 	b := bar.NewBar(tr.W("fast rewrite objects"), objectsCount, m.stepCurrent, m.stepEnd, m.verbose)

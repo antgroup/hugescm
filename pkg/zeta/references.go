@@ -178,7 +178,7 @@ func (r *Repository) ForEachReference(ctx context.Context, opts *ForEachReferenc
 		return json.NewEncoder(os.Stdout).Encode(rs)
 	}
 	for _, ref := range rs {
-		fmt.Fprintf(os.Stdout, "%s %s%s %s\n", ref.Hash, ref.Type, strings.Repeat(" ", max(0, len("commit")-len(ref.Type))), ref.Name)
+		_, _ = fmt.Fprintf(os.Stdout, "%s %s%s %s\n", ref.Hash, ref.Type, strings.Repeat(" ", max(0, len("commit")-len(ref.Type))), ref.Name)
 	}
 	return nil
 }

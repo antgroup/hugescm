@@ -306,7 +306,7 @@ func (w *Worktree) checkoutWorktreeOnly(ctx context.Context, root *object.Tree, 
 
 		switch action {
 		case merkletrie.Delete:
-			w.fs.Remove(name)
+			_ = w.fs.Remove(name)
 		default:
 			//checkout deleted and modified file
 			if err = w.checkoutFile(ctx, name, &ch.To.TreeEntry, bar); err != nil {

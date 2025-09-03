@@ -59,7 +59,7 @@ func (w *Worktree) lsFilesCached(opts *LsFilesOptions) error {
 			entries = append(entries, e.Name)
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s%c", e.Name, newLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%c", e.Name, newLine)
 	}
 	if opts.JSON {
 		return json.NewEncoder(os.Stdout).Encode(entries)
@@ -91,7 +91,7 @@ func (w *Worktree) lsFilesDeleted(ctx context.Context, opts *LsFilesOptions) err
 			entries = append(entries, p)
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s%c", p, newLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%c", p, newLine)
 	}
 	if opts.JSON {
 		return json.NewEncoder(os.Stdout).Encode(entries)
@@ -123,7 +123,7 @@ func (w *Worktree) lsFilesModified(ctx context.Context, opts *LsFilesOptions) er
 			entries = append(entries, p)
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s%c", p, newLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%c", p, newLine)
 	}
 	if opts.JSON {
 		return json.NewEncoder(os.Stdout).Encode(entries)
@@ -148,7 +148,7 @@ func (w *Worktree) lsFilesOthers(ctx context.Context, opts *LsFilesOptions) erro
 			entries = append(entries, e)
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s%c", e, newLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%c", e, newLine)
 	}
 	if opts.JSON {
 		return json.NewEncoder(os.Stdout).Encode(entries)
@@ -184,7 +184,7 @@ func (w *Worktree) lsFilesStage(opts *LsFilesOptions) error {
 			})
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s %s %d\t%s%c", e.Mode, e.Hash, e.Stage, e.Name, newLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s %s %d\t%s%c", e.Mode, e.Hash, e.Stage, e.Name, newLine)
 	}
 	if opts.JSON {
 		return json.NewEncoder(os.Stdout).Encode(entries)

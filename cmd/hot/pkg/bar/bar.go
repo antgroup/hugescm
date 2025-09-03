@@ -38,7 +38,7 @@ func NewBar(description string, total int, stepCurrent, stepEnd int, verbose boo
 
 func (b *ProgressBar) Add(n int) {
 	if b.bar != nil {
-		b.bar.Add(n)
+		_ = b.bar.Add(n)
 	}
 }
 

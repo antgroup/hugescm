@@ -91,7 +91,7 @@ func GetReferences(ctx context.Context, repoPath string, m func(*Reference) bool
 	if err != nil {
 		return nil, fmt.Errorf("run git for-each-ref error: %v", err)
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	references := make([]*Reference, 0, 100)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
@@ -157,9 +157,9 @@ func (c *PruneRefs) record(repoPath string, refs []*Reference) error {
 		fmt.Fprintf(os.Stderr, "create record json error: %v", err)
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	for _, ref := range refs {
-		fmt.Fprintf(fd, "%s %s\n", ref.Hash, ref.Name)
+		_, _ = fmt.Fprintf(fd, "%s %s\n", ref.Hash, ref.Name)
 	}
 	return nil
 }

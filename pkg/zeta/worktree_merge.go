@@ -496,6 +496,6 @@ func (w *Worktree) mergeStat(ctx context.Context, oldRev, newRev plumbing.Hash) 
 		deleted += s.Deletion
 	}
 	object.StatsWriteTo(os.Stderr, stats, term.StdoutLevel != term.LevelNone)
-	fmt.Fprintf(os.Stdout, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
+	_, _ = fmt.Fprintf(os.Stdout, "%d files changed, %d insertions(+), %d deletions(-)\n", len(stats), added, deleted)
 	return nil
 }

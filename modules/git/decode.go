@@ -355,6 +355,6 @@ func ParseRev(ctx context.Context, repoPath string, revision string) (*Commit, e
 	if err != nil {
 		return nil, err
 	}
-	defer d.Close()
+	defer d.Close() // nolint
 	return d.ParseRev(revision)
 }

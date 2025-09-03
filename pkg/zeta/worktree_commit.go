@@ -305,7 +305,7 @@ func (w *Worktree) Stats(ctx context.Context) error {
 		added += s.Addition
 		deleted += s.Deletion
 	}
-	fmt.Fprintf(os.Stdout, "[%s %s] %s\n %d files changed, %d insertions(+), %d deletions(-)\n",
+	_, _ = fmt.Fprintf(os.Stdout, "[%s %s] %s\n %d files changed, %d insertions(+), %d deletions(-)\n",
 		current.Name().Short(), shortHash(current.Hash()), cc.Subject(),
 		len(stats), added, deleted)
 	return nil

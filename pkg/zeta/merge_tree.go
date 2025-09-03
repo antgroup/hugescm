@@ -62,41 +62,41 @@ func (o *MergeTreeOptions) format(result *odb.MergeResult) {
 	if o.Z {
 		NewLine = '\x00'
 	}
-	fmt.Fprintf(os.Stdout, "%s%c", result.NewTree, NewLine)
+	_, _ = fmt.Fprintf(os.Stdout, "%s%c", result.NewTree, NewLine)
 	if o.NameOnly {
 		for _, e := range result.Conflicts {
 			if e.Ancestor.Path != "" {
-				fmt.Fprintf(os.Stdout, "%s%c", e.Ancestor.Path, NewLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%s%c", e.Ancestor.Path, NewLine)
 				continue
 			}
 			if e.Our.Path != "" {
-				fmt.Fprintf(os.Stdout, "%s%c", e.Our.Path, NewLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%s%c", e.Our.Path, NewLine)
 				continue
 			}
 			if e.Their.Path != "" {
-				fmt.Fprintf(os.Stdout, "%s%c", e.Their.Path, NewLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%s%c", e.Their.Path, NewLine)
 				continue
 			}
 		}
 	} else {
 		for _, e := range result.Conflicts {
 			if e.Ancestor.Path != "" {
-				fmt.Fprintf(os.Stdout, "%s %s 1 %s%c", e.Ancestor.Mode, e.Ancestor.Hash, e.Ancestor.Path, NewLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%s %s 1 %s%c", e.Ancestor.Mode, e.Ancestor.Hash, e.Ancestor.Path, NewLine)
 			}
 			if e.Our.Path != "" {
-				fmt.Fprintf(os.Stdout, "%s %s 2 %s%c", e.Our.Mode, e.Our.Hash, e.Our.Path, NewLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%s %s 2 %s%c", e.Our.Mode, e.Our.Hash, e.Our.Path, NewLine)
 			}
 			if e.Their.Path != "" {
-				fmt.Fprintf(os.Stdout, "%s %s 3 %s%c", e.Their.Mode, e.Their.Hash, e.Their.Path, NewLine)
+				_, _ = fmt.Fprintf(os.Stdout, "%s %s 3 %s%c", e.Their.Mode, e.Their.Hash, e.Their.Path, NewLine)
 			}
 		}
 	}
 	if len(result.Messages) == 0 {
 		return
 	}
-	fmt.Fprintf(os.Stdout, "%c", NewLine)
+	_, _ = fmt.Fprintf(os.Stdout, "%c", NewLine)
 	for _, m := range result.Messages {
-		fmt.Fprintf(os.Stdout, "%s%c", m, NewLine)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%c", m, NewLine)
 	}
 }
 

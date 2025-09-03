@@ -77,7 +77,7 @@ func (opts *LsTreeOptions) ShowTree(w io.Writer, t *object.Tree) {
 			return
 		}
 		for _, e := range t.Entries {
-			fmt.Fprintf(w, "%s%c", e.Name, opts.NewLine)
+			_, _ = fmt.Fprintf(w, "%s%c", e.Name, opts.NewLine)
 		}
 		return
 	}
@@ -88,13 +88,13 @@ func (opts *LsTreeOptions) ShowTree(w io.Writer, t *object.Tree) {
 	if opts.Long {
 		padding := t.SizePadding()
 		for _, e := range t.Entries {
-			fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), sizePadding(e, padding), e.Name)
+			_, _ = fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), sizePadding(e, padding), e.Name)
 		}
 		return
 	}
 	padding := t.SpacePadding()
 	for _, e := range t.Entries {
-		fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), spacePadding(e, padding), e.Name)
+		_, _ = fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), spacePadding(e, padding), e.Name)
 	}
 
 }
@@ -304,7 +304,7 @@ func (r *Repository) LsTreeRecurse(ctx context.Context, opts *LsTreeOptions, t *
 			return json.NewEncoder(os.Stdout).Encode(names)
 		}
 		for _, e := range g.entries {
-			fmt.Fprintf(os.Stdout, "%s%c", e.Path, opts.NewLine)
+			_, _ = fmt.Fprintf(os.Stdout, "%s%c", e.Path, opts.NewLine)
 		}
 		return nil
 	}
@@ -316,7 +316,7 @@ func (r *Repository) LsTreeRecurse(ctx context.Context, opts *LsTreeOptions, t *
 	if opts.Long {
 		padding := g.SizePadding()
 		for _, e := range g.entries {
-			fmt.Fprintf(os.Stdout, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), sizePadding(e.TreeEntry, padding), e.Path)
+			_, _ = fmt.Fprintf(os.Stdout, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), sizePadding(e.TreeEntry, padding), e.Path)
 		}
 		return nil
 	}
@@ -325,7 +325,7 @@ func (r *Repository) LsTreeRecurse(ctx context.Context, opts *LsTreeOptions, t *
 		padding = 5
 	}
 	for _, e := range g.entries {
-		fmt.Fprintf(os.Stdout, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), spacePadding(e.TreeEntry, padding), e.Path)
+		_, _ = fmt.Fprintf(os.Stdout, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), opts.ShortName(e.Hash), spacePadding(e.TreeEntry, padding), e.Path)
 	}
 	return nil
 }

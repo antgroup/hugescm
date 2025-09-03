@@ -6,10 +6,12 @@ package zeta
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/object"
@@ -141,6 +143,9 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []pl
 		p := NewPrinter(ctx)
 		for _, cc := range commits {
 			if err := p.LogOne(cc, rdb.M[cc.Hash]); err != nil {
+				if errors.Is(err, syscall.EPIPE) {
+					break
+				}
 				_ = p.Close()
 				return err
 			}
@@ -159,6 +164,9 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []pl
 			return err
 		}
 		if err := p.LogOne(cc, rdb.M[cc.Hash]); err != nil {
+			if errors.Is(err, syscall.EPIPE) {
+				break
+			}
 			_ = p.Close()
 			return err
 		}
@@ -259,6 +267,9 @@ func (r *Repository) logFromMergeBase(ctx context.Context, a, b plumbing.Hash, o
 	p := NewPrinter(ctx)
 	for _, cc := range cg.commits {
 		if err := p.LogOne(cc, rdb.M[cc.Hash]); err != nil {
+			if errors.Is(err, syscall.EPIPE) {
+				break
+			}
 			_ = p.Close()
 			return err
 		}

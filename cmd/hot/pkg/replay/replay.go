@@ -84,7 +84,7 @@ func (r *Replayer) commitsToRewrite() ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	sr := bufio.NewScanner(reader)
 	var commits [][]byte
 	for sr.Scan() {

@@ -88,7 +88,7 @@ func (c *Smart) doOnce(g *Globals, p string) error {
 		fmt.Fprintf(os.Stderr, "new rewriter error: %v\n", err)
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 	if err := r.Drop(matcher, c.Confirm, c.Prune); err != nil {
 		fmt.Fprintf(os.Stderr, "rewrite repo error: %v\n", err)
 		return err

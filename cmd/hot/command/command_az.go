@@ -81,7 +81,7 @@ func (s *summer) draw(w io.Writer) {
 		t.AppendRow(table.Row{i + 1, item.Path, item.Modifications, strengthen.FormatSize(item.Size)})
 	}
 	t.AppendRow(table.Row{"TOTAL", "", "", strengthen.FormatSize(largeSize)})
-	fmt.Fprintf(w, "Descending order by path size:\n")
+	_, _ = fmt.Fprintf(w, "Descending order by path size:\n")
 	t.Render()
 }
 
@@ -92,7 +92,7 @@ func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[str
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer out.Close() // nolint
 	if err := cmd.Start(); err != nil {
 		return err
 	}

@@ -112,7 +112,7 @@ func ScanReferences(ctx context.Context, repoPath string, m Matcher, order git.O
 	if err != nil {
 		return nil, err
 	}
-	defer odb.Close()
+	defer odb.Close() // nolint
 	refs, err := git.ParseReferences(ctx, repoPath, order)
 	if err != nil {
 		return nil, err

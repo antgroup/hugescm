@@ -51,7 +51,7 @@ func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error
 	if err != nil {
 		return fmt.Errorf("start git cat-file error %w", err)
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	br := bufio.NewReader(reader)
 	for {
 		line, err := br.ReadString('\n')
@@ -84,7 +84,7 @@ func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error
 		return err
 	}
 	if len(sum.files) != 0 {
-		fmt.Fprintf(os.Stdout, "%s - %s:\n", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))
+		_, _ = fmt.Fprintf(os.Stdout, "%s - %s:\n", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))
 	}
 	sum.draw(os.Stdout)
 	if extract {
@@ -111,7 +111,7 @@ func (e *Executor) currentCheck(ctx context.Context, repoPath string, objects ma
 		return
 	}
 	if len(sum.files) != 0 {
-		fmt.Fprintf(os.Stdout, "\n%s - %s:\n", tr.W("Descending order by total size"), tr.W("Default Branch"))
+		_, _ = fmt.Fprintf(os.Stdout, "\n%s - %s:\n", tr.W("Descending order by total size"), tr.W("Default Branch"))
 	}
 	sum.draw(os.Stdout)
 }

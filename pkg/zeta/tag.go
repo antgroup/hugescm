@@ -57,7 +57,9 @@ func (r *Repository) ListTag(ctx context.Context, pattern []string) error {
 		if !m.Match(refname) {
 			continue
 		}
-		fmt.Fprintf(w, "  %s\n", refname)
+		if _, err = fmt.Fprintf(w, "  %s\n", refname); err != nil {
+			break
+		}
 	}
 	return nil
 }
@@ -79,8 +81,8 @@ func (r *Repository) tagMessageFromPrompt(ctx context.Context, opts *NewTagOptio
 	var b bytes.Buffer
 	if oldRef != nil {
 		if tag, err := r.odb.Tag(ctx, oldRef.Hash()); err == nil {
-			for _, s := range strings.Split(tag.Content, "\n") {
-				fmt.Fprintf(&b, "%s\n", s)
+			for s := range strings.SplitSeq(tag.Content, "\n") {
+				_, _ = fmt.Fprintf(&b, "%s\n", s)
 			}
 		}
 	} else {

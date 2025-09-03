@@ -23,7 +23,7 @@ func (c *Rebase) Run(g *Globals) error {
 		diev("--abort is not compatible with --continue")
 		return ErrFlagsIncompatible
 	}
-	if !(c.Abort || c.Continue) && len(c.Args) == 0 {
+	if !c.Abort && !c.Continue && len(c.Args) == 0 {
 		fmt.Fprintf(os.Stderr, "Please specify which branch you want to rebase against.\n")
 		return ErrArgRequired
 	}

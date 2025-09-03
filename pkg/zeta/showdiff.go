@@ -73,7 +73,9 @@ func (opts *DiffOptions) showNameOnly(ctx context.Context, changes object.Change
 		if !m.Match(name) {
 			continue
 		}
-		fmt.Fprintf(w, "%s%c", name, opts.NewLine)
+		if _, err = fmt.Fprintf(w, "%s%c", name, opts.NewLine); err != nil {
+			break
+		}
 	}
 	return nil
 }
@@ -109,7 +111,9 @@ func (opts *DiffOptions) showNameStatus(ctx context.Context, changes object.Chan
 		if !m.Match(name) {
 			continue
 		}
-		fmt.Fprintf(w, "%c    %s%c", stat, name, opts.NewLine)
+		if _, err = fmt.Fprintf(w, "%c    %s%c", stat, name, opts.NewLine); err != nil {
+			break
+		}
 	}
 	return nil
 }
@@ -152,7 +156,7 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 			added += s.Addition
 			deleted += s.Deletion
 		}
-		fmt.Fprintf(w, " %d files changed, %d insertions(+), %d deletions(-)%c", len(fileStats), added, deleted, opts.NewLine)
+		_, _ = fmt.Fprintf(w, " %d files changed, %d insertions(+), %d deletions(-)%c", len(fileStats), added, deleted, opts.NewLine)
 		return nil
 	}
 	if opts.Numstat {
@@ -164,7 +168,9 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 		addPadding := len(strconv.Itoa(ma)) + 4
 		deletePadding := len(strconv.Itoa(md)) + 4
 		for _, s := range fileStats {
-			fmt.Fprintf(w, "%s %s %s%c", numPadding(s.Addition, addPadding), numPadding(s.Deletion, deletePadding), s.Name, opts.NewLine)
+			if _, err = fmt.Fprintf(w, "%s %s %s%c", numPadding(s.Addition, addPadding), numPadding(s.Deletion, deletePadding), s.Name, opts.NewLine); err != nil {
+				break
+			}
 		}
 		return nil
 	}
@@ -192,12 +198,16 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 		adds := strings.Repeat("+", addc)
 		dels := strings.Repeat("-", delc)
 		if w.ColorMode() != term.LevelNone {
-			_, _ = fmt.Fprintf(w, " %s%s | %s \x1b[32m%s\x1b[31m%s\x1b[0m\n", fs.Name, strings.Repeat(" ", nameLen-len(fs.Name)), numPaddingLeft(fs.Addition+fs.Deletion, sizePadding), adds, dels)
+			if _, err = fmt.Fprintf(w, " %s%s | %s \x1b[32m%s\x1b[31m%s\x1b[0m\n", fs.Name, strings.Repeat(" ", nameLen-len(fs.Name)), numPaddingLeft(fs.Addition+fs.Deletion, sizePadding), adds, dels); err != nil {
+				return nil
+			}
 			continue
 		}
-		fmt.Fprintf(w, "%s%s | %s %s%s%c", fs.Name, strings.Repeat(" ", nameLen-len(fs.Name)), numPaddingLeft(fs.Addition+fs.Deletion, sizePadding), adds, dels, opts.NewLine)
+		if _, err = fmt.Fprintf(w, "%s%s | %s %s%s%c", fs.Name, strings.Repeat(" ", nameLen-len(fs.Name)), numPaddingLeft(fs.Addition+fs.Deletion, sizePadding), adds, dels, opts.NewLine); err != nil {
+			return nil
+		}
 	}
-	fmt.Fprintf(w, " %d files changed, %d insertions(+), %d deletions(-)%c", len(fileStats), added, deleted, opts.NewLine)
+	_, _ = fmt.Fprintf(w, " %d files changed, %d insertions(+), %d deletions(-)%c", len(fileStats), added, deleted, opts.NewLine)
 	return nil
 }
 
@@ -231,7 +241,9 @@ func (opts *DiffOptions) showChangesStatus(ctx context.Context, changes merkletr
 			if !m.Match(name) {
 				continue
 			}
-			fmt.Fprintf(w, "%s%c", name, opts.NewLine)
+			if _, err = fmt.Fprintf(w, "%s%c", name, opts.NewLine); err != nil {
+				break
+			}
 		}
 		return nil
 	}
@@ -245,7 +257,9 @@ func (opts *DiffOptions) showChangesStatus(ctx context.Context, changes merkletr
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(w, "%c    %s%c", a.Byte(), name, opts.NewLine)
+		if _, err = fmt.Fprintf(w, "%c    %s%c", a.Byte(), name, opts.NewLine); err != nil {
+			break
+		}
 	}
 	return nil
 }

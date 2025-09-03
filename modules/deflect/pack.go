@@ -67,7 +67,7 @@ func (f *Filter) FilterPack(p *pack) error {
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fd.Close() // nolint
 	fi, err := fd.Stat()
 	if err != nil {
 		return err

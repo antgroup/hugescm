@@ -445,7 +445,7 @@ func sizePadding(e *TreeEntry, padding int) string {
 	return strings.Repeat(" ", padding-len(ss)) + ss
 }
 
-// fragments
+// Pretty tree
 func (t *Tree) Pretty(w io.Writer) error {
 	padding := t.SizePadding()
 	for _, e := range t.Entries {

@@ -18,29 +18,34 @@ import (
 type ExtraHeader struct {
 	// K is the header key, or the first run of bytes up until a ' ' (\x20)
 	// character.
-	K string
+	K string `json:"k"`
 	// V is the header value, or the remaining run of bytes in the line,
 	// stripping off the above "K" field as a prefix.
-	V string
+	V string `json:"v"`
 }
 
 type Commit struct {
 	// Hash of the commit object.
-	Hash string
+	Hash string `json:"hash"`
 	// Tree is the hash of the root tree of the commit.
-	Tree string
+	Tree string `json:"tree"`
 	// Parents are the hashes of the parent commits of the commit.
-	Parents []string
+	Parents []string `json:"parents"`
 	// Author is the original author of the commit.
-	Author Signature
+	Author Signature `json:"author"`
 	// Committer is the one performing the commit, might be different from
 	// Author.
-	Committer Signature
+	Committer Signature `json:"committer"`
 	// ExtraHeaders stores headers not listed above, for instance
 	// "encoding", "gpgsig", or "mergetag" (among others).
-	ExtraHeaders []*ExtraHeader
+	ExtraHeaders []*ExtraHeader `json:"extra_header,omitempty"`
 	// Message is the commit message, contains arbitrary text.
-	Message string
+	Message string `json:"message"`
+	size    int64
+}
+
+func (c *Commit) Size() int64 {
+	return c.size
 }
 
 func (c *Commit) Signature() string {
@@ -107,8 +112,9 @@ func (c *Commit) ExtractCommitGPGSignature() *CommitGPGSignature {
 		Payload:   w.String()}
 }
 
-func (c *Commit) Decode(hash string, reader io.Reader) error {
+func (c *Commit) Decode(hash string, reader io.Reader, size int64) error {
 	c.Hash = hash
+	c.size = size
 	r, ok := reader.(*bufio.Reader)
 	if !ok {
 		r = bufio.NewReader(reader)
@@ -189,6 +195,39 @@ func (c *Commit) Subject() string {
 		return c.Message[0:i]
 	}
 	return c.Message
+}
+
+func (c *Commit) Pretty(w io.Writer) (err error) {
+	if _, err = fmt.Fprintf(w, "tree %s\n", c.Tree); err != nil {
+		return err
+	}
+
+	for _, parent := range c.Parents {
+		if _, err = fmt.Fprintf(w, "parent %s\n", parent); err != nil {
+			return err
+		}
+	}
+
+	if _, err = fmt.Fprintf(w, "author %s\ncommitter %s\n", c.Author.String(), c.Committer.String()); err != nil {
+		return err
+	}
+
+	for _, hdr := range c.ExtraHeaders {
+		if _, err = fmt.Fprintf(w, "%s %s\n", hdr.K, strings.ReplaceAll(hdr.V, "\n", "\n ")); err != nil {
+			return err
+		}
+
+	}
+	// c.Message is built from messageParts in the Decode() function.
+	//
+	// Since each entry in messageParts _does not_ contain its trailing LF,
+	// append an empty string to capture the final newline.
+
+	if _, err = fmt.Fprintf(w, "\n%s", c.Message); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func RevUniqueList(ctx context.Context, repoPath string, ours, theirs string) ([]string, error) {

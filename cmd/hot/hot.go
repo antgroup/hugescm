@@ -16,6 +16,7 @@ import (
 
 type App struct {
 	command.Globals
+	Cat        command.Cat        `cmd:"cat" help:"Provide contents or details of repository objects"`
 	Size       command.Size       `cmd:"size" help:"Show repositories size and large files"`
 	Remove     command.Remove     `cmd:"remove" help:"Remove files in repository and rewrite history"`
 	Smart      command.Smart      `cmd:"smart" help:"Interactive mode to clean repository large files"`

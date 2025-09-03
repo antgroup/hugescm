@@ -121,7 +121,6 @@
 # branch
 "List, create, or delete branches" = "列出、创建或删除分支"
 "Get and set repository or global options" = "获取和设置存储库或全局选项"
-"Provide contents or details of repository objects" = "提供存储库对象的内容或类型和大小信息"
 "List branches. With optional <pattern>..." = "列出分支，带有可选的 <pattern>..."
 "Show current branch name" = "显示当前分支名"
 "Copy a branch and its reflog" = "拷贝一个分支和它的引用日志"
@@ -138,11 +137,11 @@
 "Branch '%s' has been moved to '%s'\n" = "已经将分支 '%s' 移动到 '%s'\n"
 "Deleted branch %s (was %s).\n" = "已删除分支 %s（曾为 %s）。\n"
 # cat
+"Provide contents or details of repository objects" = "提供存储库对象的内容或类型和大小信息"
 "The name of the object to show" = "要显示的对象的名称。"
 "Show object type" = "显示对象的类型"
 "Show object size" = "显示对象的大小"
 "Verify object hash" = "验证对象的哈希"
-"Blob output size limit; use 0 for unlimited. Units: KB, MB, GB, K, M, G" = "输出 blob 的大小限制；设置为 0 无限制。支持单位：KB, MB, GB, K, M, G"
 "Returns data as JSON; limited to commits, trees, fragments, and tags" = "仅提交、树、片段、标签数据以 JSON 格式返回"
 "Converting text to Unicode" = "将文本转为 Unicode"
 "View files directly" = "直接查看文件"

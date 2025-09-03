@@ -1,4 +1,4 @@
-package zeta
+package hexview
 
 import (
 	"bytes"
@@ -153,7 +153,7 @@ func (b *binaryPrinter) flush() error {
 	return err
 }
 
-func processColor(r io.Reader, w io.Writer, size int64, colorMode term.Level) error {
+func Format(r io.Reader, w io.Writer, size int64, colorMode term.Level) error {
 	if size < 0 {
 		size = math.MaxInt64
 	}

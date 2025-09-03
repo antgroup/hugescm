@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
@@ -151,6 +152,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 	if err != nil {
 		return err
 	}
+	defer fd.Close() // nolint
 	if opts.Verify {
 		h := plumbing.NewHasher()
 		if _, err := io.Copy(h, b.Contents); err != nil {
@@ -171,7 +173,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return processColor(reader, fd, opts.Limit, colorMode)
+		return hexview.Format(reader, fd, opts.Limit, colorMode)
 	}
 	if _, err = io.Copy(fd, io.LimitReader(reader, opts.Limit)); err != nil {
 		return err
@@ -210,7 +212,7 @@ func (r *Repository) catFragments(ctx context.Context, opts *CatOptions, ff *obj
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return processColor(reader, fd, opts.Limit, colorMode)
+		return hexview.Format(reader, fd, opts.Limit, colorMode)
 	}
 	if _, err = io.Copy(fd, io.LimitReader(reader, opts.Limit)); err != nil {
 		return err

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"reflect"
@@ -146,6 +147,14 @@ func ExpireDecoder() kong.MapperFunc {
 		}
 		return nil
 	}
+}
+
+type NopWriteCloser struct {
+	io.Writer
+}
+
+func (NopWriteCloser) Close() error {
+	return nil
 }
 
 func W(a string) string {

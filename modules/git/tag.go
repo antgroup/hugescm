@@ -12,27 +12,32 @@ import (
 
 type Tag struct {
 	// Hash of the tag.
-	Hash string
+	Hash string `json:"hash"`
 	// Name of the tag.
-	Name string
+	Name string `json:"name"`
 	// Object is the hash of the target object.
-	Object string
+	Object string `json:"object"`
 	// Type is the object type of the target.
-	Type string
+	Type string `json:"type"`
 	// Tagger is the one who created the tag.
-	Tagger Signature
-	// Message is an arbitrary text message.
-	Message string
+	Tagger Signature `json:"tagger"`
+	// Content is an arbitrary text message.
+	Content string `json:"content"`
+	size    int64
+}
+
+func (t *Tag) Size() int64 {
+	return t.size
 }
 
 func (t *Tag) Extract() (message string, signature string) {
-	if i := strings.Index(t.Message, "-----BEGIN"); i > 0 {
-		return t.Message[:i], t.Message[i:]
+	if i := strings.Index(t.Content, "-----BEGIN"); i > 0 {
+		return t.Content[:i], t.Content[i:]
 	}
-	return t.Message, ""
+	return t.Content, ""
 }
 
-func (t *Tag) StrictMessage() string {
+func (t *Tag) Message() string {
 	m, _ := t.Extract()
 	return m
 }
@@ -72,8 +77,9 @@ func (t *Tag) ExtractCommitGPGSignature() *CommitGPGSignature {
 // https://git-scm.com/docs/signature-format
 // https://github.blog/changelog/2022-08-23-ssh-commit-verification-now-supported/
 
-func (t *Tag) Decode(hash string, reader io.Reader) error {
+func (t *Tag) Decode(hash string, reader io.Reader, size int64) error {
 	t.Hash = hash
+	t.size = size
 	r, ok := reader.(*bufio.Reader)
 	if !ok {
 		r = bufio.NewReader(reader)
@@ -113,8 +119,19 @@ func (t *Tag) Decode(hash string, reader io.Reader) error {
 	if err != nil {
 		return err
 	}
-	t.Message = string(data)
+	t.Content = string(data)
 	return nil
+}
+
+func (t *Tag) Pretty(w io.Writer) error {
+	headers := []string{
+		fmt.Sprintf("object %s", t.Object),
+		fmt.Sprintf("type %s", t.Type),
+		fmt.Sprintf("tag %s", t.Name),
+		fmt.Sprintf("tagger %s", t.Tagger.String()),
+	}
+	_, err := fmt.Fprintf(w, "%s\n\n%s", strings.Join(headers, "\n"), t.Content)
+	return err
 }
 
 func FindTagReference(ctx context.Context, repoPath string, name string) (*Reference, error) {

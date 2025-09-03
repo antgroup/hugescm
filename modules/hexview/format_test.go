@@ -1,4 +1,4 @@
-package zeta
+package hexview
 
 import (
 	"bytes"
@@ -9,22 +9,22 @@ import (
 	"github.com/antgroup/hugescm/modules/term"
 )
 
-func TestProcessColor(t *testing.T) {
+func TestFormat(t *testing.T) {
 	b := make([]byte, 1000)
 	_, err := rand.Read(b[10:])
 	if err != nil {
 		return
 	}
-	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b)), term.Level16M)
+	_ = Format(bytes.NewReader(b), os.Stdout, int64(len(b)), term.Level16M)
 }
 
-func TestProcessColorOverflow(t *testing.T) {
+func TestFormatOverflow(t *testing.T) {
 	b := make([]byte, 1000)
 	_, err := rand.Read(b[10:])
 	if err != nil {
 		return
 	}
-	_ = processColor(bytes.NewReader(b), os.Stdout, int64(len(b))+8, term.Level16M)
+	_ = Format(bytes.NewReader(b), os.Stdout, int64(len(b))+8, term.Level16M)
 }
 
 func TestBorder(t *testing.T) {

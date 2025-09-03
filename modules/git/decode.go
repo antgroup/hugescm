@@ -175,80 +175,81 @@ func (d *Decoder) ObjectReader(objectKey string) (*Object, error) {
 }
 
 func (d *Decoder) Object(objectKey string) (any, error) {
-	obj, err := d.object(objectKey)
+	o, err := d.object(objectKey)
 	if err != nil {
 		return nil, err
 	}
-	if obj.Type == BlobObject {
-		return obj, nil
+	if o.Type == BlobObject {
+		return o, nil
 	}
-	defer obj.Discard()
-	switch obj.Type {
+	defer o.Discard()
+	switch o.Type {
 	case CommitObject:
-		commit := new(Commit)
-		if err := commit.Decode(obj.Hash, obj); err != nil {
+		c := new(Commit)
+		if err := c.Decode(o.Hash, o, o.Size); err != nil {
 			return nil, err
 		}
-		return commit, nil
+		return c, nil
 	case TagObject:
-		tag := new(Tag)
-		if err := tag.Decode(obj.Hash, obj); err != nil {
+		t := new(Tag)
+		if err := t.Decode(o.Hash, o, o.Size); err != nil {
 			return nil, err
 		}
-		return tag, nil
+		return t, nil
 	case TreeObject:
-		tree := new(Tree)
-		if _, err := tree.Decode(obj.Hash, obj); err != nil {
+		t := new(Tree)
+		if _, err := t.Decode(o.Hash, o, o.Size); err != nil {
 			return nil, err
 		}
-		return tree, nil
+		return t, nil
 	default:
 	}
-	return nil, &ErrUnexpectedType{message: fmt.Sprintf("unexpected object '%s' type: %s", objectKey, obj.Type)}
+	return nil, &ErrUnexpectedType{message: fmt.Sprintf("unexpected object '%s' type: %s", objectKey, o.Type)}
 }
 
 func (d *Decoder) Tree(objectKey string) (*Tree, error) {
-	obj, err := d.object(objectKey)
+	o, err := d.object(objectKey)
 	if err != nil {
 		return nil, err
 	}
-	defer obj.Discard()
-	if obj.Type != TreeObject {
-		return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not tree", objectKey, obj.Type)}
+	defer o.Discard()
+	if o.Type != TreeObject {
+		return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not tree", objectKey, o.Type)}
 	}
-	tree := new(Tree)
-	if _, err := tree.Decode(obj.Hash, obj); err != nil {
+	t := new(Tree)
+	if _, err := t.Decode(o.Hash, o, o.Size); err != nil {
 		return nil, err
 	}
-	return tree, nil
+	t.size = o.Size
+	return t, nil
 }
 
 func (d *Decoder) Commit(objectKey string) (*Commit, error) {
-	obj, err := d.object(objectKey)
+	o, err := d.object(objectKey)
 	if err != nil {
 		return nil, err
 	}
-	defer obj.Discard()
-	if obj.Type != CommitObject {
-		return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not commit", objectKey, obj.Type)}
+	defer o.Discard()
+	if o.Type != CommitObject {
+		return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not commit", objectKey, o.Type)}
 	}
-	commit := new(Commit)
-	if err := commit.Decode(obj.Hash, obj); err != nil {
+	c := new(Commit)
+	if err := c.Decode(o.Hash, o, o.Size); err != nil {
 		return nil, err
 	}
-	return commit, nil
+	return c, nil
 }
 
 func (d *Decoder) Blob(objectKey string) (*Object, error) {
-	obj, err := d.object(objectKey)
+	o, err := d.object(objectKey)
 	if err != nil {
 		return nil, err
 	}
-	if obj.Type != BlobObject {
-		obj.Discard()
-		return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not blob", objectKey, obj.Type)}
+	if o.Type != BlobObject {
+		o.Discard()
+		return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not blob", objectKey, o.Type)}
 	}
-	return obj, nil
+	return o, nil
 }
 
 func (d *Decoder) ReadOverflow(objectKey string, limit int64) (b []byte, err error) {
@@ -276,26 +277,27 @@ func (d *Decoder) ReadEntry(revision string, path string) (*Object, error) {
 func (d *Decoder) ParseRev(objectKey string) (*Commit, error) {
 	oid := objectKey
 	for {
-		obj, err := d.object(oid)
+		o, err := d.object(oid)
 		if err != nil {
 			return nil, err
 		}
-		switch obj.Type {
+		switch o.Type {
 		case CommitObject:
-			commit := new(Commit)
-			if err := commit.Decode(obj.Hash, obj); err != nil {
+			c := new(Commit)
+			if err := c.Decode(o.Hash, o, o.Size); err != nil {
 				return nil, err
 			}
-			return commit, nil
+			return c, nil
 		case TagObject:
-			tag := new(Tag)
-			if err := tag.Decode(obj.Hash, obj); err != nil {
+			t := new(Tag)
+			if err := t.Decode(o.Hash, o, o.Size); err != nil {
 				return nil, err
 			}
-			oid = tag.Object
+			t.size = o.Size
+			oid = t.Object
 		default:
-			obj.Discard()
-			return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not commit", oid, obj.Type)}
+			o.Discard()
+			return nil, &ErrUnexpectedType{message: fmt.Sprintf("object '%s' type is '%s' not commit", oid, o.Type)}
 		}
 	}
 }

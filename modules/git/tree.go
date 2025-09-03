@@ -3,6 +3,7 @@ package git
 import (
 	"bufio"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -12,19 +13,20 @@ import (
 // operating systems use the traditional values.  For example, zOS uses
 // different values.
 const (
-	sIFMT      = int32(0170000)
-	sIFREG     = int32(0100000)
-	sIFDIR     = int32(0040000)
-	sIFLNK     = int32(0120000)
-	sIFGITLINK = int32(0160000)
+	sIFMT      = FileMode(0170000)
+	sIFREG     = FileMode(0100000)
+	sIFDIR     = FileMode(0040000)
+	sIFLNK     = FileMode(0120000)
+	sIFGITLINK = FileMode(0160000)
 )
 
 // Tree encapsulates a Git tree object.
 type Tree struct {
 	// Hash of the tree object.
-	Hash string
+	Hash string `json:"hash"`
 	// Entries is the list of entries held by this tree.
-	Entries []*TreeEntry
+	Entries []*TreeEntry `json:"entries"`
+	size    int64
 }
 
 // TreeEntry encapsulates information about a single tree entry in a tree
@@ -32,11 +34,15 @@ type Tree struct {
 type TreeEntry struct {
 	// Name is the entry name relative to the tree in which this entry is
 	// contained.
-	Name string
+	Name string `json:"name"`
 	// Hash is the object ID (Hex) for this tree entry.
-	Hash string
+	Hash string `json:"hash"`
 	// Filemode is the filemode of this tree entry on disk.
-	Filemode int32
+	Filemode FileMode `json:"mode"`
+}
+
+func (t *Tree) Size() int64 {
+	return t.size
 }
 
 // Decode implements Object.Decode and decodes the uncompressed tree being
@@ -45,8 +51,9 @@ type TreeEntry struct {
 //
 // If any error was encountered along the way, that will be returned, along with
 // the number of bytes read up to that point.
-func (t *Tree) Decode(hash string, from io.Reader) (n int, err error) {
+func (t *Tree) Decode(hash string, from io.Reader, size int64) (n int, err error) {
 	t.Hash = hash
+	t.size = size
 	buf := bufio.NewReader(from)
 	hashSize := len(t.Hash) / 2
 	var entries []*TreeEntry
@@ -79,7 +86,7 @@ func (t *Tree) Decode(hash string, from io.Reader) (n int, err error) {
 		entries = append(entries, &TreeEntry{
 			Name:     fname,
 			Hash:     hex.EncodeToString(sha[:hashSize]),
-			Filemode: int32(mode),
+			Filemode: FileMode(mode),
 		})
 	}
 
@@ -109,4 +116,14 @@ func (e *TreeEntry) Type() string {
 // symbolic link (i.e., with a filemode of 0120000.
 func (e *TreeEntry) IsLink() bool {
 	return e.Filemode&sIFMT == sIFLNK
+}
+
+// Pretty tree
+func (t *Tree) Pretty(w io.Writer) error {
+	for _, e := range t.Entries {
+		if _, err := fmt.Fprintf(w, "%s %s %s %s\n", e.Filemode, e.Type(), e.Hash, e.Name); err != nil {
+			return err
+		}
+	}
+	return nil
 }

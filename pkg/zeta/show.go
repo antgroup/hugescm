@@ -10,6 +10,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/diferenco/color"
+	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
@@ -115,7 +116,7 @@ func (r *Repository) showBlob(ctx context.Context, w Printer, opts *ShowOptions,
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		return processColor(reader, w, opts.Limit, w.ColorMode())
+		return hexview.Format(reader, w, opts.Limit, w.ColorMode())
 	}
 	_, err = io.Copy(w, io.LimitReader(reader, opts.Limit))
 	return err

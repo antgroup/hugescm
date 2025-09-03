@@ -3,7 +3,7 @@
 package command
 
 type Recast struct {
-	Revision string
+	Revision string `arg:"" optional:"" name:"revision-range" help:"Revision range"`
 	Depth    int
 	To       string
 }

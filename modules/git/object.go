@@ -43,3 +43,7 @@ func (o *Object) Discard() {
 		_, _ = io.Copy(io.Discard, o.dataReader)
 	}
 }
+
+type Printer interface {
+	Pretty(io.Writer) error
+}

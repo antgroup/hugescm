@@ -21,11 +21,11 @@ const (
 // Signature represents the Author or Committer information.
 type Signature struct {
 	// Name represents a person name. It is an arbitrary string.
-	Name string
+	Name string `json:"name"`
 	// Email is an email, but it cannot be assumed to be well-formed.
-	Email string
+	Email string `json:"email"`
 	// When is the timestamp of the signature.
-	When time.Time
+	When time.Time `json:"when"`
 }
 
 const (

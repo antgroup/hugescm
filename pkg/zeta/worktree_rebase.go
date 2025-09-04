@@ -32,6 +32,15 @@ func (w *Worktree) Rebase(ctx context.Context, opts *RebaseOptions) error {
 	if opts.Continue {
 		return w.rebaseContinue(ctx)
 	}
+	s, err := w.Status(ctx, false)
+	if err != nil {
+		die_error("status: %v", err)
+		return err
+	}
+	if !s.IsClean() {
+		fmt.Fprintln(os.Stderr, W("Please commit or stash them."))
+		return ErrAborting
+	}
 	current, err := w.Current()
 	if err != nil {
 		die_error("resolve HEAD: %v", err)
@@ -359,6 +368,7 @@ func (w *Worktree) rebaseWithUpstream(ctx context.Context, our, upstream, onto p
 			if err != nil {
 				die_error("unable checkout conflicts: %v", err)
 			}
+			fmt.Fprintln(os.Stderr, W("Automatic merge failed; fix conflicts and then commit the result."))
 			return plumbing.ZeroHash, ErrHasConflicts
 		}
 		cc := &object.Commit{
@@ -451,7 +461,7 @@ func (w *Worktree) rebaseAbort(ctx context.Context) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		die_error("zeta rebase --continue: read 'REBASE-MD': %v", err)
+		die_error("zeta rebase --abort: read 'REBASE-MD': %v", err)
 		return err
 	}
 	trace.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
@@ -564,6 +574,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 			if err != nil {
 				die_error("unable checkout conflicts: %v", err)
 			}
+			fmt.Fprintln(os.Stderr, W("Automatic merge failed; fix conflicts and then commit the result."))
 			return ErrHasConflicts
 		}
 		cc := &object.Commit{
@@ -601,5 +612,6 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 	_ = os.Remove(filepath.Join(w.ODB().Root(), REBASE_MD))
 	fmt.Fprintf(os.Stderr, "%s %s..%s\n", W("Updating"), shortHash(md.REBASE_HEAD), shortHash(lastCommitID))
 	fmt.Fprintf(os.Stderr, W("Successfully rebased and updated %s.\n"), md.HEAD)
+	_ = os.Remove(filepath.Join(w.odb.Root(), REBASE_MD))
 	return nil
 }

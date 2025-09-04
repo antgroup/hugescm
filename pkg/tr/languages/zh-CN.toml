@@ -399,6 +399,10 @@
 "Set labels for file1/orig-file/file2" = "为 文件1/初始文件/文件2 设置标签"
 # show
 "Show various types of objects" = "显示各种类型的对象"
+# replay
+"EXPERIMENTAL: Apply the changes introduced by some existing commit" = "EXPERIMENTAL: 应用一些现有提交引入的更改"
+"EXPERIMENTAL: Revert commit" = "EXPERIMENTAL: 撤销提交"
+"Existing commit" = "存在的 commit"
 # Others
 "WARNING" = "警告"
 "not zeta repository" = "不是 zeta 存储库"
@@ -434,3 +438,5 @@
 "Run" = "运行"
 "to set your account's default identity." = "来设置您账号的缺省身份标识。"
 "Omit --global to set the identity only in this repository." = "如果仅在本仓库设置身份标识，则省略 --global 参数。"
+"Cherry-pick failed; fix conflicts and then commit the result." = "挑选失败；修正冲突然后提交修正的结果。"
+"Revert failed; fix conflicts and then commit the result." = "还原失败；修正冲突然后提交修正的结果。"

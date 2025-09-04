@@ -54,6 +54,8 @@ type App struct {
 	MergeFile   command.MergeFile   `cmd:"merge-file" help:"Run a three-way file merge"`
 	Show        command.Show        `cmd:"show" help:"Show various types of objects"`
 	Version     command.Version     `cmd:"version" help:"Display version information"`
+	CherryPick  command.CherryPick  `cmd:"cherry-pick" help:"EXPERIMENTAL: Apply the changes introduced by some existing commit"`
+	Revert      command.Revert      `cmd:"revert" help:"EXPERIMENTAL: Revert commit"`
 	Debug       bool                `name:"debug" help:"Enable debug mode; analyze timing"`
 }
 

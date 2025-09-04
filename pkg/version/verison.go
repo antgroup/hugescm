@@ -16,7 +16,7 @@ var (
 	telemetry   string
 )
 
-func telemetryOn() bool {
+func TelemetryEnabled() bool {
 	switch telemetry {
 	case "true", "yes", "on", "1":
 		return true
@@ -43,7 +43,7 @@ func GetServerVersion() string {
 }
 
 func GetUserAgent() string {
-	if telemetryOn() {
+	if TelemetryEnabled() {
 		if u, err := Uname(); err == nil {
 			return fmt.Sprintf("Zeta/%s (%s; %s; %s; %s)", version, u.Node, u.Name, u.Machine, u.Release)
 		}
@@ -52,7 +52,7 @@ func GetUserAgent() string {
 }
 
 func GetBannerVersion() string {
-	if telemetryOn() {
+	if TelemetryEnabled() {
 		if u, err := Uname(); err == nil {
 			// SSH-protoVersion-softwareVersion SP comments CR LF
 			return fmt.Sprintf("ZETA-%s (%s; %s; %s; %s)", version, u.Node, u.Name, u.Machine, u.Release)

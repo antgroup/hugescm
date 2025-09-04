@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
+	"slices"
 	"strings"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
@@ -63,12 +65,12 @@ func (r *Replayer) makeSquashMessage(cc *gitobj.Commit) (string, error) {
 
 // --first-parent
 // Return all branch/tags commit reverse order
-func (r *Replayer) commitsToLinear(branch string) ([][]byte, error) {
+func (r *Replayer) commitsToLinear(revision string) ([][]byte, error) {
 	psArgs := []string{"rev-list", "--reverse", "--topo-order", "--first-parent"}
-	if len(branch) == 0 {
+	if len(revision) == 0 {
 		psArgs = append(psArgs, "--all")
 	} else {
-		psArgs = append(psArgs, branch)
+		psArgs = append(psArgs, revision)
 	}
 	// --topo-order is required to ensure topological order.
 	reader, err := git.NewReader(r.ctx, &command.RunOpts{RepoPath: r.repoPath}, psArgs...)
@@ -88,21 +90,25 @@ func (r *Replayer) commitsToLinear(branch string) ([][]byte, error) {
 	return commits, nil
 }
 
-func (r *Replayer) unbranch(branchName string, keep int) error {
-	commits, err := r.commitsToLinear(branchName)
+func (r *Replayer) unbranch(revision string, keep int) ([]byte, error) {
+	commits, err := r.commitsToLinear(revision)
 	if err != nil {
-		return fmt.Errorf("commits to linear error: %w", err)
+		return nil, fmt.Errorf("commits to linear error: %w", err)
 	}
 	if keep > 0 && keep < len(commits) {
 		commits = commits[len(commits)-keep:]
 	}
+	if len(commits) == 0 {
+		return nil, errors.New("missing commits")
+	}
+	top := slices.Clone(commits[len(commits)-1])
 	b := bar.NewBar(tr.W("rewrite commits"), len(commits), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	trace.DbgPrint("commits: %v", len(commits))
 	for _, oid := range commits {
 		original, err := r.odb.Commit(oid)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		message := original.Message
 		rewrittenParents := make([][]byte, 0, len(original.ParentIDs))
@@ -135,7 +141,7 @@ func (r *Replayer) unbranch(branchName string, keep int) error {
 			copy(newSha, oid)
 		} else {
 			if newSha, err = r.odb.WriteCommit(rewrittenCommit); err != nil {
-				return err
+				return nil, err
 			}
 		}
 		// Cache that commit so that we can reassign children of this
@@ -144,14 +150,27 @@ func (r *Replayer) unbranch(branchName string, keep int) error {
 		b.Add(1)
 	}
 	b.Done()
-	return nil
+	return top, nil
 }
 
-func (r *Replayer) Unbranch(branchName string, confirm bool, prune bool, keep int) error {
-	if err := r.unbranch(branchName, keep); err != nil {
+type UnbranchOptions struct {
+	Branch  string
+	Target  string
+	Confirm bool
+	Prune   bool
+	Keep    int
+}
+
+func (r *Replayer) Unbranch(o *UnbranchOptions) error {
+	top, err := r.unbranch(o.Branch, o.Keep)
+	if err != nil {
 		return err
 	}
-	if !confirm {
+	if len(o.Branch) != 0 {
+		return r.unbranchOne(o, top)
+	}
+	if !o.Confirm {
+		var confirm bool
 		prompt := &survey.Confirm{
 			Message: tr.W("Do you want to rewrite local branches and tags"),
 		}
@@ -160,10 +179,6 @@ func (r *Replayer) Unbranch(branchName string, confirm bool, prune bool, keep in
 			return nil
 		}
 	}
-	if len(branchName) != 0 {
-		return r.unbranchOne(branchName, prune)
-	}
-
 	refs, err := r.referencesToRewrite()
 	if err != nil {
 		return errors.New("could not find refs to update")
@@ -181,33 +196,37 @@ func (r *Replayer) Unbranch(branchName string, confirm bool, prune bool, keep in
 		return errors.New("could not update refs")
 	}
 	b.Done()
-	return r.cleanup(prune)
+	return r.cleanup(o.Prune)
 }
 
-func (r *Replayer) unbranchOne(branchName string, prune bool) error {
-	ref, err := git.ReferencePrefixMatch(r.ctx, r.repoPath, branchName)
-	if err != nil {
+func (r *Replayer) unbranchOne(o *UnbranchOptions, top []byte) error {
+	newOID, ok := r.uncacheCommit(top)
+	if !ok {
+		return fmt.Errorf("find migrate commit error, origin: %s", hex.EncodeToString(top))
+	}
+	newRev := hex.EncodeToString(newOID)
+	var oldRev, refname string
+	ref, err := git.ReferencePrefixMatch(r.ctx, r.repoPath, o.Branch)
+	switch {
+	case git.IsErrNotExist(err):
+		if len(o.Target) == 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "Dangling: %s\n", newRev)
+			return nil
+		}
+		oldRev = git.ConformingHashZero(newRev)
+		refname = git.ReferenceBranchName(o.Target)
+	case err != nil:
+		return err
+	case len(o.Target) != 0:
+		oldRev = git.ConformingHashZero(newRev)
+		refname = git.ReferenceBranchName(o.Target)
+	default:
+		oldRev = ref.Hash
+		refname = ref.Name
+	}
+	fmt.Fprintf(os.Stderr, "Update '%s' %s --> %s\n", refname, oldRev, newRev)
+	if err := git.ReferenceUpdate(r.ctx, r.repoPath, refname, oldRev, newRev, false); err != nil {
 		return err
 	}
-	refs := []*git.Reference{
-		{
-			Name:       ref.Name,
-			Hash:       ref.Hash,
-			ObjectType: ref.ObjectType,
-			ShortName:  ref.ShortName,
-		},
-	}
-	updater := &refUpdater{
-		CacheFn:    r.uncacheCommit,
-		References: refs,
-		RepoPath:   r.repoPath,
-		odb:        r.odb,
-	}
-	b := bar.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
-	r.stepCurrent++
-	if err := updater.UpdateRefs(r.ctx, b); err != nil {
-		return errors.New("could not update refs")
-	}
-	b.Done()
-	return r.cleanup(prune)
+	return nil
 }

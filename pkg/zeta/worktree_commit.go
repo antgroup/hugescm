@@ -60,12 +60,11 @@ func (w *Worktree) genAmendMessageTemplate(ctx context.Context, p string) error 
 	}
 
 	var b bytes.Buffer
-	lines := strings.Split(cc.Message, "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(cc.Message, "\n") {
 		fmt.Fprintf(&b, "%s\n", line)
 	}
 	prefix := tr.Sprintf("Please enter the commit message for your changes. Lines starting\nwith '%c' will be ignored, and an empty message aborts the commit.", '#')
-	for _, s := range strings.Split(prefix, "\n") {
+	for s := range strings.SplitSeq(prefix, "\n") {
 		fmt.Fprintf(&b, "# %s\n", s)
 	}
 	fmt.Fprintf(&b, "#\n# %s %s\n# %s\n", W("On branch"), current.Name().BranchName(), W("Changes to be committed:"))
@@ -97,7 +96,7 @@ func (w *Worktree) genMessageTemplate(ctx context.Context, opts *CommitOptions, 
 	var b bytes.Buffer
 	b.WriteByte('\n')
 	prefix := tr.Sprintf("Please enter the commit message for your changes. Lines starting\nwith '%c' will be ignored, and an empty message aborts the commit.", '#')
-	for _, s := range strings.Split(prefix, "\n") {
+	for s := range strings.SplitSeq(prefix, "\n") {
 		fmt.Fprintf(&b, "# %s\n", s)
 	}
 	fmt.Fprintf(&b, "#\n# %s %s\n# %s\n", W("On branch"), branchName, W("Changes to be committed:"))

@@ -96,7 +96,7 @@ func (s *summer) printName(name, oid string, size int64) {
 }
 
 func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[string]int64, psArgs []string, fn Printer) error {
-	if git.IsGitVersionAtLeast("2.35.0") {
+	if git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
 		psArgs = append(psArgs, "--filter=object:type=blob")
 	}
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: os.Environ()}, "git", psArgs...)

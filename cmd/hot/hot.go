@@ -28,8 +28,8 @@ type App struct {
 	ScanRefs   command.ScanRefs   `cmd:"scan-refs" help:"Scan references in a local repository"`
 	ExpireRefs command.ExpireRefs `cmd:"expire-refs" help:"Clean up expired references"`
 	Snapshot   command.Snapshot   `cmd:"snapshot" help:"Create a snapshot commit for the worktree"`
-	Co         command.Co         `cmd:"co" help:"Clones a repository into a newly created directory"`
 	Az         command.Az         `cmd:"az" help:"Analyze repository large files"`
+	Co         command.Co         `cmd:"co" help:"EXPERIMENTAL: Clones a repository into a newly created directory"`
 	Debug      bool               `name:"debug" help:"Enable debug mode; analyze timing"`
 }
 

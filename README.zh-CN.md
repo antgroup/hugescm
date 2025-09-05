@@ -200,6 +200,13 @@ hot stat
 
 <img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
 
+将 Git 存储库对象格式从 SHA1 迁移到 SHA256：
+
+```shell
+hot mc https://github.com/antgroup/hugescm.git
+```
+<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3e15e5de-e297-4a3a-9a33-0a361e860486" />
+
 ## 许可证
 
 Apache License Version 2.0, 请查看 [LICENSE](LICENSE)

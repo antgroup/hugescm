@@ -195,6 +195,14 @@ hot stat
 
 <img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
 
+
+Migrate Git repository object format from SHA1 to SHA256:
+
+```shell
+hot mc https://github.com/antgroup/hugescm.git
+```
+<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3e15e5de-e297-4a3a-9a33-0a361e860486" />
+
 ## License
 
 Apache License Version 2.0, see [LICENSE](LICENSE)

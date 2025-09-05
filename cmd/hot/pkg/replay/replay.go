@@ -67,10 +67,9 @@ func (r *Replayer) referencesToRewrite() ([]*git.Reference, error) {
 	}
 	references := make([]*git.Reference, 0, len(refs))
 	for _, ref := range refs {
-		if strings.HasPrefix(ref.Name, "refs/remotes/") {
+		if ref.Name.IsRemote() {
 			continue
 		}
-
 		references = append(references, ref)
 	}
 

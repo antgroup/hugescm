@@ -29,7 +29,7 @@ var (
 )
 
 func NewRepo(ctx context.Context, repoPath, branch string, bare bool, shaFormat HashFormat) error {
-	branch = strings.TrimPrefix(branch, BranchPrefix)
+	branch = strings.TrimPrefix(branch, refHeadPrefix)
 	stderr := command.NewStderr()
 	psArgs := []string{"init", "--initial-branch=" + branch, "--object-format=" + shaFormat.String()}
 

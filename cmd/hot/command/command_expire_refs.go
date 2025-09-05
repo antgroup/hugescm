@@ -100,7 +100,7 @@ func (c *ExpireRefs) Run(g *Globals) error {
 		if !c.Expire(ref) {
 			continue
 		}
-		if err := u.Delete(ref.Name); err != nil {
+		if err := u.Delete(git.ReferenceName(ref.Name)); err != nil {
 			fmt.Fprintf(os.Stderr, "\x1b[2K\rRefUpdater: Delete %s error: %v\n", ref.Name, err)
 			return err
 		}

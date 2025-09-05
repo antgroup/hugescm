@@ -328,7 +328,7 @@ func (m *Migrator) getReferences(ctx context.Context) ([]*git.Reference, error) 
 	}
 	references := make([]*git.Reference, 0, len(refs))
 	for _, ref := range refs {
-		if strings.HasPrefix(ref.Name, "refs/remotes/") {
+		if ref.Name.IsRemote() {
 			continue
 		}
 		references = append(references, ref)
@@ -375,9 +375,9 @@ func (m *Migrator) rewriteTag(oid []byte) ([]byte, error) {
 }
 
 func (m *Migrator) rewriteOneRef(ref *git.Reference) ([]byte, error) {
-	oid, err := hex.DecodeString(ref.Hash)
+	oid, err := hex.DecodeString(ref.Target)
 	if err != nil {
-		return nil, fmt.Errorf("could not decode: '%s'", ref.Hash)
+		return nil, fmt.Errorf("could not decode: '%s'", ref.Target)
 	}
 	if newOID, ok := m.uncache(oid); ok {
 		return newOID, nil

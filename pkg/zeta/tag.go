@@ -169,7 +169,7 @@ func (r *Repository) NewTag(ctx context.Context, opts *NewTagOptions) error {
 		}
 	}
 	newRef := plumbing.NewHashReference(tagName, newRev)
-	if err := r.ReferenceUpdate(newRef, oldRef); err != nil {
+	if err := r.Update(newRef, oldRef); err != nil {
 		die_error("update-ref: %v", err)
 		return err
 	}

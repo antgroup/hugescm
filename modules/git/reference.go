@@ -13,41 +13,192 @@ import (
 )
 
 const (
-	RefsPrefix   = "refs/"
-	BranchPrefix = "refs/heads/"
-	TagPrefix    = "refs/tags/"
+	refPrefix       = "refs/"
+	refHeadPrefix   = refPrefix + "heads/"
+	refTagPrefix    = refPrefix + "tags/"
+	refRemotePrefix = refPrefix + "remotes/"
+	refNotePrefix   = refPrefix + "notes/"
 )
 
-func ReferenceBranchName(b string) string {
-	if strings.HasPrefix(b, BranchPrefix) {
-		return b
-	}
-	return BranchPrefix + b
+const (
+	RefRevParseRulesCount = 6
+)
+
+// RefRevParseRules are a set of rules to parse references into short names.
+// These are the same rules as used by git in shorten_unambiguous_ref.
+// See: https://github.com/git/git/blob/9857273be005833c71e2d16ba48e193113e12276/refs.c#L610
+var RefRevParseRules = []string{
+	"%s",
+	"refs/%s",
+	"refs/tags/%s",
+	"refs/heads/%s",
+	"refs/remotes/%s",
+	"refs/remotes/%s/HEAD",
 }
 
-func BranchRev(r string) string {
-	if ValidateHexLax(r) {
-		return r
+// ReferenceType reference type's
+type ReferenceType int8
+
+const (
+	InvalidReference  ReferenceType = 0
+	HashReference     ReferenceType = 1
+	SymbolicReference ReferenceType = 2
+)
+
+func (r ReferenceType) String() string {
+	switch r {
+	case InvalidReference:
+		return "invalid-reference"
+	case HashReference:
+		return "hash-reference"
+	case SymbolicReference:
+		return "symbolic-reference"
 	}
-	if strings.HasPrefix(r, RefsPrefix) {
-		return r
-	}
-	return BranchPrefix + r
+
+	return ""
 }
 
-func ReferenceTagName(tag string) string {
-	if strings.HasPrefix(tag, TagPrefix) {
-		return tag
+// ReferenceName reference name's
+type ReferenceName string
+
+// NewBranchReferenceName returns a reference name describing a branch based on
+// his short name.
+func NewBranchReferenceName(name string) ReferenceName {
+	return ReferenceName(refHeadPrefix + name)
+}
+
+// NewNoteReferenceName returns a reference name describing a note based on his
+// short name.
+func NewNoteReferenceName(name string) ReferenceName {
+	return ReferenceName(refNotePrefix + name)
+}
+
+// NewRemoteReferenceName returns a reference name describing a remote branch
+// based on his short name and the remote name.
+func NewRemoteReferenceName(remote, name string) ReferenceName {
+	return ReferenceName(refRemotePrefix + fmt.Sprintf("%s/%s", remote, name))
+}
+
+// NewRemoteHEADReferenceName returns a reference name describing a the HEAD
+// branch of a remote.
+func NewRemoteHEADReferenceName(remote string) ReferenceName {
+	return ReferenceName(refRemotePrefix + fmt.Sprintf("%s/%s", remote, HEAD))
+}
+
+// NewTagReferenceName returns a reference name describing a tag based on short
+// his name.
+func NewTagReferenceName(name string) ReferenceName {
+	return ReferenceName(refTagPrefix + name)
+}
+
+// IsBranch check if a reference is a branch
+func (r ReferenceName) IsBranch() bool {
+	return strings.HasPrefix(string(r), refHeadPrefix)
+}
+
+func (r ReferenceName) BranchName() string {
+	return strings.TrimPrefix(string(r), refHeadPrefix)
+}
+
+// IsNote check if a reference is a note
+func (r ReferenceName) IsNote() bool {
+	return strings.HasPrefix(string(r), refNotePrefix)
+}
+
+// IsRemote check if a reference is a remote
+func (r ReferenceName) IsRemote() bool {
+	return strings.HasPrefix(string(r), refRemotePrefix)
+}
+
+// IsTag check if a reference is a tag
+func (r ReferenceName) IsTag() bool {
+	return strings.HasPrefix(string(r), refTagPrefix)
+}
+
+func (r ReferenceName) TagName() string {
+	return strings.TrimPrefix(string(r), refTagPrefix)
+}
+
+func (r ReferenceName) String() string {
+	return string(r)
+}
+
+// Short returns the short name of a ReferenceName
+//
+//	un strict, does not check whether the name is ambiguous
+func (r ReferenceName) Short() string {
+	s := string(r)
+	res := s
+	// skip first
+	for _, format := range RefRevParseRules[1:] {
+		_, err := fmt.Sscanf(s, format, &res)
+		if err == nil {
+			continue
+		}
 	}
-	return TagPrefix + tag
+
+	return res
+}
+
+const (
+	HEAD   ReferenceName = "HEAD"
+	Master ReferenceName = "refs/heads/master"
+)
+
+// Branch returns `true` and the branch name if the reference is a branch. E.g.
+// if ReferenceName is "refs/heads/master", it will return "master". If it is
+// not a branch, `false` is returned.
+func (r ReferenceName) Branch() (string, bool) {
+	if branch, ok := strings.CutPrefix(r.String(), refHeadPrefix); ok && len(branch) != 0 {
+		return branch, true
+	}
+	return "", false
+}
+
+// Reference represents a Git reference.
+type Reference struct {
+	// Name is the name of the reference
+	Name ReferenceName
+	// Target is the target of the reference. For direct references it
+	// contains the object ID, for symbolic references it contains the
+	// target branch name.
+	Target string
+	// ObjectType is the type of the object referenced.
+	ObjectType ObjectType
+	// ShortName: ONLY git parsed (else maybe empty)
+	ShortName string
+	// IsSymbolic tells whether the reference is direct or symbolic
+	IsSymbolic bool
+}
+
+// NewReference creates a direct reference to an object.
+func NewReference(name ReferenceName, target string) Reference {
+	return Reference{
+		Name:       name,
+		Target:     target,
+		IsSymbolic: false,
+	}
+}
+
+// NewSymbolicReference creates a symbolic reference to another reference.
+func NewSymbolicReference(name ReferenceName, target ReferenceName) Reference {
+	return Reference{
+		Name:       name,
+		Target:     string(target),
+		IsSymbolic: true,
+	}
 }
 
 type ErrAlreadyLocked struct {
-	Ref string
+	refname string
+	message string
 }
 
 func (e *ErrAlreadyLocked) Error() string {
-	return fmt.Sprintf("reference is already locked: %q", e.Ref)
+	if len(e.message) != 0 {
+		return e.message
+	}
+	return fmt.Sprintf("reference is already locked: %q", e.refname)
 }
 
 var (
@@ -78,7 +229,8 @@ func ReferenceTarget(ctx context.Context, repoPath, reference string) (string, e
 	return oid, nil
 }
 
-func ReferenceUpdate(ctx context.Context, repoPath string, reference string, oldRev, newRev string, forceUpdate bool) error {
+// fatal: update_ref failed for ref 'refs/heads/release/1.0.0_20250728': 'refs/heads/release' exists; cannot create 'refs/heads/release/1.0.0_20250728
+func UpdateRef(ctx context.Context, repoPath string, reference string, oldRev, newRev string, forceUpdate bool) error {
 	updateRefArgs := []string{"update-ref", "--", reference, newRev}
 	if !forceUpdate {
 		// git update-ref refs/heads/master <newvalue> <oldvalue> check oldRev matched
@@ -93,23 +245,29 @@ func ReferenceUpdate(ctx context.Context, repoPath string, reference string, old
 	if err := cmd.Run(); err != nil {
 		message := stderr.String()
 		if refLockedRegex.MatchString(message) {
-			return &ErrAlreadyLocked{Ref: reference}
+			return &ErrAlreadyLocked{refname: reference}
+		}
+		if strings.Contains(message, " exists; cannot create ") {
+			return &ErrAlreadyLocked{message: message}
+		}
+		if strings.Contains(message, "Another git process seems to be running in this repository") {
+			return &ErrAlreadyLocked{refname: reference, message: message}
 		}
 		return fmt.Errorf("update-ref %s error: %w stderr: %v", reference, err, message)
 	}
 	return nil
 }
 
-type ErrBadReferenceName struct {
+type ErrReferenceBadName struct {
 	Name string
 }
 
-func (err ErrBadReferenceName) Error() string {
+func (err ErrReferenceBadName) Error() string {
 	return fmt.Sprintf("bad revision name: '%s'", err.Name)
 }
 
-func IsErrBadReferenceName(err error) bool {
-	_, ok := err.(*ErrBadReferenceName)
+func IsErrReferenceBadName(err error) bool {
+	_, ok := err.(*ErrReferenceBadName)
 	return ok
 }
 
@@ -236,18 +394,7 @@ const (
 	ReferenceLineFormat = "%(refname)%00%(refname:short)%00%(objectname)%00%(objecttype)"
 )
 
-type Reference struct {
-	// Name is the full reference name of the reference.
-	Name string
-	// Hash is the Hash of the referred-to object.
-	Hash string
-	// ObjectType is the type of the object referenced.
-	ObjectType ObjectType
-	// ShortName is the short reference name of the reference
-	ShortName string
-}
-
-func ParseReferenceLine(referenceLine string) (*Reference, error) {
+func ParseOneReference(referenceLine string) (*Reference, error) {
 	fields := strings.SplitN(referenceLine, "\x00", 4)
 	if len(fields) != 4 {
 		return nil, fmt.Errorf("invalid output from git for-each-ref command: %v", referenceLine)
@@ -256,20 +403,15 @@ func ParseReferenceLine(referenceLine string) (*Reference, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Reference{Name: fields[0], ShortName: fields[1], Hash: fields[2], ObjectType: typ}, nil
+	return &Reference{Name: ReferenceName(fields[0]), ShortName: fields[1], Target: fields[2], ObjectType: typ}, nil
 }
 
 type ReferenceEx struct {
-	// Name is the full reference name of the reference.
-	Name string
-	// Hash is the Hash of the referred-to object.
-	Hash string
-	// ObjectType is the type of the object referenced.
-	ObjectType ObjectType
-	// ShortName is the short reference name of the reference
-	ShortName string
-	// ShortName is the short reference name of the reference
-	Commit *Commit
+	Name       ReferenceName // name
+	ShortName  string        // short name
+	Target     string        // target commit,tag or symbolic
+	IsSymbolic bool          // is symbolic
+	Commit     *Commit       // commit
 }
 
 // ReferencePrefixMatch: follow git's priority for finding refs
@@ -303,17 +445,18 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close() // nolint
+	defer reader.Close()
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		b, err := ParseReferenceLine(scanner.Text())
+		b, err := ParseOneReference(scanner.Text())
 		if err != nil {
 			break
 		}
-		if i, ok := matches[b.Name]; ok {
+		if i, ok := matches[b.Name.String()]; ok {
 			refs[i] = b
 		}
 	}
+
 	br := func() *Reference {
 		for _, b := range refs {
 			if b != nil {
@@ -325,21 +468,38 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 	if br == nil {
 		return nil, NewBranchNotFound(refname)
 	}
-
-	d, err := NewDecoder(ctx, repoPath)
-	if err != nil {
-		return nil, err
-	}
-	defer d.Close() // nolint
-
-	cc, err := d.ParseRev(br.Hash)
+	cc, err := ParseRev(ctx, repoPath, br.Target)
 	if IsErrNotExist(err) {
 		return nil, NewBranchNotFound(refname)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &ReferenceEx{Name: br.Name, ShortName: br.ShortName, Hash: br.Hash, Commit: cc}, nil
+	return &ReferenceEx{Name: br.Name, ShortName: br.ShortName, Target: br.Target, IsSymbolic: br.IsSymbolic, Commit: cc}, nil
+}
+
+func HasSpecificReference(ctx context.Context, repoPath string, referencePrefix string) (bool, error) {
+	showRefArgs := []string{"for-each-ref"}
+	if len(referencePrefix) != 0 {
+		showRefArgs = append(showRefArgs, referencePrefix)
+	}
+	showRefArgs = append(showRefArgs, "--format=%(refname)", "--count=1")
+	cmd := command.New(ctx, repoPath, "git", showRefArgs...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return false, err
+	}
+	defer stdout.Close()
+	scanner := bufio.NewScanner(stdout)
+	if err := cmd.Start(); err != nil {
+		return false, err
+	}
+	defer cmd.Exit() // nolint
+	var result bool
+	for scanner.Scan() {
+		result = true
+	}
+	return result, nil
 }
 
 type Order int
@@ -367,7 +527,7 @@ func ParseReferences(ctx context.Context, repoPath string, order Order) ([]*Refe
 	refs := make([]*Reference, 0, 100)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		r, err := ParseReferenceLine(scanner.Text())
+		r, err := ParseOneReference(scanner.Text())
 		if err != nil {
 			break
 		}
@@ -379,49 +539,4 @@ func ParseReferences(ctx context.Context, repoPath string, order Order) ([]*Refe
 	}
 
 	return refs, nil
-}
-
-// RevParseCurrent: resolve the reference pointed to by HEAD
-//
-// not git repo:
-//
-// fatal: not a git repository (or any of the parent directories): .git
-//
-// empty repo:
-//
-// fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
-// Use '--' to separate paths from revisions, like this:
-// 'git <command> [<revision>...] -- [<file>...]'
-//
-// ref not exists: HEAD
-//
-// refs/heads/master
-func RevParseCurrent(ctx context.Context, environ []string, repoPath string) (string, error) {
-	//  git rev-parse --symbolic-full-name HEAD
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ},
-		"git", "rev-parse", "--symbolic-full-name", "HEAD")
-	line, err := cmd.OneLine()
-	if err != nil {
-		return ReferenceNameDefault, err
-	}
-	return line, nil
-}
-
-// RevParseCurrentEx parse HEAD return hash and refname
-//
-//	git rev-parse HEAD --symbolic-full-name HEAD
-//
-// result:
-//
-//	85e15f6f6272033eb83e5a56f650a7a5f9c84cf6
-//	refs/heads/master
-func RevParseCurrentEx(ctx context.Context, environ []string, repoPath string) (string, string, error) {
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ},
-		"git", "rev-parse", "HEAD", "--symbolic-full-name", "HEAD")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", ReferenceNameDefault, err
-	}
-	hash, refname, _ := strings.Cut(string(output), "\n")
-	return hash, strings.TrimSpace(refname), nil
 }

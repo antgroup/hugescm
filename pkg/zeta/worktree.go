@@ -75,7 +75,7 @@ func (w *Worktree) createBranch(opts *CheckoutOptions) error {
 		opts.Hash = ref.Hash()
 	}
 
-	return w.ReferenceUpdate(plumbing.NewHashReference(opts.Branch, opts.Hash), nil)
+	return w.Update(plumbing.NewHashReference(opts.Branch, opts.Hash), nil)
 }
 
 func (w *Worktree) getCommitFromCheckoutOptions(ctx context.Context, opts *CheckoutOptions) (plumbing.Hash, error) {
@@ -135,7 +135,7 @@ func (w *Worktree) setHEADToCommit(commit plumbing.Hash) error {
 		from = originHEAD.Name().Short()
 	}
 	newHEAD := plumbing.NewHashReference(plumbing.HEAD, commit)
-	if err := w.ReferenceUpdate(newHEAD, originHEAD); err != nil {
+	if err := w.Update(newHEAD, originHEAD); err != nil {
 		return err
 	}
 	return w.writeHEADReflog(commit, w.NewCommitter(), fmt.Sprintf("switch: move %s from to %s", from, commit))
@@ -168,7 +168,7 @@ func (w *Worktree) setHEADToBranch(branch plumbing.ReferenceName, commit plumbin
 		head = plumbing.NewHashReference(plumbing.HEAD, commit)
 	}
 
-	if err := w.ReferenceUpdate(head, originHEAD); err != nil {
+	if err := w.Update(head, originHEAD); err != nil {
 		return err
 	}
 	return w.writeHEADReflog(commit, w.NewCommitter(), fmt.Sprintf("switch: move %s from to %s", from, branch.Short()))
@@ -185,7 +185,7 @@ func (w *Worktree) resetHEAD(ctx context.Context, commit plumbing.Hash) error {
 	}
 
 	if originHEAD.Type() == plumbing.HashReference {
-		if err := w.ReferenceUpdate(plumbing.NewHashReference(plumbing.HEAD, commit), originHEAD); err != nil {
+		if err := w.Update(plumbing.NewHashReference(plumbing.HEAD, commit), originHEAD); err != nil {
 			return err
 		}
 		return nil

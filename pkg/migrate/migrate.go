@@ -486,7 +486,7 @@ func (r *Migrator) refsToMigrate(ctx context.Context) ([]*git.Reference, error) 
 
 	var local []*git.Reference
 	for _, ref := range refs {
-		if strings.HasPrefix(ref.Name, "refs/remotes/") {
+		if ref.Name.IsRemote() {
 			continue
 		}
 
@@ -539,9 +539,9 @@ func (m *Migrator) rewriteTag(ur *backend.Unpacker, oid []byte) (plumbing.Hash, 
 }
 
 func (r *Migrator) rewriteOneRef(ur *backend.Unpacker, ref *git.Reference) (plumbing.Hash, error) {
-	oid, err := hex.DecodeString(ref.Hash)
+	oid, err := hex.DecodeString(ref.Target)
 	if err != nil {
-		return plumbing.ZeroHash, fmt.Errorf("could not decode: '%s'", ref.Hash)
+		return plumbing.ZeroHash, fmt.Errorf("could not decode: '%s'", ref.Target)
 	}
 	if newOID, ok := r.uncacheMD(oid); ok {
 		return newOID, nil
@@ -569,12 +569,12 @@ func (m *Migrator) rewriteRefs(ctx context.Context, ur *backend.Unpacker) error 
 		if oid.IsZero() {
 			continue
 		}
-		if err := rdb.ReferenceUpdate(plumbing.NewHashReference(plumbing.ReferenceName(ref.Name), oid), nil); err != nil {
+		if err := rdb.Update(plumbing.NewHashReference(plumbing.ReferenceName(ref.Name), oid), nil); err != nil {
 			return fmt.Errorf("zeta update-ref '%s' error: %v", ref.Name, err)
 		}
 		bar.Add(1)
 	}
-	if err := rdb.ReferenceUpdate(plumbing.NewSymbolicReference(plumbing.HEAD, plumbing.ReferenceName(m.current)), nil); err != nil {
+	if err := rdb.Update(plumbing.NewSymbolicReference(plumbing.HEAD, plumbing.ReferenceName(m.current)), nil); err != nil {
 		return err
 	}
 	bar.Done()

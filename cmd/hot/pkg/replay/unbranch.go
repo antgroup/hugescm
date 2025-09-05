@@ -214,18 +214,18 @@ func (r *Replayer) unbranchOne(o *UnbranchOptions, top []byte) error {
 			return nil
 		}
 		oldRev = git.ConformingHashZero(newRev)
-		refname = git.ReferenceBranchName(o.Target)
+		refname = git.JoinBranchPrefix(o.Target)
 	case err != nil:
 		return err
 	case len(o.Target) != 0:
 		oldRev = git.ConformingHashZero(newRev)
-		refname = git.ReferenceBranchName(o.Target)
+		refname = git.JoinBranchPrefix(o.Target)
 	default:
-		oldRev = ref.Hash
-		refname = ref.Name
+		oldRev = ref.Target
+		refname = ref.Name.String()
 	}
 	fmt.Fprintf(os.Stderr, "Update '%s' %s --> %s\n", refname, oldRev, newRev)
-	if err := git.ReferenceUpdate(r.ctx, r.repoPath, refname, oldRev, newRev, false); err != nil {
+	if err := git.UpdateRef(r.ctx, r.repoPath, refname, oldRev, newRev, false); err != nil {
 		return err
 	}
 	return nil

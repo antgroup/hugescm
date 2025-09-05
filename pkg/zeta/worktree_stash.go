@@ -33,7 +33,7 @@ func (w *Worktree) doStashUpdate(ro *reflog.Reflog) error {
 	if N.IsZero() {
 		return fmt.Errorf("reflog: bad commit %s", N)
 	}
-	if err := w.ReferenceUpdate(plumbing.NewHashReference(StashName, N), nil); err != nil {
+	if err := w.Update(plumbing.NewHashReference(StashName, N), nil); err != nil {
 		return err
 	}
 	return w.rdb.Write(ro)

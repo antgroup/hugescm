@@ -58,9 +58,9 @@ type References struct {
 }
 
 func (r *References) resolveRefCommit(odb *git.ODB, ref *git.Reference) ([]byte, *gitobj.Commit, error) {
-	sha, err := hex.DecodeString(ref.Hash)
+	sha, err := hex.DecodeString(ref.Target)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not decode: %q", ref.Hash)
+		return nil, nil, fmt.Errorf("could not decode: %q", ref.Target)
 	}
 	for range 20 {
 		obj, err := odb.Object(sha)
@@ -82,13 +82,13 @@ func (r *References) resolveRefCommit(odb *git.ODB, ref *git.Reference) ([]byte,
 func (r *References) resolve(ctx context.Context, repoPath string, odb *git.ODB, ref *git.Reference) error {
 	sha, cc, err := r.resolveRefCommit(odb, ref)
 	if err != nil {
-		r.Items = append(r.Items, &Reference{Name: ref.Name, Hash: ref.Hash, Broken: true})
+		r.Items = append(r.Items, &Reference{Name: ref.Name.String(), Hash: ref.Target, Broken: true})
 		return err
 	}
 	reference := &Reference{
-		Name:      ref.Name,
+		Name:      ref.Name.String(),
 		ShortName: ref.ShortName,
-		Hash:      ref.Hash,
+		Hash:      ref.Target,
 		Tree:      hex.EncodeToString(cc.TreeID),
 		Message:   cc.Message,
 		Author:    git.SignatureFromLine(cc.Author),
@@ -97,10 +97,10 @@ func (r *References) resolve(ctx context.Context, repoPath string, odb *git.ODB,
 	for _, p := range cc.ParentIDs {
 		reference.Parents = append(reference.Parents, hex.EncodeToString(p))
 	}
-	if peeling := hex.EncodeToString(sha); peeling != ref.Hash {
+	if peeling := hex.EncodeToString(sha); peeling != ref.Target {
 		reference.Peeling = peeling
 	}
-	if reference.Hash != r.BasePoint && strings.HasPrefix(ref.Name, "refs/heads/") {
+	if reference.Hash != r.BasePoint && ref.Name.IsBranch() {
 		reference.Leading, reference.Lagging, _ = git.RevDivergingCount(ctx, repoPath, reference.Hash, r.BasePoint)
 	}
 	r.Items = append(r.Items, reference)
@@ -126,7 +126,7 @@ func ScanReferences(ctx context.Context, repoPath string, m Matcher, order git.O
 	}
 	for _, ref := range refs {
 		b.Add(1)
-		if !m.Match(ref.Name) {
+		if !m.Match(ref.Name.String()) {
 			continue
 		}
 		if err := r.resolve(ctx, repoPath, odb, ref); err != nil {

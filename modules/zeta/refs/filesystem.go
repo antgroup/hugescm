@@ -458,7 +458,7 @@ func (b *fsBackend) ReferenceRemove(r *plumbing.Reference) error {
 	})
 }
 
-func (b *fsBackend) ReferenceUpdate(r, old *plumbing.Reference) error {
+func (b *fsBackend) Update(r, old *plumbing.Reference) error {
 	var content string
 	switch r.Type() {
 	case plumbing.SymbolicReference:

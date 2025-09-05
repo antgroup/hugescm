@@ -90,6 +90,19 @@ func ValidateHex(hs string) error {
 	return nil
 }
 
+func IsValidateSHA256(hs string) bool {
+	if len(hs) != GIT_SHA256_HEXSZ {
+		return false
+	}
+	bs := []byte(hs)
+	for _, b := range bs {
+		if c := reverseHexTable[b]; c > 0x0f {
+			return false
+		}
+	}
+	return true
+}
+
 func IsHashZero(hexOID string) bool {
 	if len(hexOID) == GIT_SHA256_HEXSZ {
 		return hexOID == GIT_SHA256_ZERO_HEX

@@ -59,7 +59,7 @@ var (
 )
 
 var statReferencesFormatFields = []string{
-	"%(refname)", "%(refname:short)", "%(objectname)", "%(committername)", "%(committerdate:iso-strict)",
+	"%(refname)", "%(refname:short)", "%(objectname)", "%(committername)", "%(creatordate:iso-strict)",
 }
 
 type Reference struct {
@@ -86,8 +86,7 @@ func parseReferenceLine(referenceLine string) (*Reference, error) {
 
 func GetReferences(ctx context.Context, repoPath string, m func(*Reference) bool) ([]*Reference, error) {
 	stderr := command.NewStderr()
-	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: repoPath, Stderr: stderr},
-		"for-each-ref", "--format", strings.Join(statReferencesFormatFields, "%00"), "--sort=-committerdate")
+	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: repoPath, Stderr: stderr}, "for-each-ref", "--format", strings.Join(statReferencesFormatFields, "%00"))
 	if err != nil {
 		return nil, fmt.Errorf("run git for-each-ref error: %v", err)
 	}
@@ -177,7 +176,7 @@ func (c *PruneRefs) pruneRefs(ctx context.Context, repoPath string, references [
 	}
 	for _, ref := range references {
 		if !c.DryRun {
-			if err := u.Delete(ref.Name); err != nil {
+			if err := u.Delete(git.ReferenceName(ref.Name)); err != nil {
 				fmt.Fprintf(os.Stderr, "\x1b[2K\rRefUpdater: Delete %s error: %v\n", ref.Name, err)
 				return err
 			}

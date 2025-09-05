@@ -57,7 +57,7 @@ func (r *refUpdater) UpdateRefs(ctx context.Context, b *bar.ProgressBar) error {
 		return err
 	}
 
-	seen := make(map[string]bool)
+	seen := make(map[git.ReferenceName]bool)
 	for _, ref := range r.References {
 		if err := r.updateOneRef(u, maxNameLen, seen, ref); err != nil {
 			return err
@@ -113,10 +113,10 @@ func (r *refUpdater) rewriteTag(oid []byte) ([]byte, error) {
 	return oid, nil
 }
 
-func (r *refUpdater) updateOneRef(u *git.RefUpdater, maxNameLen int, seen map[string]bool, ref *git.Reference) error {
-	sha, err := hex.DecodeString(ref.Hash)
+func (r *refUpdater) updateOneRef(u *git.RefUpdater, maxNameLen int, seen map[git.ReferenceName]bool, ref *git.Reference) error {
+	sha, err := hex.DecodeString(ref.Target)
 	if err != nil {
-		return fmt.Errorf("could not decode: %q", ref.Hash)
+		return fmt.Errorf("could not decode: %q", ref.Target)
 	}
 	if seen[ref.Name] {
 		return nil
@@ -137,11 +137,11 @@ func (r *refUpdater) updateOneRef(u *git.RefUpdater, maxNameLen int, seen map[st
 	if !ok {
 		return nil
 	}
-	if err := u.Update(ref.Name, hex.EncodeToString(to), ref.Hash); err != nil {
+	if err := u.Update(ref.Name, hex.EncodeToString(to), ref.Target); err != nil {
 		return err
 	}
 
 	namePadding := max(maxNameLen-len(ref.Name), 0)
-	trace.DbgPrint("  %s%s\t%s -> %x", ref.Name, strings.Repeat(" ", namePadding), ref.Hash, to)
+	trace.DbgPrint("  %s%s\t%s -> %x", ref.Name, strings.Repeat(" ", namePadding), ref.Target, to)
 	return nil
 }

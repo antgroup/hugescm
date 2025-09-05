@@ -26,7 +26,7 @@ func (r *Repository) DoUpdate(ctx context.Context, refname plumbing.ReferenceNam
 	if !oldRev.IsZero() {
 		old = plumbing.NewHashReference(refname, oldRev)
 	}
-	if err := r.ReferenceUpdate(plumbing.NewHashReference(refname, newRev), old); err != nil {
+	if err := r.Update(plumbing.NewHashReference(refname, newRev), old); err != nil {
 		return err
 	}
 	if oldRev == newRev {

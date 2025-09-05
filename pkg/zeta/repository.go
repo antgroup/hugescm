@@ -385,13 +385,13 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	switch {
 	case ref.Name.IsBranch() && target == plumbing.NewHash(ref.Hash):
 		originBranch := plumbing.NewRemoteReferenceName(plumbing.Origin, ref.Name.BranchName())
-		if err := r.ReferenceUpdate(plumbing.NewHashReference(originBranch, target), nil); err != nil {
+		if err := r.Update(plumbing.NewHashReference(originBranch, target), nil); err != nil {
 			fmt.Fprintf(os.Stderr, "update-ref '%s' error: %v\n", originBranch, err)
 			return nil, err
 		}
 	case ref.Name.IsTag():
 		originTag := plumbing.NewTagReferenceName(ref.Name.TagName())
-		if err := r.ReferenceUpdate(plumbing.NewHashReference(originTag, target), nil); err != nil {
+		if err := r.Update(plumbing.NewHashReference(originTag, target), nil); err != nil {
 			fmt.Fprintf(os.Stderr, "update-ref '%s' error: %v\n", originTag, err)
 			return nil, err
 		}
@@ -548,7 +548,7 @@ func Init(ctx context.Context, opts *InitOptions) (*Repository, error) {
 	if len(opts.Branch) != 0 {
 		branchName := plumbing.NewBranchReferenceName(opts.Branch)
 		head := plumbing.NewSymbolicReference(plumbing.HEAD, branchName)
-		if err := r.ReferenceUpdate(head, nil); err != nil {
+		if err := r.Update(head, nil); err != nil {
 			die_error("update HEAD to %s error: %v", branchName, err)
 		}
 	}

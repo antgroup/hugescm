@@ -144,7 +144,7 @@ func (r *Repository) updateTagReference(ctx context.Context, refname plumbing.Re
 			return ErrAborting
 		}
 	}
-	if err := r.ReferenceUpdate(plumbing.NewHashReference(refname, target), old); err != nil {
+	if err := r.Update(plumbing.NewHashReference(refname, target), old); err != nil {
 		die_error("update-ref '%s' error: %v", refname, err)
 		return err
 	}
@@ -295,7 +295,7 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (*FetchR
 	switch {
 	case refname.IsBranch():
 		originBranch := plumbing.NewRemoteReferenceName(plumbing.Origin, refname.BranchName())
-		if err := r.ReferenceUpdate(plumbing.NewHashReference(originBranch, o.Target), nil); err != nil {
+		if err := r.Update(plumbing.NewHashReference(originBranch, o.Target), nil); err != nil {
 			die_error("update-ref '%s' error: %v", originBranch, err)
 			return nil, err
 		}

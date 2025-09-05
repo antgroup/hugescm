@@ -16,9 +16,9 @@ import (
 )
 
 func (r *Replayer) resolveCommit(ref *git.Reference) ([]byte, *gitobj.Commit, error) {
-	sha, err := hex.DecodeString(ref.Hash)
+	sha, err := hex.DecodeString(ref.Target)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not decode: %q", ref.Hash)
+		return nil, nil, fmt.Errorf("could not decode: %q", ref.Target)
 	}
 	for i := 0; i < 20; i++ {
 		obj, err := r.odb.Object(sha)

@@ -61,7 +61,7 @@ func (r *Repository) MoveBranch(from, to string, force bool) error {
 		return err
 	}
 	restoreBranch := func() {
-		_ = r.ReferenceUpdate(fromRef, nil)
+		_ = r.Update(fromRef, nil)
 	}
 	target := plumbing.NewBranchReferenceName(to)
 	var toRef *plumbing.Reference
@@ -83,14 +83,14 @@ func (r *Repository) MoveBranch(from, to string, force bool) error {
 		}
 	}
 	newRef := plumbing.NewHashReference(target, fromRef.Hash())
-	if err := r.ReferenceUpdate(newRef, toRef); err != nil {
+	if err := r.Update(newRef, toRef); err != nil {
 		restoreBranch()
 		die_error("update target error: %v", err)
 		return err
 	}
 
 	if head.Target() == fromRef.Name() {
-		if err := r.ReferenceUpdate(plumbing.NewSymbolicReference(plumbing.HEAD, target), nil); err != nil {
+		if err := r.Update(plumbing.NewSymbolicReference(plumbing.HEAD, target), nil); err != nil {
 			die_error("update HEAD error: %v", err)
 			return err
 		}

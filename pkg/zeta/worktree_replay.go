@@ -183,7 +183,7 @@ func (w *Worktree) cherryPickAbort(ctx context.Context) error {
 	}
 	trace.DbgPrint("BASE: %s", md.BASE)
 	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
-	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+	if err := w.Update(HEAD, nil); err != nil {
 		return err
 	}
 	if err := w.Reset(ctx, &ResetOptions{Commit: md.BASE, Mode: HardReset}); err != nil {
@@ -386,7 +386,7 @@ func (w *Worktree) revertAbort(ctx context.Context) error {
 	}
 	trace.DbgPrint("BASE: %s", md.BASE)
 	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
-	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+	if err := w.Update(HEAD, nil); err != nil {
 		return err
 	}
 	if err := w.Reset(ctx, &ResetOptions{Commit: md.BASE, Mode: HardReset}); err != nil {
@@ -495,7 +495,7 @@ func (w *Worktree) checkoutReplayConflicts(ctx context.Context, md *ReplayMD, co
 		return err
 	}
 	HEAD := plumbing.NewHashReference(plumbing.HEAD, md.LAST)
-	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+	if err := w.Update(HEAD, nil); err != nil {
 		die_error("unable set HEAD to last: %v", err)
 		return err
 	}

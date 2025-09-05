@@ -127,28 +127,28 @@ func (u *RefUpdater) Start() error {
 // is the zero OID, then the branch must not exist.
 //
 // A reference transaction must be started before calling Update.
-func (u *RefUpdater) Update(reference string, newRev, oldRev string) error {
+func (u *RefUpdater) Update(reference ReferenceName, newRev, oldRev string) error {
 	if err := u.expectState(stateStarted); err != nil {
 		return err
 	}
 
-	return u.write("update %s\x00%s\x00%s\x00", reference, newRev, oldRev)
+	return u.write("update %s\x00%s\x00%s\x00", reference.String(), newRev, oldRev)
 }
 
 // UpdateSymbolicReference is used to do a symbolic reference update. We can potentially provide the oldTarget
 // or the oldOID.
-func (u *RefUpdater) UpdateSymbolicReference(reference, newTarget string) error {
+func (u *RefUpdater) UpdateSymbolicReference(reference, newTarget ReferenceName) error {
 	if err := u.expectState(stateStarted); err != nil {
 		return err
 	}
 
-	return u.write("symref-update %s\x00%s\x00\x00\x00", reference, newTarget)
+	return u.write("symref-update %s\x00%s\x00\x00\x00", reference.String(), newTarget.String())
 }
 
 // Create commands the reference to be created with the given object ID. The ref must not exist.
 //
 // A reference transaction must be started before calling Create.
-func (u *RefUpdater) Create(reference string, oid string) error {
+func (u *RefUpdater) Create(reference ReferenceName, oid string) error {
 	return u.Update(reference, oid, u.shaFormat.ZeroOID())
 }
 
@@ -156,7 +156,7 @@ func (u *RefUpdater) Create(reference string, oid string) error {
 // state of the reference and just force-remove it.
 //
 // A reference transaction must be started before calling Delete.
-func (u *RefUpdater) Delete(reference string) error {
+func (u *RefUpdater) Delete(reference ReferenceName) error {
 	return u.Update(reference, u.shaFormat.ZeroOID(), "")
 }
 

@@ -10,6 +10,13 @@ import (
 	"github.com/antgroup/hugescm/modules/command"
 )
 
+func JoinTagPrefix(tag string) string {
+	if strings.HasPrefix(tag, refTagPrefix) {
+		return tag
+	}
+	return refTagPrefix + tag
+}
+
 type Tag struct {
 	// Hash of the tag.
 	Hash string `json:"hash"`
@@ -134,7 +141,7 @@ func (t *Tag) Pretty(w io.Writer) error {
 	return err
 }
 
-func FindTagReference(ctx context.Context, repoPath string, name string) (*Reference, error) {
+func FindTag(ctx context.Context, repoPath string, name string) (*Reference, error) {
 	stderr := command.NewStderr()
 	reader, err := NewReader(ctx, &command.RunOpts{RepoPath: repoPath, Stderr: stderr}, "tag", "-l", "--format", ReferenceLineFormat, "--", name)
 	if err != nil {
@@ -143,7 +150,7 @@ func FindTagReference(ctx context.Context, repoPath string, name string) (*Refer
 	defer reader.Close() // nolint
 	scanner := bufio.NewScanner(reader)
 	if scanner.Scan() {
-		return ParseReferenceLine(scanner.Text())
+		return ParseOneReference(scanner.Text())
 	}
 	return nil, NewTagNotFound(name)
 }

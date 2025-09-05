@@ -448,7 +448,7 @@ func (w *Worktree) checkoutRebaseConflicts(ctx context.Context, md *RebaseMD, co
 		return err
 	}
 	HEAD := plumbing.NewHashReference(plumbing.HEAD, md.LAST)
-	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+	if err := w.Update(HEAD, nil); err != nil {
 		die_error("unable set HEAD to last: %v", err)
 		return err
 	}
@@ -466,7 +466,7 @@ func (w *Worktree) rebaseAbort(ctx context.Context) error {
 	}
 	trace.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
 	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
-	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+	if err := w.Update(HEAD, nil); err != nil {
 		return err
 	}
 	if err := w.Reset(ctx, &ResetOptions{Commit: md.REBASE_HEAD, Mode: HardReset}); err != nil {
@@ -601,7 +601,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 	//Reset HEAD
 	trace.DbgPrint("REBASE_HEAD: %s", md.REBASE_HEAD)
 	HEAD := plumbing.NewSymbolicReference(plumbing.HEAD, md.HEAD)
-	if err := w.ReferenceUpdate(HEAD, nil); err != nil {
+	if err := w.Update(HEAD, nil); err != nil {
 		return err
 	}
 

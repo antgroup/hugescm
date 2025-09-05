@@ -24,7 +24,7 @@ type Backend interface {
 	//   refs/logs.l ❌
 	ReferencePrefixMatch(prefix plumbing.ReferenceName) (*plumbing.Reference, error)
 	// Update reference
-	ReferenceUpdate(r, old *plumbing.Reference) error
+	Update(r, old *plumbing.Reference) error
 	// remove reference
 	ReferenceRemove(r *plumbing.Reference) error
 	// packed references

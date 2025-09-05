@@ -19,7 +19,7 @@ func TestBackend(t *testing.T) {
 		"refs/remotes/origin/master",
 	}
 	for _, r := range refs {
-		err := b.ReferenceUpdate(plumbing.NewHashReference(plumbing.ReferenceName(r), plumbing.NewHash("adba50d9794b9ef3f7ec8cbc680f7f1fa3fbf9df0ac8d1f9b9ccab6d941bc11b")), nil)
+		err := b.Update(plumbing.NewHashReference(plumbing.ReferenceName(r), plumbing.NewHash("adba50d9794b9ef3f7ec8cbc680f7f1fa3fbf9df0ac8d1f9b9ccab6d941bc11b")), nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		}
@@ -28,7 +28,7 @@ func TestBackend(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "packed refs error: %v\n", err)
 		return
 	}
-	_ = b.ReferenceUpdate(plumbing.NewHashReference(plumbing.ReferenceName("refs/heads/dev"), plumbing.NewHash("d84149926219c5a85da48051f2b3ad296f3ade3c5cb91dac4848d84de28c12dd")), nil)
+	_ = b.Update(plumbing.NewHashReference(plumbing.ReferenceName("refs/heads/dev"), plumbing.NewHash("d84149926219c5a85da48051f2b3ad296f3ade3c5cb91dac4848d84de28c12dd")), nil)
 }
 
 func TestRemove(t *testing.T) {

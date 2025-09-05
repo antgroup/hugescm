@@ -145,6 +145,55 @@ zeta push
 zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 ```
 
+## Hot command
+
+The `hot` command is a useful Git repository maintenance tool. It not only supports deleting files in the repository and rewriting history (such as large files, password files, etc.: `hot remove`), but also supports analyzing the large files in the repository (original size: `hot size`, compressed size: `hot az`), and also supports friendly viewing of file contents (`hot cat`), deleting invalid branches and tags (deleting by prefix: `hot prune-refs`, deleting by expiration time or merged: `hot expire-refs`), and viewing the repository status (`hot stat`). For more commands, please view the help information:
+
+```txt
+Usage: hot <command> [flags]
+
+hot - Git repositories maintenance tool
+
+Flags:
+  -h, --help       Show context-sensitive help
+  -V, --verbose    Make the operation more talkative
+  -v, --version    Show version number and quit
+      --debug      Enable debug mode; analyze timing
+
+Commands:
+  cat            Provide contents or details of repository objects
+  stat           View repository status
+  size           Show repositories size and large files
+  remove         Remove files in repository and rewrite history
+  smart          Interactive mode to clean repository large files
+  graft          Interactive mode to clean repository large files (Grafting mode)
+  mc             Migrate a repository to the specified object format
+  unbranch       Linearize repository history
+  prune-refs     Prune refs by prefix
+  scan-refs      Scan references in a local repository
+  expire-refs    Clean up expired references
+  snapshot       Create a snapshot commit for the worktree
+  az             Analyze repository large files
+  co             EXPERIMENTAL: Clones a repository into a newly created directory
+
+Run "hot <command> --help" for more information on a command.
+```
+
+For example, if you want to view an image in the repository, you can do this:
+
+```shell
+hot cat HEAD:docs/images/blob.png
+```
+
+<img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/fe1d7e8d-c511-4deb-b5f1-9cc4c082a36d" />
+
+For example, if you want to view the repository information, you can do this:
+
+```shell
+hot stat
+```
+
+<img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
 
 ## License
 

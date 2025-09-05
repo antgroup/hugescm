@@ -150,6 +150,56 @@ zeta push
 zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 ```
 
+## Hot 命令
+
+`hot` 命令是一个有去的 Git 存储库维护工具，它不仅支持删除存储库中的文件并重写历史（如大文件，密码文件等：`hot remove`），还支持分析存储库有哪些大文件（原始大小：`hot size`，压缩大小：`hot az`）,还支持友好的查看文件内容（`hot cat`），删除无效的分支，标签（按前缀删除：`hot prune-refs`，按过期时间或已合并删除：`hot expire-refs`），还支持查看存储库状态（`hot stat`），更多的命令可以查看帮助信息：
+
+```txt
+Usage: hot <command> [flags]
+
+hot - Git repositories maintenance tool
+
+Flags:
+  -h, --help       Show context-sensitive help
+  -V, --verbose    Make the operation more talkative
+  -v, --version    Show version number and quit
+      --debug      Enable debug mode; analyze timing
+
+Commands:
+  cat            Provide contents or details of repository objects
+  stat           View repository status
+  size           Show repositories size and large files
+  remove         Remove files in repository and rewrite history
+  smart          Interactive mode to clean repository large files
+  graft          Interactive mode to clean repository large files (Grafting mode)
+  mc             Migrate a repository to the specified object format
+  unbranch       Linearize repository history
+  prune-refs     Prune refs by prefix
+  scan-refs      Scan references in a local repository
+  expire-refs    Clean up expired references
+  snapshot       Create a snapshot commit for the worktree
+  az             Analyze repository large files
+  co             EXPERIMENTAL: Clones a repository into a newly created directory
+
+Run "hot <command> --help" for more information on a command.
+```
+
+比如你查看仓库中的一张图片，可以这样做：
+
+```shell
+hot cat HEAD:docs/images/blob.png
+```
+
+<img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/fe1d7e8d-c511-4deb-b5f1-9cc4c082a36d" />
+
+比如你查看仓库的信息，可以这样做：
+
+```shell
+hot stat
+```
+
+<img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
+
 ## 许可证
 
 Apache License Version 2.0, 请查看 [LICENSE](LICENSE)

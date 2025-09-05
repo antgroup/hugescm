@@ -205,7 +205,7 @@ hot stat
 ```shell
 hot mc https://github.com/antgroup/hugescm.git
 ```
-<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3e15e5de-e297-4a3a-9a33-0a361e860486" />
+<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/d7c4c289-8209-4eb2-94b1-e35764934b72" />
 
 ## 许可证
 

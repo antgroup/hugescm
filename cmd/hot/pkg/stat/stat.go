@@ -97,7 +97,7 @@ func listConfig(ctx context.Context, repoPath string) (Values, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer stdout.Close()
+	defer stdout.Close() // nolint
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}

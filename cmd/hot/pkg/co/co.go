@@ -101,7 +101,7 @@ func fetch(ctx context.Context, o *CoOptions) error {
 			return err
 		}
 	}
-	tr.Fprintf(os.Stderr, "Cloning to '%s' completed, spent: %v.\n", o.Destination, time.Since(now))
+	_, _ = tr.Fprintf(os.Stderr, "Cloning to '%s' completed, spent: %v.\n", o.Destination, time.Since(now))
 	return nil
 }
 
@@ -202,6 +202,6 @@ func clone(ctx context.Context, o *CoOptions) error {
 			return err
 		}
 	}
-	tr.Fprintf(os.Stderr, "Cloning to '%s' completed, spent: %v.\n", o.Destination, time.Since(now))
+	_, _ = tr.Fprintf(os.Stderr, "Cloning to '%s' completed, spent: %v.\n", o.Destination, time.Since(now))
 	return nil
 }

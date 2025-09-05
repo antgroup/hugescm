@@ -91,7 +91,7 @@ func CommitGraphInfoForRepository(repoPath string) (CommitGraphInfo, error) {
 			}
 			return CommitGraphInfo{}, fmt.Errorf("read commit graph chain file: %w", err)
 		}
-		defer graphFile.Close()
+		defer graphFile.Close() // nolint
 
 		reader := bufio.NewReader(graphFile)
 		// The header format is defined in gitformat-commit-graph(5).

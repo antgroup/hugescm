@@ -157,7 +157,7 @@ func ReferencesStatus(ctx context.Context, repoPath string, refFormat string) (R
 		if err != nil {
 			return ReferencesStat{}, fmt.Errorf("open tables.list: %w", err)
 		}
-		defer tablesList.Close()
+		defer tablesList.Close() // nolint
 
 		// Track the expected files under the `reftable/` directory.
 		reftableRecognizedFiles := map[string]struct{}{
@@ -501,7 +501,7 @@ func BitmapStatus(path string) (BitmapStat, error) {
 	if err != nil {
 		return BitmapStat{}, fmt.Errorf("opening bitmap: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() // nolint
 
 	if _, err := io.ReadFull(file, bitmapHeader); err != nil {
 		return BitmapStat{}, fmt.Errorf("reading bitmap header: %w", err)
@@ -552,7 +552,7 @@ func MultiPackIndexStatus(path string) (MultiPackIndexStat, error) {
 	if err != nil {
 		return MultiPackIndexStat{}, fmt.Errorf("opening multi-pack-index: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() // nolint
 
 	if _, err := io.ReadFull(file, midxHeader); err != nil {
 		return MultiPackIndexStat{}, fmt.Errorf("reading header: %w", err)

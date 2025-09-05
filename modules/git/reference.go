@@ -445,7 +445,7 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		b, err := ParseOneReference(scanner.Text())
@@ -489,7 +489,7 @@ func HasSpecificReference(ctx context.Context, repoPath string, referencePrefix 
 	if err != nil {
 		return false, err
 	}
-	defer stdout.Close()
+	defer stdout.Close() // nolint
 	scanner := bufio.NewScanner(stdout)
 	if err := cmd.Start(); err != nil {
 		return false, err

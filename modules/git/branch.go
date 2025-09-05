@@ -101,7 +101,7 @@ func searchDefaultBranch(ctx context.Context, environ []string, repoPath string)
 	if err != nil {
 		return "", err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	scanner := bufio.NewScanner(reader)
 	branches := make(map[string]bool)
 	var firstBranch string
@@ -162,7 +162,7 @@ func FindBranch(ctx context.Context, repoPath string, name string) (*Reference, 
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint
 	scanner := bufio.NewScanner(reader)
 	if scanner.Scan() {
 		return ParseOneReference(scanner.Text())

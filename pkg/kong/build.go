@@ -33,7 +33,7 @@ func build(k *Kong, ast any) (app *Application, err error) {
 		return nil, fmt.Errorf("can't mix positional arguments and branching arguments on %T", ast)
 	}
 	app.Node = node
-	app.Node.Flags = append(extraFlags, app.Node.Flags...)
+	app.Flags = append(extraFlags, app.Flags...)
 	app.Tag = newEmptyTag()
 	app.Tag.Vars = k.vars
 	return app, nil

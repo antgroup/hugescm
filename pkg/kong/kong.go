@@ -180,7 +180,7 @@ func New(grammar any, options ...Option) (*Kong, error) {
 func checkOverlappingXorAnd(k *Kong) error {
 	xorGroups := map[string][]string{}
 	andGroups := map[string][]string{}
-	for _, flag := range k.Model.Node.Flags {
+	for _, flag := range k.Model.Flags {
 		for _, xor := range flag.Xor {
 			xorGroups[xor] = append(xorGroups[xor], flag.Name)
 		}
@@ -365,7 +365,7 @@ func (k *Kong) applyHook(ctx *Context, name string) error {
 		case trace.Positional != nil:
 			value = trace.Positional.Target
 		case trace.Flag != nil:
-			value = trace.Flag.Value.Target
+			value = trace.Flag.Target
 		default:
 			panic("unsupported Path")
 		}
@@ -428,9 +428,9 @@ func formatMultilineMessage(w io.Writer, leaders []string, format string, args .
 		}
 		leader += l + ": "
 	}
-	fmt.Fprintf(w, "%s%s\n", leader, lines[0])
+	_, _ = fmt.Fprintf(w, "%s%s\n", leader, lines[0])
 	for _, line := range lines[1:] {
-		fmt.Fprintf(w, "%*s%s\n", len(leader), " ", line)
+		_, _ = fmt.Fprintf(w, "%*s%s\n", len(leader), " ", line)
 	}
 }
 
@@ -469,10 +469,10 @@ func (k *Kong) FatalIfErrorf(err error, args ...any) {
 		switch k.usageOnError {
 		case fullUsage:
 			_ = k.help(k.helpOptions, parseErr.Context)
-			fmt.Fprintln(k.Stdout)
+			_, _ = fmt.Fprintln(k.Stdout)
 		case shortUsage:
 			_ = k.shortHelp(k.helpOptions, parseErr.Context)
-			fmt.Fprintln(k.Stdout)
+			_, _ = fmt.Fprintln(k.Stdout)
 		}
 	}
 	k.Errorf("%s", msg)
@@ -489,11 +489,11 @@ func (k *Kong) LoadConfig(path string) (Resolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := os.Open(path) //nolint: gas
+	r, err := os.Open(path) // nolint
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer r.Close() // nolint
 
 	return k.loader(r)
 }

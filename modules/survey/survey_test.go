@@ -26,33 +26,33 @@ type expectConsole interface {
 	Send(string)
 }
 
-type consoleWithErrorHandling struct {
+type ConsoleWithErrorHandling struct {
 	console *expect.Console
 	t       *testing.T
 }
 
-func (c *consoleWithErrorHandling) ExpectString(s string) {
+func (c *ConsoleWithErrorHandling) ExpectString(s string) {
 	if _, err := c.console.ExpectString(s); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("ExpectString(%q) = %v", s, err)
 	}
 }
 
-func (c *consoleWithErrorHandling) SendLine(s string) {
+func (c *ConsoleWithErrorHandling) SendLine(s string) {
 	if _, err := c.console.SendLine(s); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("SendLine(%q) = %v", s, err)
 	}
 }
 
-func (c *consoleWithErrorHandling) Send(s string) {
+func (c *ConsoleWithErrorHandling) Send(s string) {
 	if _, err := c.console.Send(s); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("Send(%q) = %v", s, err)
 	}
 }
 
-func (c *consoleWithErrorHandling) ExpectEOF() {
+func (c *ConsoleWithErrorHandling) ExpectEOF() {
 	if _, err := c.console.ExpectEOF(); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("ExpectEOF() = %v", err)

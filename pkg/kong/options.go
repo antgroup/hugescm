@@ -451,7 +451,7 @@ func Configuration(loader ConfigurationLoader, paths ...string) Option {
 
 				return err
 			}
-			f.Close()
+			_ = f.Close()
 
 			resolver, err := k.LoadConfig(path)
 			if err != nil {
@@ -521,7 +521,7 @@ func DefaultEnvars(prefix string) Option {
 		names = siftStrings(names, func(s string) bool { return (s != "_" && strings.TrimSpace(s) != "") })
 		name := strings.ToUpper(strings.Join(names, "_"))
 		flag.Envs = append(flag.Envs, name)
-		flag.Value.Tag.Envs = append(flag.Value.Tag.Envs, name)
+		flag.Tag.Envs = append(flag.Tag.Envs, name)
 	}
 
 	var processNode func(node *Node)

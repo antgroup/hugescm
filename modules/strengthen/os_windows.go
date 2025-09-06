@@ -1,4 +1,4 @@
-// go:build windows
+//go:build windows
 
 /*
    Copyright The containerd Authors.
@@ -111,7 +111,7 @@ func resolvePath(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer windows.CloseHandle(h)
+	defer windows.CloseHandle(h) //nolint
 
 	// We use the Windows API GetFinalPathNameByHandle to handle path resolution. GetFinalPathNameByHandle
 	// returns a resolved path name for a file or directory. The returned path can be in several different

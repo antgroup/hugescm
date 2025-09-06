@@ -37,7 +37,7 @@ func NewAnsiStdout(out FileWriter) io.Writer {
 		return out
 	}
 	handle := syscall.Handle(out.Fd())
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	_, _, _ = procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
 	return &Writer{out: out, handle: handle, orgAttr: csbi.attributes}
 }
 
@@ -47,7 +47,7 @@ func NewAnsiStderr(out FileWriter) io.Writer {
 		return out
 	}
 	handle := syscall.Handle(out.Fd())
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	_, _, _ = procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
 	return &Writer{out: out, handle: handle, orgAttr: csbi.attributes}
 }
 
@@ -94,12 +94,12 @@ func (w *Writer) handleEscape(r *bytes.Reader) (n int, err error) {
 		if err == io.EOF {
 			err = nil
 		}
-		fmt.Fprint(w.out, string(buf))
+		_, _ = fmt.Fprint(w.out, string(buf))
 		return
 	}
 	n += size
 	if ch != '[' {
-		fmt.Fprint(w.out, string(buf))
+		_, _ = fmt.Fprint(w.out, string(buf))
 		return
 	}
 
@@ -112,7 +112,7 @@ func (w *Writer) handleEscape(r *bytes.Reader) (n int, err error) {
 			if err == io.EOF {
 				err = nil
 			}
-			fmt.Fprint(w.out, string(buf))
+			_, _ = fmt.Fprint(w.out, string(buf))
 			return
 		}
 		n += size

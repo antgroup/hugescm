@@ -19,13 +19,13 @@ type helpFlag bool
 func (h helpFlag) IgnoreDefault() {}
 
 func (h helpFlag) BeforeReset(ctx *Context) error {
-	options := ctx.Kong.helpOptions
+	options := ctx.helpOptions
 	options.Summary = false
-	err := ctx.Kong.help(options, ctx)
+	err := ctx.help(options, ctx)
 	if err != nil {
 		return err
 	}
-	ctx.Kong.Exit(0)
+	ctx.Exit(0)
 	return nil
 }
 
@@ -395,7 +395,7 @@ func newHelpWriter(ctx *Context, options HelpOptions) *helpWriter {
 		indent:        "",
 		width:         wrapWidth,
 		lines:         &lines,
-		helpFormatter: ctx.Kong.helpFormatter,
+		helpFormatter: ctx.helpFormatter,
 		HelpOptions:   options,
 	}
 	return w

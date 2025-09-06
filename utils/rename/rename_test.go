@@ -56,7 +56,7 @@ func TestRemove(t *testing.T) {
 
 func TestLink(t *testing.T) {
 	a := filepath.Join(os.TempDir(), "a.txt")
-	os.Link(a, filepath.Join(os.TempDir(), "cc/b.txt"))
+	_ = os.Link(a, filepath.Join(os.TempDir(), "cc/b.txt"))
 	fmt.Fprintf(os.Stderr, "remove  %s\n", a)
 	if err := os.Remove(a); err != nil {
 		fmt.Fprintf(os.Stderr, "remove %s error: %v\n", a, err)

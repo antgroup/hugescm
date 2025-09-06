@@ -45,7 +45,7 @@ func PosixRename(oldName, newName string) error {
 	if err != nil {
 		return err
 	}
-	defer windows.CloseHandle(fd)
+	defer windows.CloseHandle(fd) // nolint
 
 	// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information
 	// https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_rename_info
@@ -104,10 +104,10 @@ func removeInternal(fd windows.Handle) error {
 			return nil
 		}
 	}
-	switch {
-	case err == windows.ERROR_INVALID_PARAMETER:
-	case err == windows.ERROR_INVALID_FUNCTION:
-	case err == windows.ERROR_NOT_SUPPORTED:
+	switch err {
+	case windows.ERROR_INVALID_PARAMETER:
+	case windows.ERROR_INVALID_FUNCTION:
+	case windows.ERROR_NOT_SUPPORTED:
 	default:
 		return err
 	}
@@ -141,6 +141,6 @@ func Remove(name string) error {
 	if err != nil {
 		return err
 	}
-	defer windows.CloseHandle(fd)
+	defer windows.CloseHandle(fd) // nolint
 	return removeInternal(fd)
 }

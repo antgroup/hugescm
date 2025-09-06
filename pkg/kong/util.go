@@ -31,7 +31,7 @@ type VersionFlag bool
 
 // BeforeReset writes the version variable and terminates with a 0 exit status.
 func (v VersionFlag) BeforeReset(app *Kong, vars Vars) error {
-	fmt.Fprintln(app.Stdout, vars["version"])
+	_, _ = fmt.Fprintln(app.Stdout, vars["version"])
 	app.Exit(0)
 	return nil
 }

@@ -145,7 +145,7 @@ func detectFileSystem(stat *unix.Statfs_t) string {
 	// returns an int32 instead.
 	fsType, found := magicMap[int64(stat.Type)] //nolint:unconvert
 	if !found {
-		return unknownFS
+		return UnknownFS
 	}
 
 	return fsType

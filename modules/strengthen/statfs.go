@@ -8,4 +8,4 @@ type DiskFreeSpace struct {
 	FS    string
 }
 
-const unknownFS = "unknown"
+const UnknownFS = "unknown"

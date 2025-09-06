@@ -149,7 +149,7 @@ func systemProxyConfig() *httpproxy.Config {
 		return ""
 	}
 	if len(cfg.NoProxy) == 0 {
-		cfg.NoProxy = strings.Replace(values.ProxyOverride, ";", ",", -1)
+		cfg.NoProxy = strings.ReplaceAll(values.ProxyOverride, ";", ",")
 	}
 	if len(cfg.HTTPProxy) == 0 {
 		cfg.HTTPProxy = getProtocolAny("http", "")

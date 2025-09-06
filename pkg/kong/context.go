@@ -435,7 +435,8 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 					c.endPassthroughParsing(node)
 
 					// Pop the -- token unless the next positional argument accepts passthrough arguments.
-					if !(positional < len(node.Positional) && node.Positional[positional].Passthrough) {
+					if positional >= len(node.Positional) || !node.Positional[positional].Passthrough {
+						//if !(positional < len(node.Positional) && node.Positional[positional].Passthrough) {
 						c.scan.Pop()
 					}
 
@@ -802,7 +803,7 @@ func (c *Context) parseFlag(flags []*Flag, match string) (err error) {
 			if err != nil {
 				return err
 			}
-			flag.Value.Apply(value)
+			flag.Apply(value)
 		}
 		c.Path = append(c.Path, &Path{
 			Flag:      flag,
@@ -901,7 +902,7 @@ func (c *Context) Run(binds ...any) (err error) {
 		}
 	}
 	runErr := c.RunNode(node, binds...)
-	err = c.Kong.applyHook(c, "AfterRun")
+	err = c.applyHook(c, "AfterRun")
 	return errors.Join(runErr, err)
 }
 

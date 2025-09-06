@@ -439,26 +439,26 @@ func (f *Flag) String() string {
 
 // FormatPlaceHolder formats the placeholder string for a Flag.
 func (f *Flag) FormatPlaceHolder() string {
-	placeholderHelper, ok := f.Value.Mapper.(PlaceHolderProvider)
+	placeholderHelper, ok := f.Mapper.(PlaceHolderProvider)
 	if ok {
 		return placeholderHelper.PlaceHolder(f)
 	}
 	tail := ""
-	if f.Value.IsSlice() && f.Value.Tag.Sep != -1 && f.Tag.Type == "" {
-		tail += string(f.Value.Tag.Sep) + "..."
+	if f.IsSlice() && f.Tag.Sep != -1 && f.Tag.Type == "" {
+		tail += string(f.Tag.Sep) + "..."
 	}
 	if f.PlaceHolder != "" {
 		return f.PlaceHolder + tail
 	}
 	if f.HasDefault {
-		if f.Value.Target.Kind() == reflect.String {
+		if f.Target.Kind() == reflect.String {
 			return strconv.Quote(f.Default) + tail
 		}
 		return f.Default + tail
 	}
-	if f.Value.IsMap() {
-		if f.Value.Tag.MapSep != -1 && f.Tag.Type == "" {
-			tail = string(f.Value.Tag.MapSep) + "..."
+	if f.IsMap() {
+		if f.Tag.MapSep != -1 && f.Tag.Type == "" {
+			tail = string(f.Tag.MapSep) + "..."
 		}
 		return "KEY=VALUE" + tail
 	}

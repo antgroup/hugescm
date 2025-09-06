@@ -1,3 +1,5 @@
+//go:build windows
+
 package terminal
 
 import (
@@ -14,7 +16,7 @@ var (
 	procSetConsoleCursorInfo       = kernel32.NewProc("SetConsoleCursorInfo")
 )
 
-type wchar uint16
+// type wchar uint16
 type dword uint32
 type word uint16
 

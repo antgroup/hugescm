@@ -14,7 +14,7 @@ func detectFileSystem(stat *unix.Statfs_t) string {
 	}
 
 	if len(buf) == 0 {
-		return unknownFS
+		return UnknownFS
 	}
 
 	return string(buf)

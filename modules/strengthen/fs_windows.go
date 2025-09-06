@@ -71,7 +71,7 @@ func posixSemanticsRename(oldpath, newpath string) error {
 	if err != nil {
 		return err
 	}
-	defer windows.CloseHandle(fd)
+	defer windows.CloseHandle(fd) // nolint
 	fileNameLen := len(newPathUTF16)*2 - 2
 	var info FILE_RENAME_INFO
 	bufferSize := int(unsafe.Offsetof(info.FileName)) + fileNameLen
@@ -152,7 +152,7 @@ func Remove(name string) error {
 	if err != nil {
 		return err
 	}
-	defer windows.CloseHandle(fd)
+	defer windows.CloseHandle(fd) // nolint
 	return posixSemanticsRemove(fd)
 }
 

@@ -150,41 +150,51 @@ zeta push
 zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 ```
 
-## Hot 命令
+## 额外的工具 - hot 命令
 
-`hot` 命令是一个有去的 Git 存储库维护工具，它不仅支持删除存储库中的文件并重写历史（如大文件，密码文件等：`hot remove`），还支持分析存储库有哪些大文件（原始大小：`hot size`，压缩大小：`hot az`）,还支持友好的查看文件内容（`hot cat`），删除无效的分支，标签（按前缀删除：`hot prune-refs`，按过期时间或已合并删除：`hot expire-refs`），还支持查看存储库状态（`hot stat`），更多的命令可以查看帮助信息：
+`hot` 命令是我们整合到 HugeSCM 中的一个 Git 存储库治理利器，它支持很多的场景：
+
++  Git 存储库误提交了密码凭证等，可以使用 `hot remove` 删除并重写历史记录，`hot remove` 的重写更快。
++  你可以使用 `hot mc` 将 Git 存储库的对象格式迁移到 `SHA256`，也可以从 `SHA256` 的迁移到 `SHA1`。
++  你可以使用 `hot size（原始大小）`/`hot az（近似压缩大小）` 查看仓库中的大文件，可以直接使用 `hot smart` 交互式操作（如： `hot smart -L20m`）。
++  仓库无效分支标签太多，可以使用 `hot prune-refs（按前缀匹配）`/`hot expire-refs（按过期时间，是否合并）` 删除，亦可以使用 `hot scan-refs` 查看分支的情况。
++  你可以使用 `hot unbranch` 将存储库的历史线性化，也就是不包含任何合并点。
++  你亦可以使用 `hot unbranch -K1 master -Tnew-branch` 基于特定的版本创建一个孤儿分支，这将保留最近的历史，可用于开源或者重置历史场景。
++  你可以使用 `hot cat` 查看存储库中的文件，`commit/tree/tag/blob`，其中 `commit/tree/tag` 可以使用 `--json` 输出成 **JSON**，`blob` 则能智能的使用 16 进制输出二进制文件。
+
+更多的帮助信息如下：
 
 ```txt
 Usage: hot <command> [flags]
 
-hot - Git repositories maintenance tool
+hot - Git 存储库维护工具
 
-Flags:
-  -h, --help       Show context-sensitive help
-  -V, --verbose    Make the operation more talkative
-  -v, --version    Show version number and quit
-      --debug      Enable debug mode; analyze timing
+标志：
+  -h, --help       显示上下文相关的帮助
+  -V, --verbose    展示操作的更多细节
+  -v, --version    展示版本信息并退出
+      --debug      开启调试模式分析时间消耗
 
-Commands:
-  cat            Provide contents or details of repository objects
-  stat           View repository status
-  size           Show repositories size and large files
-  remove         Remove files in repository and rewrite history
-  smart          Interactive mode to clean repository large files
-  graft          Interactive mode to clean repository large files (Grafting mode)
-  mc             Migrate a repository to the specified object format
-  unbranch       Linearize repository history
-  prune-refs     Prune refs by prefix
-  scan-refs      Scan references in a local repository
-  expire-refs    Clean up expired references
-  snapshot       Create a snapshot commit for the worktree
-  az             Analyze repository large files
-  co             EXPERIMENTAL: Clones a repository into a newly created directory
+命令：
+  cat            提供存储库对象的内容或类型和大小信息
+  stat           查看存储库状态
+  size           展示存储库体积和大文件
+  remove         删除存储库中的文件并重写历史
+  smart          交互模式清理存储库大文件
+  graft          交互模式清理存储库大文件（嫁接模式）
+  mc             迁移存储库对象格式到指定对象格式
+  unbranch       线性化存储库历史
+  prune-refs     清理指定前缀的引用
+  scan-refs      扫描本地存储库中的引用
+  expire-refs    清理过期引用
+  snapshot       为工作树创建快照提交
+  az             分析存储大文件
+  co             EXPERIMENTAL: 将存储库克隆到新创建的目录中
 
-Run "hot <command> --help" for more information on a command.
+运行 "hot <command> --help" 以获取有关命令的更多信息。
 ```
 
-比如你查看仓库中的一张图片，可以这样做：
+比如你查看仓库中的一张图片，可以这样做（二进制文件按照 16 进制展示）：
 
 ```shell
 hot cat HEAD:docs/images/blob.png

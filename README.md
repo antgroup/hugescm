@@ -145,9 +145,18 @@ zeta push
 zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 ```
 
-## Hot command
+## Additional tools - hot command
 
-The `hot` command is a useful Git repository maintenance tool. It not only supports deleting files in the repository and rewriting history (such as large files, password files, etc.: `hot remove`), but also supports analyzing the large files in the repository (original size: `hot size`, compressed size: `hot az`), and also supports friendly viewing of file contents (`hot cat`), deleting invalid branches and tags (deleting by prefix: `hot prune-refs`, deleting by expiration time or merged: `hot expire-refs`), and viewing the repository status (`hot stat`). For more commands, please view the help information:
+`hot` command is a Git repository governance tool that we integrated into HugeSCM, supporting many scenarios:
+
++  If password credentials and other sensitive information were mistakenly committed to a Git repository, you can use `hot remove` to delete and rewrite the history, with `hot remove` being faster for rewriting. +  You can use `hot mc` to migrate the object format of the Git repository to `SHA256`, or migrate from `SHA256` back to `SHA1`. 
++  You can check for large files in the repository by using `hot size (original size)` or `hot az (approximate compressed size)`, and you can perform interactive operations directly with `hot smart` (e.g: `hot smart -L20m`). 
++  If there are too many invalid branch tags in the repository, you can delete them using `hot prune-refs (prefix matching)` or `hot expire-refs (by expiration time, whether to merge)`, and you can also use `hot scan-refs` to check the status of branches. 
++  You can linearize the history of the repository using `hot unbranch`, which means there will be no merge points included. 
++  You can also create an orphan branch based on a specific version using `hot unbranch -K1 master -Tnew-branch`, which preserves the recent history and can be used for open-source purposes or resetting history scenarios. 
++  You can view files in the repository with `hot cat`, which includes `commit/tree/tag/blob`, where `commit/tree/tag` can be output as **JSON** using `--json`, and `blob` can intelligently output binary files in hexadecimal.
+
+Here's some more help information:
 
 ```txt
 Usage: hot <command> [flags]

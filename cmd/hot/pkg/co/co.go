@@ -36,14 +36,15 @@ var (
 
 func run(ctx context.Context, repoPath string, cmdArg0 string, args ...string) error {
 	now := time.Now()
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{
-		RepoPath:  repoPath,
-		Environ:   newEnviron(),
-		Stderr:    os.Stderr,
-		Stdout:    os.Stdout,
-		Stdin:     os.Stdin,
-		NoSetpgid: true,
-	}, cmdArg0, args...)
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{
+			RepoPath:  repoPath,
+			Environ:   newEnviron(),
+			Stderr:    os.Stderr,
+			Stdout:    os.Stdout,
+			Stdin:     os.Stdin,
+			NoSetpgid: true,
+		}, cmdArg0, args...)
 	if err := cmd.Run(); err != nil {
 		return err
 	}

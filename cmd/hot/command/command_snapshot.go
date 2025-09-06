@@ -280,14 +280,15 @@ func (c *Snapshot) Run(g *Globals) error {
 		psArgs = append(psArgs, "-f")
 	}
 	psArgs = append(psArgs, remote, fmt.Sprintf("%s:%s", commit, refname))
-	cmd := command.NewFromOptions(context.Background(), &command.RunOpts{
-		RepoPath:  c.repoPath,
-		Environ:   os.Environ(),
-		Stdin:     os.Stdin,
-		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
-		NoSetpgid: true,
-	}, "git", psArgs...)
+	cmd := command.NewFromOptions(context.Background(),
+		&command.RunOpts{
+			RepoPath:  c.repoPath,
+			Environ:   os.Environ(),
+			Stdin:     os.Stdin,
+			Stdout:    os.Stdout,
+			Stderr:    os.Stderr,
+			NoSetpgid: true,
+		}, "git", psArgs...)
 	if err := cmd.RunEx(); err != nil {
 		return err
 	}

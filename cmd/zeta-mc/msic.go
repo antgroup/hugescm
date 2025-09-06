@@ -55,14 +55,15 @@ func pickURI(rawURL string) (string, error) {
 
 func (g *Globals) RunEx(repoPath string, cmdArg0 string, args ...string) error {
 	now := time.Now()
-	cmd := command.NewFromOptions(context.Background(), &command.RunOpts{
-		RepoPath:  repoPath,
-		Environ:   os.Environ(),
-		Stderr:    os.Stderr,
-		Stdout:    os.Stdout,
-		Stdin:     os.Stdin,
-		NoSetpgid: true,
-	}, cmdArg0, args...)
+	cmd := command.NewFromOptions(context.Background(),
+		&command.RunOpts{
+			RepoPath:  repoPath,
+			Environ:   os.Environ(),
+			Stderr:    os.Stderr,
+			Stdout:    os.Stdout,
+			Stdin:     os.Stdin,
+			NoSetpgid: true,
+		}, cmdArg0, args...)
 	if err := cmd.Run(); err != nil {
 		return err
 	}

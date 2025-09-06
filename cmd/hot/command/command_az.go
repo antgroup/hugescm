@@ -86,7 +86,11 @@ func (s *summer) draw(w io.Writer) {
 }
 
 func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[string]int64) error {
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: os.Environ()},
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{
+			RepoPath: repoPath,
+			Environ:  os.Environ(),
+		},
 		"git", "rev-list", "--objects", "--all", "--filter=object:type=blob")
 	out, err := cmd.StdoutPipe()
 	if err != nil {

@@ -23,14 +23,15 @@ func (r *Replayer) cleanup(prune bool) error {
 			return nil
 		}
 	}
-	cmd := command.NewFromOptions(r.ctx, &command.RunOpts{
-		Environ:   os.Environ(),
-		RepoPath:  r.repoPath,
-		Stderr:    os.Stderr,
-		Stdout:    os.Stdout,
-		Stdin:     os.Stdin,
-		NoSetpgid: true,
-	}, "git", "-c", "repack.writeBitmaps=true", "-c", "pack.packSizeLimit=16g", "gc", "--prune=now", "--aggressive")
+	cmd := command.NewFromOptions(r.ctx,
+		&command.RunOpts{
+			Environ:   os.Environ(),
+			RepoPath:  r.repoPath,
+			Stderr:    os.Stderr,
+			Stdout:    os.Stdout,
+			Stdin:     os.Stdin,
+			NoSetpgid: true,
+		}, "git", "-c", "repack.writeBitmaps=true", "-c", "pack.packSizeLimit=16g", "gc", "--prune=now", "--aggressive")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("run git gc error: %w", err)
 	}

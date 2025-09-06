@@ -448,14 +448,15 @@ func (m *Migrator) Execute(ctx context.Context) error {
 }
 
 func (m *Migrator) reset(ctx context.Context) error {
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{
-		Environ:   os.Environ(),
-		RepoPath:  m.worktree,
-		Stderr:    os.Stderr,
-		Stdout:    os.Stdout,
-		Stdin:     os.Stdin,
-		NoSetpgid: true,
-	}, "git", "reset", "--hard")
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{
+			Environ:   os.Environ(),
+			RepoPath:  m.worktree,
+			Stderr:    os.Stderr,
+			Stdout:    os.Stdout,
+			Stdin:     os.Stdin,
+			NoSetpgid: true,
+		}, "git", "reset", "--hard")
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "checkout error: %v", err)
 		return err
@@ -464,14 +465,15 @@ func (m *Migrator) reset(ctx context.Context) error {
 }
 
 func (m *Migrator) cleanup(ctx context.Context) error {
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{
-		Environ:   os.Environ(),
-		RepoPath:  m.to,
-		Stderr:    os.Stderr,
-		Stdout:    os.Stdout,
-		Stdin:     os.Stdin,
-		NoSetpgid: true,
-	}, "git", "-c", "repack.writeBitmaps=true", "-c", "pack.packSizeLimit=16g", "gc")
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{
+			Environ:   os.Environ(),
+			RepoPath:  m.to,
+			Stderr:    os.Stderr,
+			Stdout:    os.Stdout,
+			Stdin:     os.Stdin,
+			NoSetpgid: true,
+		}, "git", "-c", "repack.writeBitmaps=true", "-c", "pack.packSizeLimit=16g", "gc")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("run git gc error: %w", err)
 	}

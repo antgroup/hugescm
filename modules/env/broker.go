@@ -2,6 +2,8 @@ package env
 
 import (
 	"os"
+	"slices"
+	"strings"
 	"sync"
 	"syscall"
 )
@@ -58,13 +60,10 @@ func NewSanitizer() Broker {
 		env:  make(map[string]int),
 		envs: make([]string, len(allowedEnv)),
 	}
-	for i, k := range allowedEnv {
+	sa.envs = slices.Clone(Environ())
+	for i, s := range Environ() {
+		k, _, _ := strings.Cut(s, "=")
 		sa.env[k] = i
-		if v, ok := LookupEnv(k); ok {
-			sa.envs[i] = k + "=" + v
-			continue
-		}
-		sa.envs[i] = ""
 	}
 	return sa
 }

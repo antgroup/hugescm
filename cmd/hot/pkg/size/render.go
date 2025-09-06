@@ -99,7 +99,11 @@ func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[str
 	if git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
 		psArgs = append(psArgs, "--filter=object:type=blob")
 	}
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: os.Environ()}, "git", psArgs...)
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{
+			RepoPath: repoPath,
+			Environ:  os.Environ(),
+		}, "git", psArgs...)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return err

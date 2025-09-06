@@ -90,6 +90,7 @@ type Values map[string]string
 func listConfig(ctx context.Context, repoPath string) (Values, error) {
 	var stderr strings.Builder
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{
+		Environ:  os.Environ(),
 		RepoPath: repoPath,
 		Stderr:   &stderr,
 	}, "git", "config", "list", "-z")
@@ -116,6 +117,7 @@ func listConfig(ctx context.Context, repoPath string) (Values, error) {
 		line = line[0 : len(line)-1]
 		k, v, ok := strings.Cut(line, "\n")
 		if !ok {
+
 			continue
 		}
 		vs[strings.ToLower(k)] = v

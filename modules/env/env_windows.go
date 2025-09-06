@@ -6,9 +6,50 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 
 	"golang.org/x/sys/windows/registry"
+)
+
+var allowedEnv = map[string]bool{
+	// Environment variables to tell git to use custom SSH executable or command
+	"GIT_SSH":         true,
+	"GIT_SSH_COMMAND": true,
+	// Export git tracing variables for easier debugging
+	"GIT_TRACE":             true,
+	"GIT_TRACE_PACK_ACCESS": true,
+	"GIT_TRACE_PACKET":      true,
+	"GIT_TRACE_PERFORMANCE": true,
+	"GIT_TRACE_SETUP":       true,
+	"GIT_CURL_VERBOSE":      true,
+}
+
+func LookupEnv(key string) (string, bool) {
+	// if key == "LANG" {
+	// 	return "en_US.UTF-8", true
+	// }
+	return os.LookupEnv(key)
+}
+
+var (
+	Environ = sync.OnceValue(func() []string {
+		origin := os.Environ()
+		cleanEnv := make([]string, 0, len(origin))
+		for _, s := range origin {
+			k, _, ok := strings.Cut(s, "=")
+			if !ok {
+				continue
+			}
+			if strings.HasPrefix(k, "GIT_") && !allowedEnv[k] {
+				continue
+			}
+			cleanEnv = append(cleanEnv, s)
+		}
+		slices.Sort(cleanEnv) // order by
+		return cleanEnv
+	})
 )
 
 func searchGitForWindows() (string, error) {

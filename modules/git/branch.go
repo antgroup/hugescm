@@ -44,7 +44,8 @@ func JoinBranchRev(r string) string {
 // refs/heads/master
 func RevParseCurrent(ctx context.Context, environ []string, repoPath string) (string, error) {
 	//  git rev-parse --symbolic-full-name HEAD
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ},
+	cmd := command.NewFromOptions(ctx,
+		&command.RunOpts{RepoPath: repoPath, Environ: environ},
 		"git", "rev-parse", "--symbolic-full-name", "HEAD")
 	line, err := cmd.OneLine()
 	if err != nil {

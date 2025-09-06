@@ -60,7 +60,7 @@ type App struct {
 }
 
 func main() {
-	_ = env.InitializeEnv()
+	_ = env.DelayInitializeEnv()
 	// initialize locale
 	_ = tr.Initialize()
 	kong.BindW(tr.W) // replace W

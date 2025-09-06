@@ -14,7 +14,6 @@ type K string
 const (
 	ZETA_TERMINAL_PROMPT  K      = "ZETA_TERMINAL_PROMPT"
 	ZETA_NO_SSH_AUTH_SOCK K      = "ZETA_NO_SSH_AUTH_SOCK"
-	ZETA_LESS_EXE_HIJACK         = "ZETA_LESS_EXE_HIJACK"
 	StandardSeparator     string = ";"
 )
 

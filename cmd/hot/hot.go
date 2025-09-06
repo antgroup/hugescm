@@ -35,7 +35,7 @@ type App struct {
 
 func main() {
 	// delay initilaize git env
-	_ = env.InitializeEnv()
+	_ = env.DelayInitializeEnv()
 	// initialize locale
 	_ = tr.DelayInitializeLocale()
 	kong.BindW(tr.W) // replace W

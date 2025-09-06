@@ -178,14 +178,9 @@ func NewPrinter(ctx context.Context) *printer {
 		pager = cmdArgs[0]
 		pagerArgs = append(pagerArgs, cmdArgs[1:]...)
 	}
-	pagerExe, err := exec.LookPath(pager)
+	pagerExe, err := env.LookupPager(pager)
 	if err != nil {
-		if pagerExe, ok = os.LookupEnv(env.ZETA_LESS_EXE_HIJACK); !ok {
-			return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
-		}
-		if _, err := os.Stat(pagerExe); err != nil {
-			return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
-		}
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
 	cmd.Env = env.SanitizerEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV

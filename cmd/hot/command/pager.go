@@ -69,24 +69,20 @@ func NewPrinter(ctx context.Context) *printer {
 	}
 	pager, ok := lookupPager()
 	if ok && len(pager) == 0 {
+		// PAGER disabled
 		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	if len(pager) == 0 {
-		pager = "less"
+		pager = "less" // search pager
 	}
 	pagerArgs := make([]string, 0, 4)
 	if cmdArgs, _ := shlex.Split(pager, true); len(cmdArgs) > 0 {
 		pager = cmdArgs[0]
 		pagerArgs = append(pagerArgs, cmdArgs[1:]...)
 	}
-	pagerExe, err := exec.LookPath(pager)
+	pagerExe, err := env.LookupPager(pager)
 	if err != nil {
-		if pagerExe, ok = os.LookupEnv(env.ZETA_LESS_EXE_HIJACK); !ok {
-			return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
-		}
-		if _, err := os.Stat(pagerExe); err != nil {
-			return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
-		}
+		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
 	cmd.Env = env.SanitizerEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV

@@ -16,7 +16,7 @@ import (
 
 func main() {
 	// delay initialize git env
-	_ = env.InitializeEnv()
+	_ = env.DelayInitializeEnv()
 	// initialize locale
 	_ = tr.Initialize()
 	kong.BindW(tr.W) // replace W

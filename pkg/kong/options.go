@@ -61,7 +61,7 @@ type embedded struct {
 // "strct" must be a pointer to a structure.
 func Embed(strct any, tags ...string) Option {
 	t := reflect.TypeOf(strct)
-	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
+	if t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
 		panic("kong: Embed() must be called with a pointer to a struct")
 	}
 	return OptionFunc(func(k *Kong) error {

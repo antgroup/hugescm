@@ -253,7 +253,7 @@ func (r *Registry) RegisterType(typ reflect.Type, mapper Mapper) *Registry {
 // RegisterValue registers a Mapper by pointer to the field value.
 func (r *Registry) RegisterValue(ptr any, mapper Mapper) *Registry {
 	key := reflect.ValueOf(ptr)
-	if key.Kind() != reflect.Ptr {
+	if key.Kind() != reflect.Pointer {
 		panic("expected a pointer")
 	}
 	key = key.Elem()
@@ -290,7 +290,7 @@ func (r *Registry) RegisterDefaults() *Registry {
 		RegisterName("existingdir", existingDirMapper(r)).
 		RegisterName("counter", counterMapper()).
 		RegisterName("filecontent", fileContentMapper(r)).
-		RegisterKind(reflect.Ptr, ptrMapper{r})
+		RegisterKind(reflect.Pointer, ptrMapper{r})
 }
 
 type boolMapper struct{}
@@ -580,7 +580,7 @@ func pathMapper(r *Registry) MapperFunc {
 		if target.Kind() == reflect.Slice {
 			return sliceDecoder(r)(ctx, target)
 		}
-		if target.Kind() == reflect.Ptr && target.Elem().Kind() == reflect.String {
+		if target.Kind() == reflect.Pointer && target.Elem().Kind() == reflect.String {
 			if target.IsNil() {
 				return nil
 			}
@@ -752,7 +752,7 @@ func (p ptrMapper) IsBoolFromValue(target reflect.Value) bool {
 	if bm, ok := nestedMapper.(BoolMapperExt); ok && bm.IsBoolFromValue(target) {
 		return true
 	}
-	return target.Kind() == reflect.Ptr && target.Type().Elem().Kind() == reflect.Bool
+	return target.Kind() == reflect.Pointer && target.Type().Elem().Kind() == reflect.Bool
 }
 
 func (p ptrMapper) Decode(ctx *DecodeContext, target reflect.Value) error {

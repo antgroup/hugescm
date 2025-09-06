@@ -14,7 +14,7 @@ type Plugins []any
 func build(k *Kong, ast any) (app *Application, err error) {
 	v := reflect.ValueOf(ast)
 	iv := reflect.Indirect(v)
-	if v.Kind() != reflect.Ptr || iv.Kind() != reflect.Struct {
+	if v.Kind() != reflect.Pointer || iv.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("expected a pointer to a struct but got %T", ast)
 	}
 
@@ -77,7 +77,7 @@ func flattenedFields(v reflect.Value, ptag *Tag) (out []flattenedField, err erro
 		// Combine parent vars.
 		tag.Vars = ptag.Vars.CloneWith(tag.Vars)
 		// Command and embedded structs can be pointers, so we hydrate them now.
-		if (tag.Cmd || tag.Embed) && ft.Type.Kind() == reflect.Ptr {
+		if (tag.Cmd || tag.Embed) && ft.Type.Kind() == reflect.Pointer {
 			fv = reflect.New(ft.Type.Elem()).Elem()
 			v.FieldByIndex(ft.Index).Set(fv.Addr())
 		}

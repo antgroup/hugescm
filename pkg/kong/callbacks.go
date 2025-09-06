@@ -129,7 +129,7 @@ func getMethod(value reflect.Value, name string) reflect.Value {
 //
 // Returns a slice of bound methods that can be called directly.
 func getMethods(value reflect.Value, name string) (methods []reflect.Value) {
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		value = value.Elem()
 	}
 	if !value.IsValid() {

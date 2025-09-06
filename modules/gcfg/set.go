@@ -218,7 +218,7 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	value string, blankValue bool, subsectPass bool) error {
 	//
 	vPCfg := reflect.ValueOf(cfg)
-	if vPCfg.Kind() != reflect.Ptr || vPCfg.Elem().Kind() != reflect.Struct {
+	if vPCfg.Kind() != reflect.Pointer || vPCfg.Elem().Kind() != reflect.Struct {
 		return errors.New("config must be a pointer to a struct")
 	}
 	vCfg := vPCfg.Elem()
@@ -234,7 +234,7 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	if isSubsect {
 		vst := vSect.Type()
 		if vst.Key().Kind() != reflect.String ||
-			vst.Elem().Kind() != reflect.Ptr ||
+			vst.Elem().Kind() != reflect.Pointer ||
 			vst.Elem().Elem().Kind() != reflect.Struct {
 			return fmt.Errorf("map field for section must have string keys and pointer-to-struct values: section %q", sect)
 		}
@@ -277,8 +277,8 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	var vVal reflect.Value
 	// multi-value if unnamed slice type
 	isMulti := vVar.Type().Name() == "" && vVar.Kind() == reflect.Slice ||
-		vVar.Type().Name() == "" && vVar.Kind() == reflect.Ptr && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
-	if isMulti && vVar.Kind() == reflect.Ptr {
+		vVar.Type().Name() == "" && vVar.Kind() == reflect.Pointer && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
+	if isMulti && vVar.Kind() == reflect.Pointer {
 		if vVar.IsNil() {
 			vVar.Set(reflect.New(vVar.Type().Elem()))
 		}
@@ -293,7 +293,7 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	} else {
 		vVal = vVar
 	}
-	isDeref := vVal.Type().Name() == "" && vVal.Type().Kind() == reflect.Ptr
+	isDeref := vVal.Type().Name() == "" && vVal.Type().Kind() == reflect.Pointer
 	isNew := isDeref && vVal.IsNil()
 	// vAddr is address of value to set (dereferenced & allocated as needed)
 	var vAddr reflect.Value

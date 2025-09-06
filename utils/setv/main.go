@@ -35,7 +35,7 @@ func parseKeyValue(str string, result any) error {
 	keys := strings.Split(keyPath, ".")
 
 	v := reflect.ValueOf(result)
-	if v.Kind() != reflect.Ptr || v.IsNil() {
+	if v.Kind() != reflect.Pointer || v.IsNil() {
 		return fmt.Errorf("result must be a non-nil pointer")
 	}
 	v = v.Elem()

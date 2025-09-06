@@ -203,7 +203,7 @@ func isScalarType(t reflect.Type) bool {
 		return true
 	}
 	switch t.Kind() {
-	case reflect.Slice, reflect.Map, reflect.Ptr:
+	case reflect.Slice, reflect.Map, reflect.Pointer:
 		return false
 	}
 	return true
@@ -236,7 +236,7 @@ func hydrateTag(t *Tag, typ reflect.Type) error { //nolint: gocyclo
 	if typ != nil {
 		typeName = typ.Name()
 		isBool = typ.Kind() == reflect.Bool
-		isBoolPtr = typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Bool
+		isBoolPtr = typ.Kind() == reflect.Pointer && typ.Elem().Kind() == reflect.Bool
 	}
 	var err error
 	t.Cmd = t.Has("cmd")

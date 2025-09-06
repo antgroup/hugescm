@@ -71,7 +71,7 @@ func (n *Node) Leaf() bool {
 // Returns nil if not found. Panics if ptr is not a pointer.
 func (n *Node) Find(ptr any) *Node {
 	key := reflect.ValueOf(ptr)
-	if key.Kind() != reflect.Ptr {
+	if key.Kind() != reflect.Pointer {
 		panic("expected a pointer")
 	}
 	return n.findNode(key)
@@ -356,7 +356,7 @@ func (v *Value) IsCounter() bool {
 
 // Parse tokens into value, parse, and validate, but do not write to the field.
 func (v *Value) Parse(scan *Scanner, target reflect.Value) (err error) {
-	if target.Kind() == reflect.Ptr && target.IsNil() {
+	if target.Kind() == reflect.Pointer && target.IsNil() {
 		target.Set(reflect.New(target.Type().Elem()))
 	}
 	err = v.Mapper.Decode(&DecodeContext{Value: v, Scan: scan}, target)
@@ -500,7 +500,7 @@ func reflectValueIsZero(v reflect.Value) bool {
 			}
 		}
 		return true
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
 		return v.IsNil()
 	case reflect.String:
 		return v.Len() == 0

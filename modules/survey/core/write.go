@@ -50,7 +50,7 @@ func WriteAnswer(t any, name string, v any) (err error) {
 	value := reflect.ValueOf(v)
 
 	// make sure we are writing to a pointer
-	if target.Kind() != reflect.Ptr {
+	if target.Kind() != reflect.Pointer {
 		return errors.New("you must pass a pointer as the target of a Write operation")
 	}
 	// the object "inside" of the target pointer
@@ -191,7 +191,7 @@ func flattenFields(s reflect.Value) []reflectField {
 	sType := s.Type()
 	numField := sType.NumField()
 	fields := make([]reflectField, 0, numField)
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		fieldType := sType.Field(i)
 		field := s.Field(i)
 

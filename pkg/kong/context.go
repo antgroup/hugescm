@@ -682,7 +682,7 @@ func (c *Context) getValue(value *Value) reflect.Value {
 	if !ok {
 		v = reflect.New(value.Target.Type()).Elem()
 		switch v.Kind() {
-		case reflect.Ptr:
+		case reflect.Pointer:
 			v.Set(reflect.New(v.Type().Elem()))
 		case reflect.Slice:
 			v.Set(reflect.MakeSlice(v.Type(), 0, 0))
@@ -752,7 +752,7 @@ func flipBoolValue(value reflect.Value) error {
 		return nil
 	}
 
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		if !value.IsNil() {
 			return flipBoolValue(value.Elem())
 		}
@@ -1064,7 +1064,7 @@ func checkEnum(value *Value, target reflect.Value) error {
 	case reflect.Map, reflect.Struct:
 		return errors.New("enum can only be applied to a slice or value")
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if target.IsNil() {
 			return nil
 		}
@@ -1187,7 +1187,7 @@ type validatableFunc func() error
 func (f validatableFunc) Validate(kctx *Context) error { return f() }
 
 func isValidatable(v reflect.Value) extendedValidatable {
-	if !v.IsValid() || (v.Kind() == reflect.Ptr || v.Kind() == reflect.Slice || v.Kind() == reflect.Map) && v.IsNil() {
+	if !v.IsValid() || (v.Kind() == reflect.Pointer || v.Kind() == reflect.Slice || v.Kind() == reflect.Map) && v.IsNil() {
 		return nil
 	}
 	if validate, ok := v.Interface().(validatable); ok {

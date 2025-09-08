@@ -149,12 +149,14 @@ zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 
 `hot` command is a Git repository governance tool that we integrated into HugeSCM, supporting many scenarios:
 
-+  If password credentials and other sensitive information were mistakenly committed to a Git repository, you can use `hot remove` to delete and rewrite the history, with `hot remove` being faster for rewriting. +  You can use `hot mc` to migrate the object format of the Git repository to `SHA256`, or migrate from `SHA256` back to `SHA1`. 
-+  You can check for large files in the repository by using `hot size (original size)` or `hot az (approximate compressed size)`, and you can perform interactive operations directly with `hot smart` (e.g: `hot smart -L20m`). 
-+  If there are too many invalid branch tags in the repository, you can delete them using `hot prune-refs (prefix matching)` or `hot expire-refs (by expiration time, whether to merge)`, and you can also use `hot scan-refs` to check the status of branches. 
-+  You can linearize the history of the repository using `hot unbranch`, which means there will be no merge points included. 
-+  You can also create an orphan branch based on a specific version using `hot unbranch -K1 master -Tnew-branch`, which preserves the recent history and can be used for open-source purposes or resetting history scenarios. 
-+  You can view files in the repository with `hot cat`, which includes `commit/tree/tag/blob`, where `commit/tree/tag` can be output as **JSON** using `--json`, and `blob` can intelligently output binary files in hexadecimal.
++  You can use `hot size (original size)`/`hot az (approximate compressed size)` to view large files in a repository.
++  If a Git repository accidentally commits passwords or other credentials, use `hot remove` to delete and rewrite the history. `hot remove` is extremely fast.
++  You can also use `hot smart` interactively to delete large files from a repository. It combines the `size, remove` commands (e.g., `hot smart -L20m`).
++  You can use `hot mc` to migrate a Git repository's object format to `SHA256` or from `SHA256` to `SHA1`.
++  If a repository has too many invalid branch tags, use `hot prune-refs (match by prefix)`/`hot expire-refs (by expiration time, whether merged)` to remove them. You can also use `hot scan-refs` to view the status of branches.
++  You can use `hot unbranch` to linearize the repository's history, meaning that it excludes any merge points. 
++  You can also use `hot unbranch -K1 master -Tnew-branch` to create an orphan branch based on a specific revision. This preserves the most recent history and can be used for open source or historical resets.
++  You can use `hot cat` to view files in the repository, `commit/tree/tag/blob`. `commit/tree/tag` can be output to **JSON** using `--json`, and `blob` can intelligently output binary files in hexadecimal.
 
 Here's some more help information:
 

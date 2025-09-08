@@ -154,9 +154,10 @@ zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 
 `hot` 命令是我们整合到 HugeSCM 中的一个 Git 存储库治理利器，它支持很多的场景：
 
-+  Git 存储库误提交了密码凭证等，可以使用 `hot remove` 删除并重写历史记录，`hot remove` 的重写更快。
++  你可以使用 `hot size（原始大小）`/`hot az（近似压缩大小）` 查看仓库中的大文件。
++  Git 存储库误提交了密码凭证等，可以使用 `hot remove` 删除并重写历史记录，`hot remove` 的重写速度特别快。
++  你也可以直接使用 `hot smart` 交互式操作删除仓库中的大文件，它结合了 `size, remove` 命令（如： `hot smart -L20m`）。
 +  你可以使用 `hot mc` 将 Git 存储库的对象格式迁移到 `SHA256`，也可以从 `SHA256` 的迁移到 `SHA1`。
-+  你可以使用 `hot size（原始大小）`/`hot az（近似压缩大小）` 查看仓库中的大文件，可以直接使用 `hot smart` 交互式操作（如： `hot smart -L20m`）。
 +  仓库无效分支标签太多，可以使用 `hot prune-refs（按前缀匹配）`/`hot expire-refs（按过期时间，是否合并）` 删除，亦可以使用 `hot scan-refs` 查看分支的情况。
 +  你可以使用 `hot unbranch` 将存储库的历史线性化，也就是不包含任何合并点。
 +  你亦可以使用 `hot unbranch -K1 master -Tnew-branch` 基于特定的版本创建一个孤儿分支，这将保留最近的历史，可用于开源或者重置历史场景。

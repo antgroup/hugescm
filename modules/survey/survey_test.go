@@ -26,33 +26,33 @@ type expectConsole interface {
 	Send(string)
 }
 
-type ConsoleWithErrorHandling struct {
+type consoleWithErrorHandling struct {
 	console *expect.Console
 	t       *testing.T
 }
 
-func (c *ConsoleWithErrorHandling) ExpectString(s string) {
+func (c *consoleWithErrorHandling) ExpectString(s string) {
 	if _, err := c.console.ExpectString(s); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("ExpectString(%q) = %v", s, err)
 	}
 }
 
-func (c *ConsoleWithErrorHandling) SendLine(s string) {
+func (c *consoleWithErrorHandling) SendLine(s string) {
 	if _, err := c.console.SendLine(s); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("SendLine(%q) = %v", s, err)
 	}
 }
 
-func (c *ConsoleWithErrorHandling) Send(s string) {
+func (c *consoleWithErrorHandling) Send(s string) {
 	if _, err := c.console.Send(s); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("Send(%q) = %v", s, err)
 	}
 }
 
-func (c *ConsoleWithErrorHandling) ExpectEOF() {
+func (c *consoleWithErrorHandling) ExpectEOF() {
 	if _, err := c.console.ExpectEOF(); err != nil {
 		c.t.Helper()
 		c.t.Fatalf("ExpectEOF() = %v", err)
@@ -60,10 +60,11 @@ func (c *ConsoleWithErrorHandling) ExpectEOF() {
 }
 
 type PromptTest struct {
-	name      string
-	prompt    Prompt
-	procedure func(expectConsole)
-	expected  any
+	name          string
+	prompt        Prompt
+	promptOptions []AskOpt
+	procedure     func(expectConsole)
+	expected      any
 }
 
 func RunPromptTest(t *testing.T, test PromptTest) {
@@ -74,56 +75,14 @@ func RunPromptTest(t *testing.T, test PromptTest) {
 		if p, ok := test.prompt.(wantsStdio); ok {
 			p.WithStdio(stdio)
 		}
-
-		answer, err = test.prompt.Prompt(defaultPromptConfig())
-		return err
-	})
-	require.Equal(t, test.expected, answer)
-}
-
-func RunPromptTestKeepFilter(t *testing.T, test PromptTest) {
-	t.Helper()
-	var answer any
-	RunTest(t, test.procedure, func(stdio terminal.Stdio) error {
-		var err error
-		if p, ok := test.prompt.(wantsStdio); ok {
-			p.WithStdio(stdio)
+		options := defaultAskOptions()
+		for _, o := range test.promptOptions {
+			err = o(options)
+			if err != nil {
+				return err
+			}
 		}
-		config := defaultPromptConfig()
-		config.KeepFilter = true
-		answer, err = test.prompt.Prompt(config)
-		return err
-	})
-	require.Equal(t, test.expected, answer)
-}
-
-func RunPromptTestRemoveSelectAll(t *testing.T, test PromptTest) {
-	t.Helper()
-	var answer any
-	RunTest(t, test.procedure, func(stdio terminal.Stdio) error {
-		var err error
-		if p, ok := test.prompt.(wantsStdio); ok {
-			p.WithStdio(stdio)
-		}
-		config := defaultPromptConfig()
-		config.RemoveSelectAll = true
-		answer, err = test.prompt.Prompt(config)
-		return err
-	})
-	require.Equal(t, test.expected, answer)
-}
-
-func RunPromptTestRemoveSelectNone(t *testing.T, test PromptTest) {
-	t.Helper()
-	var answer any
-	RunTest(t, test.procedure, func(stdio terminal.Stdio) error {
-		var err error
-		if p, ok := test.prompt.(wantsStdio); ok {
-			p.WithStdio(stdio)
-		}
-		config := defaultPromptConfig()
-		config.RemoveSelectNone = true
-		answer, err = test.prompt.Prompt(config)
+		answer, err = test.prompt.Prompt(&options.PromptConfig)
 		return err
 	})
 	require.Equal(t, test.expected, answer)
@@ -404,7 +363,7 @@ func TestAsk(t *testing.T) {
 
 func TestAsk_returnsErrorIfTargetIsNil(t *testing.T) {
 	// pass an empty place to leave the answers
-	err := Ask([]*Question{}, nil)
+	err := Ask([]*Question{{Prompt: &Input{Message: "Test"}}}, nil)
 
 	// if we didn't get an error
 	if err == nil {

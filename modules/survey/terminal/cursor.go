@@ -14,6 +14,8 @@ import (
 
 var COORDINATE_SYSTEM_BEGIN Short = 1
 
+var CURSOR_STAGNATES_ON_LAST_CHAR = false
+
 var dsrPattern = regexp.MustCompile(`\x1b\[(\d+);(\d+)R$`)
 
 type Cursor struct {
@@ -47,7 +49,7 @@ func (c *Cursor) Back(n int) error {
 
 // NextLine moves cursor to beginning of the line n lines down.
 func (c *Cursor) NextLine(n int) error {
-	if err := c.Down(n); err != nil {
+	if err := c.Down(1); err != nil {
 		return err
 	}
 	return c.HorizontalAbsolute(0)
@@ -55,7 +57,7 @@ func (c *Cursor) NextLine(n int) error {
 
 // PreviousLine moves cursor to beginning of the line n lines up.
 func (c *Cursor) PreviousLine(n int) error {
-	if err := c.Up(n); err != nil {
+	if err := c.Up(1); err != nil {
 		return err
 	}
 	return c.HorizontalAbsolute(0)

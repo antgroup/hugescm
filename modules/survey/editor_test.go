@@ -115,6 +115,7 @@ func TestEditorPrompt(t *testing.T) {
 				Editor:  "vi",
 				Message: "Edit git commit message",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Edit git commit message [Enter to launch editor]")
 				c.SendLine("")
@@ -132,6 +133,7 @@ func TestEditorPrompt(t *testing.T) {
 				Message: "Edit git commit message",
 				Default: "No comment",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Edit git commit message (No comment) [Enter to launch editor]")
 				c.SendLine("")
@@ -148,6 +150,7 @@ func TestEditorPrompt(t *testing.T) {
 				Message: "Edit git commit message",
 				Default: "No comment",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Edit git commit message (No comment) [Enter to launch editor]")
 				c.SendLine("")
@@ -166,6 +169,7 @@ func TestEditorPrompt(t *testing.T) {
 				Default:     "No comment",
 				HideDefault: true,
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Edit git commit message [Enter to launch editor]")
 				c.SendLine("")
@@ -182,6 +186,7 @@ func TestEditorPrompt(t *testing.T) {
 				Message: "Edit git commit message",
 				Help:    "Describe your git commit",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString(
 					fmt.Sprintf(
@@ -207,6 +212,7 @@ func TestEditorPrompt(t *testing.T) {
 				Default:       "No comment",
 				AppendDefault: true,
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Edit git commit message (No comment) [Enter to launch editor]")
 				c.SendLine("")
@@ -223,6 +229,7 @@ func TestEditorPrompt(t *testing.T) {
 				Editor:  "vi --",
 				Message: "Edit git commit message",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Edit git commit message [Enter to launch editor]")
 				c.SendLine("")

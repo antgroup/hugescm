@@ -1,3 +1,5 @@
+//go:build windows
+
 package terminal
 
 import (
@@ -94,12 +96,12 @@ func (w *Writer) handleEscape(r *bytes.Reader) (n int, err error) {
 		if err == io.EOF {
 			err = nil
 		}
-		_, _ = fmt.Fprint(w.out, string(buf))
+		fmt.Fprint(w.out, string(buf))
 		return
 	}
 	n += size
 	if ch != '[' {
-		_, _ = fmt.Fprint(w.out, string(buf))
+		fmt.Fprint(w.out, string(buf))
 		return
 	}
 

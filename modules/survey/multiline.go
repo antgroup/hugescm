@@ -2,6 +2,8 @@ package survey
 
 import (
 	"strings"
+
+	"github.com/antgroup/hugescm/modules/survey/terminal"
 )
 
 type Multiline struct {
@@ -29,7 +31,7 @@ var MultilineQuestionTemplate = `
   {{- "\n"}}{{color "cyan"}}{{.Answer}}{{color "reset"}}
   {{- if .Answer }}{{ "\n" }}{{ end }}
 {{- else }}
-  {{- if .Default}}{{color "white"}}({{.Default}}) {{color "reset"}}{{end}}
+  {{- if .Default}}{{color "gray"}}({{.Default}}) {{color "reset"}}{{end}}
   {{- color "cyan"}}[Enter 2 empty lines to finish]{{color "reset"}}
 {{- end}}`
 
@@ -68,7 +70,13 @@ func (i *Multiline) Prompt(config *PromptConfig) (any, error) {
 
 		if string(line) == "" {
 			if emptyOnce {
-				_ = cursor.PreviousLine(3)
+				numLines := len(multiline) + 2
+				_ = cursor.PreviousLine(numLines)
+				for range numLines {
+					_ = terminal.EraseLine(i.Stdio().Out, terminal.ERASE_LINE_ALL)
+					_ = cursor.NextLine(1)
+				}
+				_ = cursor.PreviousLine(numLines)
 				break
 			}
 			emptyOnce = true

@@ -70,7 +70,7 @@ func (m MultiSelectTemplateData) GetDescription(opt core.OptionAnswer) string {
 
 var MultiSelectQuestionTemplate = `
 {{- define "option"}}
-    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }}{{color "reset"}}{{else}} {{end}}
+    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }}{{color "reset"}}{{else}}{{- spaces .Config.Icons.SelectFocus.Text }}{{end}}
     {{- if index .Checked .CurrentOpt.Index }}{{color .Config.Icons.MarkedOption.Format }} {{ .Config.Icons.MarkedOption.Text }} {{else}}{{color .Config.Icons.UnmarkedOption.Format }} {{ .Config.Icons.UnmarkedOption.Text }} {{end}}
     {{- color "reset"}}
     {{- " "}}{{- .CurrentOpt.Value}}{{ if ne ($.GetDescription .CurrentOpt) "" }} - {{color "cyan"}}{{ $.GetDescription .CurrentOpt }}{{color "reset"}}{{end}}
@@ -80,7 +80,7 @@ var MultiSelectQuestionTemplate = `
 {{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
 {{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else }}
-	{{- "  "}}{{- color "cyan"}}[Use arrows to move, space to select,{{- if not .Config.RemoveSelectAll }} <right> to all,{{end}}{{- if not .Config.RemoveSelectNone }} <left> to none,{{end}} type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
+	{{- "  "}}{{- color "cyan"}}[Use arrows to move, space to select{{- if not .Config.RemoveSelectAll }}, <right> to all{{end}}{{- if not .Config.RemoveSelectNone }}, <left> to none{{end}}{{- if not .Config.DisableFilter}}, type to filter{{end}}{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
   {{- "\n"}}
   {{- range $ix, $option := .PageEntries}}
     {{- template "option" $.IterateOption $ix $option}}
@@ -140,7 +140,7 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 			runeFilter := []rune(m.filter)
 			m.filter = string(runeFilter[0 : len(runeFilter)-1])
 		}
-	} else if key >= terminal.KeySpace {
+	} else if key >= terminal.KeySpace && !config.DisableFilter {
 		m.filter += string(key)
 		m.VimMode = false
 	} else if !config.RemoveSelectAll && key == terminal.KeyArrowRight {
@@ -201,8 +201,8 @@ func (m *MultiSelect) filterOptions(config *PromptConfig) []core.OptionAnswer {
 	// the filtered list
 	answers := []core.OptionAnswer{}
 
-	// if there is no filter applied
-	if m.filter == "" {
+	// if there is no filter applied or it is disabled
+	if m.filter == "" || config.DisableFilter {
 		// return all of the options
 		return core.OptionAnswerList(m.Options)
 	}

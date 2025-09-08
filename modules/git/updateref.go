@@ -230,7 +230,7 @@ func (u *RefUpdater) closeWithError(closeErr error) error {
 	return nil
 }
 
-func (u *RefUpdater) write(format string, args ...interface{}) error {
+func (u *RefUpdater) write(format string, args ...any) error {
 	if _, err := fmt.Fprintf(u.stdin, format, args...); err != nil {
 		return u.closeWithError(err)
 	}

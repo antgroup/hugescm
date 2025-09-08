@@ -63,6 +63,7 @@ func TestPasswordPrompt(t *testing.T) {
 			&Password{
 				Message: "Please type your password",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Please type your password")
 				c.Send("secret")
@@ -77,6 +78,7 @@ func TestPasswordPrompt(t *testing.T) {
 				Message: "Please type your password",
 				Help:    "It's a secret",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Please type your password")
 				c.SendLine("?")

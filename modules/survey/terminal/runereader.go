@@ -55,26 +55,40 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 	if len(onRunes) > 0 {
 		onRune = onRunes[0]
 	}
-
+	cursorIsInLastPosition := false
 	// we get the terminal width and height (if resized after this point the property might become invalid)
 	terminalSize, _ := cursor.Size(rr.Buffer())
 	// we set the current location of the cursor once
 	cursorCurrent, _ := cursor.Location(rr.Buffer())
-
+	lastAction := ""
+	wroteOnLine := COORDINATE_SYSTEM_BEGIN == 0
 	increment := func() {
-		if cursorCurrent.CursorIsAtLineEnd(terminalSize) {
+		if CURSOR_STAGNATES_ON_LAST_CHAR && !cursorIsInLastPosition && cursorCurrent.CursorIsAtLineEnd(terminalSize) && lastAction == "write" {
+			cursorIsInLastPosition = true
+		} else if cursorCurrent.CursorIsAtLineEnd(terminalSize) {
 			cursorCurrent.X = COORDINATE_SYSTEM_BEGIN
+			if CURSOR_STAGNATES_ON_LAST_CHAR && lastAction == "write" {
+				cursorCurrent.X++
+			}
 			cursorCurrent.Y++
+			wroteOnLine = COORDINATE_SYSTEM_BEGIN == 0
+			cursorIsInLastPosition = false
 		} else {
 			cursorCurrent.X++
+			wroteOnLine = true
+			cursorIsInLastPosition = false
 		}
 	}
 	decrement := func() {
-		if cursorCurrent.CursorIsAtLineBegin() {
+		if cursorIsInLastPosition && cursorCurrent.CursorIsAtLineEnd(terminalSize) {
+			cursorIsInLastPosition = false
+		} else if cursorCurrent.CursorIsAtLineBegin() {
 			cursorCurrent.X = terminalSize.X
 			cursorCurrent.Y--
+			cursorIsInLastPosition = false
 		} else {
 			cursorCurrent.X--
+			cursorIsInLastPosition = false
 		}
 	}
 
@@ -102,18 +116,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 
 		// if the user pressed enter or some other newline/termination like ctrl+d
 		if r == '\r' || r == '\n' || r == KeyEndTransmission {
-			// delete what's printed out on the console screen (cleanup)
-			for index > 0 {
-				if cursorCurrent.CursorIsAtLineBegin() {
-					_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
-					_ = cursor.PreviousLine(1)
-					_ = cursor.Forward(int(terminalSize.X))
-				} else {
-					_ = cursor.Back(1)
-				}
-				decrement()
-				index--
-			}
+			// Cleanup is handled by rerender
 			// move the cursor the a new line
 			_ = cursor.MoveNextLine(cursorCurrent, terminalSize)
 
@@ -142,15 +145,22 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 					cells := runeWidth(line[len(line)-1])
 					line = line[:len(line)-1]
 					// go back one
-					if cursorCurrent.X == 1 {
+					if cursorCurrent.X == COORDINATE_SYSTEM_BEGIN && wroteOnLine {
 						_ = cursor.PreviousLine(1)
 						_ = cursor.Forward(int(terminalSize.X))
+						// clear the rest of the line
+						_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
+					} else if cursorIsInLastPosition {
+						// clear the rest of the line
+						_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
+						_ = cursor.Back(cells)
+						_ = cursor.Forward(cells)
 					} else {
 						_ = cursor.Back(cells)
+						// clear the rest of the line
+						_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
 					}
 
-					// clear the rest of the line
-					_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
 				} else {
 					// we need to remove a character from the middle of the word
 
@@ -165,7 +175,12 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 					_ = cursor.Save()
 
 					// clear the rest of the line
-					_ = cursor.Back(cells)
+					if cursorCurrent.CursorIsAtLineBegin() {
+						_ = cursor.PreviousLine(1)
+						_ = cursor.Forward(int(terminalSize.X))
+					} else {
+						_ = cursor.Back(cells)
+					}
 
 					// print what comes after
 					for _, char := range line[index-1:] {
@@ -176,6 +191,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 							return line, err
 						}
 					}
+					_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
 					// erase what's left over from last print
 					if cursorCurrent.Y < terminalSize.Y {
 						_ = cursor.NextLine(1)
@@ -198,6 +214,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 				// otherwise the user pressed backspace while at the beginning of the line
 				_ = soundBell(rr.stdio.Out)
 			}
+			lastAction = "delete"
 
 			// we're done processing this key
 			continue
@@ -208,7 +225,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 			// if we have space to the left
 			if index > 0 {
 				//move the cursor to the prev line if necessary
-				if cursorCurrent.CursorIsAtLineBegin() {
+				if cursorCurrent.CursorIsAtLineBegin() && lastAction != "arrowRight" && lastAction != "write" {
 					_ = cursor.PreviousLine(1)
 					_ = cursor.Forward(int(terminalSize.X))
 				} else {
@@ -223,7 +240,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 				// sound the bell
 				_ = soundBell(rr.stdio.Out)
 			}
-
+			lastAction = "arrowLeft"
 			// we're done processing this key press
 			continue
 		}
@@ -234,7 +251,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 			if index < len(line) {
 				// move the cursor to the next line if necessary
 				if cursorCurrent.CursorIsAtLineEnd(terminalSize) {
-					_ = cursor.NextLine(1)
+					_ = cursor.MoveNextLine(cursorCurrent, terminalSize)
 				} else {
 					_ = cursor.Forward(runeWidth(line[index]))
 				}
@@ -246,7 +263,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 				// sound the bell
 				_ = soundBell(rr.stdio.Out)
 			}
-
+			lastAction = "arrowRight"
 			// we're done processing this key press
 			continue
 		}
@@ -264,6 +281,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 				}
 				index--
 			}
+			lastAction = "specialKeyHome"
 			continue
 			// user pressed end
 		} else if r == SpecialKeyEnd {
@@ -278,6 +296,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 				}
 				index++
 			}
+			lastAction = "specialKeyEnd"
 			continue
 			// user pressed forward delete key
 		} else if r == SpecialKeyDelete {
@@ -307,6 +326,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 				if len(line) == 0 || index == len(line) {
 					_ = EraseLine(rr.stdio.Out, ERASE_LINE_END)
 				}
+				lastAction = "specialKeyDelete"
 			}
 			continue
 		}
@@ -326,6 +346,7 @@ func (rr *RuneReader) ReadLineWithDefault(mask rune, d []rune, onRunes ...OnRune
 			// save the location of the cursor
 			index++
 			increment()
+			lastAction = "write"
 			// print out the character
 			if err := rr.printChar(r, mask); err != nil {
 				return line, err

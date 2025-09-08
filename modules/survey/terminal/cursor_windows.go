@@ -4,11 +4,21 @@ package terminal
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"syscall"
 	"unsafe"
 )
 
 var COORDINATE_SYSTEM_BEGIN Short = 0
+
+var CURSOR_STAGNATES_ON_LAST_CHAR = false
+
+func init() {
+	if windowsTerminalSession := os.Getenv("WT_SESSION"); windowsTerminalSession != "" {
+		CURSOR_STAGNATES_ON_LAST_CHAR = true
+	}
+}
 
 // shared variable to save the cursor location from CursorSave()
 var cursorLoc Coord
@@ -19,19 +29,19 @@ type Cursor struct {
 }
 
 func (c *Cursor) Up(n int) error {
-	return c.cursorMove(0, n)
+	return c.cursorMove(0, -1*n, false)
 }
 
 func (c *Cursor) Down(n int) error {
-	return c.cursorMove(0, -1*n)
+	return c.cursorMove(0, n, false)
 }
 
 func (c *Cursor) Forward(n int) error {
-	return c.cursorMove(n, 0)
+	return c.cursorMove(n, 0, false)
 }
 
 func (c *Cursor) Back(n int) error {
-	return c.cursorMove(-1*n, 0)
+	return c.cursorMove(-1*n, 0, false)
 }
 
 // save the cursor location
@@ -59,7 +69,7 @@ func (cur Coord) CursorIsAtLineBegin() bool {
 	return cur.X == 0
 }
 
-func (c *Cursor) cursorMove(x int, y int) error {
+func (c *Cursor) cursorMove(x int, y int, xIsAbs bool) error {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var csbi consoleScreenBufferInfo
@@ -68,51 +78,39 @@ func (c *Cursor) cursorMove(x int, y int) error {
 	}
 
 	var cursor Coord
-	cursor.X = csbi.cursorPosition.X + Short(x)
+	if xIsAbs {
+		cursor.X = Short(x)
+	} else {
+		cursor.X = csbi.cursorPosition.X + Short(x)
+	}
 	cursor.Y = csbi.cursorPosition.Y + Short(y)
 
 	_, _, err := procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursor))))
-	return normalizeError(err)
+	if normalizeError(err) != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Cursor) NextLine(n int) error {
-	if err := c.Up(n); err != nil {
-		return err
-	}
-	return c.HorizontalAbsolute(0)
+	return c.cursorMove(0, n, true)
 }
 
 func (c *Cursor) PreviousLine(n int) error {
-	if err := c.Down(n); err != nil {
-		return err
-	}
-	return c.HorizontalAbsolute(0)
+	return c.cursorMove(0, -1*n, true)
 }
 
-// for comparability purposes between windows
-// in windows we don't have to print out a new line
 func (c *Cursor) MoveNextLine(cur *Coord, terminalSize *Coord) error {
-	return c.NextLine(1)
+	if err := c.cursorMove(0, 1, true); err != nil {
+		// moving to the next line will fail when at the bottom of the terminal viewport
+		_, err = fmt.Fprint(c.Out, "\n")
+		return err
+	}
+	return nil
 }
 
 func (c *Cursor) HorizontalAbsolute(x int) error {
-	handle := syscall.Handle(c.Out.Fd())
-
-	var csbi consoleScreenBufferInfo
-	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
-		return err
-	}
-
-	var cursor Coord
-	cursor.X = Short(x)
-	cursor.Y = csbi.cursorPosition.Y
-
-	if csbi.size.X < cursor.X {
-		cursor.X = csbi.size.X
-	}
-
-	_, _, err := procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursor))))
-	return normalizeError(err)
+	return c.cursorMove(0, 0, true)
 }
 
 func (c *Cursor) Show() error {

@@ -25,6 +25,10 @@ func defaultAskOptions() *AskOptions {
 			HelpInput:    "?",
 			SuggestInput: "tab",
 			Icons: IconSet{
+				Info: Icon{
+					Text:   "#",
+					Format: "blue+hb",
+				},
 				Error: Icon{
 					Text:   "X",
 					Format: "red",
@@ -47,6 +51,14 @@ func defaultAskOptions() *AskOptions {
 				},
 				SelectFocus: Icon{
 					Text:   ">",
+					Format: "cyan+b",
+				},
+				SliderFiller: Icon{
+					Text:   "-",
+					Format: "default+hb",
+				},
+				SliderCursor: Icon{
+					Text:   "*",
 					Format: "cyan+b",
 				},
 			},
@@ -84,12 +96,15 @@ type Icon struct {
 // IconSet holds the icons to use for various prompts
 type IconSet struct {
 	HelpInput      Icon
+	Info           Icon
 	Error          Icon
 	Help           Icon
 	Question       Icon
 	MarkedOption   Icon
 	UnmarkedOption Icon
 	SelectFocus    Icon
+	SliderFiller   Icon
+	SliderCursor   Icon
 }
 
 // Validator is a function passed to a Question after a user has provided a response.
@@ -121,6 +136,7 @@ type PromptConfig struct {
 	Filter           func(filter string, option string, index int) bool
 	KeepFilter       bool
 	ShowCursor       bool
+	DisableFilter    bool
 	RemoveSelectAll  bool
 	RemoveSelectNone bool
 	HideCharacter    rune
@@ -166,6 +182,15 @@ func WithFilter(filter func(filter string, value string, index int) (include boo
 		// save the filter internally
 		options.PromptConfig.Filter = filter
 
+		return nil
+	}
+}
+
+// WithDisableFilter disables the filter behavior.
+func WithDisableFilter() AskOpt {
+	return func(options *AskOptions) error {
+		// save the boolean internally
+		options.PromptConfig.DisableFilter = true
 		return nil
 	}
 }
@@ -323,10 +348,12 @@ func Ask(qs []*Question, response any, opts ...AskOpt) error {
 		}
 	}
 
-	// if we weren't passed a place to record the answers
-	if response == nil {
-		// we can't go any further
-		return errors.New("cannot call Ask() with a nil reference to record the answers")
+	for _, q := range qs {
+		_, ok := q.Prompt.(*Info)
+		if !ok && response == nil {
+			// if we weren't passed a place to record the answers - only on non info
+			return errors.New("cannot call Ask() with a nil reference to record the answers")
+		}
 	}
 
 	validate := func(q *Question, val any) error {

@@ -102,6 +102,7 @@ func TestMultilinePrompt(t *testing.T) {
 			&Multiline{
 				Message: "What is your name?",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("What is your name?")
 				c.SendLine("Larry Bird\nI guess...\nnot sure\n\n")
@@ -115,6 +116,7 @@ func TestMultilinePrompt(t *testing.T) {
 				Message: "What is your name?",
 				Default: "Johnny Appleseed",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("What is your name?")
 				c.SendLine("\n\n")
@@ -128,6 +130,7 @@ func TestMultilinePrompt(t *testing.T) {
 				Message: "What is your name?",
 				Default: "Johnny Appleseed",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("What is your name?")
 				c.SendLine("Larry Bird\n\n")
@@ -141,6 +144,7 @@ func TestMultilinePrompt(t *testing.T) {
 				Message: "What is your name?",
 				Help:    "It might be Satoshi Nakamoto",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("What is your name?")
 				c.SendLine("?")

@@ -52,7 +52,7 @@ var EditorQuestionTemplate = `
   {{- color "cyan"}}{{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else }}
   {{- if and .Help (not .ShowHelp)}}{{color "cyan"}}[{{ .Config.HelpInput }} for help]{{color "reset"}} {{end}}
-  {{- if and .Default (not .HideDefault)}}{{color "white"}}({{.Default}}) {{color "reset"}}{{end}}
+  {{- if and .Default (not .HideDefault)}}{{color "gray"}}({{.Default}}) {{color "reset"}}{{end}}
   {{- color "cyan"}}[Enter to launch editor] {{color "reset"}}
 {{- end}}`
 

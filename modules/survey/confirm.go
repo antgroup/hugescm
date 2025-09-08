@@ -30,7 +30,7 @@ var ConfirmQuestionTemplate = `
   {{- color "cyan"}}{{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else }}
   {{- if and .Help (not .ShowHelp)}}{{color "cyan"}}[{{ .Config.HelpInput }} for help]{{color "reset"}} {{end}}
-  {{- color "white"}}{{if .Default}}(Y/n) {{else}}(y/N) {{end}}{{color "reset"}}
+  {{- color "gray"}}{{if .Default}}(Y/n) {{else}}(y/N) {{end}}{{color "reset"}}
 {{- end}}`
 
 // the regex for answers
@@ -89,7 +89,8 @@ func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 			showHelp = true
 			continue
 		default:
-			// we didn't get a valid answer, so print error and prompt again
+			// we didnt get a valid answer, so print error and prompt again
+			c.AppendRenderedText(val)
 			if err := c.Error(config, fmt.Errorf("%q is not a valid answer, please try again", val)); err != nil {
 				return c.Default, err
 			}

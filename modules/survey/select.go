@@ -68,7 +68,7 @@ func (s SelectTemplateData) GetDescription(opt core.OptionAnswer) string {
 
 var SelectQuestionTemplate = `
 {{- define "option"}}
-    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }} {{else}}{{color "default"}}  {{end}}
+    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }} {{else}}{{color "default"}}{{- spaces .Config.Icons.SelectFocus.Text }} {{end}}
     {{- .CurrentOpt.Value}}{{ if ne ($.GetDescription .CurrentOpt) "" }} - {{color "cyan"}}{{ $.GetDescription .CurrentOpt }}{{end}}
     {{- color "reset"}}
 {{end}}
@@ -77,7 +77,7 @@ var SelectQuestionTemplate = `
 {{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
 {{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else}}
-  {{- "  "}}{{- color "cyan"}}[Use arrows to move, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
+  {{- "  "}}{{- color "cyan"}}[Use arrows to move{{- if not .Config.DisableFilter}}, type to filter{{end}}{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
   {{- "\n"}}
   {{- range $ix, $option := .PageEntries}}
     {{- template "option" $.IterateOption $ix $option}}
@@ -140,7 +140,7 @@ func (s *Select) OnChange(key rune, config *PromptConfig) bool {
 			s.filter = string(runeFilter[0 : len(runeFilter)-1])
 			// we removed the last value in the filter
 		}
-	} else if key >= terminal.KeySpace {
+	} else if key >= terminal.KeySpace && !config.DisableFilter {
 		s.filter += string(key)
 		// make sure vim mode is disabled
 		s.VimMode = false
@@ -191,8 +191,8 @@ func (s *Select) filterOptions(config *PromptConfig) []core.OptionAnswer {
 	// the filtered list
 	answers := []core.OptionAnswer{}
 
-	// if there is no filter applied
-	if s.filter == "" {
+	// if there is no filter applied or it is disabled
+	if s.filter == "" || config.DisableFilter {
 		return core.OptionAnswerList(s.Options)
 	}
 
@@ -222,7 +222,6 @@ func (s *Select) Prompt(config *PromptConfig) (any, error) {
 		// we failed
 		return "", errors.New("please provide options to select from")
 	}
-
 	s.selectedIndex = 0
 	if s.Default != nil {
 		switch defaultValue := s.Default.(type) {

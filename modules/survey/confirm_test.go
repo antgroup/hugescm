@@ -91,6 +91,7 @@ func TestConfirmPrompt(t *testing.T) {
 			&Confirm{
 				Message: "Is pizza your favorite food?",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Is pizza your favorite food? (y/N)")
 				c.SendLine("n")
@@ -104,6 +105,7 @@ func TestConfirmPrompt(t *testing.T) {
 				Message: "Is pizza your favorite food?",
 				Default: true,
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Is pizza your favorite food? (Y/n)")
 				c.SendLine("")
@@ -117,6 +119,7 @@ func TestConfirmPrompt(t *testing.T) {
 				Message: "Is pizza your favorite food?",
 				Default: true,
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString("Is pizza your favorite food? (Y/n)")
 				c.SendLine("n")
@@ -130,6 +133,7 @@ func TestConfirmPrompt(t *testing.T) {
 				Message: "Is pizza your favorite food?",
 				Help:    "It probably is",
 			},
+			nil,
 			func(c expectConsole) {
 				c.ExpectString(
 					fmt.Sprintf(

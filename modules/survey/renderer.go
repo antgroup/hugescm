@@ -137,7 +137,7 @@ func (r *Renderer) resetPrompt(lines int) {
 	_ = cursor.HorizontalAbsolute(0)
 	_ = terminal.EraseLine(r.stdio.Out, terminal.ERASE_LINE_ALL)
 	// clean up what we left behind last time
-	for i := 0; i < lines; i++ {
+	for range lines {
 		_ = cursor.PreviousLine(1)
 		_ = terminal.EraseLine(r.stdio.Out, terminal.ERASE_LINE_ALL)
 	}
@@ -165,7 +165,6 @@ func (r *Renderer) countLines(buf bytes.Buffer) int {
 	w := r.termWidthSafe()
 
 	bufBytes := buf.Bytes()
-
 	count := 0
 	curr := 0
 	for curr < len(bufBytes) {
@@ -191,6 +190,5 @@ func (r *Renderer) countLines(buf bytes.Buffer) int {
 		}
 		curr = delim + 1
 	}
-
 	return count
 }

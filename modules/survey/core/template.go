@@ -3,9 +3,11 @@ package core
 import (
 	"bytes"
 	"os"
+	"strings"
 	"sync"
 	"text/template"
 
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/mgutz/ansi"
 )
 
@@ -14,7 +16,35 @@ var DisableColor = false
 
 var TemplateFuncsWithColor = map[string]any{
 	// Templates with Color formatting. See Documentation: https://github.com/mgutz/ansi#style-format
-	"color": ansi.ColorCode,
+	"color":  color,
+	"spaces": spaces,
+}
+
+func color(style string) string {
+	switch style {
+	case "gray":
+		// Fails on windows, only affects defaults
+		if term.StdoutLevel >= term.Level256 {
+			return ansi.ColorCode("8")
+		}
+		return ansi.ColorCode("default")
+	default:
+		return ansi.ColorCode(style)
+	}
+}
+
+func spaces(selectorText string) string {
+	length := 0
+	for _, s := range selectorText {
+		if len(string(s)) == 1 {
+			// This character is displayed as one space
+			length++
+		} else {
+			// This character is displayed differently than its length : emoji
+			length += 2
+		}
+	}
+	return strings.Repeat(" ", length)
 }
 
 var TemplateFuncsNoColor = map[string]any{
@@ -22,6 +52,7 @@ var TemplateFuncsNoColor = map[string]any{
 	"color": func(color string) string {
 		return ""
 	},
+	"spaces": spaces,
 }
 
 // envColorDisabled returns if output colors are forbid by environment variables

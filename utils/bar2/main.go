@@ -43,7 +43,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			max := 100 * time.Millisecond
-			for i := 0; i < total; i++ {
+			for range total {
 				// start variable is solely for EWMA calculation
 				// EWMA's unit of measure is an iteration's duration
 				start := time.Now()

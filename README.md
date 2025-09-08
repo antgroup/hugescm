@@ -212,7 +212,7 @@ Migrate Git repository object format from SHA1 to SHA256:
 ```shell
 hot mc https://github.com/antgroup/hugescm.git
 ```
-<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/d7c4c289-8209-4eb2-94b1-e35764934b72" />
+<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3c84566a-9626-40e1-bffc-07ce2917c91a" />
 
 ## License
 

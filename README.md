@@ -149,14 +149,14 @@ zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 
 `hot` command is a Git repository governance tool that we integrated into HugeSCM, supporting many scenarios:
 
-+  You can use `hot size (original size)`/`hot az (approximate compressed size)` to view large files in a repository.
-+  If a Git repository accidentally commits passwords or other credentials, use `hot remove` to delete and rewrite the history. `hot remove` is extremely fast.
-+  You can also use `hot smart` interactively to delete large files from a repository. It combines the `size, remove` commands (e.g., `hot smart -L20m`).
-+  You can use `hot mc` to migrate a Git repository's object format to `SHA256` or from `SHA256` to `SHA1`.
-+  If a repository has too many invalid branch tags, use `hot prune-refs (match by prefix)`/`hot expire-refs (by expiration time, whether merged)` to remove them. You can also use `hot scan-refs` to view the status of branches.
-+  You can use `hot unbranch` to linearize the repository's history, meaning that it excludes any merge points. 
-+  You can also use `hot unbranch -K1 master -Tnew-branch` to create an orphan branch based on a specific revision. This preserves the most recent history and can be used for open source or historical resets.
-+  You can use `hot cat` to view files in the repository, `commit/tree/tag/blob`. `commit/tree/tag` can be output to **JSON** using `--json`, and `blob` can intelligently output binary files in hexadecimal.
++  Find large files with `hot size (raw size)` / `hot az (compressed size)`.
++  Use `hot remove` to quickly delete committed secrets and rewrite history.
++  Interactively remove large files with `hot smart`, which combines the `size` and `remove` commands (e.g., `hot smart -L20m`).
++  Migrate the repository's object format between `SHA1` and `SHA256` with `hot mc`.
++  Clean up stale refs with `hot prune-refs (by prefix)` or `hot expire-refs (by age & merged status)`. Use `hot scan-refs` to review their status.
++  Linearize repository history (i.e., remove all merge commits) with `hot unbranch`.
++  Create an orphan branch from a specific commit using `hot unbranch -K1 master -Tnew-branch`. It keeps recent history, ideal for open-sourcing or history resets.
++  Use `hot cat` to inspect Git objects (`commit`/`tree`/`tag`/`blob`). It outputs `commit`/`tree`/`tag` as **JSON** (`--json`) and **intelligently hexdumps** binary blobs.
 
 Here's some more help information:
 

@@ -30,20 +30,17 @@ var (
 
 var (
 	Environ = sync.OnceValue(func() []string {
-		origin := os.Environ()
-		cleanEnv := make([]string, 0, len(origin))
-		for _, s := range origin {
+		originEnv := os.Environ()
+		sanitizedEnv := make([]string, 0, len(originEnv))
+		for _, s := range originEnv {
 			k, _, ok := strings.Cut(s, "=")
-			if !ok {
+			if !ok || strings.HasPrefix(k, "GIT_") && !allowedEnv[k] {
 				continue
 			}
-			if strings.HasPrefix(k, "GIT_") && !allowedEnv[k] {
-				continue
-			}
-			cleanEnv = append(cleanEnv, s)
+			sanitizedEnv = append(sanitizedEnv, s)
 		}
-		slices.Sort(cleanEnv) // order by
-		return cleanEnv
+		slices.Sort(sanitizedEnv) // order by
+		return sanitizedEnv
 	})
 )
 

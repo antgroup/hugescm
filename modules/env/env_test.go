@@ -22,3 +22,9 @@ func TestEnvironForEach(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "%d use time: %v\n", len(env), time.Since(now))
 	}
 }
+
+func TestSanitizeEnv(t *testing.T) {
+	for _, e := range SanitizeEnv("PATH") {
+		fmt.Fprintf(os.Stderr, "%s\n", e)
+	}
+}

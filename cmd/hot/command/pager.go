@@ -85,7 +85,7 @@ func NewPrinter(ctx context.Context) *printer {
 		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
-	cmd.Env = env.SanitizerEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV
+	cmd.Env = env.SanitizeEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV
 	// PAGER_ENV: LESS=FRX LV=-c
 	cmd.Env = append(cmd.Env, "LESS=FRX", "LV=-c")
 	stdin, err := cmd.StdinPipe()

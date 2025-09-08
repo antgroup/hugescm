@@ -181,7 +181,7 @@ func (c *Snapshot) writeTree(ctx context.Context, snapshotEnv []string) (string,
 
 func (c *Snapshot) doSnapshot(ctx context.Context, basePoint string) (string, error) {
 	snapshotIndex := filepath.Join(c.repoPath, "snapshot.index") // INDEX file
-	snapshotEnv := env.SanitizerEnv("GIT_INDEX_VERSION", "GIT_INDEX_FILE")
+	snapshotEnv := env.SanitizeEnv("GIT_INDEX_VERSION", "GIT_INDEX_FILE")
 	snapshotEnv = append(snapshotEnv,
 		"GIT_INDEX_VERSION=4",
 		"GIT_INDEX_FILE="+snapshotIndex,

@@ -3,9 +3,13 @@ package env
 import (
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
+
+	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
 type Broker interface {
@@ -50,98 +54,100 @@ func (b *broker) Environ() []string {
 }
 
 type sanitizer struct {
-	env     map[string]int
-	envs    []string
-	envLock sync.RWMutex
+	keys map[string]int
+	env  []string
+	mu   sync.RWMutex
 }
 
 func NewSanitizer() Broker {
-	sa := &sanitizer{
-		env:  make(map[string]int),
-		envs: make([]string, len(allowedEnv)),
+	b := &sanitizer{
+		keys: make(map[string]int),
+		env:  slices.Clone(Environ()),
 	}
-	sa.envs = slices.Clone(Environ())
-	for i, s := range Environ() {
-		k, _, _ := strings.Cut(s, "=")
-		sa.env[k] = i
+	for i, e := range b.env {
+		k, _, ok := strings.Cut(e, "=")
+		if !ok {
+			continue
+		}
+		b.keys[k] = i
 	}
-	return sa
+	return b
 }
 
-func (sa *sanitizer) ExpandEnv(s string) string {
-	return os.Expand(s, sa.Getenv)
+func (b *sanitizer) ExpandEnv(s string) string {
+	return os.Expand(s, b.Getenv)
 }
 
-func (sa *sanitizer) LookupEnv(key string) (string, bool) {
+func (b *sanitizer) LookupEnv(key string) (string, bool) {
 	if len(key) == 0 {
 		return "", false
 	}
-	sa.envLock.RLock()
-	defer sa.envLock.RUnlock()
-	i, ok := sa.env[key]
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	i, ok := b.keys[key]
 	if !ok {
 		return "", false
 	}
-	s := sa.envs[i]
-	for i := 0; i < len(s); i++ {
-		if s[i] == '=' {
-			return s[i+1:], true
+	s := b.env[i]
+	if len(s) != 0 {
+		if _, v, ok := strings.Cut(s, "="); ok {
+			return v, true
 		}
 	}
 	return "", false
 }
 
-func (sa *sanitizer) Getenv(key string) string {
-	v, _ := sa.LookupEnv(key)
+func (b *sanitizer) Getenv(key string) string {
+	v, _ := b.LookupEnv(key)
 	return v
 }
 
-func (sa *sanitizer) Setenv(key, value string) error {
+func (b *sanitizer) Setenv(key, value string) error {
 	if len(key) == 0 {
 		return syscall.EINVAL
 	}
-	for i := 0; i < len(key); i++ {
+	for i := range len(key) {
 		if key[i] == '=' || key[i] == 0 {
 			return syscall.EINVAL
 		}
 	}
 	kv := key + "=" + value
-	sa.envLock.Lock()
-	defer sa.envLock.Unlock()
-	i, ok := sa.env[key]
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	i, ok := b.keys[key]
 	if ok {
-		sa.envs[i] = kv
-	} else {
-		i = len(sa.envs)
-		sa.envs = append(sa.envs, kv)
+		b.env[i] = kv
+		return nil
 	}
-	sa.env[key] = i
+	i = len(b.env)
+	b.env = append(b.env, kv)
+	b.keys[key] = i
 	return nil
 }
 
-func (sa *sanitizer) Unsetenv(key string) error {
-	sa.envLock.Lock()
-	defer sa.envLock.Unlock()
+func (b *sanitizer) Unsetenv(key string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 
-	if i, ok := sa.env[key]; ok {
-		sa.envs[i] = ""
-		delete(sa.env, key)
+	if i, ok := b.keys[key]; ok {
+		b.env[i] = ""
+		delete(b.keys, key)
 	}
 	return nil
 }
 
-func (sa *sanitizer) Clearenv() {
-	sa.envLock.Lock()
-	defer sa.envLock.Unlock()
-	sa.env = make(map[string]int)
-	sa.envs = []string{}
+func (b *sanitizer) Clearenv() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.keys = make(map[string]int)
+	b.env = []string{}
 }
 
-func (sa *sanitizer) Environ() []string {
-	sa.envLock.RLock()
-	defer sa.envLock.RUnlock()
-	a := make([]string, 0, len(sa.envs)+16) // Reduce the number of memory allocations
-	for _, env := range sa.envs {
+func (b *sanitizer) Environ() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	a := make([]string, 0, len(b.env)+16) // Reduce the number of memory allocations
+	for _, env := range b.env {
 		if env != "" {
 			a = append(a, env)
 		}
@@ -149,29 +155,44 @@ func (sa *sanitizer) Environ() []string {
 	return a
 }
 
-func (sa *sanitizer) copySanitizer() *sanitizer {
-	sa.envLock.RLock()
-	defer sa.envLock.RUnlock()
-	nsa := &sanitizer{
-		env:  make(map[string]int),
-		envs: make([]string, len(sa.envs)),
+func (b *sanitizer) Find(k K) string {
+	return b.Getenv(string(k))
+}
+
+func (b *sanitizer) SimpleAtoi(k K, dv int64) int64 {
+	v := b.Getenv(string(k))
+	if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+		return i
 	}
-	for k, i := range sa.env {
-		nsa.env[k] = i
-		nsa.envs[i] = sa.envs[i]
+	return dv
+}
+
+func (b *sanitizer) SimpleAtou(k K, dv uint64) uint64 {
+	v := b.Getenv(string(k))
+	if i, err := strconv.ParseUint(v, 10, 64); err == nil {
+		return i
 	}
-	return nsa
+	return dv
+}
+
+func (b *sanitizer) SimpleAtob(k K, dv bool) bool {
+	v := b.Getenv(string(k))
+	return strengthen.SimpleAtob(v, dv)
+}
+
+func (b *sanitizer) Duration(k K, dv time.Duration) time.Duration {
+	v := b.Getenv(string(k))
+	if d, err := time.ParseDuration(v); err == nil {
+		return d
+	}
+	return dv
+}
+
+func (b *sanitizer) Strings(k K) []string {
+	s := b.Getenv(string(k))
+	return strings.Split(s, StandardSeparator)
 }
 
 var (
 	SystemBroker Broker = &broker{}
 )
-
-func DeriveSanitizer(b Broker) Broker {
-	if b != nil {
-		if sa, ok := b.(*sanitizer); ok {
-			return sa.copySanitizer()
-		}
-	}
-	return NewSanitizer()
-}

@@ -14,11 +14,14 @@ import (
 var (
 	allowedEnv = map[string]bool{
 		"HOME":            true,
+		"USER":            true,
+		"LOGNAME":         true,
 		"PATH":            true,
 		"TZ":              true,
 		"LANG":            true, //Replace by en_US.UTF-8
-		"TEMP":            true,
 		"LD_LIBRARY_PATH": true,
+		"SHELL":           true,
+		"TMPDIR":          true,
 		// Git HTTP proxy settings: https://git-scm.com/docs/git-config#git-config-httpproxy
 		"all_proxy":   true,
 		"http_proxy":  true,
@@ -31,7 +34,7 @@ var (
 		// Environment variables to tell git to use custom SSH executable or command
 		"GIT_SSH":         true,
 		"GIT_SSH_COMMAND": true,
-		// Environment variables need for ssh-agent based authentication
+		// Environment variables neesmd for ssh-agent based authentication
 		"SSH_AUTH_SOCK": true,
 		"SSH_AGENT_PID": true,
 
@@ -41,25 +44,23 @@ var (
 		"GIT_TRACE_PACKET":      true,
 		"GIT_TRACE_PERFORMANCE": true,
 		"GIT_TRACE_SETUP":       true,
+		"GIT_CURL_VERBOSE":      true,
 	}
 )
 
 var (
 	Environ = sync.OnceValue(func() []string {
-		origin := os.Environ()
-		cleanEnv := make([]string, 0, len(origin))
-		for _, s := range origin {
-			k, _, ok := strings.Cut(s, "=")
-			if !ok {
+		originEnv := os.Environ()
+		sanitizedEnv := make([]string, 0, len(originEnv))
+		for _, e := range originEnv {
+			k, _, ok := strings.Cut(e, "=")
+			if !ok || !allowedEnv[k] {
 				continue
 			}
-			if !allowedEnv[k] {
-				continue
-			}
-			cleanEnv = append(cleanEnv, s)
+			sanitizedEnv = append(sanitizedEnv, e)
 		}
-		slices.Sort(cleanEnv) // order by
-		return cleanEnv
+		slices.Sort(sanitizedEnv)
+		return sanitizedEnv
 	})
 )
 

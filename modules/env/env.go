@@ -8,25 +8,21 @@ import (
 	"time"
 )
 
-func SanitizerEnv(removeKey ...string) []string {
-	removeMap := make(map[string]bool)
-	for _, k := range removeKey {
-		removeMap[k] = true
+func SanitizeEnv(keys ...string) []string {
+	excludedKeys := make(map[string]bool)
+	for _, k := range keys {
+		excludedKeys[k] = true
 	}
 	originEnv := os.Environ()
-	env := make([]string, 0, len(originEnv))
+	sanitizedEnv := make([]string, 0, len(originEnv))
 	for _, e := range originEnv {
 		k, _, ok := strings.Cut(e, "=")
-		if !ok {
-			// BAD env
+		if !ok || excludedKeys[k] { // skip keys
 			continue
 		}
-		if removeMap[k] {
-			continue
-		}
-		env = append(env, e)
+		sanitizedEnv = append(sanitizedEnv, e)
 	}
-	return env
+	return sanitizedEnv
 }
 
 // GetBool fetches and parses a boolean typed environment variable

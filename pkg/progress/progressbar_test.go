@@ -10,7 +10,7 @@ import (
 func TestNewBar(t *testing.T) {
 	term.StderrLevel = term.Level16M
 	b := NewBar("init", 100, false)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		time.Sleep(time.Millisecond * 100)
 		b.Add(1)
 	}

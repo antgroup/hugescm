@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand/v2"
+	"os"
 	"sync"
 	"time"
 
@@ -15,16 +16,19 @@ func main() {
 	// passed wg will be accounted at p.Wait() call
 	p := mpb.New(
 		mpb.WithWaitGroup(&wg),
-		mpb.WithWidth(60),
+		mpb.WithOutput(os.Stderr),
+		mpb.WithAutoRefresh(),
+		mpb.WithWidth(80),
 	)
 	total, numBars := 100, 3
 	wg.Add(numBars)
-
 	for i := range numBars {
 		name := fmt.Sprintf("Bar#%d:", i)
-		bar := p.AddBar(int64(total),
+		bar := p.New(int64(total),
+			mpb.BarStyle().Filler("#").Padding(" "),
 			// set BarWidth 40 for bar 1 and 2
-			mpb.BarOptional(mpb.BarWidth(40), i > 0),
+			mpb.BarOptional(mpb.BarWidth(80), i > 0),
+
 			mpb.PrependDecorators(
 				// simple name decorator
 				decor.Name(name),

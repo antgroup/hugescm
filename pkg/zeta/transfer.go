@@ -102,8 +102,6 @@ func (r *Repository) directMultiTransfer(ctx context.Context, t http.Downloader,
 		mpb.WithAutoRefresh(),
 		mpb.WithWidth(width),
 	)
-	style := mpb.BarStyle()
-	style.Filler(progress.NewFiller())
 	errs := make(chan error, len(objects))
 	for _, e := range objects {
 		oid := plumbing.NewHash(e.OID)
@@ -237,8 +235,6 @@ func (r *Repository) multiTransfer(ctx context.Context, t transport.Transport, l
 		mpb.WithAutoRefresh(),
 		mpb.WithWidth(width),
 	)
-	style := mpb.BarStyle()
-	style.Filler(progress.NewFiller())
 	errs := make(chan error, len(larges))
 	for _, o := range larges {
 		task := fmt.Sprintf("%s %s", W("Downloading"), shortHash(o.Hash))
@@ -296,7 +292,7 @@ func (r *Repository) transfer(ctx context.Context, t transport.Transport, larges
 		config.Dragonfly: r.dragonflyGet,
 	}
 	if h, ok := accelerator[r.Accelerator()]; ok {
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			objects, err := r.getLinks(ctx, t, larges)
 			if err != nil {
 				return err

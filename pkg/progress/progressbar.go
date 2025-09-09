@@ -156,14 +156,3 @@ func NewSingleBar(r io.Reader, total int64, current int64, oid plumbing.Hash, ro
 		progressbar.OptionSeekTo(current))
 	return io.TeeReader(r, bar), bar
 }
-
-func NewFiller() string {
-	switch term.StderrLevel {
-	case term.Level256:
-		return "\x1b[36m#\x1b[0m"
-	case term.Level16M:
-		return "\x1b[38;2;45;203;254m#\x1b[0m"
-	default:
-	}
-	return "#"
-}

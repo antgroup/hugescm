@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/command"
 	"github.com/antgroup/hugescm/modules/deflect"
 	"github.com/antgroup/hugescm/modules/git"

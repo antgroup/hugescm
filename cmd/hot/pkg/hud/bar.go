@@ -1,12 +1,12 @@
 // Copyright ©️ Ant Group. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package bar
+package hud
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/progressbar"
 )
 

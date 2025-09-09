@@ -39,6 +39,14 @@ type CatOptions struct {
 	Output    string
 }
 
+func (opts *CatOptions) NewFD() (io.WriteCloser, term.Level, error) {
+	if len(opts.Output) == 0 {
+		return &NopWriteCloser{Writer: os.Stdout}, term.StdoutLevel, nil
+	}
+	fd, err := os.Create(opts.Output)
+	return fd, term.LevelNone, err
+}
+
 func (opts *CatOptions) Println(a ...any) error {
 	fd, _, err := opts.NewFD()
 	if err != nil {
@@ -47,14 +55,6 @@ func (opts *CatOptions) Println(a ...any) error {
 	defer fd.Close() // nolint
 	_, err = fmt.Fprintln(fd, a...)
 	return err
-}
-
-func (opts *CatOptions) NewFD() (io.WriteCloser, term.Level, error) {
-	if len(opts.Output) == 0 {
-		return &NopWriteCloser{Writer: os.Stdout}, term.StdoutLevel, nil
-	}
-	fd, err := os.Create(opts.Output)
-	return fd, term.LevelNone, err
 }
 
 func catShowError(oid string, err error) error {

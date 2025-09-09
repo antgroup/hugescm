@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
 	"github.com/antgroup/hugescm/modules/survey"
@@ -74,7 +74,7 @@ func (r *Replayer) rewriteCommits(m Matcher) error {
 	if err != nil {
 		return fmt.Errorf("commits to rewrite error: %w", err)
 	}
-	b := bar.NewBar(tr.W("rewrite commits"), len(commits), r.stepCurrent, r.stepEnd, r.verbose)
+	b := hud.NewBar(tr.W("rewrite commits"), len(commits), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	trace.DbgPrint("commits: %v", len(commits))
 	for _, oid := range commits {
@@ -179,7 +179,7 @@ func (r *Replayer) Drop(m Matcher, confirm bool, prune bool) error {
 		RepoPath:   r.repoPath,
 		odb:        r.odb,
 	}
-	b := bar.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
+	b := hud.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	if err := updater.UpdateRefs(r.ctx, b); err != nil {
 		return errors.New("could not update refs")

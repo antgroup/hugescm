@@ -13,8 +13,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/command"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
@@ -177,7 +177,7 @@ func (m *Migrator) hashObjects(ctx context.Context) error {
 	defer reader.Close() // nolint
 	br := bufio.NewScanner(reader)
 	objectsCount := countObjects(ctx, m.from)
-	b := bar.NewBar(tr.W("fast rewrite objects"), objectsCount, m.stepCurrent, m.stepEnd, m.verbose)
+	b := hud.NewBar(tr.W("fast rewrite objects"), objectsCount, m.stepCurrent, m.stepEnd, m.verbose)
 	m.stepCurrent++
 	// format: 1a1db8dba9f976364fb6dab3e29deaf0f1140ed8 blob 5155
 	for br.Scan() {
@@ -252,7 +252,7 @@ func (m *Migrator) rewriteCommits(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("commits to migrate error: %w", err)
 	}
-	b := bar.NewBar(tr.W("rewrite commits"), len(commits), m.stepCurrent, m.stepEnd, m.verbose)
+	b := hud.NewBar(tr.W("rewrite commits"), len(commits), m.stepCurrent, m.stepEnd, m.verbose)
 	m.stepCurrent++
 	trace.DbgPrint("commits: %v", len(commits))
 	for _, oid := range commits {
@@ -398,7 +398,7 @@ func (m *Migrator) reconstruct(ctx context.Context) error {
 		fmt.Fprintf(os.Stderr, "No references to be deleted\n")
 		return nil
 	}
-	b := bar.NewBar(tr.W("rewrite references"), len(refs), m.stepCurrent, m.stepEnd, m.verbose)
+	b := hud.NewBar(tr.W("rewrite references"), len(refs), m.stepCurrent, m.stepEnd, m.verbose)
 	m.stepCurrent++
 	var oid []byte
 	u, err := git.NewRefUpdater(ctx, m.to, nil, false)

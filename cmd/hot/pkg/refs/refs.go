@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
 )
@@ -117,7 +117,7 @@ func ScanReferences(ctx context.Context, repoPath string, m Matcher, order git.O
 	if err != nil {
 		return nil, err
 	}
-	b := bar.NewBar(tr.W("scan references"), len(refs), 1, 1, false)
+	b := hud.NewBar(tr.W("scan references"), len(refs), 1, 1, false)
 	hash, refname, _ := git.ParseReference(ctx, repoPath, "HEAD")
 	r := &References{
 		BasePoint: hash,

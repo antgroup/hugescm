@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/cmd/hot/command"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/trace"

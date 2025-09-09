@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/refs"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/fnmatch"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/trace"

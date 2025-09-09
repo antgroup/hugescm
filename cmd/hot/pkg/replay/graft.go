@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
 	"github.com/antgroup/hugescm/modules/survey"
@@ -98,7 +98,7 @@ func (r *Replayer) graftHEAD() error {
 
 func (r *Replayer) graftCommits(refs []*git.Reference, headOnly bool) error {
 	if headOnly {
-		b := bar.NewBar(tr.W("graft commits"), 1, r.stepCurrent, r.stepEnd, r.verbose)
+		b := hud.NewBar(tr.W("graft commits"), 1, r.stepCurrent, r.stepEnd, r.verbose)
 		r.stepCurrent++
 		if err := r.graftHEAD(); err != nil {
 			return err
@@ -106,7 +106,7 @@ func (r *Replayer) graftCommits(refs []*git.Reference, headOnly bool) error {
 		b.Done()
 		return nil
 	}
-	b := bar.NewBar(tr.W("graft commits"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
+	b := hud.NewBar(tr.W("graft commits"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	for _, ref := range refs {
 		oid, original, err := r.resolveCommit(ref)
@@ -191,7 +191,7 @@ func (r *Replayer) Graft(m Matcher, confirm bool, prune bool, headOnly bool) err
 		odb:        r.odb,
 	}
 
-	b := bar.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
+	b := hud.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	if err := updater.UpdateRefs(r.ctx, b); err != nil {
 		return errors.New("could not update refs")

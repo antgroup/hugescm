@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
-	"github.com/antgroup/hugescm/cmd/hot/tr"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/command"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
@@ -102,7 +102,7 @@ func (r *Replayer) unbranch(revision string, keep int) ([]byte, error) {
 		return nil, errors.New("missing commits")
 	}
 	top := slices.Clone(commits[len(commits)-1])
-	b := bar.NewBar(tr.W("rewrite commits"), len(commits), r.stepCurrent, r.stepEnd, r.verbose)
+	b := hud.NewBar(tr.W("rewrite commits"), len(commits), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	trace.DbgPrint("commits: %v", len(commits))
 	for _, oid := range commits {
@@ -190,7 +190,7 @@ func (r *Replayer) Unbranch(o *UnbranchOptions) error {
 		RepoPath:   r.repoPath,
 		odb:        r.odb,
 	}
-	b := bar.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
+	b := hud.NewBar(tr.W("rewrite references"), len(refs), r.stepCurrent, r.stepEnd, r.verbose)
 	r.stepCurrent++
 	if err := updater.UpdateRefs(r.ctx, b); err != nil {
 		return errors.New("could not update refs")

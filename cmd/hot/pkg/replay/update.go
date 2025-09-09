@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/bar"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
 	"github.com/antgroup/hugescm/modules/trace"
@@ -41,7 +41,7 @@ type refUpdater struct {
 //
 // It returns any error encountered, or nil if the reference update(s) was/were
 // successful.
-func (r *refUpdater) UpdateRefs(ctx context.Context, b *bar.ProgressBar) error {
+func (r *refUpdater) UpdateRefs(ctx context.Context, b *hud.ProgressBar) error {
 
 	var maxNameLen int
 	for _, ref := range r.References {

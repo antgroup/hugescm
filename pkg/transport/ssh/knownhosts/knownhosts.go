@@ -368,22 +368,26 @@ func IsHostUnknown(err error) bool {
 	return errors.As(err, &keyErr) && len(keyErr.Want) == 0
 }
 
-// Normalize normalizes an address into the form used in known_hosts. This
-// implementation includes a fix for https://github.com/golang/go/issues/53463
-// and will omit brackets around ipv6 addresses on standard port 22.
+// Normalize normalizes an address into the form used in known_hosts. Supports
+// IPv4, hostnames, bracketed IPv6. Any other non-standard formats are returned
+// with minimal transformation.
 func Normalize(address string) string {
+	const defaultSSHPort = "22"
+
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
 		host = address
-		port = "22"
+		port = defaultSSHPort
 	}
-	entry := host
-	if port != "22" {
-		entry = "[" + entry + "]:" + port
-	} else if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
-		entry = entry[1 : len(entry)-1]
+
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		host = host[1 : len(host)-1]
 	}
-	return entry
+
+	if port == defaultSSHPort {
+		return host
+	}
+	return "[" + host + "]:" + port
 }
 
 // Line returns a line to append to the known_hosts files. This implementation

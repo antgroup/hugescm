@@ -1201,10 +1201,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 		% |------        |  (kb/s) (iteration count) (iteration rate) (predict time) Description
 	*/
 
-	repeatAmount := c.width - s.currentSaucerSize
-	if repeatAmount < 0 {
-		repeatAmount = 0
-	}
+	repeatAmount := max(c.width-s.currentSaucerSize, 0)
 
 	str := ""
 
@@ -1454,9 +1451,8 @@ func Bprintln(pb *ProgressBar, a ...any) (int, error) {
 	defer pb.lock.Unlock()
 	if !shouldCacheOutput(pb) {
 		return fmt.Fprintln(pb.config.writer, a...)
-	} else {
-		return fmt.Fprintln(&pb.config.stdBuffer, a...)
 	}
+	return fmt.Fprintln(&pb.config.stdBuffer, a...)
 }
 
 func Bprintf(pb *ProgressBar, format string, a ...any) (int, error) {
@@ -1464,7 +1460,6 @@ func Bprintf(pb *ProgressBar, format string, a ...any) (int, error) {
 	defer pb.lock.Unlock()
 	if !shouldCacheOutput(pb) {
 		return fmt.Fprintf(pb.config.writer, format, a...)
-	} else {
-		return fmt.Fprintf(&pb.config.stdBuffer, format, a...)
 	}
+	return fmt.Fprintf(&pb.config.stdBuffer, format, a...)
 }

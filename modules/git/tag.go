@@ -130,17 +130,6 @@ func (t *Tag) Decode(hash string, reader io.Reader, size int64) error {
 	return nil
 }
 
-func (t *Tag) Pretty(w io.Writer) error {
-	headers := []string{
-		fmt.Sprintf("object %s", t.Object),
-		fmt.Sprintf("type %s", t.Type),
-		fmt.Sprintf("tag %s", t.Name),
-		fmt.Sprintf("tagger %s", t.Tagger.String()),
-	}
-	_, err := fmt.Fprintf(w, "%s\n\n%s", strings.Join(headers, "\n"), t.Content)
-	return err
-}
-
 func FindTag(ctx context.Context, repoPath string, name string) (*Reference, error) {
 	stderr := command.NewStderr()
 	reader, err := NewReader(ctx, &command.RunOpts{RepoPath: repoPath, Stderr: stderr}, "tag", "-l", "--format", ReferenceLineFormat, "--", name)

@@ -4,11 +4,8 @@
 package object
 
 import (
-	"fmt"
 	"io"
 	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/antgroup/hugescm/modules/binary"
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -109,36 +106,6 @@ func (f *Fragments) Decode(reader Reader) error {
 			return err
 		}
 		f.Entries = append(f.Entries, entry)
-	}
-	return nil
-}
-
-func (f *Fragments) indexPadding() int {
-	var v uint32
-	for _, e := range f.Entries {
-		v = max(v, e.Index)
-	}
-	indexMax := len(strconv.Itoa(int(v)))
-	return indexMax
-}
-
-func fragmentIndexPadding(e *Fragment, padding int) string {
-	ss := strconv.Itoa(int(e.Index))
-	if len(ss) >= padding {
-		return ss
-	}
-	return strings.Repeat(" ", padding-len(ss)) + ss
-}
-
-func (f *Fragments) Pretty(w io.Writer) error {
-	if _, err := fmt.Fprintf(w, "origin: %s size: %d\n", f.Origin, f.Size); err != nil {
-		return err
-	}
-	padding := f.indexPadding()
-	for _, e := range f.Entries {
-		if _, err := fmt.Fprintf(w, "%s %s\t%d\n", e.Hash, fragmentIndexPadding(e, padding), e.Size); err != nil {
-			return err
-		}
 	}
 	return nil
 }

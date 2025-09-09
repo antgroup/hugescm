@@ -271,15 +271,12 @@ func (r *Repository) catObject(ctx context.Context, opts *CatOptions, o *promise
 			return r.catFragments(ctx, opts, ff)
 		}
 	}
-	if w, ok := a.(object.Printer); ok {
-		fd, _, err := opts.NewFD()
-		if err != nil {
-			return err
-		}
-		defer fd.Close() // nolint
-		_ = w.Pretty(fd)
+	fd, termLevel, err := opts.NewFD()
+	if err != nil {
+		return err
 	}
-	return nil
+	defer fd.Close() // nolint
+	return Display(fd, a, termLevel)
 }
 
 func (r *Repository) catBranchOrTag(ctx context.Context, opts *CatOptions, branchOrTag string) (err error) {

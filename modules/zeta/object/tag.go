@@ -106,18 +106,6 @@ func (t *Tag) Decode(reader Reader) error {
 	return nil
 }
 
-func (t *Tag) encodeInternal(w io.Writer) error {
-	headers := []string{
-		fmt.Sprintf("object %s", t.Object),
-		fmt.Sprintf("type %s", t.ObjectType),
-		fmt.Sprintf("tag %s", t.Name),
-		fmt.Sprintf("tagger %s", t.Tagger.String()),
-	}
-
-	_, err := fmt.Fprintf(w, "%s\n\n%s", strings.Join(headers, "\n"), t.Content)
-	return err
-}
-
 // Encode encodes the Tag's contents to the given io.Writer, "w". If there was
 // any error copying the Tag's contents, that error will be returned.
 //
@@ -127,11 +115,15 @@ func (t *Tag) Encode(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return t.encodeInternal(w)
-}
+	headers := []string{
+		fmt.Sprintf("object %s", t.Object),
+		fmt.Sprintf("type %s", t.ObjectType),
+		fmt.Sprintf("tag %s", t.Name),
+		fmt.Sprintf("tagger %s", t.Tagger.String()),
+	}
 
-func (t *Tag) Pretty(w io.Writer) error {
-	return t.encodeInternal(w)
+	_, err = fmt.Fprintf(w, "%s\n\n%s", strings.Join(headers, "\n"), t.Content)
+	return err
 }
 
 // Equal returns whether the receiving and given Tags are equal, or in other

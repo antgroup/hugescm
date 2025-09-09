@@ -131,6 +131,14 @@ func (e *TreeEntry) IsLink() bool {
 	return e.Mode&sIFMT == sIFLNK
 }
 
+func (e *TreeEntry) IsDir() bool {
+	return e.Mode&sIFMT == sIFDIR
+}
+
+func (e *TreeEntry) IsRegular() bool {
+	return e.Mode&sIFMT == sIFREG
+}
+
 func (e *TreeEntry) IsFragments() bool {
 	return e.Mode&filemode.Fragments != 0
 }
@@ -428,32 +436,6 @@ func (t *Tree) SizePadding() int {
 		return max(5, sizeMax)
 	}
 	return sizeMax
-}
-
-func sizePadding(e *TreeEntry, padding int) string {
-	switch e.Type() {
-	case TreeObject:
-		return strings.Repeat(" ", padding-1) + "-"
-	case FragmentsObject:
-		return strings.Repeat(" ", padding-6) + "L"
-	default:
-	}
-	ss := strconv.FormatInt(e.Size, 10)
-	if len(ss) == padding {
-		return ss
-	}
-	return strings.Repeat(" ", padding-len(ss)) + ss
-}
-
-// Pretty tree
-func (t *Tree) Pretty(w io.Writer) error {
-	padding := t.SizePadding()
-	for _, e := range t.Entries {
-		if _, err := fmt.Fprintf(w, "%s %s %s %s %s\n", e.Mode.Origin(), e.Type(), e.Hash.String(), sizePadding(e, padding), e.Name); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (t *Tree) Encode(w io.Writer) error {

@@ -197,39 +197,6 @@ func (c *Commit) Subject() string {
 	return c.Message
 }
 
-func (c *Commit) Pretty(w io.Writer) (err error) {
-	if _, err = fmt.Fprintf(w, "tree %s\n", c.Tree); err != nil {
-		return err
-	}
-
-	for _, parent := range c.Parents {
-		if _, err = fmt.Fprintf(w, "parent %s\n", parent); err != nil {
-			return err
-		}
-	}
-
-	if _, err = fmt.Fprintf(w, "author %s\ncommitter %s\n", c.Author.String(), c.Committer.String()); err != nil {
-		return err
-	}
-
-	for _, hdr := range c.ExtraHeaders {
-		if _, err = fmt.Fprintf(w, "%s %s\n", hdr.K, strings.ReplaceAll(hdr.V, "\n", "\n ")); err != nil {
-			return err
-		}
-
-	}
-	// c.Message is built from messageParts in the Decode() function.
-	//
-	// Since each entry in messageParts _does not_ contain its trailing LF,
-	// append an empty string to capture the final newline.
-
-	if _, err = fmt.Fprintf(w, "\n%s", c.Message); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func RevUniqueList(ctx context.Context, repoPath string, ours, theirs string) ([]string, error) {
 	stderr := command.NewStderr()
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{

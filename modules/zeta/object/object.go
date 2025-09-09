@@ -240,10 +240,6 @@ func Base64Encode(e Encoder) (string, error) {
 	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
 }
 
-type Printer interface {
-	Pretty(io.Writer) error
-}
-
 func Hash(e Encoder) plumbing.Hash {
 	h := plumbing.NewHasher()
 	if err := e.Encode(h); err != nil {

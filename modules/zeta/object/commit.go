@@ -145,7 +145,11 @@ type Commit struct {
 	b       Backend
 }
 
-func (c *Commit) encodeInternal(w io.Writer) (err error) {
+func (c *Commit) Encode(w io.Writer) error {
+	_, err := w.Write(COMMIT_MAGIC[:])
+	if err != nil {
+		return err
+	}
 	if _, err = fmt.Fprintf(w, "tree %s\n", c.Tree.String()); err != nil {
 		return err
 	}
@@ -176,14 +180,6 @@ func (c *Commit) encodeInternal(w io.Writer) (err error) {
 	}
 
 	return nil
-}
-
-func (c *Commit) Encode(w io.Writer) error {
-	_, err := w.Write(COMMIT_MAGIC[:])
-	if err != nil {
-		return err
-	}
-	return c.encodeInternal(w)
 }
 
 func (c *Commit) Decode(reader Reader) error {
@@ -302,10 +298,6 @@ func (c *Commit) Subject() string {
 		return c.Message[0:i]
 	}
 	return c.Message
-}
-
-func (c *Commit) Pretty(w io.Writer) error {
-	return c.encodeInternal(w)
 }
 
 // Root returns the Tree from the commit.

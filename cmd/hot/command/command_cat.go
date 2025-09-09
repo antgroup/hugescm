@@ -10,12 +10,12 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
-	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
 const (
@@ -105,15 +105,12 @@ func (c *Cat) showObject(a any) error {
 		defer fd.Close() // nolint
 		return json.NewEncoder(fd).Encode(a)
 	}
-	if w, ok := a.(object.Printer); ok {
-		fd, _, err := c.NewFD()
-		if err != nil {
-			return err
-		}
-		defer fd.Close() // nolint
-		_ = w.Pretty(fd)
+	fd, termLevel, err := c.NewFD()
+	if err != nil {
+		return err
 	}
-	return nil
+	defer fd.Close() // nolint
+	return hud.Display(fd, a, termLevel)
 }
 
 func (c *Cat) formatObject(o *git.Object) error {

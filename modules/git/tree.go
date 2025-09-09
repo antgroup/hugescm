@@ -3,7 +3,6 @@ package git
 import (
 	"bufio"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -116,14 +115,4 @@ func (e *TreeEntry) Type() string {
 // symbolic link (i.e., with a filemode of 0120000.
 func (e *TreeEntry) IsLink() bool {
 	return e.Filemode&sIFMT == sIFLNK
-}
-
-// Pretty tree
-func (t *Tree) Pretty(w io.Writer) error {
-	for _, e := range t.Entries {
-		if _, err := fmt.Fprintf(w, "%s %s %s %s\n", e.Filemode, e.Type(), e.Hash, e.Name); err != nil {
-			return err
-		}
-	}
-	return nil
 }

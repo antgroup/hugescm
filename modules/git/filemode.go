@@ -47,8 +47,6 @@ const (
 	// Submodule represents git submodules.  This mode has no file system
 	// equivalent.
 	Submodule FileMode = 0160000
-	// Fragmentation of large files
-	Fragments FileMode = 0400000
 )
 
 // New takes the octal string representation of a FileMode and returns
@@ -118,10 +116,6 @@ func isSetSymLink(m os.FileMode) bool {
 	return m&os.ModeSymlink != 0
 }
 
-func (m FileMode) Origin() FileMode {
-	return m &^ Fragments
-}
-
 // Bytes return a slice of 4 bytes with the mode in little endian
 // encoding.
 func (m FileMode) Bytes() []byte {
@@ -134,17 +128,12 @@ func (m FileMode) Bytes() []byte {
 // this is: Empty and any other mode not mentioned as a constant in this
 // package.
 func (m FileMode) IsMalformed() bool {
-	originMode := m &^ Fragments
-	return originMode != Dir &&
-		originMode != Regular &&
-		originMode != Deprecated &&
-		originMode != Executable &&
-		originMode != Symlink &&
-		originMode != Submodule
-}
-
-func (m FileMode) IsFragments() bool {
-	return m&Fragments != 0
+	return m != Dir &&
+		m != Regular &&
+		m != Deprecated &&
+		m != Executable &&
+		m != Symlink &&
+		m != Submodule
 }
 
 // String returns the FileMode as a string in the standard git format,
@@ -161,23 +150,17 @@ func (m FileMode) String() string {
 // are not regular even though in the UNIX tradition, they usually are:
 // See the IsFile method.
 func (m FileMode) IsRegular() bool {
-	originMode := m &^ Fragments
-	return originMode == Regular ||
-		originMode == Deprecated
+	return m == Regular ||
+		m == Deprecated
 }
 
 // IsFile returns if the FileMode represents that of a file, this is,
 // Regular, Deprecated, Executable or Link.
 func (m FileMode) IsFile() bool {
-	originMode := m &^ Fragments
-	return originMode == Regular ||
-		originMode == Deprecated ||
-		originMode == Executable ||
-		originMode == Symlink
-}
-
-func (m FileMode) Unmask() FileMode {
-	return m &^ Fragments
+	return m == Regular ||
+		m == Deprecated ||
+		m == Executable ||
+		m == Symlink
 }
 
 type ErrMalformedMode struct {
@@ -204,8 +187,7 @@ func IsErrMalformedMode(err error) bool {
 //
 // The returned file mode does not take into account the umask.
 func (m FileMode) ToOSFileMode() (os.FileMode, error) {
-	originMode := m &^ Fragments
-	switch originMode {
+	switch m {
 	case Dir:
 		return os.ModePerm | os.ModeDir, nil
 	case Submodule:

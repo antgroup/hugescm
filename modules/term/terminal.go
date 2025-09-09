@@ -36,7 +36,7 @@ func detectForceColor() (Level, bool) {
 		return LevelNone, false
 	}
 	if isFalse(forceColorEnv) {
-		return LevelNone, false
+		return LevelNone, true
 	}
 	if forceColorEnv == "3" {
 		return Level16M, true

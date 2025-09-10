@@ -281,10 +281,13 @@ func (u *packedUnpacker) Unpack(oid plumbing.Hash, r io.Reader, size uint32, met
 			_ = pw.CloseWithError(err)
 			return err
 		}
-		_ = pr.Close()
+		_ = pw.Close()
 		return nil
 	})
 	if err := g.Wait(); err != nil {
+		return t, err
+	}
+	if got != oid {
 		return t, fmt.Errorf("unexpected blob oid got '%s' want '%s'", got, oid)
 	}
 	return t, nil

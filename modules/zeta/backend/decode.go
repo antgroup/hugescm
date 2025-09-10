@@ -77,6 +77,9 @@ func (d *Database) Exists(oid plumbing.Hash, metadata bool) error {
 	if metadata {
 		return d.metaRO.Exists(oid)
 	}
+	if oid == BLANK_BLOB_HASH {
+		return nil
+	}
 	return d.ro.Exists(oid)
 }
 

@@ -234,6 +234,9 @@ type Writer struct {
 }
 
 func NewWriter(packDir string, entries uint32) (*Writer, error) {
+	if err := os.MkdirAll(packDir, 0755); err != nil {
+		return nil, err
+	}
 	fd, err := os.CreateTemp(packDir, "pack-")
 	if err != nil {
 		return nil, err

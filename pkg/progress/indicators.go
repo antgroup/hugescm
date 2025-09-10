@@ -66,9 +66,9 @@ func (i *Indicators) run(ctx context.Context) {
 			current := atomic.LoadUint64(&i.current)
 			spinner := selectedSpinner[int(math.Round(math.Mod(float64(time.Since(startTime).Milliseconds()/100), float64(len(selectedSpinner)))))]
 			if i.total == 0 {
-				fmt.Fprintf(os.Stderr, "\x1b[2K\r%s %s... %s%d%s", blue, spinner, i.description, current, end)
+				fmt.Fprintf(os.Stderr, "\x1b[2K\r%s %s... %s %d%s", blue, spinner, i.description, current, end)
 			} else {
-				fmt.Fprintf(os.Stderr, "\x1b[2K\r%s %s... %s%d%% (%d/%d)%s", blue, spinner, i.description, 100*current/i.total, current, i.total, end)
+				fmt.Fprintf(os.Stderr, "\x1b[2K\r%s %s... %s %d%% (%d/%d)%s", blue, spinner, i.description, 100*current/i.total, current, i.total, end)
 			}
 		}
 	}

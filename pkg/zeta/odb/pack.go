@@ -117,16 +117,16 @@ func (d *ODB) onPush(ctx context.Context, originWriter io.Writer, objects *PushO
 }
 
 func (d *ODB) PushTo(ctx context.Context, originWriter io.Writer, objects *PushObjects, quiet bool) error {
-	ia := progress.NewIndicators("Push objects", "Push objects completed", 0, quiet)
+	b := progress.NewIndicators("Push objects", "Push objects completed", 0, quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	ia.Run(newCtx)
-	if err := d.onPush(ctx, originWriter, objects, ia); err != nil {
+	b.Run(newCtx)
+	if err := d.onPush(ctx, originWriter, objects, b); err != nil {
 		cancelCtx(err)
-		ia.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	ia.Wait()
+	b.Wait()
 	return nil
 }
 

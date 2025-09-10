@@ -28,16 +28,16 @@ func (w *Worktree) Checkout(ctx context.Context, opts *CheckoutOptions) error {
 	if opts.First {
 		return w.checkoutFirstTime(ctx, opts)
 	}
-	bar := progress.NewIndicators("Checkout files", "Checkout files completed", 0, opts.Quiet)
+	b := progress.NewIndicators("Checkout files", "Checkout files completed", 0, opts.Quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := w.checkout(ctx, opts, bar); err != nil {
+	b.Run(newCtx)
+	if err := w.checkout(ctx, opts, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	return nil
 }
 
@@ -314,16 +314,16 @@ func (w *Worktree) checkout(ctx context.Context, opts *CheckoutOptions, bar Prog
 
 // Only call zeta checkout or migrate
 func (w *Worktree) checkoutFirstTime(ctx context.Context, opts *CheckoutOptions) error {
-	bar := progress.NewIndicators("Checkout files", "Checkout files completed", 0, opts.Quiet)
+	b := progress.NewIndicators("Checkout files", "Checkout files completed", 0, opts.Quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := w.checkoutFirstTimeInternal(ctx, opts, bar); err != nil {
+	b.Run(newCtx)
+	if err := w.checkoutFirstTimeInternal(ctx, opts, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	if opts.One {
 		return w.checkoutOneAfterAnother(ctx)
 	}

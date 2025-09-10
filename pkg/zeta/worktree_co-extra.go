@@ -236,16 +236,16 @@ func (w *Worktree) DoBatchCo(ctx context.Context, oneByOne bool, revision string
 	if !oneByOne {
 		entries = append(entries, t.larges...)
 	}
-	bar := progress.NewIndicators("Checkout files", "Checkout files completed", uint64(len(entries)), w.quiet)
+	b := progress.NewIndicators("Checkout files", "Checkout files completed", uint64(len(entries)), w.quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := w.resetWorktreeEntries(ctx, entries, bar); err != nil {
+	b.Run(newCtx)
+	if err := w.resetWorktreeEntries(ctx, entries, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	if oneByOne {
 		return w.checkoutOneAfterAnother0(ctx, t.larges)
 	}
@@ -411,16 +411,16 @@ func (w *Worktree) doPathCheckoutWorktreeOnly(ctx context.Context, patterns []st
 	if err := w.fetchMissingObjects(ctx, ci, false); err != nil {
 		return err
 	}
-	bar := progress.NewIndicators("Checkout files", "Checkout files completed", uint64(len(entries)), w.quiet)
+	b := progress.NewIndicators("Checkout files", "Checkout files completed", uint64(len(entries)), w.quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := w.resetWorktreeEntriesWorktreeOnly(ctx, entries, bar); err != nil {
+	b.Run(newCtx)
+	if err := w.resetWorktreeEntriesWorktreeOnly(ctx, entries, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	return nil
 }
 
@@ -469,15 +469,15 @@ func (w *Worktree) DoPathCo(ctx context.Context, worktreeOnly bool, oid plumbing
 	if err := w.fetchMissingObjects(ctx, ci, false); err != nil {
 		return err
 	}
-	bar := progress.NewIndicators("Checkout files", "Checkout files completed", 0, w.quiet)
+	b := progress.NewIndicators("Checkout files", "Checkout files completed", 0, w.quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := w.resetWorktreeEntries(ctx, entries, bar); err != nil {
+	b.Run(newCtx)
+	if err := w.resetWorktreeEntries(ctx, entries, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	return nil
 }

@@ -146,15 +146,15 @@ func (r *Repository) dragonflyGet(ctx context.Context, objects []*transport.Repr
 		}
 		return nil
 	}
-	bar := progress.NewIndicators("Batch download files", "Batch download files completed", uint64(len(objects)), r.quiet)
+	b := progress.NewIndicators("Batch download files", "Batch download files completed", uint64(len(objects)), r.quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := r.doDragonflyGet(ctx, dfget, objects, concurrent, bar); err != nil {
+	b.Run(newCtx)
+	if err := r.doDragonflyGet(ctx, dfget, objects, concurrent, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	return nil
 }

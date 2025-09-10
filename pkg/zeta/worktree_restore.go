@@ -156,15 +156,15 @@ func (w *Worktree) Restore(ctx context.Context, opts *RestoreOptions) error {
 		// NO entries
 		return nil
 	}
-	bar := progress.NewIndicators("Restore files", "Restore files completed", uint64(len(entries)), w.quiet)
+	b := progress.NewIndicators("Restore files", "Restore files completed", uint64(len(entries)), w.quiet)
 	newCtx, cancelCtx := context.WithCancelCause(ctx)
-	bar.Run(newCtx)
-	if err := w.resetWorktreeEntries(ctx, entries, bar); err != nil {
+	b.Run(newCtx)
+	if err := w.resetWorktreeEntries(ctx, entries, b); err != nil {
 		cancelCtx(err)
-		bar.Wait()
+		b.Wait()
 		return err
 	}
 	cancelCtx(nil)
-	bar.Wait()
+	b.Wait()
 	return nil
 }

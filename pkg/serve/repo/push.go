@@ -237,7 +237,9 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 		_ = ro.ok(cmd, newReference.Hash)
 		return nil
 	}
+	var verified bool
 	recvObjects, err := r.odb.Unpack(ctx, reader, &odb.OStats{M: cmd.M, B: cmd.B}, func(ctx context.Context, quarantineDir string, o *odb.Objects) error {
+		verified = true
 		if err := ro.EncodeString("unpack ok"); err != nil {
 			_ = ro.close()
 			return ErrReportStarted
@@ -259,6 +261,9 @@ func (r *repository) DoPush(ctx context.Context, cmd *Command, reader io.Reader,
 		return nil
 	})
 	if err != nil {
+		if !verified {
+			_ = ro.ng(cmd, "upack error: %v", err)
+		}
 		return err
 	}
 	logrus.Infof("objects %d", len(recvObjects.Commits))

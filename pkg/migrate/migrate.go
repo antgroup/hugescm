@@ -265,12 +265,10 @@ func (cg *migrateGroup) convert(ctx context.Context, m *Migrator) error {
 }
 
 func (cg *migrateGroup) run(ctx context.Context, m *Migrator) {
-	cg.wg.Add(1)
-	go func() {
-		defer cg.wg.Done()
+	cg.wg.Go(func() {
 		err := cg.convert(ctx, m)
 		cg.errors <- err
-	}()
+	})
 }
 
 func countObjects(ctx context.Context, repoPath string) int {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -64,6 +65,28 @@ func (i *Index) Add(path string) *Entry {
 
 	i.Entries = append(i.Entries, e)
 	return e
+}
+
+func (i *Index) Rename(source, destination string, prefix bool) error {
+	if prefix {
+		source = filepath.ToSlash(source) + "/"
+		destination = filepath.ToSlash(destination) + "/"
+		for _, e := range i.Entries {
+			if suffix, ok := strings.CutPrefix(e.Name, source); ok {
+				e.Name = destination + suffix
+			}
+		}
+		return nil
+	}
+	source = filepath.ToSlash(source)
+	destination = filepath.ToSlash(destination)
+	for _, e := range i.Entries {
+		if e.Name == source {
+			e.Name = destination
+			return nil
+		}
+	}
+	return ErrEntryNotFound
 }
 
 // Entry returns the entry that match the given path, if any.

@@ -514,3 +514,8 @@ func TestEncode(t *testing.T) {
 func TestMode(t *testing.T) {
 	fmt.Fprintf(os.Stderr, "%o\n", filemode.Regular&filemode.Executable)
 }
+
+func TestMv(t *testing.T) {
+	err := os.Rename("/tmp/Readme.md", "/tmp/README.md")
+	fmt.Fprintf(os.Stderr, "rename: %v\n", err)
+}

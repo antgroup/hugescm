@@ -292,6 +292,8 @@
 "Do not list removed files" = "不列出删除的文件"
 "Only remove from the index" = "只从索引区删除"
 "Allow recursive removal" = "允许递归删除"
+# mv
+"destination already exists, source=%s, destination=%s" = "目标已存在，源=%s，目标=%s"
 # merge
 "Join two development histories together" = "将两段发展史连在一起"
 "Merge specific revision into HEAD" = "将特定的版本合并到 HEAD"
@@ -403,6 +405,10 @@
 "EXPERIMENTAL: Apply the changes introduced by some existing commit" = "EXPERIMENTAL: 应用一些现有提交引入的更改"
 "EXPERIMENTAL: Revert commit" = "EXPERIMENTAL: 撤销提交"
 "Existing commit" = "存在的 commit"
+# rename
+"EXPERIMENTAL: Rename a file" = "EXPERIMENTAL: 重命名文件"
+"Force rename even if target exists" = "强制重命名，即使目标存在"
+"Skip rename errors" = "跳过重命名错误"
 # Others
 "WARNING" = "警告"
 "not zeta repository" = "不是 zeta 存储库"

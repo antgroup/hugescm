@@ -399,7 +399,7 @@ func (w *Worktree) cleanPatterns(paths []string) ([]string, bool, error) {
 		}
 		slashRel := filepath.ToSlash(rel)
 		if hasDotDot(slashRel) {
-			return nil, false, fmt.Errorf("fatal: %s: '%s' is outside repository at '%s'", p, p, w.baseDir)
+			return nil, false, fmt.Errorf("fatal: '%s' is outside repository at '%s'", p, w.baseDir)
 		}
 		if slashRel == dot {
 			hasDot = true
@@ -476,11 +476,29 @@ func (w *Worktree) chmod(ctx context.Context, paths []string, mask bool) error {
 		return ctx.Err()
 	default:
 	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("chmod error: %w", err)
+	}
+	cleanedPaths := make([]string, 0, len(paths))
+	for _, p := range paths {
+		rel, err := filepath.Rel(w.baseDir, filepath.Join(cwd, p))
+		if err != nil {
+			return fmt.Errorf("chmod (%s) error: %w", p, err)
+		}
+		slashRel := filepath.ToSlash(rel)
+		if hasDotDot(slashRel) {
+			return fmt.Errorf("fatal: '%s' is outside repository at '%s'", p, w.baseDir)
+		}
+		cleanedPaths = append(cleanedPaths, slashRel)
+	}
+
 	idx, err := w.odb.Index()
 	if err != nil {
 		return err
 	}
-	for _, p := range paths {
+	for _, p := range cleanedPaths {
 		e, err := idx.Entry(p)
 		if err != nil {
 			return err

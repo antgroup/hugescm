@@ -45,9 +45,9 @@ func (a *Add) Run(g *Globals) error {
 	switch a.Chmod {
 	case "": // ignore
 	case "+x":
-		return w.Chmod(context.Background(), slashPaths(a.PathSpec), true, a.DryRun)
+		return w.Chmod(context.Background(), a.PathSpec, true, a.DryRun)
 	case "-x":
-		return w.Chmod(context.Background(), slashPaths(a.PathSpec), false, a.DryRun)
+		return w.Chmod(context.Background(), a.PathSpec, false, a.DryRun)
 	default:
 		diev("--chmod param '%s' must be either -x or +x\n", a.Chmod)
 		return errors.New("bad chmod")

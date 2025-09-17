@@ -60,21 +60,13 @@ var (
 )
 
 func detectColorLevel() Level {
-	// detect FORCE_COLOR and level
-	if level, ok := detectForceColor(); ok {
-		return level
-	}
-	// detect NO_COLOR
-	if noColor, ok := os.LookupEnv("NO_COLOR"); ok && !isFalse(noColor) {
-		return LevelNone
-	}
 	// detect Windows Terminal
 	if _, ok := os.LookupEnv("WT_SESSION"); ok {
 		return Level16M
 	}
 	if termApp, ok := os.LookupEnv("TERM_PROGRAM"); ok {
-		if level, ok := termSupports[termApp]; ok {
-			return level
+		if colorLevel, ok := termSupports[termApp]; ok {
+			return colorLevel
 		}
 	}
 	colorTermEnv := os.Getenv("COLORTERM")
@@ -92,6 +84,17 @@ func detectColorLevel() Level {
 }
 
 func init() {
+	// detect FORCE_COLOR and level
+	if colorLevel, ok := detectForceColor(); ok {
+		StderrLevel = colorLevel
+		StdoutLevel = colorLevel
+		return
+	}
+	// detect NO_COLOR
+	if noColor, ok := os.LookupEnv("NO_COLOR"); ok && !isFalse(noColor) {
+		return
+	}
+	// detect color level
 	colorLevel := detectColorLevel()
 	if IsTerminal(os.Stderr.Fd()) {
 		StderrLevel = colorLevel

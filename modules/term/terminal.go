@@ -49,13 +49,13 @@ func detectForceColor() (Level, bool) {
 // https://github.com/microsoft/terminal/issues/11057
 // https://marvinh.dev/blog/terminal-colors/
 // https://github.com/microsoft/terminal/issues/13006
+// https://github.com/termstandard/colors/issues/69 Terminal.app for macOS Tahoe supports truecolor
 
 var (
 	termSupports = map[string]Level{
-		"mintty":         Level16M,
-		"iTerm.app":      Level16M,
-		"WezTerm":        Level16M,
-		"Apple_Terminal": Level256,
+		"mintty":    Level16M,
+		"iTerm.app": Level16M,
+		"WezTerm":   Level16M,
 	}
 )
 

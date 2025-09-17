@@ -211,8 +211,7 @@ func (c *client) checkAuthRedirect(ctx context.Context, cred *Credentials, opera
 }
 
 func remoteNotify(notice string) {
-	lines := strings.SplitSeq(notice, "\n")
-	for line := range lines {
+	for line := range strings.SplitSeq(notice, "\n") {
 		fmt.Fprintf(os.Stderr, "remote notice: %s\n", line)
 	}
 }

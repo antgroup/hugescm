@@ -119,6 +119,7 @@ Date = "日期"
 "Output to a specific file instead of stdout" = "输出到特定文件而不是 stdout"
 # stat
 "View repository status" = "查看存储库状态"
+"Git Version: %s\n" = "Git 版本：%s\n"
 "Location: %s\n" = "位置：%s\n"
 "error: '%s' is not configured correctly\n" = "错误：未正确配置 '%s'\n"
 "error: invalid email '%s' (from user.email)\n" = "错误：无效的邮件地址 '%s'（来源 user.email）\n"

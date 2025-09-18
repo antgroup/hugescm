@@ -199,6 +199,9 @@ func parseShallowCommit(repoPath string) string {
 
 func Stat(ctx context.Context, o *StatOptions) error {
 	_, _ = tr.Fprintf(os.Stderr, "Location: %s\n", colorText(o.RepoPath))
+	if version, err := git.VersionDetect(); err == nil {
+		_, _ = tr.Fprintf(os.Stderr, "Git Version: %s\n", colorText(version.String()))
+	}
 	vs, err := listConfig(ctx, o.RepoPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "list git config error: %v\n", err)

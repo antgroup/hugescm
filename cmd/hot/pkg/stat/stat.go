@@ -228,7 +228,7 @@ func Stat(ctx context.Context, o *StatOptions) error {
 	}
 	fmt.Fprintf(os.Stderr, "%s%s\n", tr.W("repository disk size:   "), colorSize(filter.Size()))
 	if !careful {
-		_ = showHugeObjects(ctx, o.RepoPath, objects)
+		_ = showHugeObjects(ctx, o.RepoPath, objects, false)
 	}
 	return nil
 }

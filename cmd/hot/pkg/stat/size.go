@@ -21,13 +21,14 @@ import (
 )
 
 type SizeExecutor struct {
-	limit   int64
-	paths   []string
-	objects map[string]int64
+	limit    int64
+	paths    []string
+	objects  map[string]int64
+	fullPath bool
 }
 
-func NewSizeExecutor(size int64) *SizeExecutor {
-	return &SizeExecutor{limit: size, objects: make(map[string]int64)}
+func NewSizeExecutor(size int64, fullPath bool) *SizeExecutor {
+	return &SizeExecutor{limit: size, objects: make(map[string]int64), fullPath: fullPath}
 }
 
 // BLOB filter
@@ -77,7 +78,7 @@ func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) e
 			e.objects[sv[0]] = sz
 		}
 	}
-	su := newSummer()
+	su := newSummer(e.fullPath)
 	psArgs := []string{"rev-list", "--objects", "--all"}
 	if err := su.resolveName(ctx, repoPath, e.objects, psArgs, su.printName); err != nil {
 		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
@@ -104,7 +105,7 @@ func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) e
 }
 
 func (e *SizeExecutor) currentCheck(ctx context.Context, repoPath string, objects map[string]int64) {
-	su := newSummer()
+	su := newSummer(e.fullPath)
 	psArgs := []string{"rev-list", "--objects", "HEAD"}
 	if err := su.resolveName(ctx, repoPath, objects, psArgs, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)

@@ -16,6 +16,7 @@
 "Run \"%s <command> --help\" for more information on a command." = "运行 \"%s <command> --help\" 以获取有关命令的更多信息。"
 "Show repositories size and large files" = "展示存储库体积和大文件"
 "Remove files in repository and rewrite history" = "删除存储库中的文件并重写历史"
+"Show full path" = "展示完整路径"
 "Scan references in a local repository" = "扫描本地存储库中的引用"
 "Sort by time from oldest to newest" = "按照时间从旧到新排序"
 "Interactive mode to clean repository large files" = "交互模式清理存储库大文件"

@@ -16,11 +16,12 @@ import (
 )
 
 type Smart struct {
-	Paths   []string `arg:"" name:"path" help:"Path to repositories" default:"." type:"path"`
-	Limit   int64    `short:"L" name:"limit" optional:"" help:"Large file limit size, supported units: KB,MB,GB,K,M,G" default:"20m" type:"size"`
-	Confirm bool     `short:"Y" name:"confirm" help:"Confirm rewriting local branches and tags"`
-	Prune   bool     `short:"P" name:"prune" help:"Prune repository when commits are rewritten"`
-	ALL     bool     `short:"A" name:"all" help:"Remove all large blobs"`
+	Paths    []string `arg:"" name:"path" help:"Path to repositories" default:"." type:"path"`
+	Limit    int64    `short:"L" name:"limit" optional:"" help:"Large file limit size, supported units: KB,MB,GB,K,M,G" default:"20m" type:"size"`
+	Confirm  bool     `short:"Y" name:"confirm" help:"Confirm rewriting local branches and tags"`
+	Prune    bool     `short:"P" name:"prune" help:"Prune repository when commits are rewritten"`
+	FullPath bool     `short:"F" name:"full-path" help:"Show full path"`
+	ALL      bool     `short:"A" name:"all" help:"Remove all large blobs"`
 }
 
 func (c *Smart) Run(g *Globals) error {
@@ -67,7 +68,7 @@ func newMatcher(e *stat.SizeExecutor, all bool) replay.Matcher {
 func (c *Smart) doOnce(g *Globals, p string) error {
 	repoPath := git.RevParseRepoPath(context.Background(), p)
 	trace.DbgPrint("check %s size ...", p)
-	e := stat.NewSizeExecutor(c.Limit)
+	e := stat.NewSizeExecutor(c.Limit, c.FullPath)
 	if err := e.Run(context.Background(), repoPath, false); err != nil {
 		fmt.Fprintf(os.Stderr, "analyze repo size error: %v\n", err)
 		return err

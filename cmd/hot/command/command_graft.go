@@ -20,6 +20,7 @@ type Graft struct {
 	Confirm  bool     `short:"Y" name:"confirm" help:"Confirm rewriting local branches and tags"`
 	Prune    bool     `short:"P" name:"prune" help:"Prune repository when commits are rewritten"`
 	HeadOnly bool     `short:"H" name:"head-only" help:"Graft only the default branch"`
+	FullPath bool     `short:"F" name:"full-path" help:"Show full path"`
 	ALL      bool     `short:"A" name:"all" help:"Remove all large blobs"`
 }
 
@@ -35,7 +36,7 @@ func (c *Graft) Run(g *Globals) error {
 func (c *Graft) doOnce(g *Globals, p string) error {
 	repoPath := git.RevParseRepoPath(context.Background(), p)
 	trace.DbgPrint("check %s size ...", repoPath)
-	e := stat.NewSizeExecutor(c.Limit)
+	e := stat.NewSizeExecutor(c.Limit, c.FullPath)
 	if err := e.Run(context.Background(), repoPath, false); err != nil {
 		fmt.Fprintf(os.Stderr, "check repo size error: %v\n", err)
 		return err

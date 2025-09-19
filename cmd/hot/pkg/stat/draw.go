@@ -43,9 +43,10 @@ type sizeCounter struct {
 }
 
 type summer struct {
-	files map[string]*sizeCounter
-	total int64
-	count int
+	files    map[string]*sizeCounter
+	total    int64
+	count    int
+	fullPath bool
 }
 
 func truncatedName(s string, maxWidth int) string {
@@ -66,8 +67,8 @@ func truncatedName(s string, maxWidth int) string {
 	return vv[len(vv)-1]
 }
 
-func newSummer() *summer {
-	return &summer{files: make(map[string]*sizeCounter)}
+func newSummer(fullPath bool) *summer {
+	return &summer{files: make(map[string]*sizeCounter), fullPath: fullPath}
 }
 
 func (s *summer) add(file string, size int64) {
@@ -108,7 +109,10 @@ func (s *summer) printName(name, oid string, size int64) {
 		fmt.Fprintf(os.Stderr, "%s <%s> %s: %s\n", yellow(oid), blue("dangle"), tr.W("size"), red(strengthen.FormatSize(size)))
 		return
 	}
-	fmt.Fprintf(os.Stderr, "%s [%s] %s: %s\n", yellow(oid), blue(truncatedName(name, 100)), tr.W("size"), red(strengthen.FormatSize(size)))
+	if !s.fullPath {
+		name = truncatedName(name, 100)
+	}
+	fmt.Fprintf(os.Stderr, "%s [%s] %s: %s\n", yellow(oid), blue(name), tr.W("size"), red(strengthen.FormatSize(size)))
 }
 
 func (s *summer) resolveName(ctx context.Context, repoPath string, seen map[string]int64, psArgs []string, fn Printer) error {

@@ -1,6 +1,4 @@
-// Copyright ©️ Ant Group. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-package size
+package stat
 
 import (
 	"bufio"
@@ -8,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/rivo/uniseg"
 )
 
 type Item struct {
@@ -48,6 +48,24 @@ type summer struct {
 	count int
 }
 
+func truncatedName(s string, maxWidth int) string {
+	w := uniseg.StringWidth(s)
+	if w < maxWidth {
+		return s
+	}
+	vv := strengthen.SplitPath(s)
+	if len(vv) <= 1 {
+		return s
+	}
+	for i := 1; i < len(vv); i++ {
+		ss := ".../" + path.Join(vv[i:]...)
+		if uniseg.StringWidth(ss) <= maxWidth {
+			return ss
+		}
+	}
+	return vv[len(vv)-1]
+}
+
 func newSummer() *summer {
 	return &summer{files: make(map[string]*sizeCounter)}
 }
@@ -77,7 +95,7 @@ func (s *summer) draw(w io.Writer) {
 	}
 	sort.Sort(Items(items))
 	for i, item := range items {
-		t.AppendRow(table.Row{i + 1, item.Path, strconv.Itoa(item.Count), strengthen.FormatSize(item.Total)})
+		t.AppendRow(table.Row{i + 1, truncatedName(item.Path, 100), strconv.Itoa(item.Count), strengthen.FormatSize(item.Total)})
 	}
 	t.AppendRow(table.Row{strings.ToUpper(tr.W("total")), "", strconv.Itoa(s.count), strengthen.FormatSize(s.total)})
 	t.Render()
@@ -87,15 +105,13 @@ type Printer func(string, string, int64)
 
 func (s *summer) printName(name, oid string, size int64) {
 	if len(name) == 0 {
-		fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m%s\x1b[0m <\x1b[38;2;72;198;239mdangling\x1b[0m> %s: \x1b[38;2;247;112;98m%s\x1b[0m\n", oid, tr.W("size"),
-			strengthen.FormatSize(size))
+		fmt.Fprintf(os.Stderr, "%s <%s> %s: %s\n", yellow(oid), blue("dangle"), tr.W("size"), red(strengthen.FormatSize(size)))
 		return
 	}
-	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m%s\x1b[0m [\x1b[38;2;72;198;239m%s\x1b[0m] %s: \x1b[38;2;247;112;98m%s\x1b[0m\n",
-		oid, name, tr.W("size"), strengthen.FormatSize(size))
+	fmt.Fprintf(os.Stderr, "%s [%s] %s: %s\n", yellow(oid), blue(truncatedName(name, 100)), tr.W("size"), red(strengthen.FormatSize(size)))
 }
 
-func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[string]int64, psArgs []string, fn Printer) error {
+func (s *summer) resolveName(ctx context.Context, repoPath string, seen map[string]int64, psArgs []string, fn Printer) error {
 	if git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
 		psArgs = append(psArgs, "--filter=object:type=blob")
 	}
@@ -115,7 +131,7 @@ func (s *summer) resolveName(ctx context.Context, repoPath string, blobs map[str
 	br := bufio.NewScanner(out)
 	for br.Scan() {
 		oid, name, _ := strings.Cut(br.Text(), " ")
-		if size, ok := blobs[oid]; ok {
+		if size, ok := seen[oid]; ok {
 			if fn != nil {
 				fn(name, oid, size)
 			}

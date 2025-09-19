@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/replay"
-	"github.com/antgroup/hugescm/cmd/hot/pkg/size"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/stat"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/survey"
@@ -32,11 +32,11 @@ func (c *Smart) Run(g *Globals) error {
 	return nil
 }
 
-func newMatcher(sz *size.Executor, all bool) replay.Matcher {
+func newMatcher(e *stat.SizeExecutor, all bool) replay.Matcher {
 	if all {
-		return sz
+		return e
 	}
-	largePaths := sz.Paths()
+	largePaths := e.Paths()
 	removedPaths := make([]string, 0, len(largePaths))
 	for i := range 40 {
 		pathsLen := len(largePaths)
@@ -67,7 +67,7 @@ func newMatcher(sz *size.Executor, all bool) replay.Matcher {
 func (c *Smart) doOnce(g *Globals, p string) error {
 	repoPath := git.RevParseRepoPath(context.Background(), p)
 	trace.DbgPrint("check %s size ...", p)
-	e := size.NewExecutor(c.Limit)
+	e := stat.NewSizeExecutor(c.Limit)
 	if err := e.Run(context.Background(), repoPath, false); err != nil {
 		fmt.Fprintf(os.Stderr, "analyze repo size error: %v\n", err)
 		return err

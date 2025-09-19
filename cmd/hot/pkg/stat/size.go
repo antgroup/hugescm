@@ -1,6 +1,6 @@
 // Copyright ©️ Ant Group. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package size
+package stat
 
 import (
 	"bufio"
@@ -20,30 +20,30 @@ import (
 	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
-type Executor struct {
+type SizeExecutor struct {
 	limit   int64
 	paths   []string
 	objects map[string]int64
 }
 
-func NewExecutor(size int64) *Executor {
-	return &Executor{limit: size, objects: make(map[string]int64)}
+func NewSizeExecutor(size int64) *SizeExecutor {
+	return &SizeExecutor{limit: size, objects: make(map[string]int64)}
 }
 
 // BLOB filter
-func (e *Executor) Match(entry *gitobj.TreeEntry, absPath string) bool {
+func (e *SizeExecutor) Match(entry *gitobj.TreeEntry, absPath string) bool {
 	if _, ok := e.objects[hex.EncodeToString(entry.Oid)]; ok {
 		return true
 	}
 	return false
 }
 
-func (e *Executor) Paths() []string {
+func (e *SizeExecutor) Paths() []string {
 	return e.paths
 }
 
 // git cat-file --batch-check --batch-all-objects
-func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error {
+func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) error {
 	if !git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
 		return fmt.Errorf("require Git 2.28 or later")
 	}
@@ -77,21 +77,21 @@ func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error
 			e.objects[sv[0]] = sz
 		}
 	}
-	sum := newSummer()
+	su := newSummer()
 	psArgs := []string{"rev-list", "--objects", "--all"}
-	if err := sum.resolveName(ctx, repoPath, e.objects, psArgs, sum.printName); err != nil {
+	if err := su.resolveName(ctx, repoPath, e.objects, psArgs, su.printName); err != nil {
 		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
 		return err
 	}
-	if len(sum.files) != 0 {
+	if len(su.files) != 0 {
 		_, _ = fmt.Fprintf(os.Stdout, "%s - %s:\n", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))
 	}
-	sum.draw(os.Stdout)
+	su.draw(os.Stdout)
 	if extract {
 		e.currentCheck(ctx, repoPath, e.objects)
 	}
 	// COPY to files
-	for p := range sum.files {
+	for p := range su.files {
 		e.paths = append(e.paths, p)
 	}
 	diskSize, err := strengthen.Du(filepath.Join(repoPath, "objects"))
@@ -99,19 +99,19 @@ func (e *Executor) Run(ctx context.Context, repoPath string, extract bool) error
 		fmt.Fprintf(os.Stderr, "hot size: check repo disk usage error: %v", err)
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "%s: \x1b[38;2;32;225;215m%s\x1b[0m %s: \x1b[38;2;72;198;239m%s\x1b[0m\n", tr.W("Repository"), repoPath, tr.W("size"), strengthen.FormatSize(diskSize))
+	fmt.Fprintf(os.Stderr, "%s: %s %s: %s\n", tr.W("Repository"), green2(repoPath), tr.W("size"), blue(strengthen.FormatSize(diskSize)))
 	return nil
 }
 
-func (e *Executor) currentCheck(ctx context.Context, repoPath string, objects map[string]int64) {
-	sum := newSummer()
+func (e *SizeExecutor) currentCheck(ctx context.Context, repoPath string, objects map[string]int64) {
+	su := newSummer()
 	psArgs := []string{"rev-list", "--objects", "HEAD"}
-	if err := sum.resolveName(ctx, repoPath, objects, psArgs, nil); err != nil {
+	if err := su.resolveName(ctx, repoPath, objects, psArgs, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
 		return
 	}
-	if len(sum.files) != 0 {
+	if len(su.files) != 0 {
 		_, _ = fmt.Fprintf(os.Stdout, "\n%s - %s:\n", tr.W("Descending order by total size"), tr.W("Default Branch"))
 	}
-	sum.draw(os.Stdout)
+	su.draw(os.Stdout)
 }

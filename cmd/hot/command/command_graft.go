@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/replay"
-	"github.com/antgroup/hugescm/cmd/hot/pkg/size"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/stat"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/trace"
@@ -35,7 +35,7 @@ func (c *Graft) Run(g *Globals) error {
 func (c *Graft) doOnce(g *Globals, p string) error {
 	repoPath := git.RevParseRepoPath(context.Background(), p)
 	trace.DbgPrint("check %s size ...", repoPath)
-	e := size.NewExecutor(c.Limit)
+	e := stat.NewSizeExecutor(c.Limit)
 	if err := e.Run(context.Background(), repoPath, false); err != nil {
 		fmt.Fprintf(os.Stderr, "check repo size error: %v\n", err)
 		return err

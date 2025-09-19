@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/antgroup/hugescm/cmd/hot/pkg/size"
+	"github.com/antgroup/hugescm/cmd/hot/pkg/stat"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/trace"
 )
@@ -31,7 +31,7 @@ func (c *Size) Run(g *Globals) error {
 func (c *Size) sizeOnce(p string) error {
 	repoPath := git.RevParseRepoPath(context.Background(), p)
 	trace.DbgPrint("check %s size ...", repoPath)
-	e := size.NewExecutor(c.Limit)
+	e := stat.NewSizeExecutor(c.Limit)
 	if err := e.Run(context.Background(), repoPath, c.Extract); err != nil {
 		return err
 	}

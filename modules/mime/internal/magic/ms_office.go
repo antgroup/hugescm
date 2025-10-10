@@ -7,17 +7,34 @@ import (
 
 // Xlsx matches a Microsoft Excel 2007 file.
 func Xlsx(raw []byte, limit uint32) bool {
-	return zipContains(raw, []byte("xl/"), true)
+	return msoxml(raw, zipEntries{{
+		name: []byte("xl/"),
+		dir:  true,
+	}}, 100)
 }
 
 // Docx matches a Microsoft Word 2007 file.
 func Docx(raw []byte, limit uint32) bool {
-	return zipContains(raw, []byte("word/"), true)
+	return msoxml(raw, zipEntries{{
+		name: []byte("word/"),
+		dir:  true,
+	}}, 100)
 }
 
 // Pptx matches a Microsoft PowerPoint 2007 file.
 func Pptx(raw []byte, limit uint32) bool {
-	return zipContains(raw, []byte("ppt/"), true)
+	return msoxml(raw, zipEntries{{
+		name: []byte("ppt/"),
+		dir:  true,
+	}}, 100)
+}
+
+// Visio matches a Microsoft Visio 2013+ file.
+func Visio(raw []byte, limit uint32) bool {
+	return msoxml(raw, zipEntries{{
+		name: []byte("visio/"),
+		dir:  true,
+	}}, 100)
 }
 
 // Ole matches an Open Linking and Embedding file.
@@ -157,6 +174,14 @@ func Msi(raw []byte, limit uint32) bool {
 	})
 }
 
+// One matches a Microsoft OneNote file.
+func One(raw []byte, limit uint32) bool {
+	return bytes.HasPrefix(raw, []byte{
+		0xe4, 0x52, 0x5c, 0x7b, 0x8c, 0xd8, 0xa7, 0x4d,
+		0xae, 0xb1, 0x53, 0x78, 0xd0, 0x29, 0x96, 0xd3,
+	})
+}
+
 // Helper to match by a specific CLSID of a compound file.
 //
 // http://fileformats.archiveteam.org/wiki/Microsoft_Compound_File
@@ -183,4 +208,15 @@ func matchOleClsid(in []byte, clsid []byte) bool {
 	}
 
 	return bytes.HasPrefix(in[clsidOffset:], clsid)
+}
+
+// WPD matches a WordPerfect document.
+func WPD(raw []byte, _ uint32) bool {
+	if len(raw) < 10 {
+		return false
+	}
+	if !bytes.HasPrefix(raw, []byte("\xffWPC")) {
+		return false
+	}
+	return raw[8] == 1 && raw[9] == 10
 }

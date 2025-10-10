@@ -110,6 +110,18 @@ var fromXMLTestCases = []struct {
 }, {
 	"   not <?xml start ", "",
 }, {
+	"xml at end <?xml", "",
+}, {
+	"xml at end and encoding <?xml encoding", "",
+}, {
+	"xml at end and encoding= <?xml encoding=", "",
+}, {
+	"xml at end and encoding=c <?xml encoding=c ", "c",
+}, {
+	"xml is case sensitive <?XML encoding=c ", "",
+}, {
+	"encoding is case sensitive too <?xml Encoding=c ", "",
+}, {
 	`<?xml version="1.0" encoding=c ?>`, "c",
 }, {
 	`<?xml version="1.0" encoding="c"?>`, "c",

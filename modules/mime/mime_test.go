@@ -143,6 +143,9 @@ func TestJsonMIME(t *testing.T) {
 func TestSVGForEach(t *testing.T) {
 	ss := []string{
 		"<svg></svg>",
+		`<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="80" fill="blue" />
+</svg>`,
 		`<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Basic//EN"
 	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-basic.dtd">
 	<svg></svg>`,
@@ -164,4 +167,16 @@ func TestSVGForEach(t *testing.T) {
 		m := DetectAny([]byte(s))
 		fmt.Fprintf(os.Stderr, "[%s]\n mime: %v\n", s, m.mime)
 	}
+}
+
+func TestXML(t *testing.T) {
+	a := `<?xml version="1.0" encoding="UTF-8"?>
+- <note>
+  <to>Tove</to>
+  <from>Jani</from>
+  <heading>Reminder</heading>
+  <body>Don't forget me this weekend!</body>
+</note>`
+	m := DetectAny([]byte(a))
+	fmt.Fprintf(os.Stderr, "mime: %v\n", m.mime)
 }

@@ -2,7 +2,6 @@ package mime
 
 import (
 	"mime"
-
 	"slices"
 
 	"github.com/antgroup/hugescm/modules/mime/internal/charset"
@@ -99,18 +98,20 @@ func (m *MIME) match(in []byte, readLimit uint32) *MIME {
 		"text/html":  charset.FromHTML,
 		"text/xml":   charset.FromXML,
 	}
-	// ps holds optional MIME parameters.
-	ps := map[string]string{}
+	charset := ""
 	if f, ok := needsCharset[m.mime]; ok {
-		if cset := f(in); cset != "" {
-			ps["charset"] = cset
-		}
+		// The charset comes from BOM, from HTML headers, from XML headers.
+		// Limit the number of bytes searched for to 1024.
+		charset = f(in[:min(len(in), 1024)])
+	}
+	if m == root {
+		return m
 	}
 
-	return m.cloneHierarchy(ps)
+	return m.cloneHierarchy(charset)
 }
 
-// flatten transforms an hierarchy of MIMEs into a slice of MIMEs.
+// Flatten transforms an hierarchy of MIMEs into a slice of MIMEs.
 func (m *MIME) Flatten() []*MIME {
 	out := []*MIME{m}
 	for _, c := range m.children {
@@ -121,10 +122,10 @@ func (m *MIME) Flatten() []*MIME {
 }
 
 // clone creates a new MIME with the provided optional MIME parameters.
-func (m *MIME) clone(ps map[string]string) *MIME {
+func (m *MIME) clone(charset string) *MIME {
 	clonedMIME := m.mime
-	if len(ps) > 0 {
-		clonedMIME = mime.FormatMediaType(m.mime, ps)
+	if charset != "" {
+		clonedMIME = m.mime + "; charset=" + charset
 	}
 
 	return &MIME{
@@ -136,11 +137,11 @@ func (m *MIME) clone(ps map[string]string) *MIME {
 
 // cloneHierarchy creates a clone of m and all its ancestors. The optional MIME
 // parameters are set on the last child of the hierarchy.
-func (m *MIME) cloneHierarchy(ps map[string]string) *MIME {
-	ret := m.clone(ps)
+func (m *MIME) cloneHierarchy(charset string) *MIME {
+	ret := m.clone(charset)
 	lastChild := ret
 	for p := m.Parent(); p != nil; p = p.Parent() {
-		pClone := p.clone(nil)
+		pClone := p.clone("")
 		lastChild.parent = pClone
 		lastChild = pClone
 	}
@@ -149,7 +150,10 @@ func (m *MIME) cloneHierarchy(ps map[string]string) *MIME {
 }
 
 func (m *MIME) lookup(mime string) *MIME {
-	if slices.Contains(append(m.aliases, m.mime), mime) {
+	if mime == m.mime {
+		return m
+	}
+	if slices.Contains(m.aliases, mime) {
 		return m
 	}
 

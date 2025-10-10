@@ -1,6 +1,8 @@
 package mime
 
-import "slices"
+import (
+	"slices"
+)
 
 // https://github.com/chromium/chromium/blob/main/third_party/blink/common/mime_util/mime_util.cc
 var (

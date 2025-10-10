@@ -80,7 +80,7 @@ func DetectFile(path string) (*MIME, error) {
 	if err != nil {
 		return errMIME, err
 	}
-	defer f.Close() // nolint
+	defer f.Close()
 
 	return DetectReader(f)
 }

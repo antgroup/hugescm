@@ -23,7 +23,7 @@ var getAnAttributeTestCases = []struct {
 }, {
 	"1>", "1", "", false,
 }, {
-	"A>", "a", "", false,
+	"A>", "A", "", false,
 }, {
 	"a>", "a", "", false,
 }, {
@@ -47,6 +47,8 @@ var getAnAttributeTestCases = []struct {
 	" meta6 =' meta '>", "meta6", " meta ", false,
 }, {
 	` meta7 =' "meta '>`, "meta7", ` "meta `, false,
+}, {
+	` mEtA7 =' "meta '>`, "mEtA7", ` "meta `, false,
 	// / as attribute ender
 }, {
 	// when the value is unquoted / right after is a parse warning
@@ -213,10 +215,10 @@ func TestGetAllAttributes(t *testing.T) {
 		ret := [][2]string{}
 		for {
 			name, value, _ := GetAnAttribute(&s)
-			if name == "" {
+			if len(name) == 0 {
 				return ret
 			}
-			ret = append(ret, [2]string{name, value})
+			ret = append(ret, [2]string{string(name), string(value)})
 		}
 	}
 
@@ -225,6 +227,36 @@ func TestGetAllAttributes(t *testing.T) {
 			got := getAll(tc.in)
 			if !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("got: %v, want: %v", got, tc.expected)
+			}
+		})
+	}
+}
+
+func TestSkipAComment(t *testing.T) {
+	tcases := []struct {
+		in      string
+		out     string
+		skipped bool
+	}{{
+		"", "", false,
+	}, {
+		"abc", "abc", false,
+	}, {
+		"<!--", "<!--", false, // not ending comment
+	}, {
+		"<!-- abc -->", "", true, // regular comment
+	}, {
+		"<!-->", "", true, // the beginning and ending -- are the same chars
+	}}
+	for _, tc := range tcases {
+		t.Run(tc.in, func(t *testing.T) {
+			s := scan.Bytes(tc.in)
+			skipped := SkipAComment(&s)
+			if tc.skipped != skipped {
+				t.Errorf("skipped got: %v, want: %v", skipped, tc.skipped)
+			}
+			if string(s) != tc.out {
+				t.Errorf("got: %v, want: %v", string(s), tc.out)
 			}
 		})
 	}

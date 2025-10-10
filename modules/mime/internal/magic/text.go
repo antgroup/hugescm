@@ -29,6 +29,7 @@ var (
 		[]byte("<BODY"),
 		[]byte("<BR"),
 		[]byte("<P"),
+		[]byte("<!--"),
 	)
 	// XML matches an Extensible Markup Language file.
 	XML = markup([]byte("<?XML"))
@@ -71,59 +72,129 @@ var (
 	VCard = ciPrefix([]byte("BEGIN:VCARD\n"), []byte("BEGIN:VCARD\r\n"))
 	// ICalendar matches a iCalendar file.
 	ICalendar = ciPrefix([]byte("BEGIN:VCALENDAR\n"), []byte("BEGIN:VCALENDAR\r\n"))
+	// phpPageF  = ciPrefix(
+	// 	[]byte("<?PHP"),
+	// 	[]byte("<?\n"),
+	// 	[]byte("<?\r"),
+	// 	[]byte("<? "),
+	// )
+	// phpScriptF = shebang(
+	// 	[]byte("/usr/local/bin/php"),
+	// 	[]byte("/usr/bin/php"),
+	// 	[]byte("/usr/bin/env php"),
+	// )
 	// Js matches a Javascript file.
 	Js = shebang(
+		scan.CompactWS,
 		[]byte("/bin/node"),
 		[]byte("/usr/bin/node"),
 		[]byte("/bin/nodejs"),
 		[]byte("/usr/bin/nodejs"),
 		[]byte("/usr/bin/env node"),
+		[]byte("/usr/bin/env -S node"),
 		[]byte("/usr/bin/env nodejs"),
+		[]byte("/usr/bin/env -S nodejs"),
 	)
 	// Lua matches a Lua programming language file.
 	Lua = shebang(
+		scan.CompactWS|scan.FullWord,
 		[]byte("/usr/bin/lua"),
 		[]byte("/usr/local/bin/lua"),
 		[]byte("/usr/bin/env lua"),
+		[]byte("/usr/bin/env -S lua"),
 	)
 	// Perl matches a Perl programming language file.
 	Perl = shebang(
+		scan.CompactWS|scan.FullWord,
 		[]byte("/usr/bin/perl"),
 		[]byte("/usr/bin/env perl"),
+		[]byte("/usr/bin/env -S perl"),
 	)
 	// Python matches a Python programming language file.
 	Python = shebang(
+		scan.CompactWS,
 		[]byte("/usr/bin/python"),
 		[]byte("/usr/local/bin/python"),
 		[]byte("/usr/bin/env python"),
+		[]byte("/usr/bin/env -S python"),
+		[]byte("/usr/bin/python2"),
+		[]byte("/usr/local/bin/python2"),
+		[]byte("/usr/bin/env python2"),
+		[]byte("/usr/bin/env -S python2"),
+		[]byte("/usr/bin/python3"),
+		[]byte("/usr/local/bin/python3"),
+		[]byte("/usr/bin/env python3"),
+		[]byte("/usr/bin/env -S python3"),
+	)
+	// Ruby matches a Ruby programming language file.
+	Ruby = shebang(
+		scan.CompactWS,
+		[]byte("/usr/bin/ruby"),
+		[]byte("/usr/local/bin/ruby"),
+		[]byte("/usr/bin/env ruby"),
+		[]byte("/usr/bin/env -S ruby"),
 	)
 	// Tcl matches a Tcl programming language file.
 	Tcl = shebang(
+		scan.CompactWS,
 		[]byte("/usr/bin/tcl"),
 		[]byte("/usr/local/bin/tcl"),
 		[]byte("/usr/bin/env tcl"),
+		[]byte("/usr/bin/env -S tcl"),
 		[]byte("/usr/bin/tclsh"),
 		[]byte("/usr/local/bin/tclsh"),
 		[]byte("/usr/bin/env tclsh"),
+		[]byte("/usr/bin/env -S tclsh"),
 		[]byte("/usr/bin/wish"),
 		[]byte("/usr/local/bin/wish"),
 		[]byte("/usr/bin/env wish"),
+		[]byte("/usr/bin/env -S wish"),
 	)
 	// Rtf matches a Rich Text Format file.
 	Rtf = prefix([]byte("{\\rtf"))
+	// Shell matches a shell script file.
+	Shell = shebang(
+		scan.CompactWS|scan.FullWord,
+		[]byte("/bin/sh"),
+		[]byte("/bin/bash"),
+		[]byte("/usr/local/bin/bash"),
+		[]byte("/usr/bin/env bash"),
+		[]byte("/usr/bin/env -S bash"),
+		[]byte("/bin/csh"),
+		[]byte("/usr/local/bin/csh"),
+		[]byte("/usr/bin/env csh"),
+		[]byte("/usr/bin/env -S csh"),
+		[]byte("/bin/dash"),
+		[]byte("/usr/local/bin/dash"),
+		[]byte("/usr/bin/env dash"),
+		[]byte("/usr/bin/env -S dash"),
+		[]byte("/bin/ksh"),
+		[]byte("/usr/local/bin/ksh"),
+		[]byte("/usr/bin/env ksh"),
+		[]byte("/usr/bin/env -S ksh"),
+		[]byte("/bin/tcsh"),
+		[]byte("/usr/local/bin/tcsh"),
+		[]byte("/usr/bin/env tcsh"),
+		[]byte("/usr/bin/env -S tcsh"),
+		[]byte("/bin/zsh"),
+		[]byte("/usr/local/bin/zsh"),
+		[]byte("/usr/bin/env zsh"),
+		[]byte("/usr/bin/env -S zsh"),
+	)
 )
 
 // Text matches a plain text file.
 //
 // TODO: This function does not parse BOM-less UTF16 and UTF32 files. Not really
 // sure it should. Linux file utility also requires a BOM for UTF16 and UTF32.
-func Text(raw []byte, limit uint32) bool {
+func Text(raw []byte, _ uint32) bool {
 	// First look for BOM.
 	if cset := charset.FromBOM(raw); cset != "" {
 		return true
 	}
 	// Binary data bytes as defined here: https://mimesniff.spec.whatwg.org/#binary-data-byte
-	for _, b := range raw {
+	for i := 0; i < min(len(raw), 4096); i++ {
+		b := raw[i]
 		if b <= 0x08 ||
 			b == 0x0B ||
 			0x0E <= b && b <= 0x1A ||
@@ -133,6 +204,26 @@ func Text(raw []byte, limit uint32) bool {
 	}
 	return true
 }
+
+// XHTML matches an XHTML file. This check depends on the XML check to have passed.
+func XHTML(raw []byte, limit uint32) bool {
+	raw = raw[:min(len(raw), 1024)]
+	b := scan.Bytes(raw)
+	i, _ := b.Search([]byte("<!DOCTYPE HTML"), scan.CompactWS|scan.IgnoreCase)
+	if i != -1 {
+		return true
+	}
+	i, _ = b.Search([]byte("<HTML XMLNS="), scan.CompactWS|scan.IgnoreCase)
+	return i != -1
+}
+
+// // Php matches a PHP: Hypertext Preprocessor file.
+// func Php(raw []byte, limit uint32) bool {
+// 	if res := phpPageF(raw, limit); res {
+// 		return res
+// 	}
+// 	return phpScriptF(raw, limit)
+// }
 
 // JSON matches a JavaScript Object Notation file.
 func JSON(raw []byte, limit uint32) bool {
@@ -217,6 +308,7 @@ func Svg(raw []byte, limit uint32) bool {
 // svgWithoutXMLDeclaration matches a SVG image that does not have an XML header.
 // Example:
 //
+//	<!-- xml comment ignored -->
 //	<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 //	    <rect fill="#fff" stroke="#000" x="-70" y="-70" width="390" height="390"/>
 //	</svg>
@@ -224,15 +316,18 @@ func svgWithoutXMLDeclaration(s scan.Bytes) bool {
 	for scan.ByteIsWS(s.Peek()) {
 		s.Advance(1)
 	}
+	for mkup.SkipAComment(&s) {
+	}
 	if !bytes.HasPrefix(s, []byte("<svg")) {
 		return false
 	}
 
-	targetName, targetVal := "xmlns", "http://www.w3.org/2000/svg"
-	aName, aVal, hasMore := "", "", true
+	targetName, targetVal := []byte("xmlns"), []byte("http://www.w3.org/2000/svg")
+	var aName, aVal []byte
+	hasMore := true
 	for hasMore {
 		aName, aVal, hasMore = mkup.GetAnAttribute(&s)
-		if aName == targetName && aVal == targetVal {
+		if bytes.Equal(aName, targetName) && bytes.Equal(aVal, targetVal) {
 			return true
 		}
 		if !hasMore {
@@ -259,10 +354,11 @@ func svgWithXMLDeclaration(s scan.Bytes) bool {
 
 	// version is a required attribute for XML.
 	hasVersion := false
-	aName, hasMore := "", true
+	var aName []byte
+	hasMore := true
 	for hasMore {
 		aName, _, hasMore = mkup.GetAnAttribute(&s)
-		if aName == "version" {
+		if bytes.Equal(aName, []byte("version")) {
 			hasVersion = true
 			break
 		}

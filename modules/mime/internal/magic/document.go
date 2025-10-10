@@ -1,6 +1,9 @@
 package magic
 
-import "bytes"
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 var (
 	// Fdf matches a Forms Data Format file.
@@ -11,18 +14,18 @@ var (
 	Lit = prefix([]byte("ITOLITLS"))
 )
 
-// PDF matches a Portable Document Format file.Add commentMore actions
+// PDF matches a Portable Document Format file.
 // The %PDF- header should be the first thing inside the file but many
 // implementations don't follow the rule. The PDF spec at Appendix H says the
 // signature can be prepended by anything.
 // https://bugs.astron.com/view.php?id=446
-func PDF(raw []byte, limit uint32) bool {
+func PDF(raw []byte, _ uint32) bool {
 	raw = raw[:min(len(raw), 1024)]
 	return bytes.Contains(raw, []byte("%PDF-"))
 }
 
 // DjVu matches a DjVu file.
-func DjVu(raw []byte, limit uint32) bool {
+func DjVu(raw []byte, _ uint32) bool {
 	if len(raw) < 12 {
 		return false
 	}
@@ -36,7 +39,7 @@ func DjVu(raw []byte, limit uint32) bool {
 }
 
 // P7s matches an .p7s signature File (PEM, Base64).
-func P7s(raw []byte, limit uint32) bool {
+func P7s(raw []byte, _ uint32) bool {
 	// Check for PEM Encoding.
 	if bytes.HasPrefix(raw, []byte("-----BEGIN PKCS7")) {
 		return true
@@ -59,4 +62,22 @@ func P7s(raw []byte, limit uint32) bool {
 	}
 
 	return false
+}
+
+// Lotus123 matches a Lotus 1-2-3 spreadsheet document.
+func Lotus123(raw []byte, _ uint32) bool {
+	if len(raw) <= 20 {
+		return false
+	}
+	version := binary.BigEndian.Uint32(raw)
+	if version == 0x00000200 {
+		return raw[6] != 0 && raw[7] == 0
+	}
+
+	return version == 0x00001a00 && raw[20] > 0 && raw[20] < 32
+}
+
+// CHM matches a Microsoft Compiled HTML Help file.
+func CHM(raw []byte, _ uint32) bool {
+	return bytes.HasPrefix(raw, []byte("ITSF\003\000\000\000\x60\000\000\000"))
 }

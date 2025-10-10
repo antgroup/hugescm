@@ -2,6 +2,7 @@ package charset
 
 import (
 	"bytes"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/antgroup/hugescm/modules/chardet"
@@ -103,6 +104,7 @@ func FromPlain(content []byte) string {
 	if ascii(origContent) {
 		return "utf-8"
 	}
+	// Fallback use chardet
 	if r, err := defaultDetector.DetectBest(origContent); err == nil {
 		return r.Charset
 	}
@@ -148,28 +150,27 @@ func FromXML(content []byte) string {
 	}
 	return FromPlain(content)
 }
+
 func fromXML(s scan.Bytes) string {
-	xml := []byte("<?XML")
+	xml := []byte("<?xml")
 	lxml := len(xml)
 	for {
-		if len(s) == 0 {
-			return ""
-		}
-		for scan.ByteIsWS(s.Peek()) {
-			s.Advance(1)
-		}
+		s.TrimLWS()
 		if len(s) <= lxml {
 			return ""
 		}
-		if !ciCheck(xml, s[:lxml]) {
-			s.Advance(1)
-			continue
+
+		i, k := s.Search(xml, 0)
+		if i == -1 {
+			return ""
 		}
-		aName, aVal, hasMore := "", "", true
+		s.Advance(i + k)
+		var aName, aVal []byte
+		hasMore := true
 		for hasMore {
 			aName, aVal, hasMore = markup.GetAnAttribute(&s)
-			if aName == "encoding" && aVal != "" {
-				return aVal
+			if scan.Bytes(aName).Match([]byte("encoding"), 0) != -1 && len(aVal) != 0 {
+				return string(aVal)
 			}
 		}
 	}
@@ -189,25 +190,6 @@ func FromHTML(content []byte) string {
 	return FromPlain(content)
 }
 
-// ciCheck does case insensitive check.
-func ciCheck(upperCase, anyCase []byte) bool {
-	if len(anyCase) < len(upperCase) {
-		return false
-	}
-
-	// perform case insensitive check
-	for i, b := range upperCase {
-		db := anyCase[i]
-		if 'A' <= b && b <= 'Z' {
-			db &= 0xDF
-		}
-		if b != db {
-			return false
-		}
-	}
-	return true
-}
-
 func fromHTML(s scan.Bytes) string {
 	const (
 		dontKnow = iota
@@ -215,26 +197,24 @@ func fromHTML(s scan.Bytes) string {
 		doNotNeedPragma
 	)
 	meta := []byte("<META")
+	body := []byte("<BODY")
 	lmeta := len(meta)
 	for {
-		if len(s) == 0 {
-			return ""
-		}
-		if bytes.HasPrefix(s, []byte("<!--")) {
-			// Offset by two (<!) because the starting and ending -- can be the same.j
-			s.Advance(2)
-			if i := bytes.Index(s, []byte("-->")); i != -1 {
-				s.Advance(i)
-			}
+		if markup.SkipAComment(&s) {
+			continue
 		}
 		if len(s) <= lmeta {
 			return ""
 		}
-		if !ciCheck(meta, s) {
-			s.Advance(1)
+		// Abort when <body is reached.
+		if s.Match(body, scan.IgnoreCase) != -1 {
+			return ""
+		}
+		if s.Match(meta, scan.IgnoreCase) == -1 {
+			s = s[1:] // safe to slice instead of s.Advance(1) because bounds are checked
 			continue
 		}
-		s.Advance(lmeta)
+		s = s[lmeta:]
 		c := s.Pop()
 		if c == 0 || (!scan.ByteIsWS(c) && c != '/') {
 			return ""
@@ -244,14 +224,16 @@ func fromHTML(s scan.Bytes) string {
 		needPragma := dontKnow
 
 		charset := ""
-		aName, aVal, hasMore := "", "", true
+		var aNameB, aValB []byte
+		hasMore := true
 		for hasMore {
-			aName, aVal, hasMore = markup.GetAnAttribute(&s)
+			aNameB, aValB, hasMore = markup.GetAnAttribute(&s)
+			aName := strings.ToLower(string(aNameB))
 			if attrList[aName] {
 				continue
 			}
 			// processing step
-			if len(aName) == 0 && len(aVal) == 0 {
+			if len(aName) == 0 && len(aValB) == 0 {
 				if needPragma == dontKnow {
 					continue
 				}
@@ -260,15 +242,18 @@ func fromHTML(s scan.Bytes) string {
 				}
 			}
 			attrList[aName] = true
-			if aName == "http-equiv" && ciCheck([]byte("CONTENT-TYPE"), []byte(aVal)) {
-				gotPragma = true
-			} else if aName == "content" {
-				charset = string(extractCharsetFromMeta(scan.Bytes(aVal)))
+			switch aName {
+			case "http-equiv":
+				if scan.Bytes(aValB).Match([]byte("CONTENT-TYPE"), scan.IgnoreCase) != -1 {
+					gotPragma = true
+				}
+			case "content":
+				charset = string(extractCharsetFromMeta(scan.Bytes(aValB)))
 				if len(charset) != 0 {
 					needPragma = doNeedPragma
 				}
-			} else if aName == "charset" {
-				charset = aVal
+			case "charset":
+				charset = string(aValB)
 				needPragma = doNotNeedPragma
 			}
 		}

@@ -41,7 +41,7 @@ bali 构建工具可以制作 `zip`, `deb`, `tar`, `rpm`, `sh (STGZ)` 压缩/安
 
 ### Windows 安装包
 
-我们编写了 Inno Setup 按照包脚本，可以使用 Docker + wine 在没有 Windows 的环境下生成安装包，可以运行 `amake/innosetup` 制作 Inno Setup 安装包 ：
+我们编写了 Inno Setup 脚本，可以使用 Docker + wine 在没有 Windows 的环境下生成安装包，可以运行 `amake/innosetup` 制作 Inno Setup 安装包 ：
 
 ```shell
 docker run --rm -i -v "$TOPLEVEL:/work" amake/innosetup xxxxx.iss

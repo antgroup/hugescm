@@ -48,8 +48,8 @@ func NewBlobFromFile(path string) (*Blob, error) {
 
 	stat, err := f.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("git/object: could not stat %s: %s", path,
-			err)
+		_ = f.Close()
+		return nil, fmt.Errorf("git/object: could not stat %s: %s", path, err)
 	}
 
 	return &Blob{
@@ -58,9 +58,7 @@ func NewBlobFromFile(path string) (*Blob, error) {
 
 		closeFn: func() error {
 			if err := f.Close(); err != nil {
-				return fmt.Errorf(
-					"git/object: could not close %s: %s",
-					path, err)
+				return fmt.Errorf("git/object: could not close %s: %s", path, err)
 			}
 			return nil
 		},
@@ -118,8 +116,7 @@ func (b *Blob) Equal(other *Blob) bool {
 	}
 
 	if b != nil {
-		return b.Contents == other.Contents &&
-			b.Size == other.Size
+		return b.Contents == other.Contents && b.Size == other.Size
 	}
 	return true
 }

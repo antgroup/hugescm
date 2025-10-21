@@ -34,7 +34,7 @@ var (
 
 // RevParseCurrentName: resolve the reference pointed to by HEAD
 func RevParseCurrentName(ctx context.Context, environ []string, repoPath string) (string, error) {
-	//  git symbolic-re HEAD
+	//  git symbolic-ref HEAD
 	stderr := command.NewStderr()
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{
 		RepoPath: repoPath,

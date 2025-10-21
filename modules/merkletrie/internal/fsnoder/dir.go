@@ -3,7 +3,7 @@ package fsnoder
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"hash/fnv"
 	"sort"
 	"strings"
@@ -34,11 +34,11 @@ func newDir(name string, children []noder.Noder) (*dir, error) {
 	sort.Sort(byName(cloned))
 
 	if hasChildrenWithNoName(cloned) {
-		return nil, fmt.Errorf("non-root inner nodes cannot have empty names")
+		return nil, errors.New("non-root inner nodes cannot have empty names")
 	}
 
 	if hasDuplicatedNames(cloned) {
-		return nil, fmt.Errorf("children cannot have duplicated names")
+		return nil, errors.New("children cannot have duplicated names")
 	}
 
 	return &dir{

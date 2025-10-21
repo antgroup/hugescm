@@ -390,7 +390,7 @@ func (d *doubleStar) String() string {
 	if d.Until == nil {
 		return "**"
 	}
-	return fmt.Sprintf("**/%s", d.Until.String())
+	return "**/" + d.Until.String()
 }
 
 // unanchoredDirectory is an implementation of the Token interface which
@@ -409,7 +409,7 @@ func (d *unanchoredDirectory) Consume(path []string, isDir bool) ([]string, bool
 
 // String implements Component.String.
 func (d *unanchoredDirectory) String() string {
-	return fmt.Sprintf("%s/", d.Until.String())
+	return d.Until.String() + "/"
 }
 
 // trailingComponents is an implementation of the Token interface which

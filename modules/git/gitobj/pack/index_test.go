@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,7 +81,7 @@ func TestIndexIsNotFound(t *testing.T) {
 }
 
 func TestIndexIsNotFoundForOtherErrors(t *testing.T) {
-	assert.False(t, IsNotFound(fmt.Errorf("git/object/pack:: misc")),
+	assert.False(t, IsNotFound(errors.New("git/object/pack: misc")),
 		"expected 'err' not to satisfy 'IsNotFound()'")
 }
 
@@ -103,7 +103,7 @@ func init() {
 	// each entry will increase by the number of entries per slot (see: eps
 	// above).
 	fanout := make([]uint32, indexFanoutEntries)
-	for i := 0; i < len(fanout); i++ {
+	for i := range fanout {
 		// Begin the index at (i+1), since the fanout table mandates
 		// objects less than the value at index "i".
 		fanout[i] = uint32((i + 1) * eps)
@@ -113,7 +113,7 @@ func init() {
 	crcs := make([]uint32, 0, 256*eps)
 
 	names := make([][]byte, 0, 256*eps)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		// For each name, generate a unique SHA using the prefix "i",
 		// and then suffix "j".
 		//
@@ -123,7 +123,7 @@ func init() {
 		//   []byte{0x1 0x2 0x2 0x2 ...}
 		//
 		// and etc.
-		for j := 0; j < eps; j++ {
+		for j := range eps {
 			var sha [20]byte
 
 			sha[0] = byte(i)

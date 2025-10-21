@@ -44,7 +44,7 @@ func DialServerViaCONNECT(ctx context.Context, addr string, proxy *url.URL, forw
 	}
 	h := make(http.Header)
 	if u := proxy.User; u != nil {
-		h.Set("Proxy-Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(u.String()))))
+		h.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(u.String())))
 	}
 	h.Set("Proxy-Connection", "Keep-Alive")
 	connect := &http.Request{

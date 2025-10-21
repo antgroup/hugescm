@@ -138,8 +138,7 @@ func (c *Commit) Decode(hash string, reader io.Reader, size int64) error {
 				//
 				// Append it to the last-parsed header, and
 				// continue.
-				c.ExtraHeaders[len(c.ExtraHeaders)-1].V +=
-					fmt.Sprintf("\n%s", text[1:])
+				c.ExtraHeaders[len(c.ExtraHeaders)-1].V += "\n" + text[1:]
 				continue
 			}
 			if len(fields) < 2 {

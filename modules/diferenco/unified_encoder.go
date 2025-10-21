@@ -93,8 +93,8 @@ func (e *UnifiedEncoder) appendPathLines(lines []string, fromPath, toPath string
 		)
 	}
 	return append(lines,
-		fmt.Sprintf("--- %s", fromPath),
-		fmt.Sprintf("+++ %s", toPath),
+		"--- "+fromPath,
+		"+++ "+toPath,
 	)
 }
 
@@ -120,8 +120,8 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 		if !e.noRename {
 			if from.Name != to.Name {
 				lines = append(lines,
-					fmt.Sprintf("rename from %s", from.Name),
-					fmt.Sprintf("rename to %s", to.Name),
+					"rename from "+from.Name,
+					"rename to "+to.Name,
 				)
 			}
 		}

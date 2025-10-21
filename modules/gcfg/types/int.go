@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -32,7 +31,7 @@ func (m IntMode) String() string {
 	return "IntMode(" + strings.Join(modes, "|") + ")"
 }
 
-var errIntAmbig = fmt.Errorf("ambiguous integer value; must include '0' prefix")
+var errIntAmbig = errors.New("ambiguous integer value; must include '0' prefix")
 
 func prefix0(val string) bool {
 	return strings.HasPrefix(val, "0") || strings.HasPrefix(val, "-0")

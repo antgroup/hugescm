@@ -2,6 +2,7 @@ package fsnoder
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 
@@ -124,8 +125,7 @@ func decodeChild(data []byte) (noder.Noder, error) {
 	dirNameEnd := bytes.IndexRune(data, dirStartMark)
 	switch {
 	case fileNameEnd == -1 && dirNameEnd == -1:
-		return nil, fmt.Errorf(
-			"malformed child, no file or dir start mark found")
+		return nil, errors.New("malformed child, no file or dir start mark found")
 	case fileNameEnd == -1:
 		return decodeDir(clean, nonRoot)
 	case dirNameEnd == -1:
@@ -136,7 +136,7 @@ func decodeChild(data []byte) (noder.Noder, error) {
 		return decodeFile(clean)
 	}
 
-	return nil, fmt.Errorf("unreachable")
+	return nil, errors.New("unreachable")
 }
 
 func decodeFile(data []byte) (noder.Noder, error) {
@@ -157,17 +157,17 @@ func decodeFile(data []byte) (noder.Noder, error) {
 	case contentStart == contentEnd:
 		name := string(data[:nameEnd])
 		if !validFileName(name) {
-			return nil, fmt.Errorf("invalid file name")
+			return nil, errors.New("invalid file name")
 		}
 		return newFile(name, "")
 	default:
 		name := string(data[:nameEnd])
 		if !validFileName(name) {
-			return nil, fmt.Errorf("invalid file name")
+			return nil, errors.New("invalid file name")
 		}
 		contents := string(data[contentStart:contentEnd])
 		if !validFileContents(contents) {
-			return nil, fmt.Errorf("invalid file contents")
+			return nil, errors.New("invalid file contents")
 		}
 		return newFile(name, contents)
 	}

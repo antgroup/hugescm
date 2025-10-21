@@ -1,7 +1,7 @@
 package pack
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ func TestObjectUnpackUnpacksData(t *testing.T) {
 }
 
 func TestObjectUnpackPropogatesErrors(t *testing.T) {
-	expected := fmt.Errorf("git/object/pack:: testing")
+	expected := errors.New("git/object/pack: testing")
 
 	o := &Object{
 		data: &ChainSimple{

@@ -47,7 +47,7 @@ func (fs *BoundOS) Create(filename string) (*os.File, error) {
 func openFile(fn string, flag int, perm os.FileMode, createDir func(string) error) (*os.File, error) {
 	if flag&os.O_CREATE != 0 {
 		if createDir == nil {
-			return nil, fmt.Errorf("createDir func cannot be nil if file needs to be opened in create mode")
+			return nil, errors.New("createDir func cannot be nil if file needs to be opened in create mode")
 		}
 		if err := createDir(fn); err != nil {
 			return nil, err

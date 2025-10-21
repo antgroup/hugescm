@@ -3,7 +3,7 @@ package gitobj
 import (
 	"bufio"
 	"compress/zlib"
-	"fmt"
+	"errors"
 	"io"
 	"strconv"
 	"strings"
@@ -104,9 +104,7 @@ func (r *ObjectReader) Header() (typ ObjectType, size int64, err error) {
 		return UnknownObjectType, 0, err
 	}
 	if len(typs) == 0 {
-		return UnknownObjectType, 0, fmt.Errorf(
-			"git/object: object type must not be empty",
-		)
+		return UnknownObjectType, 0, errors.New("git/object: object type must not be empty")
 	}
 	typs = strings.TrimSuffix(typs, " ")
 

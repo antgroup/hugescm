@@ -59,7 +59,7 @@ func (p *Packfile) Object(name []byte) (*Object, error) {
 		if !IsNotFound(err) {
 			// If the error was not an errNotFound, re-wrap it with
 			// additional context.
-			err = fmt.Errorf("git/object/pack:: could not load index: %s", err)
+			err = fmt.Errorf("git/object/pack: could not load index: %s", err)
 		}
 		return nil, err
 	}

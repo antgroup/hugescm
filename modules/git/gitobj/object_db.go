@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -114,7 +115,7 @@ func FromBackend(b storage.Backend, setters ...Option) (*Database, error) {
 // If Close() has already been called, this function will return an error.
 func (d *Database) Close() error {
 	if !atomic.CompareAndSwapUint32(&d.closed, 0, 1) {
-		return fmt.Errorf("git/object: *Database already closed")
+		return errors.New("git/object: *Database already closed")
 	}
 
 	if err := d.ro.Close(); err != nil {
@@ -342,7 +343,7 @@ func (o *Database) save(sha []byte, buf io.Reader) ([]byte, int64, error) {
 // "sha" []byte, or an error.
 func (o *Database) open(sha []byte) (*ObjectReader, error) {
 	if atomic.LoadUint32(&o.closed) == 1 {
-		return nil, fmt.Errorf("git/object: cannot use closed *pack.Set")
+		return nil, errors.New("git/object: cannot use closed *pack.Set")
 	}
 
 	f, err := o.ro.Open(sha)

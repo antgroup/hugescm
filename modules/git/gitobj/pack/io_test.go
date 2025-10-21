@@ -2,7 +2,7 @@ package pack
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ func TestOffsetReaderAtReadsAtOffset(t *testing.T) {
 }
 
 func TestOffsetReaderPropogatesErrors(t *testing.T) {
-	expected := fmt.Errorf("git/object/pack:: testing")
+	expected := errors.New("git/object/pack: testing")
 	bo := &OffsetReaderAt{
 		r: &ErrReaderAt{Err: expected},
 		o: 1,

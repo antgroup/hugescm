@@ -3,7 +3,7 @@ package pack
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"hash"
 	"io"
 )
@@ -48,7 +48,7 @@ const (
 var (
 	// ErrShortFanout is an error representing situations where the entire
 	// fanout table could not be read, and is thus too short.
-	ErrShortFanout = fmt.Errorf("git/object/pack:: too short fanout table")
+	ErrShortFanout = errors.New("git/object/pack: too short fanout table")
 
 	// indexHeader is the first four "magic" bytes of index files version 2
 	// or newer.

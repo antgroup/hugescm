@@ -5,14 +5,14 @@ package object
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sort"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 )
 
 // errIsReachable is thrown when first commit is an ancestor of the second
-var errIsReachable = fmt.Errorf("first is reachable from second")
+var errIsReachable = errors.New("first is reachable from second")
 
 // MergeBase mimics the behavior of `git merge-base actual other`, returning the
 // best common ancestor between the actual and the passed one.

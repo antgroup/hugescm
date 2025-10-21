@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -46,7 +47,7 @@ func (e *SizeExecutor) Paths() []string {
 // git cat-file --batch-check --batch-all-objects
 func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) error {
 	if !git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
-		return fmt.Errorf("require Git 2.28 or later")
+		return errors.New("require Git 2.28 or later")
 	}
 	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: repoPath}, "cat-file", "--batch-check", "--batch-all-objects", "--unordered")
 	if err != nil {

@@ -1,7 +1,6 @@
 package pack
 
 import (
-	"fmt"
 	"hash"
 	"os"
 	"path/filepath"
@@ -57,7 +56,7 @@ func NewSet(db string, algo hash.Hash) (*Set, error) {
 
 		name := subMatch[1]
 
-		ifd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.idx", name)))
+		ifd, err := os.Open(filepath.Join(pd, name+".idx"))
 		if err != nil {
 			// We have a pack (since it matched the regex), but the
 			// index is missing or unusable.  Skip this pack and
@@ -71,7 +70,7 @@ func NewSet(db string, algo hash.Hash) (*Set, error) {
 			continue
 		}
 
-		pfd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.pack", name)))
+		pfd, err := os.Open(filepath.Join(pd, name+".pack"))
 		if err != nil {
 			_ = ifd.Close()
 			return nil, err

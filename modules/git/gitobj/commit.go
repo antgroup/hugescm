@@ -116,8 +116,7 @@ func (c *Commit) Decode(hash hash.Hash, from io.Reader, size int64) (n int, err 
 				//
 				// Append it to the last-parsed header, and
 				// continue.
-				c.ExtraHeaders[len(c.ExtraHeaders)-1].V +=
-					fmt.Sprintf("\n%s", text[1:])
+				c.ExtraHeaders[len(c.ExtraHeaders)-1].V += "\n" + text[1:]
 				continue
 			}
 			switch fields[0] {

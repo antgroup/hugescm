@@ -1,6 +1,9 @@
 package pack
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // ChainDelta represents a "delta" component of a delta-base chain.
 type ChainDelta struct {
@@ -47,7 +50,7 @@ func patch(base, delta []byte) ([]byte, error) {
 		//
 		// If this does not match with the srcSize, return an error
 		// early so as to avoid a possible bounds error below.
-		return nil, fmt.Errorf("git/object/pack:: invalid delta data")
+		return nil, errors.New("git/object/pack: invalid delta data")
 	}
 
 	// The remainder of the delta header contains the destination size, and
@@ -145,7 +148,7 @@ func patch(base, delta []byte) ([]byte, error) {
 		// an invalid set of patch instructions.
 		//
 		// Return immediately.
-		return nil, fmt.Errorf("git/object/pack:: invalid delta data")
+		return nil, errors.New("git/object/pack: invalid delta data")
 	}
 	return dest, nil
 }

@@ -397,7 +397,7 @@ func diffNodesSameName(ctx context.Context, changes *Changes, ii *doubleIter) er
 			return err
 		}
 	default:
-		return fmt.Errorf("bad status from double iterator")
+		return errors.New("bad status from double iterator")
 	}
 
 	return nil
@@ -433,7 +433,7 @@ func diffDirs(ctx context.Context, changes *Changes, ii *doubleIter) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("both dirs are empty but has different hash")
+		return errors.New("both dirs are empty but has different hash")
 	}
 
 	return nil

@@ -211,7 +211,7 @@ func (t *Table) getVarInt(src []byte, start uint, blockEnd uint) (uint, uint, er
 	for (uint(src[start]) & 0x80) > 0 {
 		start++
 		if start > blockEnd {
-			return 0, 0, fmt.Errorf("exceeded block length")
+			return 0, 0, errors.New("exceeded block length")
 		}
 
 		val = ((val + 1) << 7) | (uint(src[start]) & 0x7f)
@@ -481,7 +481,7 @@ func ParseTable(absolutePath string) (_ *Table, returnedErr error) {
 	}
 
 	if h != t.footer.header {
-		return nil, fmt.Errorf("footer doesn't match header")
+		return nil, errors.New("footer doesn't match header")
 	}
 
 	t.blockSize = parseUint24(t.footer.BlockSize)

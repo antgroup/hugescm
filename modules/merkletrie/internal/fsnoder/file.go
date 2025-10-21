@@ -3,7 +3,7 @@ package fsnoder
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"hash/fnv"
 
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
@@ -19,7 +19,7 @@ type file struct {
 // newFile returns a noder representing a file with the given contents.
 func newFile(name, contents string) (*file, error) {
 	if name == "" {
-		return nil, fmt.Errorf("files cannot have empty names")
+		return nil, errors.New("files cannot have empty names")
 	}
 
 	return &file{

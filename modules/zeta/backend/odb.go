@@ -186,7 +186,7 @@ func closeSafe(a ...io.Closer) error {
 // If Close() has already been called, this function will return an error.
 func (d *Database) Close() error {
 	if !atomic.CompareAndSwapUint32(&d.closed, 0, 1) {
-		return fmt.Errorf("zeta: *Database already closed")
+		return errors.New("zeta: *Database already closed")
 	}
 	return closeSafe(d.ro, d.metaRO, d.rw, d.metaRW)
 }

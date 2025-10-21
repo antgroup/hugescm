@@ -4,7 +4,6 @@
 package pack
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -198,7 +197,7 @@ func newPacks(db string) ([]*Packfile, error) {
 
 		name := subMatch[1]
 
-		ifd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.idx", name)))
+		ifd, err := os.Open(filepath.Join(pd, name+".idx"))
 		if err != nil {
 			// We have a pack (since it matched the regex), but the
 			// index is missing or unusable.  Skip this pack and
@@ -212,7 +211,7 @@ func newPacks(db string) ([]*Packfile, error) {
 			continue
 		}
 
-		pfd, err := os.Open(filepath.Join(pd, fmt.Sprintf("%s.pack", name)))
+		pfd, err := os.Open(filepath.Join(pd, name+".pack"))
 		if err != nil {
 			_ = ifd.Close()
 			return nil, err

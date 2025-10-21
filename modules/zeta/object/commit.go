@@ -209,8 +209,7 @@ func (c *Commit) Decode(reader Reader) error {
 				//
 				// Append it to the last-parsed header, and
 				// continue.
-				c.ExtraHeaders[len(c.ExtraHeaders)-1].V +=
-					fmt.Sprintf("\n%s", text[1:])
+				c.ExtraHeaders[len(c.ExtraHeaders)-1].V += "\n" + text[1:]
 				continue
 			}
 			if len(fields) < 2 {

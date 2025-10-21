@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -188,7 +188,7 @@ func TestPackfileClosesReadClosers(t *testing.T) {
 }
 
 func TestPackfileClosePropogatesCloseErrors(t *testing.T) {
-	e := fmt.Errorf("git/object/pack:: testing")
+	e := errors.New("git/object/pack: testing")
 	p := &Packfile{
 		r: &ReaderAtCloser{E: e},
 	}

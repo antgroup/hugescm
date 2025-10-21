@@ -173,7 +173,7 @@ func Stat(ctx context.Context, o *StatOptions) error {
 	if len(shallow) != 0 {
 		_, _ = tr.Fprintf(os.Stderr, "shallow clone started at: %s\n", shallow)
 	}
-	if oid, current, err := git.RevParseCurrentEx(ctx, nil, o.RepoPath); err == nil {
+	if current, oid, err := git.RevParseCurrent(ctx, nil, o.RepoPath); err == nil {
 		refname := git.ReferenceName(current)
 		if refname.IsBranch() {
 			fmt.Fprintf(os.Stderr, "%s: %s (commit: %s)\n", tr.W("On branch"), blue(refname.BranchName()), green(oid[:9]))

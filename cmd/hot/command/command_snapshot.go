@@ -259,7 +259,7 @@ func (c *Snapshot) Run(g *Globals) error {
 	}
 	c.repoPath = git.RevParseRepoPath(context.Background(), c.CWD)
 	trace.DbgPrint("repository location: %v", c.repoPath)
-	basePoint, current, err := git.RevParseCurrentEx(context.Background(), os.Environ(), c.repoPath)
+	current, basePoint, err := git.RevParseCurrent(context.Background(), os.Environ(), c.repoPath)
 	if err != nil {
 		die("rev-parse HEAD: %v", err)
 		return err

@@ -39,7 +39,7 @@ func (r *Replayer) resolveCommit(ref *git.Reference) ([]byte, *gitobj.Commit, er
 
 // graft HEAD
 func (r *Replayer) graftHEAD() error {
-	oldRev, _, err := git.RevParseCurrentEx(r.ctx, os.Environ(), r.repoPath)
+	_, oldRev, err := git.RevParseCurrent(r.ctx, os.Environ(), r.repoPath)
 	if err != nil {
 		return err
 	}

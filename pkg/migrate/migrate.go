@@ -71,7 +71,7 @@ type Migrator struct {
 
 func NewMigrator(ctx context.Context, opts *MigrateOptions) (*Migrator, error) {
 	fromPath := git.RevParseRepoPath(ctx, opts.From)
-	current, err := git.RevParseCurrent(ctx, opts.Environ, opts.From)
+	current, err := git.RevParseCurrentName(ctx, opts.Environ, opts.From)
 	if err != nil {
 		return nil, err
 	}

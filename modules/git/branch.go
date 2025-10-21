@@ -3,6 +3,7 @@ package git
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -27,50 +28,59 @@ func JoinBranchRev(r string) string {
 	return refHeadPrefix + r
 }
 
-// RevParseCurrent: resolve the reference pointed to by HEAD
-//
-// not git repo:
-//
-// fatal: not a git repository (or any of the parent directories): .git
-//
-// empty repo:
-//
-// fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
-// Use '--' to separate paths from revisions, like this:
-// 'git <command> [<revision>...] -- [<file>...]'
-//
-// ref not exists: HEAD
-//
-// refs/heads/master
-func RevParseCurrent(ctx context.Context, environ []string, repoPath string) (string, error) {
-	//  git rev-parse --symbolic-full-name HEAD
-	cmd := command.NewFromOptions(ctx,
-		&command.RunOpts{RepoPath: repoPath, Environ: environ},
-		"git", "rev-parse", "--symbolic-full-name", "HEAD")
+var (
+	ErrNotSymbolicRef = errors.New("ref HEAD is not a symbolic ref")
+)
+
+// RevParseCurrentName: resolve the reference pointed to by HEAD
+func RevParseCurrentName(ctx context.Context, environ []string, repoPath string) (string, error) {
+	//  git symbolic-re HEAD
+	stderr := command.NewStderr()
+	cmd := command.NewFromOptions(ctx, &command.RunOpts{
+		RepoPath: repoPath,
+		Environ:  environ,
+		Stderr:   stderr,
+	}, "git", "symbolic-ref", "HEAD")
 	line, err := cmd.OneLine()
 	if err != nil {
+		message := stderr.String()
+		switch {
+		case strings.Contains(message, "ref HEAD is not a symbolic ref"):
+			return ReferenceNameDefault, ErrNotSymbolicRef
+		case len(message) != 0:
+			return ReferenceNameDefault, errors.New(message)
+		}
 		return ReferenceNameDefault, err
 	}
 	return line, nil
 }
 
-// RevParseCurrentEx parse HEAD return hash and refname
-//
-//	git rev-parse HEAD --symbolic-full-name HEAD
-//
-// result:
-//
-//	85e15f6f6272033eb83e5a56f650a7a5f9c84cf6
-//	refs/heads/master
-func RevParseCurrentEx(ctx context.Context, environ []string, repoPath string) (string, string, error) {
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ},
-		"git", "rev-parse", "HEAD", "--symbolic-full-name", "HEAD")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", ReferenceNameDefault, err
+// RevParseCurrent parse HEAD return hash and refname
+func RevParseCurrent(ctx context.Context, environ []string, repoPath string) (refname string, hash string, err error) {
+	if refname, err = RevParseCurrentName(ctx, environ, repoPath); err != nil {
+		if err == ErrNotSymbolicRef {
+			// try parse HEAD
+			stderr := command.NewStderr()
+			cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ, Stderr: stderr}, "git", "rev-parse", "HEAD")
+			if hash, err = cmd.OneLine(); err != nil {
+				if message := stderr.String(); len(message) != 0 {
+					err = errors.Join(err, errors.New(message))
+				}
+				return ReferenceNameDefault, "", err
+			}
+			return "", hash, nil
+		}
+		return
 	}
-	hash, refname, _ := strings.Cut(string(output), "\n")
-	return hash, strings.TrimSpace(refname), nil
+	stderr := command.NewStderr()
+	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ, Stderr: stderr}, "git", "rev-parse", refname)
+	if hash, err = cmd.OneLine(); err != nil {
+		if message := stderr.String(); len(message) != 0 {
+			err = errors.Join(err, errors.New(message))
+		}
+		return ReferenceNameDefault, "", err
+	}
+	return refname, hash, nil
 }
 
 // SymReferenceLink: Update default branch or current branch
@@ -141,7 +151,7 @@ func searchDefaultBranch(ctx context.Context, environ []string, repoPath string)
 // If none of these branches exist, return the first branch in the branch list.
 // Return: refname, needCorrect
 func resolveCurrentReference(ctx context.Context, environ []string, repoPath string) (current string, needfix bool, err error) {
-	if current, err = RevParseCurrent(ctx, environ, repoPath); err == nil && strings.HasPrefix(current, refHeadPrefix) {
+	if current, err = RevParseCurrentName(ctx, environ, repoPath); err == nil && strings.HasPrefix(current, refHeadPrefix) {
 		return
 	}
 	needfix = true

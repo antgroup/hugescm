@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/command"
-	"github.com/antgroup/hugescm/modules/env"
 )
 
 func JoinBranchPrefix(b string) string {
@@ -29,54 +28,54 @@ func JoinBranchRev(r string) string {
 }
 
 var (
-	ErrNotSymbolicRef = errors.New("ref HEAD is not a symbolic ref")
+	ErrDetachedHEAD = errors.New("detached HEAD")
 )
 
 // RevParseCurrentName: resolve the reference pointed to by HEAD
 func RevParseCurrentName(ctx context.Context, environ []string, repoPath string) (string, error) {
 	//  git symbolic-ref HEAD
 	stderr := command.NewStderr()
+	var stdout strings.Builder
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{
 		RepoPath: repoPath,
 		Environ:  environ,
 		Stderr:   stderr,
+		Stdout:   &stdout,
 	}, "git", "symbolic-ref", "HEAD")
-	line, err := cmd.OneLine()
-	if err != nil {
-		message := stderr.String()
-		switch {
-		case strings.Contains(message, "ref HEAD is not a symbolic ref"):
-			return ReferenceNameDefault, ErrNotSymbolicRef
-		case len(message) != 0:
-			return ReferenceNameDefault, errors.New(message)
+	if err := cmd.Run(); err != nil {
+		message := strings.TrimSpace(stderr.String())
+		if strings.Contains(message, "is not a symbolic ref") {
+			return ReferenceNameDefault, ErrDetachedHEAD
+		}
+		if len(message) != 0 {
+			err = errors.New(message)
 		}
 		return ReferenceNameDefault, err
 	}
-	return line, nil
+	symref, trailing, ok := strings.Cut(stdout.String(), "\n")
+	if !ok {
+		return ReferenceNameDefault, errors.New("expected symbolic reference to be terminated by newline")
+	}
+	if len(trailing) > 0 {
+		return ReferenceNameDefault, errors.New("symbolic reference has trailing data")
+	}
+	return symref, nil
 }
 
 // RevParseCurrent parse HEAD return hash and refname
 func RevParseCurrent(ctx context.Context, environ []string, repoPath string) (refname string, hash string, err error) {
 	if refname, err = RevParseCurrentName(ctx, environ, repoPath); err != nil {
-		if err == ErrNotSymbolicRef {
-			// try parse HEAD
-			stderr := command.NewStderr()
-			cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ, Stderr: stderr}, "git", "rev-parse", "HEAD")
-			if hash, err = cmd.OneLine(); err != nil {
-				if message := stderr.String(); len(message) != 0 {
-					err = errors.Join(err, errors.New(message))
-				}
-				return ReferenceNameDefault, "", err
-			}
-			return "", hash, nil
+		if err != ErrDetachedHEAD {
+			return
 		}
-		return
+		refname = "HEAD" // git checkout commit
 	}
 	stderr := command.NewStderr()
-	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ, Stderr: stderr}, "git", "rev-parse", refname)
+	cmd := command.NewFromOptions(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ, Stderr: stderr},
+		"git", "rev-parse", "--verify", "--end-of-options", refname)
 	if hash, err = cmd.OneLine(); err != nil {
-		if message := stderr.String(); len(message) != 0 {
-			err = errors.Join(err, errors.New(message))
+		if message := strings.TrimSpace(stderr.String()); len(message) != 0 {
+			err = errors.New(message)
 		}
 		return ReferenceNameDefault, "", err
 	}
@@ -90,81 +89,6 @@ func SymReferenceLink(ctx context.Context, repoPath string, refname string) erro
 		return err
 	}
 	return nil
-}
-
-var (
-	branchMatches = map[string]bool{
-		"refs/heads/master":   true,
-		"refs/heads/main":     true,
-		"refs/heads/mainline": true,
-		"refs/heads/trunk":    true,
-	}
-	orderBranches = []string{
-		"refs/heads/master",
-		"refs/heads/main",
-		"refs/heads/mainline",
-		"refs/heads/trunk",
-	}
-)
-
-func searchDefaultBranch(ctx context.Context, environ []string, repoPath string) (string, error) {
-	reader, err := NewReader(ctx, &command.RunOpts{RepoPath: repoPath, Environ: environ}, "for-each-ref", refHeadPrefix, "--format=%(refname)")
-	if err != nil {
-		return "", err
-	}
-	defer reader.Close() // nolint
-	scanner := bufio.NewScanner(reader)
-	branches := make(map[string]bool)
-	var firstBranch string
-	for scanner.Scan() {
-		if len(branches) == len(orderBranches) && len(firstBranch) != 0 {
-			break
-		}
-		branch := strings.TrimSpace(scanner.Text())
-		if branchMatches[branch] {
-			branches[branch] = true
-			continue
-		}
-		if len(firstBranch) == 0 {
-			firstBranch = branch
-			continue
-		}
-	}
-	for _, b := range orderBranches {
-		if branches[b] {
-			return b, nil
-		}
-	}
-	if len(firstBranch) != 0 {
-		return firstBranch, nil
-	}
-	return "", ErrNoBranches
-}
-
-// resolveCurrentReference: Returns the default branch. If the default branch does not exist,
-// returns the valid branch from the branch list. The priority of the branch is as follows:
-//  1. refs/heads/master
-//  2. refs/heads/main
-//  3. refs/heads/mainline
-//  4. refs/heads/trunk
-//
-// If none of these branches exist, return the first branch in the branch list.
-// Return: refname, needCorrect
-func resolveCurrentReference(ctx context.Context, environ []string, repoPath string) (current string, needfix bool, err error) {
-	if current, err = RevParseCurrentName(ctx, environ, repoPath); err == nil && strings.HasPrefix(current, refHeadPrefix) {
-		return
-	}
-	needfix = true
-	current, err = searchDefaultBranch(ctx, environ, repoPath)
-	return
-}
-
-func DefaultBranchName(ctx context.Context, repoPath string) (string, error) {
-	branchName, _, err := resolveCurrentReference(ctx, env.Environ(), repoPath)
-	if err == ErrNoBranches {
-		return "", nil
-	}
-	return branchName, err
 }
 
 func FindBranch(ctx context.Context, repoPath string, name string) (*Reference, error) {

@@ -83,6 +83,7 @@ Date = "日期"
 "Create a shallow clone with a history truncated to the specified number of commits" = "创建一个浅克隆，其历史记录被截断为指定的提交次数"
 "Cloning to '%s' completed, spent: %v.\n" = "克隆到：'%s' 完成，耗时：%v。\n"
 "After the clone is created, initialize and clone submodules within based on the provided pathspec" = "创建克隆后，根据提供的路径规范初始化并克隆其中的子模块"
+"Override default clone/fetch configuration, format: <key>=<value>" = "覆盖默认 clone/fetch 配置, 格式: <名称>=<取值>"
 # unbranch
 "Linearize repository history" = "线性化存储库历史"
 "Linearize the specified revision history" = "线性化指定版本历史"

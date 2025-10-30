@@ -23,6 +23,7 @@ type Co struct {
 	Depth       int      `name:"depth" short:"d" help:"Create a shallow clone with a history truncated to the specified number of commits" default:"5"`
 	Limit       int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
 	Recursive   bool     `name:"recursive" short:"r" help:"After the clone is created, initialize and clone submodules within based on the provided pathspec"`
+	Values      []string `short:"X" shortonly:"" help:"Override default clone/fetch configuration, format: <key>=<value>"`
 }
 
 func (c *Co) concatDestination(baseName string) (string, error) {
@@ -89,5 +90,6 @@ func (c *Co) Run(g *Globals) error {
 		Depth:       c.Depth,
 		Limit:       c.Limit,
 		Recursive:   c.Recursive,
+		Values:      c.Values,
 	})
 }

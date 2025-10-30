@@ -22,6 +22,7 @@ type CoOptions struct {
 	Depth               int
 	Limit               int64
 	Recursive           bool
+	Values              []string
 }
 
 var (
@@ -71,7 +72,10 @@ func fetch(ctx context.Context, o *CoOptions) error {
 			return err
 		}
 	}
-	fetchArgs := make([]string, 0, 10)
+	fetchArgs := make([]string, 0, 10+len(o.Values)*2)
+	for _, v := range o.Values {
+		fetchArgs = append(fetchArgs, "-c", v)
+	}
 	fetchArgs = append(fetchArgs, "fetch")
 	if o.Depth > 0 && o.Depth < 20 {
 		fetchArgs = append(fetchArgs, "--depth="+strconv.Itoa(o.Depth))
@@ -97,7 +101,12 @@ func fetch(ctx context.Context, o *CoOptions) error {
 		return err
 	}
 	if o.Recursive {
-		if err := run(ctx, o.Destination, "git", "submodule", "update", "--init", "--recursive", "--recommend-shallow"); err != nil {
+		submoduleArgs := make([]string, 0, 5+len(o.Values)*2)
+		for _, v := range o.Values {
+			submoduleArgs = append(submoduleArgs, "-c", v)
+		}
+		submoduleArgs = append(submoduleArgs, "submodule", "update", "--init", "--recursive", "--recommend-shallow")
+		if err := run(ctx, o.Destination, "git", submoduleArgs...); err != nil {
 			fmt.Fprintf(os.Stderr, "switch error: %v", err)
 			return err
 		}
@@ -153,7 +162,10 @@ func sparseCheckout(ctx context.Context, o *CoOptions) error {
 
 func clone(ctx context.Context, o *CoOptions) error {
 	now := time.Now()
-	cloneArgs := make([]string, 0, 20)
+	cloneArgs := make([]string, 0, 20+len(o.Values)*2)
+	for _, v := range o.Values {
+		cloneArgs = append(cloneArgs, "-c", v)
+	}
 	cloneArgs = append(cloneArgs, "-c", "index.version=4", "-c", "advice.detachedHead=false", "clone")
 	switch {
 	case len(o.Sparse) != 0 && o.Limit >= 0:

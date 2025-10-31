@@ -77,8 +77,14 @@ func (d *Decrypter) encrypt(plaintext []byte) ([]byte, error) {
 	if _, err := io.ReadFull(hkdfReader, symmetricKey); err != nil {
 		return nil, fmt.Errorf("gen symmetricKey error: %w", err)
 	}
-	aesBlock, _ := aes.NewCipher(symmetricKey)
-	gcm, _ := cipher.NewGCM(aesBlock)
+	aesBlock, err := aes.NewCipher(symmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("NewCipher %w", err)
+	}
+	gcm, err := cipher.NewGCM(aesBlock)
+	if err != nil {
+		return nil, fmt.Errorf("NewGCM %w", err)
+	}
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("nonce error: %w", err)
@@ -89,7 +95,7 @@ func (d *Decrypter) encrypt(plaintext []byte) ([]byte, error) {
 
 func (d *Decrypter) decrypt(message []byte) ([]byte, error) {
 	if len(message) < x25519PublicKeySize {
-		return nil, fmt.Errorf("invalid message size")
+		return nil, errors.New("invalid message size")
 	}
 	ephemeralPublicBytes := message[:x25519PublicKeySize]
 	ciphertext := message[x25519PublicKeySize:]
@@ -111,15 +117,19 @@ func (d *Decrypter) decrypt(message []byte) ([]byte, error) {
 	if _, err := io.ReadFull(hkdfReader, symmetricKey); err != nil {
 		return nil, fmt.Errorf("symmetricKey error: %w", err)
 	}
-
-	aesBlock, _ := aes.NewCipher(symmetricKey)
-	gcm, _ := cipher.NewGCM(aesBlock)
+	aesBlock, err := aes.NewCipher(symmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("NewCipher %w", err)
+	}
+	gcm, err := cipher.NewGCM(aesBlock)
+	if err != nil {
+		return nil, fmt.Errorf("NewGCM %w", err)
+	}
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return nil, fmt.Errorf("message too short")
+		return nil, errors.New("message too short")
 	}
 	nonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-
 	plaintext, err := gcm.Open(nil, nonce, actualCiphertext, nil)
 	if err != nil {
 		return nil, fmt.Errorf("invalid cipher text: %w", err)

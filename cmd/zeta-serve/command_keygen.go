@@ -4,6 +4,7 @@
 package main
 
 import (
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
@@ -76,6 +77,22 @@ func (c *Keygen) genECDSA() error {
 	return nil
 }
 
+func (c *Keygen) genX25519() error {
+	privateKey, err := ecdh.X25519().GenerateKey(rand.Reader)
+	if err != nil {
+		return fmt.Errorf("GenKey error: %w", err)
+	}
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return fmt.Errorf("GenKeyError: %w", err)
+	}
+	_, _ = fmt.Fprint(os.Stdout, string(pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})))
+	return nil
+}
+
 func (c *Keygen) Run(g *Globals) error {
 	switch strings.ToUpper(c.Type) {
 	case "RSA":
@@ -84,6 +101,8 @@ func (c *Keygen) Run(g *Globals) error {
 		return c.genED25519()
 	case "ECDSA":
 		return c.genECDSA()
+	case "X25519":
+		return c.genX25519()
 	default:
 		fmt.Fprintf(os.Stderr, "unsupported key type: %v\n", c.Type)
 		return errors.New("unsupported key type")

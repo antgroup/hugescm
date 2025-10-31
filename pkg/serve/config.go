@@ -37,11 +37,11 @@ type Database struct {
 	Timeout Duration `toml:"timeout,omitempty"`
 }
 
-func (d *Database) Decrypt(decryptedKey string) {
-	if d == nil || len(decryptedKey) == 0 {
+func (d *Database) Decrypt(dec *Decrypter) {
+	if dec == nil {
 		return
 	}
-	if passwd, err := Decrypt(d.Passwd, decryptedKey); err == nil {
+	if passwd, err := dec.Decrypt(d.Passwd); err == nil {
 		d.Passwd = passwd
 	}
 }
@@ -79,14 +79,15 @@ type OSS struct {
 	Region          string `toml:"region,omitempty"`
 }
 
-func (o *OSS) Decrypt(decryptedKey string) {
-	if o == nil || len(decryptedKey) == 0 {
+func (o *OSS) Decrypt(d *Decrypter) {
+	if d == nil {
 		return
 	}
-	if accessKeyID, err := Decrypt(o.AccessKeyID, decryptedKey); err == nil {
+
+	if accessKeyID, err := d.Decrypt(o.AccessKeyID); err == nil {
 		o.AccessKeyID = accessKeyID
 	}
-	if accessKeySecret, err := Decrypt(o.AccessKeySecret, decryptedKey); err == nil {
+	if accessKeySecret, err := d.Decrypt(o.AccessKeySecret); err == nil {
 		o.AccessKeySecret = accessKeySecret
 	}
 }

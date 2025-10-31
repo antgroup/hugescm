@@ -4,25 +4,35 @@
 package serve
 
 import (
-	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/ecdh"
 	"crypto/rand"
-	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math"
-	"regexp"
+	"io"
+	"reflect"
+	"strings"
+
+	"github.com/antgroup/hugescm/modules/base58"
+	"golang.org/x/crypto/hkdf"
 )
 
-type Decryptor struct {
-	*rsa.PrivateKey
+const (
+	x25519PublicKeySize = 32
+	eciesPrefix         = "ENC@"
+)
+
+type Decrypter struct {
+	*ecdh.PrivateKey
 }
 
-// parseRsaKey returns pub or pri key through parsing the fname
+// parsePrivateKey returns pub or pri key through parsing the fname
 // Use type assert to get the specific rsa privatekey or publickey
-func parseRsaKey(key []byte) (any, error) {
+func parsePrivateKey(key []byte) (any, error) {
 	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, errors.New("malformed Key")
@@ -38,89 +48,109 @@ func parseRsaKey(key []byte) (any, error) {
 	return nil, fmt.Errorf("key type not supported: %s", block.Type)
 }
 
-func NewDecryptor(decryptedKey string) (*Decryptor, error) {
-	rsaKey, err := parseRsaKey([]byte(decryptedKey))
+func NewDecrypter(x25519Key string) (*Decrypter, error) {
+	a, err := parsePrivateKey([]byte(x25519Key))
 	if err != nil {
 		return nil, err
 	}
-	if k, ok := rsaKey.(*rsa.PrivateKey); ok {
-		return &Decryptor{PrivateKey: k}, nil
+	p, ok := a.(*ecdh.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("key type not supported: %s", reflect.TypeOf(a))
 	}
-	return nil, errors.New("not rsa key")
+	return &Decrypter{PrivateKey: p}, nil
 }
 
-func (d *Decryptor) Decrypt(data []byte) ([]byte, error) {
-	chunkLen := d.N.BitLen() / 8
-	var b bytes.Buffer
-	chunkNum := int(math.Ceil(float64(len(data)) / float64(chunkLen)))
-	var err error
-	var decryptedPart []byte
-	for i := range chunkNum {
-		if i == chunkNum-1 {
-			decryptedPart, err = rsa.DecryptPKCS1v15(rand.Reader, d.PrivateKey, data[chunkLen*i:])
-		} else {
-			decryptedPart, err = rsa.DecryptPKCS1v15(rand.Reader, d.PrivateKey, data[chunkLen*i:chunkLen*(i+1)])
-		}
-		if err != nil {
-			return nil, err
-		}
-		b.Write(decryptedPart)
+func (d *Decrypter) encrypt(plaintext []byte) ([]byte, error) {
+	ephemeralPriv, err := ecdh.X25519().GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("gen temp Key error: %w", err)
 	}
-	return b.Bytes(), nil
+	ephemeralPublic := ephemeralPriv.PublicKey()
+	sharedSecret, err := ephemeralPriv.ECDH(d.PublicKey())
+	if err != nil {
+		return nil, fmt.Errorf("gen shared Key error: %w", err)
+	}
+	salt := ephemeralPublic.Bytes()
+	info := []byte("ECIES-AES256-GCM-HKDF-SHA256")
+	hkdfReader := hkdf.New(sha256.New, sharedSecret, salt, info)
+	symmetricKey := make([]byte, 32) // 32 byte for AES-256
+	if _, err := io.ReadFull(hkdfReader, symmetricKey); err != nil {
+		return nil, fmt.Errorf("gen symmetricKey error: %w", err)
+	}
+	aesBlock, _ := aes.NewCipher(symmetricKey)
+	gcm, _ := cipher.NewGCM(aesBlock)
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, fmt.Errorf("nonce error: %w", err)
+	}
+	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
+	return append(ephemeralPublic.Bytes(), ciphertext...), nil
 }
 
-func (d *Decryptor) Encrypt(data []byte) ([]byte, error) {
-	chunkLen := d.N.BitLen()/8 - 11
-	var b bytes.Buffer
-	chunkNum := int(math.Ceil(float64(len(data)) / float64(chunkLen)))
-	var err error
-	var encryptedPart []byte
-	for i := range chunkNum {
-		if i == chunkNum-1 {
-			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PublicKey, data[chunkLen*i:])
-		} else {
-			encryptedPart, err = rsa.EncryptPKCS1v15(rand.Reader, &d.PublicKey, data[chunkLen*i:chunkLen*(i+1)])
-		}
-		if err != nil {
-			return nil, err
-		}
-		b.Write(encryptedPart)
+func (d *Decrypter) decrypt(message []byte) ([]byte, error) {
+	if len(message) < x25519PublicKeySize {
+		return nil, fmt.Errorf("invalid message size")
 	}
-	return b.Bytes(), nil
+	ephemeralPublicBytes := message[:x25519PublicKeySize]
+	ciphertext := message[x25519PublicKeySize:]
+
+	ephemeralPublic, err := ecdh.X25519().NewPublicKey(ephemeralPublicBytes)
+	if err != nil {
+		return nil, fmt.Errorf("cannot gen key: %w", err)
+	}
+
+	sharedSecret, err := d.ECDH(ephemeralPublic)
+	if err != nil {
+		return nil, fmt.Errorf("shared secret bad: %w", err)
+	}
+
+	salt := ephemeralPublic.Bytes()
+	info := []byte("ECIES-AES256-GCM-HKDF-SHA256")
+	hkdfReader := hkdf.New(sha256.New, sharedSecret, salt, info)
+	symmetricKey := make([]byte, 32)
+	if _, err := io.ReadFull(hkdfReader, symmetricKey); err != nil {
+		return nil, fmt.Errorf("symmetricKey error: %w", err)
+	}
+
+	aesBlock, _ := aes.NewCipher(symmetricKey)
+	gcm, _ := cipher.NewGCM(aesBlock)
+	nonceSize := gcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, fmt.Errorf("message too short")
+	}
+	nonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+	plaintext, err := gcm.Open(nil, nonce, actualCiphertext, nil)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cipher text: %w", err)
+	}
+	return plaintext, nil
 }
 
-var (
-	regEncryptBlock = regexp.MustCompile(`^ENC\((?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{4})\)$`)
-)
-
-func Decrypt(content string, decryptedKey string) (string, error) {
-	if !regEncryptBlock.MatchString(content) {
-		return content, nil
-	}
-	encryptedRaw, err := base64.StdEncoding.DecodeString(content[4 : len(content)-1])
+func (d *Decrypter) Encrypt(plaintext string) (string, error) {
+	b, err := d.encrypt([]byte(plaintext))
 	if err != nil {
 		return "", err
 	}
-	d, err := NewDecryptor(decryptedKey)
-	if err != nil {
-		return "", err
-	}
-	rawContent, err := d.Decrypt(encryptedRaw)
-	if err != nil {
-		return "", err
-	}
-	return string(rawContent), nil
+	return eciesPrefix + base58.Encode(b), nil
 }
 
-func Encrypt(content string, decryptedKey string) (string, error) {
-	d, err := NewDecryptor(decryptedKey)
+func (d *Decrypter) Decrypt(ciphertext string) (string, error) {
+	suffix, ok := strings.CutPrefix(ciphertext, eciesPrefix)
+	if !ok {
+		return ciphertext, nil
+	}
+	b, err := d.decrypt(base58.Decode(suffix))
 	if err != nil {
 		return "", err
 	}
-	encryptedData, err := d.Encrypt([]byte(content))
+	return string(b), nil
+}
+
+func Encrypt(x25519Key string, plaintext string) (string, error) {
+	d, err := NewDecrypter(x25519Key)
 	if err != nil {
 		return "", err
 	}
-	hexData := base64.StdEncoding.EncodeToString(encryptedData)
-	return "ENC(" + hexData + ")", nil
+	return d.Encrypt(plaintext)
 }

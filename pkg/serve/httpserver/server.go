@@ -110,6 +110,7 @@ func (s *Server) ListenAndServe() error {
 	if err := serve.RegisterLanguageMatcher(); err != nil {
 		logrus.Errorf("register languages matcher error: %v", err)
 	}
+	logrus.Infof("Listen %s", s.Listen)
 	return s.srv.ListenAndServe()
 }
 

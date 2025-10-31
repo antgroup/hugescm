@@ -24,7 +24,7 @@ type ServerConfig struct {
 	IdleTimeout     serve.Duration  `toml:"idle_timeout,omitempty"`
 	BannerVersion   string          `toml:"banner_version,omitempty"`
 	HostPrivateKeys []string        `toml:"host_private_keys"` // private keys
-	DecryptedKey    string          `toml:"decrypted_key,omitempty"`
+	X25519Key       string          `toml:"x25519_key,omitempty"`
 	Cache           *serve.Cache    `toml:"cache,omitempty"`
 	DB              *serve.Database `toml:"database,omitempty"`
 	PersistentOSS   *serve.OSS      `toml:"oss,omitempty"`
@@ -49,8 +49,12 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 	if _, err = toml.NewDecoder(r).Decode(sc); err != nil {
 		return nil, err
 	}
-	sc.DB.Decrypt(sc.DecryptedKey)
-	sc.PersistentOSS.Decrypt(sc.DecryptedKey)
+	var d *serve.Decrypter
+	if d, err = serve.NewDecrypter(sc.X25519Key); err != nil {
+		return nil, err
+	}
+	sc.DB.Decrypt(d)
+	sc.PersistentOSS.Decrypt(d)
 	if sc.Cache == nil {
 		sc.Cache = &serve.Cache{
 			NumCounters: 1000000000,

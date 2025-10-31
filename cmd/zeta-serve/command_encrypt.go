@@ -15,7 +15,7 @@ import (
 )
 
 type pseudoConfig struct {
-	DecryptedKey string `toml:"decrypted_key,omitempty"`
+	X25519Key string `toml:"x25519_key,omitempty"`
 }
 
 func (pc *pseudoConfig) Decode(cfg string, expandEnv bool) error {
@@ -73,7 +73,7 @@ func (c *Encrypt) Run(globals *Globals) error {
 		fmt.Fprintf(os.Stderr, "read from file error: %v\n", err)
 		return err
 	}
-	secret, err := serve.Encrypt(source, pc.DecryptedKey)
+	secret, err := serve.Encrypt(pc.X25519Key, source)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "encrypt error: %v\n", err)
 		return err

@@ -50,8 +50,10 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 		return nil, err
 	}
 	var d *serve.Decrypter
-	if d, err = serve.NewDecrypter(sc.X25519Key); err != nil {
-		return nil, err
+	if len(sc.X25519Key) != 0 {
+		if d, err = serve.NewDecrypter(sc.X25519Key); err != nil {
+			return nil, err
+		}
 	}
 	sc.DB.Decrypt(d)
 	sc.PersistentOSS.Decrypt(d)

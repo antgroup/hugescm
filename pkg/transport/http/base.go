@@ -91,10 +91,9 @@ func cloneURL(u *url.URL) *url.URL {
 }
 
 func newClient(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (*client, error) {
-	if endpoint == nil || endpoint.Base == nil {
+	if endpoint == nil {
 		return nil, errors.New("bad endpoint")
 	}
-	base := cloneURL(endpoint.Base)
 	c := &client{
 		Client: &http.Client{
 			Transport: &http.Transport{
@@ -113,7 +112,7 @@ func newClient(ctx context.Context, endpoint *transport.Endpoint, operation tran
 				return http.ErrUseLastResponse
 			},
 		},
-		baseURL:     base,
+		baseURL:     cloneURL(&endpoint.URL),
 		extraHeader: endpoint.ExtraHeader,
 		userAgent:   version.GetUserAgent(),
 		language:    tr.Language(),

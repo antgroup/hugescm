@@ -21,7 +21,7 @@
 | `http.sslVerify` |  | 与 `ZETA_SSL_NO_VERIFY`刚好相反，只有显式设置为 false 才会禁用 SSL 验证。 |
 | `http.extraHeader` |  | 设置 HTTP 附加头，如果设置了 `Authorization`，客户端会跳过自身的权限预验证，该机制可以实现一些自定义的能力。 |
 | `transport.maxEntries`|`ZETA_TRANSPORT_MAX_ENTRIES`|设置 batch 下载对象数量限制，影响 batch 接口调用次数|
-| `transport.largeSize`|`ZETA_TRANSPORT_LARGE_SIZE`|设置大文件大小，默认 10M|
+| `transport.largeSize`|`ZETA_TRANSPORT_LARGE_SIZE`|设置大文件大小，默认 5M|
 | `transport.externalProxy`|`ZETA_TRANSPORT_EXTERNAL_PROXY`|为 `direct` 下载配置外部代理|
 | `diff.algorithm`||diff 算法，支持：`histogram`，`onp`，`myers`，`patience`，`minimal`|
 | `merge.conflictStyle`||指定在合并时将存在冲突的代码块写入工作区文件的样式，支持 `merge`，`diff3`，`zdiff3`|

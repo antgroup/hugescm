@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 // The terminal mode manipulation code is derived heavily from:
 // https://github.com/golang/crypto/blob/master/ssh/terminal/util.go:

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build openbsd || dragonfly || solaris
-// +build openbsd dragonfly solaris
 
 package zeta
 

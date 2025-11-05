@@ -13,11 +13,11 @@ import (
 )
 
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
-	switch endpoint.Protocol {
+	switch endpoint.Scheme {
 	case "http", "https":
 		return http.NewTransport(ctx, endpoint, operation, verbose)
 	case "ssh":
 		return ssh.NewTransport(ctx, endpoint, operation, verbose)
 	}
-	return nil, fmt.Errorf("unsupported protocol '%s'", endpoint.Protocol)
+	return nil, fmt.Errorf("unsupported protocol '%s'", endpoint.Scheme)
 }

@@ -157,7 +157,7 @@ type Transport struct {
 
 const (
 	minLargeSize = 512 << 10 // 512K
-	largeSize    = 10 << 20  // 10M
+	largeSize    = 5 << 20   // 5M
 )
 
 func (t Transport) LargeSize() int64 {

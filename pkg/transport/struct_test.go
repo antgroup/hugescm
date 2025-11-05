@@ -39,24 +39,13 @@ func TestPathJoin(t *testing.T) {
 	fmt.Fprintf(os.Stderr, "%s\n", u3.Path)
 }
 
-func TestEndpointIsURL(t *testing.T) {
-	sss := []string{
-		"http://xxxx",
-		"git@xxxx",
-		"zeta@zzzz",
-		"zeta@zeta.io:jack/zeta-demo",
-	}
-	for _, s := range sss {
-		fmt.Fprintf(os.Stderr, "%s %v\n", s, hasScheme(s))
-	}
-}
-
 func TestParseEndpoint(t *testing.T) {
 	sss := []string{
 		"http://zeta.io/jack/zeta-demo",
 		"https://zeta.io/jack/zeta-demo",
 		"zeta@zeta.io:jack/zeta-demo",
 		"ssh://zeta@zeta.io/jack/zeta-demo",
+		"ssh://zeta@zeta.io:4399/jack/zeta-demo",
 	}
 	for _, s := range sss {
 		e, err := NewEndpoint(s, nil)
@@ -64,7 +53,7 @@ func TestParseEndpoint(t *testing.T) {
 			fmt.Fprintf(os.Stderr, "Parse: %v\n", err)
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s raw: %s\n", e, e.Protocol, s)
+		fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s raw: %s\n", e, e.Scheme, s)
 	}
 }
 
@@ -75,5 +64,5 @@ func TestEndpoint(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "Parse: %v\n", err)
 		return
 	}
-	fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s raw: %s\n", e, e.Protocol, raw)
+	fmt.Fprintf(os.Stderr, "endpoint: %v protocol: %s raw: %s\n", e, e.Scheme, raw)
 }

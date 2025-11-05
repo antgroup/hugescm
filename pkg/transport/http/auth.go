@@ -103,6 +103,7 @@ func (c *client) credentialAskOne() (*Credentials, error) {
 	var username string
 	if c.baseURL.User != nil {
 		username = c.baseURL.User.Username()
+		c.baseURL.User = nil
 	} else {
 		pu := &survey.Input{
 			Message: fmt.Sprintf("Username for '%s://%s':", c.baseURL.Scheme, c.baseURL.Host),
@@ -125,6 +126,7 @@ func (c *client) readCredentials(ctx context.Context) (*Credentials, error) {
 	if u := c.baseURL.User; u != nil {
 		if password, ok := u.Password(); ok {
 			trace.DbgPrint("Got credentials from userinfo, username: %s", u.Username())
+			c.baseURL.User = nil // remove username and password
 			return &Credentials{UserName: u.Username(), Password: password}, nil
 		}
 	}

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -56,8 +55,9 @@ var DefaultUserSettings = &config.UserSettings{
 }
 
 func resolvePort(endpoint *transport.Endpoint) string {
-	if endpoint.Port != 22 && endpoint.Port != 0 {
-		return strconv.Itoa(endpoint.Port)
+	port := endpoint.Port()
+	if port != "22" && len(port) != 0 {
+		return port
 	}
 	if port, err := DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err == nil && len(port) != 0 {
 		return port
@@ -66,10 +66,11 @@ func resolvePort(endpoint *transport.Endpoint) string {
 }
 
 func resolveHostName(endpoint *transport.Endpoint) string {
-	if hostName, err := DefaultUserSettings.GetStrict(endpoint.Host, "Hostname"); err == nil && len(hostName) != 0 {
+	hostname := endpoint.Hostname()
+	if hostName, err := DefaultUserSettings.GetStrict(hostname, "Hostname"); err == nil && len(hostName) != 0 {
 		return hostName
 	}
-	return endpoint.Host
+	return hostname
 }
 
 func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation transport.Operation, verbose bool) (transport.Transport, error) {
@@ -135,7 +136,7 @@ func (c *client) traceSSH(cc ssh.Conn) {
 		return
 	}
 	// Remote protocol version 2.0, remote software version Bassinet-7.9.9
-	// SSH-2.0-HugeSCM-0.20.0
+	// SSH-2.0-HugeSCM-0.20.1
 	protocolVersion, softwareVersion, ok := strings.Cut(strings.TrimPrefix(string(cc.ServerVersion()), "SSH-"), "-")
 	if ok {
 		trace.DbgPrint("Remote protocol version %s, remote software version %s", protocolVersion, softwareVersion)
@@ -152,8 +153,12 @@ func (c *client) newCommand(conn net.Conn, addr string) (*Command, error) {
 	if err != nil {
 		return nil, err
 	}
+	username := c.User.Username()
+	if len(username) == 0 {
+		username = "zeta"
+	}
 	cc, chans, reqs, err := ssh.NewClientConn(conn, addr, &ssh.ClientConfig{
-		User:              c.User,
+		User:              username,
 		Auth:              auth,
 		ClientVersion:     protocolVersionPrefix + version.GetBannerVersion(),
 		HostKeyCallback:   c.HostKeyCallback,

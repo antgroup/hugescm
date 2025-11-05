@@ -134,8 +134,9 @@ func filterKnownHostsFiles(files ...string) ([]string, error) {
 func (c *client) prepareAuthMethod() ([]ssh.AuthMethod, error) {
 	auth := make([]ssh.AuthMethod, 0, 4)
 	auth = append(auth, ssh.PublicKeysCallback(c.PublicKeys))
-	if len(c.Password) != 0 {
-		auth = append(auth, ssh.Password(c.Password)) // static password
+
+	if password, ok := c.User.Password(); ok && len(password) != 0 {
+		auth = append(auth, ssh.Password(password)) // static password
 		return auth, nil
 	}
 	if !env.ZETA_TERMINAL_PROMPT.SimpleAtob(true) {

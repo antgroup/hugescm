@@ -63,14 +63,28 @@ func linecol(lines []int, offs int) (int, int) {
 
 func verifyPositions(t *testing.T, fset *FileSet, f *File, lines []int) {
 	for offs := 0; offs < f.Size(); offs++ {
-		p := f.Pos(offs)
-		offs2 := f.Offset(p)
+		p, err := f.Pos(offs)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		offs2, err := f.Offset(p)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if offs2 != offs {
 			t.Errorf("%s, Offset: expected offset %d; got %d", f.Name(), offs, offs2)
 		}
 		line, col := linecol(lines, offs)
 		msg := fmt.Sprintf("%s (offs = %d, p = %d)", f.Name(), offs, p)
-		checkPos(t, msg, f.Position(f.Pos(offs)), Position{f.Name(), offs, line, col})
+		pos, err := f.Pos(offs)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		position, err := f.Position(pos)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		checkPos(t, msg, position, Position{f.Name(), offs, line, col})
 		checkPos(t, msg, fset.Position(p), Position{f.Name(), offs, line, col})
 	}
 }
@@ -95,14 +109,21 @@ func TestPositions(t *testing.T) {
 		}
 
 		// add file and verify name and size
-		f, _ := fset.AddFile(test.filename, fset.Base()+delta, test.size)
+		f, err := fset.AddFile(test.filename, fset.Base()+delta, test.size)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if f.Name() != test.filename {
 			t.Errorf("expected filename %q; got %q", test.filename, f.Name())
 		}
 		if f.Size() != test.size {
 			t.Errorf("%s: expected file size %d; got %d", f.Name(), test.size, f.Size())
 		}
-		if fset.File(f.Pos(0)) != f {
+		pos, err := f.Pos(0)
+		if err != nil {
+			t.Errorf("unexpected error %v", err)
+		}
+		if fset.File(pos) != f {
 			t.Errorf("%s: f.Pos(0) was not found in f", f.Name())
 		}
 
@@ -145,7 +166,10 @@ func TestPositions(t *testing.T) {
 
 func TestLineInfo(t *testing.T) {
 	fset := NewFileSet()
-	f, _ := fset.AddFile("foo", fset.Base(), 500)
+	f, err := fset.AddFile("foo", fset.Base(), 500)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	lines := []int{0, 42, 77, 100, 210, 220, 277, 300, 333, 401}
 	// add lines individually and provide alternative line information
 	for _, offs := range lines {
@@ -154,10 +178,21 @@ func TestLineInfo(t *testing.T) {
 	}
 	// verify positions for all offsets
 	for offs := 0; offs <= f.Size(); offs++ {
-		p := f.Pos(offs)
+		p, err := f.Pos(offs)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
 		_, col := linecol(lines, offs)
 		msg := fmt.Sprintf("%s (offs = %d, p = %d)", f.Name(), offs, p)
-		checkPos(t, msg, f.Position(f.Pos(offs)), Position{"bar", offs, 42, col})
+		pos, err := f.Pos(offs)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		position, err := f.Position(pos)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		checkPos(t, msg, position, Position{"bar", offs, 42, col})
 		checkPos(t, msg, fset.Position(p), Position{"bar", offs, 42, col})
 	}
 }

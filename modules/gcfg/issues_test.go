@@ -27,8 +27,8 @@ var testsIssue1 = []struct {
 }
 
 // Value parse error should:
-//   - include plain type name
-//   - not include reflect internals
+//  - include plain type name
+//  - not include reflect internals
 func TestIssue1(t *testing.T) {
 	for i, tt := range testsIssue1 {
 		var c Config1

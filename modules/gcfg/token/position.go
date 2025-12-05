@@ -13,6 +13,13 @@ import (
 	"sync"
 )
 
+var (
+	ErrIllegalFileOffset  = errors.New("illegal file offset")
+	ErrIllegalPosValue    = errors.New("illegal Pos value")
+	ErrIllegalBaseOrValue = errors.New("illegal base or value")
+	ErrPosOffsetOverflow  = errors.New("token.Pos offset overflow (> 2G of source code in file set)")
+)
+
 // -----------------------------------------------------------------------------
 // Positions
 
@@ -202,30 +209,32 @@ func (f *File) AddLineInfo(offset int, filename string, line int) {
 // Pos returns the Pos value for the given file offset;
 // the offset must be <= f.Size().
 // f.Pos(f.Offset(p)) == p.
-func (f *File) Pos(offset int) Pos {
+func (f *File) Pos(offset int) (Pos, error) {
 	if offset > f.size {
-		//panic("illegal file offset")
-		return NoPos
+		return 0, ErrIllegalFileOffset
 	}
-	return Pos(f.base + offset)
+	return Pos(f.base + offset), nil
 }
 
 // Offset returns the offset for the given file position p;
 // p must be a valid Pos value in that file.
 // f.Offset(f.Pos(offset)) == offset.
-func (f *File) Offset(p Pos) int {
+func (f *File) Offset(p Pos) (int, error) {
 	if int(p) < f.base || int(p) > f.base+f.size {
-		//panic("illegal Pos value")
-		return 0
+		return 0, ErrIllegalPosValue
 	}
-	return int(p) - f.base
+	return int(p) - f.base, nil
 }
 
 // Line returns the line number for the given file position p;
 // p must be a Pos value in that file or NoPos.
-func (f *File) Line(p Pos) int {
+func (f *File) Line(p Pos) (int, error) {
 	// TODO(gri) this can be implemented much more efficiently
-	return f.Position(p).Line
+	position, err := f.Position(p)
+	if err != nil {
+		return 0, err
+	}
+	return position.Line, nil
 }
 
 func searchLineInfos(a []lineInfo, x int) int {
@@ -260,15 +269,14 @@ func (f *File) position(p Pos) (pos Position) {
 
 // Position returns the Position value for the given file position p;
 // p must be a Pos value in that file or NoPos.
-func (f *File) Position(p Pos) (pos Position) {
+func (f *File) Position(p Pos) (Position, error) {
 	if p != NoPos {
 		if int(p) < f.base || int(p) > f.base+f.size {
-			//panic("illegal Pos value")
-			return Position{Line: 0}
+			return Position{}, ErrIllegalPosValue
 		}
-		pos = f.position(p)
+		return f.position(p), nil
 	}
-	return
+	return Position{}, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -319,13 +327,13 @@ func (s *FileSet) AddFile(filename string, base, size int) (*File, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if base < s.base || size < 0 {
-		return nil, errors.New("illegal base or size")
+		return nil, ErrIllegalBaseOrValue
 	}
 	// base >= s.base && size >= 0
 	f := &File{s, filename, base, size, []int{0}, nil}
 	base += size + 1 // +1 because EOF also has a position
 	if base < 0 {
-		return nil, errors.New("token.Pos offset overflow (> 2G of source code in file set)")
+		return nil, ErrPosOffsetOverflow
 	}
 	// add the file to the file set
 	s.base = base

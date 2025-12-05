@@ -94,8 +94,11 @@ func TestSerialization(t *testing.T) {
 	p := NewFileSet()
 	checkSerialize(t, p)
 	// add some files
-	for i := range 10 {
-		f, _ := p.AddFile(fmt.Sprintf("file%d", i), p.Base()+i, i*100)
+	for i := 0; i < 10; i++ {
+		f, err := p.AddFile(fmt.Sprintf("file%d", i), p.Base()+i, i*100)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		checkSerialize(t, p)
 		// add some lines and alternative file infos
 		line := 1000

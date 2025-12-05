@@ -15,6 +15,14 @@ import (
 	"github.com/antgroup/hugescm/modules/gcfg/types"
 )
 
+var (
+	ErrUnsupportedType             = errors.New("unsupported type")
+	ErrBlankUnsupported            = errors.New("blank value not supported for type")
+	ErrConfigMustBePointerToStruct = errors.New("config must be a pointer to a struct")
+	ErrInvalidMapFieldForSection   = errors.New("map field for section must have string keys and pointer-to-struct values")
+	ErrInvalidFieldForSection      = errors.New("field for section must be a map or a struct")
+)
+
 type tag struct {
 	ident   string
 	intMode string
@@ -58,9 +66,6 @@ func fieldFold(v reflect.Value, name string) (reflect.Value, tag) {
 
 type setter func(destp any, blank bool, val string, t tag) error
 
-var errUnsupportedType = errors.New("unsupported type")
-var errBlankUnsupported = errors.New("blank value not supported for type")
-
 var setters = []setter{
 	typeSetter, textUnmarshalerSetter, kindSetter, scanSetter,
 }
@@ -68,10 +73,10 @@ var setters = []setter{
 func textUnmarshalerSetter(d any, blank bool, val string, t tag) error {
 	dtu, ok := d.(encoding.TextUnmarshaler)
 	if !ok {
-		return errUnsupportedType
+		return ErrUnsupportedType
 	}
 	if blank {
-		return errBlankUnsupported
+		return ErrBlankUnsupported
 	}
 	return dtu.UnmarshalText([]byte(val))
 }
@@ -127,7 +132,7 @@ func intModeDefault(t reflect.Type) types.IntMode {
 
 func intSetter(d any, blank bool, val string, t tag) error {
 	if blank {
-		return errBlankUnsupported
+		return ErrBlankUnsupported
 	}
 	mode := intMode(t.intMode)
 	if mode == 0 {
@@ -138,11 +143,11 @@ func intSetter(d any, blank bool, val string, t tag) error {
 
 func stringSetter(d any, blank bool, val string, t tag) error {
 	if blank {
-		return errBlankUnsupported
+		return ErrBlankUnsupported
 	}
 	dsp, ok := d.(*string)
 	if !ok {
-		return errUnsupportedType
+		return ErrUnsupportedType
 	}
 	*dsp = val
 	return nil
@@ -172,7 +177,7 @@ func typeSetter(d any, blank bool, val string, tt tag) error {
 	t := reflect.ValueOf(d).Type().Elem()
 	setter, ok := typeSetters[t]
 	if !ok {
-		return errUnsupportedType
+		return ErrUnsupportedType
 	}
 	return setter(d, blank, val, tt)
 }
@@ -181,19 +186,19 @@ func kindSetter(d any, blank bool, val string, tt tag) error {
 	k := reflect.ValueOf(d).Type().Elem().Kind()
 	setter, ok := kindSetters[k]
 	if !ok {
-		return errUnsupportedType
+		return ErrUnsupportedType
 	}
 	return setter(d, blank, val, tt)
 }
 
 func scanSetter(d any, blank bool, val string, tt tag) error {
 	if blank {
-		return errBlankUnsupported
+		return ErrBlankUnsupported
 	}
 	return types.ScanFully(d, val, 'v')
 }
 
-func newValue(c *Collector, sect string, vCfg reflect.Value,
+func newValue(sect string, vCfg reflect.Value,
 	vType reflect.Type) (reflect.Value, error) {
 	//
 	pv := reflect.New(vType)
@@ -203,29 +208,31 @@ func newValue(c *Collector, sect string, vCfg reflect.Value,
 	if dfltField.IsValid() {
 		b := bytes.NewBuffer(nil)
 		ge := gob.NewEncoder(b)
-		if err = c.Collect(ge.EncodeValue(dfltField)); err != nil {
+		err = ge.EncodeValue(dfltField)
+		if err != nil && errors.Is(err, ErrSyntaxWarning) {
 			return pv, err
 		}
+
 		gd := gob.NewDecoder(bytes.NewReader(b.Bytes()))
-		if err = c.Collect(gd.DecodeValue(pv.Elem())); err != nil {
+		err = gd.DecodeValue(pv.Elem())
+		if err != nil && errors.Is(err, ErrSyntaxWarning) {
 			return pv, err
 		}
 	}
 	return pv, nil
 }
 
-func set(c *Collector, cfg any, sect, sub, name string,
+func set(cfg any, sect, sub, name string,
 	value string, blankValue bool, subsectPass bool) error {
 	//
 	vPCfg := reflect.ValueOf(cfg)
-	if vPCfg.Kind() != reflect.Pointer || vPCfg.Elem().Kind() != reflect.Struct {
-		return errors.New("config must be a pointer to a struct")
+	if vPCfg.Kind() != reflect.Ptr || vPCfg.Elem().Kind() != reflect.Struct {
+		return ErrConfigMustBePointerToStruct
 	}
 	vCfg := vPCfg.Elem()
 	vSect, _ := fieldFold(vCfg, sect)
 	if !vSect.IsValid() {
-		err := extraData{section: sect}
-		return c.Collect(err)
+		return newSyntaxWarning(sect, "", "")
 	}
 	isSubsect := vSect.Kind() == reflect.Map
 	if subsectPass != isSubsect {
@@ -234,9 +241,9 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	if isSubsect {
 		vst := vSect.Type()
 		if vst.Key().Kind() != reflect.String ||
-			vst.Elem().Kind() != reflect.Pointer ||
+			vst.Elem().Kind() != reflect.Ptr ||
 			vst.Elem().Elem().Kind() != reflect.Struct {
-			return fmt.Errorf("map field for section must have string keys and pointer-to-struct values: section %q", sect)
+			return fmt.Errorf("%w: section %q", ErrInvalidMapFieldForSection, sect)
 		}
 		if vSect.IsNil() {
 			vSect.Set(reflect.MakeMap(vst))
@@ -246,17 +253,16 @@ func set(c *Collector, cfg any, sect, sub, name string,
 		if !pv.IsValid() {
 			vType := vSect.Type().Elem().Elem()
 			var err error
-			if pv, err = newValue(c, sect, vCfg, vType); err != nil {
+			if pv, err = newValue(sect, vCfg, vType); err != nil {
 				return err
 			}
 			vSect.SetMapIndex(k, pv)
 		}
 		vSect = pv.Elem()
 	} else if vSect.Kind() != reflect.Struct {
-		return fmt.Errorf("field for section must be a map or a struct: section %q", sect)
+		return fmt.Errorf("%w: section %q", ErrInvalidFieldForSection, sect)
 	} else if sub != "" {
-		err := extraData{section: sect, subsection: &sub}
-		return c.Collect(err)
+		return newSyntaxWarning(sect, sub, "")
 	}
 	// Empty name is a special value, meaning that only the
 	// section/subsection object is to be created, with no values set.
@@ -267,18 +273,18 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	if !vVar.IsValid() {
 		var err error
 		if isSubsect {
-			err = extraData{section: sect, subsection: &sub, variable: &name}
+			err = newSyntaxWarning(sect, sub, name)
 		} else {
-			err = extraData{section: sect, variable: &name}
+			err = newSyntaxWarning(sect, "", name)
 		}
-		return c.Collect(err)
+		return err
 	}
 	// vVal is either single-valued var, or newly allocated value within multi-valued var
 	var vVal reflect.Value
 	// multi-value if unnamed slice type
 	isMulti := vVar.Type().Name() == "" && vVar.Kind() == reflect.Slice ||
-		vVar.Type().Name() == "" && vVar.Kind() == reflect.Pointer && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
-	if isMulti && vVar.Kind() == reflect.Pointer {
+		vVar.Type().Name() == "" && vVar.Kind() == reflect.Ptr && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
+	if isMulti && vVar.Kind() == reflect.Ptr {
 		if vVar.IsNil() {
 			vVar.Set(reflect.New(vVar.Type().Elem()))
 		}
@@ -293,7 +299,7 @@ func set(c *Collector, cfg any, sect, sub, name string,
 	} else {
 		vVal = vVar
 	}
-	isDeref := vVal.Type().Name() == "" && vVal.Type().Kind() == reflect.Pointer
+	isDeref := vVal.Type().Name() == "" && vVal.Type().Kind() == reflect.Ptr
 	isNew := isDeref && vVal.IsNil()
 	// vAddr is address of value to set (dereferenced & allocated as needed)
 	var vAddr reflect.Value
@@ -313,12 +319,12 @@ func set(c *Collector, cfg any, sect, sub, name string,
 			ok = true
 			break
 		}
-		if err != errUnsupportedType {
+		if !errors.Is(err, ErrUnsupportedType) {
 			return err
 		}
 	}
 	if !ok {
-		// in case all setters returned errUnsupportedType
+		// in case all setters returned ErrUnsupportedType
 		return err
 	}
 	if isNew { // set reference if it was dereferenced and newly allocated

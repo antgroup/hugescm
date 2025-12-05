@@ -13,7 +13,7 @@ import (
 var unescape = map[rune]rune{'\\': '\\', '"': '"', 'n': '\n', 't': '\t', 'b': '\b', '\n': '\n'}
 
 // no error: invalid literals should be caught by scanner
-func unquote(s string) string {
+func unquote(s string) (string, error) {
 	u, q, esc := make([]rune, 0, len(s)), false, false
 	for _, c := range s {
 		if esc {
@@ -26,8 +26,7 @@ func unquote(s string) string {
 				esc = false
 				continue
 			}
-			//panic("invalid escape sequence")
-			return ""
+			return "", ErrMissingEscapeSequence
 		}
 		switch c {
 		case '"':
@@ -39,32 +38,32 @@ func unquote(s string) string {
 		}
 	}
 	if q {
-		//panic("missing end quote")
-		return ""
+		return "", ErrMissingEndQuote
 	}
 	if esc {
-		//panic("invalid escape sequence")
-		return ""
+		return "", ErrMissingEscapeSequence
 	}
-	return string(u)
+	return string(u), nil
 }
 
-func read(c *Collector, callback func(string, string, string, string, bool) error,
+func read(callback func(string, string, string, string, bool) error,
 	fset *token.FileSet, file *token.File, src []byte) error {
 	//
 	var s scanner.Scanner
 	var errs scanner.ErrorList
-	if err := s.Init(file, src, func(p token.Position, m string) { errs.Add(p, m) }, 0); err != nil {
-		return err
-	}
+	_ = s.Init(file, src, func(p token.Position, m string) { errs.Add(p, m) }, 0)
 	sect, sectsub := "", ""
-	pos, tok, lit := s.Scan()
+	pos, tok, lit, err := s.Scan()
 	errfn := func(msg string) error {
 		return fmt.Errorf("%s: %s", fset.Position(pos), msg)
 	}
+	if err != nil {
+		return err
+	}
+	var accErr error
 	for {
 		if errs.Len() > 0 {
-			if err := c.Collect(errs.Err()); err != nil {
+			if err, fatal := joinNonFatal(accErr, errs.Err()); fatal {
 				return err
 			}
 		}
@@ -72,116 +71,140 @@ func read(c *Collector, callback func(string, string, string, string, bool) erro
 		case token.EOF:
 			return nil
 		case token.EOL, token.COMMENT:
-			pos, tok, lit = s.Scan()
+			pos, tok, lit, err = s.Scan()
+			if err != nil {
+				return err
+			}
 		case token.LBRACK:
-			pos, tok, lit = s.Scan()
+			pos, tok, lit, err = s.Scan()
+			if err != nil {
+				return err
+			}
 			if errs.Len() > 0 {
-				if err := c.Collect(errs.Err()); err != nil {
+				if err, fatal := joinNonFatal(accErr, errs.Err()); fatal {
 					return err
 				}
 			}
 			if tok != token.IDENT {
-				if err := c.Collect(errfn("expected section name")); err != nil {
+				if err, fatal := joinNonFatal(accErr, errfn("expected section name")); fatal {
 					return err
 				}
 			}
 			sect, sectsub = lit, ""
-			pos, tok, lit = s.Scan()
+			pos, tok, lit, err = s.Scan()
+			if err != nil {
+				return err
+			}
 			if errs.Len() > 0 {
-				if err := c.Collect(errs.Err()); err != nil {
+				if err, fatal := joinNonFatal(accErr, errs.Err()); fatal {
 					return err
 				}
 			}
 			if tok == token.STRING {
-				sectsub = unquote(lit)
-				if sectsub == "" {
-					if err := c.Collect(errfn("empty subsection name")); err != nil {
-						return err
-					}
+				ss, err := unquote(lit)
+				if err != nil {
+					return err
 				}
-				pos, tok, _ = s.Scan()
+
+				sectsub = ss
+				_, tok, _, err = s.Scan()
+				if err != nil {
+					return err
+				}
 				if errs.Len() > 0 {
-					if err := c.Collect(errs.Err()); err != nil {
+					if err, fatal := joinNonFatal(accErr, errs.Err()); fatal {
 						return err
 					}
 				}
 			}
 			if tok != token.RBRACK {
-				if sectsub == "" {
-					if err := c.Collect(errfn("expected subsection name or right bracket")); err != nil {
-						return err
-					}
-				}
-				if err := c.Collect(errfn("expected right bracket")); err != nil {
+				if err, fatal := joinNonFatal(accErr, errfn("expected right bracket")); fatal {
 					return err
 				}
 			}
-			pos, tok, lit = s.Scan()
+			pos, tok, lit, err = s.Scan()
+			if err != nil {
+				return err
+			}
 			if tok != token.EOL && tok != token.EOF && tok != token.COMMENT {
-				if err := c.Collect(errfn("expected EOL, EOF, or comment")); err != nil {
+				if err, fatal := joinNonFatal(accErr, errfn("expected EOL, EOF, or comment")); fatal {
 					return err
 				}
 			}
 			// If a section/subsection header was found, ensure a
 			// container object is created, even if there are no
 			// variables further down.
-			err := c.Collect(callback(sect, sectsub, "", "", true))
+			err := callback(sect, sectsub, "", "", true)
 			if err != nil {
 				return err
 			}
 		case token.IDENT:
 			if sect == "" {
-				if err := c.Collect(errfn("expected section header")); err != nil {
+				if err, fatal := joinNonFatal(accErr, errfn("expected section header")); fatal {
 					return err
 				}
 			}
 			n := lit
-			pos, tok, lit = s.Scan()
+			pos, tok, lit, err = s.Scan()
+			if err != nil {
+				return err
+			}
 			if errs.Len() > 0 {
 				return errs.Err()
 			}
 			blank, v := tok == token.EOF || tok == token.EOL || tok == token.COMMENT, ""
 			if !blank {
 				if tok != token.ASSIGN {
-					if err := c.Collect(errfn("expected '='")); err != nil {
+					if err, fatal := joinNonFatal(accErr, errfn("expected '='")); fatal {
 						return err
 					}
 				}
-				pos, tok, lit = s.Scan()
+				pos, tok, lit, err = s.Scan()
+				if err != nil {
+					return err
+				}
 				if errs.Len() > 0 {
-					if err := c.Collect(errs.Err()); err != nil {
+					if err, fatal := joinNonFatal(accErr, errs.Err()); fatal {
 						return err
 					}
 				}
 				if tok != token.STRING {
-					if err := c.Collect(errfn("expected value")); err != nil {
+					if err, fatal := joinNonFatal(accErr, errfn("expected value")); fatal {
 						return err
 					}
 				}
-				v = unquote(lit)
-				pos, tok, lit = s.Scan()
+				unq, err := unquote(lit)
+				if err != nil {
+					return err
+				}
+
+				v = unq
+				pos, tok, lit, err = s.Scan()
+				if err != nil {
+					return err
+				}
 				if errs.Len() > 0 {
-					if err := c.Collect(errs.Err()); err != nil {
+					if err, fatal := joinNonFatal(accErr, errs.Err()); fatal {
 						return err
 					}
 				}
 				if tok != token.EOL && tok != token.EOF && tok != token.COMMENT {
-					if err := c.Collect(errfn("expected EOL, EOF, or comment")); err != nil {
+					if err, fatal := joinNonFatal(accErr, errfn("expected EOL, EOF, or comment")); fatal {
 						return err
 					}
 				}
 			}
-			err := c.Collect(callback(sect, sectsub, n, v, blank))
+			err := callback(sect, sectsub, n, v, blank)
 			if err != nil {
 				return err
 			}
 		default:
 			if sect == "" {
-				if err := c.Collect(errfn("expected section header")); err != nil {
+				if err, fatal := joinNonFatal(accErr, errfn("expected section header")); fatal {
 					return err
 				}
 			}
-			if err := c.Collect(errfn("expected section header or variable declaration")); err != nil {
+			if err, fatal := joinNonFatal(accErr, errfn("expected section header or variable declaration")); fatal {
 				return err
 			}
 		}
@@ -191,22 +214,17 @@ func read(c *Collector, callback func(string, string, string, string, bool) erro
 func readInto(config any, fset *token.FileSet, file *token.File,
 	src []byte) error {
 	//
-	c := NewCollector(isFatal)
 	firstPassCallback := func(s string, ss string, k string, v string, bv bool) error {
-		return set(c, config, s, ss, k, v, bv, false)
+		return set(config, s, ss, k, v, bv, false)
 	}
-	err := read(c, firstPassCallback, fset, file, src)
+	err := read(firstPassCallback, fset, file, src)
 	if err != nil {
 		return err
 	}
 	secondPassCallback := func(s string, ss string, k string, v string, bv bool) error {
-		return set(c, config, s, ss, k, v, bv, true)
+		return set(config, s, ss, k, v, bv, true)
 	}
-	err = read(c, secondPassCallback, fset, file, src)
-	if err != nil {
-		return err
-	}
-	return c.Done()
+	return read(secondPassCallback, fset, file, src)
 }
 
 // ReadWithCallback reads gcfg formatted data from reader and calls
@@ -236,9 +254,8 @@ func ReadWithCallback(reader io.Reader, callback func(string, string, string, st
 	if err != nil {
 		return err
 	}
-	c := NewCollector(isFatal)
 
-	return read(c, callback, fset, file, src)
+	return read(callback, fset, file, src)
 }
 
 // ReadInto reads gcfg formatted data from reader and sets the values into the

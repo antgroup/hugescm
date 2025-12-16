@@ -70,7 +70,7 @@ func wroteHeaderField(key string, value []string) {
 		}
 	case term.Level16M:
 		for _, v := range value {
-			_, _ = fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[36m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+			_, _ = fmt.Fprintf(os.Stderr, "\x1b[33m< \x1b[38;2;86;182;194m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
 		}
 	default:
 		for _, v := range value {
@@ -117,7 +117,7 @@ func traceResponse(resp *http.Response) {
 		fmt.Fprintf(os.Stderr, "\x1b[38;2;249;212;35m%s %s\x1b[0m\n", resp.Proto, resp.Status)
 		for key, value := range resp.Header {
 			for _, v := range value {
-				fmt.Fprintf(os.Stderr, "\x1b[33m> \x1b[34m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
+				fmt.Fprintf(os.Stderr, "\x1b[33m> \x1b[38;2;97;175;239m%s: \x1b[38;2;254;225;64m%s\x1b[0m\n", key, redactedHeader(key, v))
 			}
 		}
 	default:

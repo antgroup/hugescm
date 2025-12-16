@@ -42,7 +42,7 @@ func IsRemoteEndpoint(url string) bool {
 	return MatchesScheme(url) || MatchesScpLike(url)
 }
 
-func parseSCPLike(endpoint string) (*Endpoint, bool) {
+func parseSCPLike(endpoint string, opts *Options) (*Endpoint, bool) {
 	if MatchesScheme(endpoint) || !MatchesScpLike(endpoint) {
 		return nil, false
 	}
@@ -51,7 +51,7 @@ func parseSCPLike(endpoint string) (*Endpoint, bool) {
 	if port != "" {
 		host = net.JoinHostPort(host, port)
 	}
-	return &Endpoint{
+	e := &Endpoint{
 		URL: url.URL{
 			Scheme: "ssh",
 			User:   url.User(user),
@@ -59,7 +59,12 @@ func parseSCPLike(endpoint string) (*Endpoint, bool) {
 			Path:   path,
 		},
 		origin: endpoint,
-	}, true
+	}
+	if opts != nil {
+		// SSH protocol only support parseExtraEnv
+		e.ExtraEnv = opts.parseExtraEnv()
+	}
+	return e, true
 }
 
 // Endpoint represents a zeta URL in any supported protocol.
@@ -106,7 +111,7 @@ func (opts *Options) parseExtraEnv() map[string]string {
 }
 
 func NewEndpoint(endpoint string, opts *Options) (*Endpoint, error) {
-	if e, ok := parseSCPLike(endpoint); ok {
+	if e, ok := parseSCPLike(endpoint, opts); ok {
 		return e, nil
 	}
 	return parseURL(endpoint, opts)

@@ -117,8 +117,8 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/vbauerster/mpb/v8 v8.11.2 h1:OqLoHznUVU7SKS/WV+1dB5/hm20YLheYupiHhL5+M1Y=
-github.com/vbauerster/mpb/v8 v8.11.2/go.mod h1:mEB/M353al1a7wMUNtiymmPsEkGlJgeJmtlbY5adCJ8=
+github.com/vbauerster/mpb/v8 v8.11.3 h1:iniBmO4ySXCl4gVdmJpgrtormH5uvjpxcx/dMyVU9Jw=
+github.com/vbauerster/mpb/v8 v8.11.3/go.mod h1:n9M7WbP0NFjpgKS5XdEC3tMRgZTNM/xtC8zWGkiMuy0=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavMF/ppJZNG9ZpyihvCd0w101no=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJuqunuUZ/Dhy/avygyECGrLceyNeo4LiM=
 github.com/zeebo/assert v1.1.0 h1:hU1L1vLTHsnO8x8c9KAR5GmM5QscxHg5RNU5z5qbUWY=

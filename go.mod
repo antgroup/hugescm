@@ -15,7 +15,7 @@ require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/gliderlabs/ssh v0.3.8
 	github.com/go-sql-driver/mysql v1.9.3
-	github.com/godbus/dbus/v5 v5.2.0
+	github.com/godbus/dbus/v5 v5.2.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/gorilla/mux v1.8.1
 	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
@@ -26,7 +26,7 @@ require (
 	github.com/rivo/uniseg v0.4.7
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
-	github.com/vbauerster/mpb/v8 v8.11.2
+	github.com/vbauerster/mpb/v8 v8.11.3
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.46.0
 	golang.org/x/net v0.48.0

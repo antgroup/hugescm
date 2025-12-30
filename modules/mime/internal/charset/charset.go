@@ -150,7 +150,6 @@ func FromXML(content []byte) string {
 	}
 	return FromPlain(content)
 }
-
 func fromXML(s scan.Bytes) string {
 	xml := []byte("<?xml")
 	lxml := len(xml)

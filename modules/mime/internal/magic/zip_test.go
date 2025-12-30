@@ -54,40 +54,40 @@ func TestZeroZip(t *testing.T) {
 		name:  "empty zip",
 		files: nil,
 	}, {
-		name:  "no customXml",
+		name:  "no customXml/",
 		files: []string{"foo", "word/"},
 	}, {
-		name:  "customXml, but no word/",
-		files: []string{"customXml"},
+		name:  "customXml/, but no word/",
+		files: []string{"customXml/"},
 	}, {
-		name:  "customXml, and other files, but no word/",
-		files: []string{"customXml", "1", "2", "3"},
+		name:  "customXml/, and other files, but no word/",
+		files: []string{"customXml/", "1", "2", "3"},
 	}, {
-		name:  "customXml, and other files, but word/ is the 7th file", // we only check until 6th file
-		files: []string{"customXml", "1", "2", "3", "4", "5", "word/"},
+		name:  "customXml/, and other files, but word/ is the 7th file", // we only check until 6th file
+		files: []string{"customXml/", "1", "2", "3", "4", "5", "word/"},
 		docx:  true,
 	}, {
-		name:  "customXml, word/ xl/ pptx/ after 5 files",
-		files: []string{"1", "2", "3", "4", "5", "customXml", "word/", "xl/", "ppt/"},
+		name:  "customXml/, word/ xl/ pptx/ after 5 files",
+		files: []string{"1", "2", "3", "4", "5", "customXml/", "word/", "xl/", "ppt/"},
 	}, {
-		name:  "customXml, word/",
-		files: []string{"customXml", "word/"},
+		name:  "customXml/, word/",
+		files: []string{"customXml/", "word/"},
 		docx:  true,
 	}, {
-		name:  "customXml, word/with_suffix",
-		files: []string{"customXml", "word/with_suffix"},
+		name:  "customXml/, word/with_suffix",
+		files: []string{"customXml/", "word/with_suffix"},
 		docx:  true,
 	}, {
-		name:  "customXml, word/",
-		files: []string{"customXml", "word/media"},
+		name:  "customXml/, word/",
+		files: []string{"customXml/", "word/media"},
 		docx:  true,
 	}, {
-		name:  "customXml, xl/",
-		files: []string{"customXml", "xl/media"},
+		name:  "customXml/, xl/",
+		files: []string{"customXml/", "xl/media"},
 		xlsx:  true,
 	}, {
-		name:  "customXml, ppt/",
-		files: []string{"customXml", "ppt/media"},
+		name:  "customXml/, ppt/",
+		files: []string{"customXml/", "ppt/media"},
 		pptx:  true,
 	}, {
 		name:  "manifest file first",
@@ -97,6 +97,10 @@ func TestZeroZip(t *testing.T) {
 		name:  "manifest dir first",
 		files: []string{"META-INF/"},
 		jar:   true,
+	}, {
+		name:  "META-INF but not manifest first",
+		files: []string{"META-INF/com.github.org", "META-INF/"},
+		jar:   false,
 	}, {
 		name:  "manifest second file",
 		files: []string{"1", "META-INF/MANIFEST.MF"},
@@ -122,6 +126,15 @@ func TestZeroZip(t *testing.T) {
 			"ppt/_rels/presentation.xml.rel",
 		},
 		pptx: true,
+	}, {
+		// #728 - msoxml directories have to be compared with bytes.HasPrefix.
+		// bytes.Equal worked fine for most office files because [Content_Types].xml
+		// is a file. But for directories, sometimes the zip record is an empty
+		// file, other times it is a file in that directory. To account for these
+		// cases, bytes.HasPrefix is used.
+		name:  "docProps dir (not file) is first",
+		files: []string{"docProps/custom.xml", "xl/"},
+		xlsx:  true,
 	}}
 
 	for i, tc := range tcases {
@@ -162,5 +175,41 @@ uncompressedZip: docx	xlsx	pptx	jar %d
              got %t	%t	%t	%t`, i, docx, xlsx, pptx, jar)
 			}
 		})
+	}
+}
+
+func BenchmarkZip(b *testing.B) {
+	buf, err := createZip([]string{
+		"[Content_Types].xml",
+		"_rels/.rels",
+		"customXml/_rels/item1.xml",
+		"customXml/_rels/item2.xml.rels",
+		"customXml/_rels/item3.xml.rels",
+		"customXml/_rels/item4.xml.rels",
+		"customXml/item1.xml",
+		"customXml/item2.xml",
+		"customXml/item3.xml",
+		"customXml/itemProps1.xml",
+		"customXml/itemProps2.xml",
+		"customXml/itemProps3.xml",
+		"docProps/app.xml",
+		"docProps/core.xml",
+		"docProps/custom.xml",
+		"ppt/_rels/presentation.xml.rel",
+		"xl/_rels/presentation.xml.rel",
+		"word/_rels/presentation.xml.rel",
+		"doc.kml",
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		Docx(buf.Bytes(), 0)
+		Xlsx(buf.Bytes(), 0)
+		Pptx(buf.Bytes(), 0)
+		Jar(buf.Bytes(), 0)
+		KMZ(buf.Bytes(), 0)
 	}
 }

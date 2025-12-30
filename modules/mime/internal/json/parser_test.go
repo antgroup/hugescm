@@ -774,11 +774,11 @@ func TestCurrPathBounded(t *testing.T) {
 	}
 }
 
-var sample = []byte(` { "type": "Feature", "fruit": "Apple", "size": "Large", "color": "Red" } `)
+var sample = []byte(`{"type":"Feature","fruit":[{},{"dummy":"data","another field":[false,null]},true,false],"size":"Large","color":"Red"}`)
 
 func BenchmarkParse(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, _, query := Parse(QueryGeo, sample)
 		if !query {
 			b.Error("query should be satisfied")
@@ -788,7 +788,7 @@ func BenchmarkParse(b *testing.B) {
 
 func BenchmarkJSONStdlibDecoder(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		d := json.NewDecoder(bytes.NewReader(sample))
 		for {
 			_, err := d.Token()
@@ -800,7 +800,7 @@ func BenchmarkJSONStdlibDecoder(b *testing.B) {
 }
 func BenchmarkJSONOurParser(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p := &parserState{}
 		p.consumeAny(sample, nil, 0)
 	}

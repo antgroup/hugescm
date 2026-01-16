@@ -38,6 +38,16 @@ linux*)
 		echo "build HugeSCM failed"
 		exit 1
 	fi
+	echo -e "build for \x1b[32mdarwin/amd64\x1b[0m"
+	if ! bali '--pack=tar,sh' --target=darwin --arch=amd64; then
+		echo "build HugeSCM failed"
+		exit 1
+	fi
+	echo -e "build for \x1b[32mdarwin/arm64\x1b[0m"
+	if ! bali '--pack=tar,sh' --target=darwin --arch=arm64; then
+		echo "build HugeSCM failed"
+		exit 1
+	fi
 	;;
 bsd*)
 	echo "bsd unsupported"

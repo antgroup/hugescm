@@ -17,11 +17,9 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ubuntu-latest, windows-latest]
         include:
           - platform: ubuntu-latest
-            release_command: ./script/release.sh
-          - platform: macos-latest
             release_command: ./script/release.sh
           - platform: windows-latest
             release_command: pwsh -NoProfile -NoLogo -ExecutionPolicy unrestricted -File "./script/release.ps1"

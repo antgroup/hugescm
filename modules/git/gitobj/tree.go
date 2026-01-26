@@ -102,7 +102,7 @@ func (t *Tree) Encode(to io.Writer) (n int, err error) {
 			return n, err
 		}
 
-		n = n + ne
+		n += ne
 	}
 	return
 }

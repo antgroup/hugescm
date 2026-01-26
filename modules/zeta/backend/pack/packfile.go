@@ -89,7 +89,7 @@ func (p *Packfile) find(offset int64) (*SizeReader, error) {
 // returned without a corresponding packfile.
 func DecodePackfile(r io.ReaderAt) (*Packfile, error) {
 	header := make([]byte, 12)
-	if _, err := r.ReadAt(header[:], 0); err != nil {
+	if _, err := r.ReadAt(header, 0); err != nil {
 		return nil, err
 	}
 

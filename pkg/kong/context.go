@@ -380,7 +380,7 @@ type PassthroughProvider interface {
 
 func (c *Context) endPassthroughParsing(n *Node) {
 	if p, ok := n.Target.Addr().Interface().(PassthroughProvider); ok {
-		c.scan.Pop() //pop --
+		c.scan.Pop() // pop --
 		args := []string{}
 		for {
 			token := c.scan.Pop()
@@ -436,7 +436,7 @@ func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 
 					// Pop the -- token unless the next positional argument accepts passthrough arguments.
 					if positional >= len(node.Positional) || !node.Positional[positional].Passthrough {
-						//if !(positional < len(node.Positional) && node.Positional[positional].Passthrough) {
+						// if !(positional < len(node.Positional) && node.Positional[positional].Passthrough) {
 						c.scan.Pop()
 					}
 

@@ -284,7 +284,7 @@ func (w *Wildmatch) consume(t string, opt MatchOpts) ([]string, bool) {
 		// Standardize the formation of subject string so directories always
 		// end with '/'
 		if !strings.HasSuffix(t, "/") {
-			t = t + "/"
+			t += "/"
 		}
 	} else {
 		isDir = strings.HasSuffix(t, string(sep))
@@ -513,7 +513,7 @@ func parseComponent(s string) []componentFn {
 				// Once a '^' or '!' character has been seen,
 				// anything following it will be negated.
 				neg = !neg
-				i = i + 1
+				i += 1
 			} else if strings.HasPrefix(s[i:], "[:") {
 				close := strings.Index(s[i:], ":]")
 				if close < 0 {
@@ -531,7 +531,7 @@ func parseComponent(s string) []componentFn {
 					// _less_ than expected, to terminate
 					// the group.
 					run += "[:]"
-					i = i + 2
+					i += 2
 					continue
 				}
 
@@ -581,12 +581,12 @@ func parseComponent(s string) []componentFn {
 					include, exclude = appendMaybe(!neg,
 						include, exclude, bfn)
 
-					i = i + 2
+					i += 2
 				} else {
 					// If this is in the final position, add
 					// it to the run and exit the loop.
-					run = run + "-"
-					i = i + 2
+					run += "-"
+					i += 2
 				}
 			} else if s[i] == '\\' {
 				// If we encounter an escape sequence in the
@@ -595,8 +595,8 @@ func parseComponent(s string) []componentFn {
 				if i+1 >= len(s) {
 					panic("wildmatch: unclosed escape")
 				}
-				run = run + string(s[i+1])
-				i = i + 2
+				run += string(s[i+1])
+				i += 2
 			} else if s[i] == ']' {
 				// If we encounter a closing ']', then stop
 				// parsing the group.
@@ -604,8 +604,8 @@ func parseComponent(s string) []componentFn {
 			} else {
 				// Otherwise, add the character to the run and
 				// advance forward.
-				run = run + string(s[i])
-				i = i + 1
+				run += string(s[i])
+				i += 1
 			}
 		}
 

@@ -34,7 +34,7 @@ func getSizeAndUnit(size float64) (float64, string) {
 	i := 0
 	unitsLimit := len(sizeLists) - 1
 	for size >= sizeByteBase && i < unitsLimit {
-		size = size / sizeByteBase
+		size /= sizeByteBase
 		i++
 	}
 	return size, sizeLists[i]

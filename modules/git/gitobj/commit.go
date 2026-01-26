@@ -102,7 +102,7 @@ func (c *Commit) Decode(hash hash.Hash, from io.Reader, size int64) (n int, err 
 			return 0, readErr
 		}
 		text := strings.TrimSuffix(line, "\n")
-		n = n + len(line)
+		n += len(line)
 
 		if len(text) == 0 && !finishedHeaders {
 			finishedHeaders = true
@@ -198,7 +198,7 @@ func (c *Commit) Encode(to io.Writer) (n int, err error) {
 			return n, err
 		}
 
-		n = n + n1
+		n += n1
 	}
 
 	n2, err := fmt.Fprintf(to, "author %s\ncommitter %s\n", c.Author, c.Committer)
@@ -206,7 +206,7 @@ func (c *Commit) Encode(to io.Writer) (n int, err error) {
 		return n, err
 	}
 
-	n = n + n2
+	n += n2
 
 	for _, hdr := range c.ExtraHeaders {
 		n3, err := fmt.Fprintf(to, "%s %s\n",
@@ -215,7 +215,7 @@ func (c *Commit) Encode(to io.Writer) (n int, err error) {
 			return n, err
 		}
 
-		n = n + n3
+		n += n3
 	}
 
 	// c.Message is built from messageParts in the Decode() function.

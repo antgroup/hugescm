@@ -247,7 +247,7 @@ func (t *Table) getRefsFromBlock(src []byte, b *block) ([]git.Reference, error) 
 		suffixLength >>= 3
 
 		refname := prefix[:prefixLength] + string(src[idx:idx+suffixLength])
-		idx = idx + suffixLength
+		idx += suffixLength
 
 		idx, updateIndexDelta, err = t.getVarInt(src, idx, b.FullBlockSize)
 		if err != nil {
@@ -291,7 +291,7 @@ func (t *Table) getRefsFromBlock(src []byte, b *block) ([]git.Reference, error) 
 
 			reference.Target = git.ReferenceName(src[idx : idx+size]).String()
 			reference.IsSymbolic = true
-			idx = idx + size
+			idx += size
 		}
 
 		prefix = refname

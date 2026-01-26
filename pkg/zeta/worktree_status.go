@@ -504,7 +504,7 @@ func (w *Worktree) chmod(ctx context.Context, paths []string, mask bool) error {
 			return err
 		}
 		if mask {
-			e.Mode = e.Mode | filemode.Executable
+			e.Mode |= filemode.Executable
 			continue
 		}
 		e.Mode = e.Mode&^filemode.Executable | filemode.Regular

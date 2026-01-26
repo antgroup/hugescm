@@ -25,7 +25,7 @@ var (
 // returned without a corresponding packfile.
 func DecodePackfile(r io.ReaderAt, hash hash.Hash) (*Packfile, error) {
 	header := make([]byte, 12)
-	if _, err := r.ReadAt(header[:], 0); err != nil {
+	if _, err := r.ReadAt(header, 0); err != nil {
 		return nil, err
 	}
 

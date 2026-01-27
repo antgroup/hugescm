@@ -14,15 +14,13 @@ type Case struct {
 }
 
 func (c *Case) Assert(t *testing.T) {
-	defer func() {
-		if err := recover(); err != nil {
-			if c.Match {
-				t.Errorf("could not parse: %s (%s)", c.Pattern, err)
-			}
+	p, err := NewWildmatch(c.Pattern, c.Opts...)
+	if err != nil {
+		if c.Match {
+			t.Errorf("could not parse: %s (%s)", c.Pattern, err)
 		}
-	}()
-
-	p := NewWildmatch(c.Pattern, c.Opts...)
+		return
+	}
 	if (c.MatchOpts != MatchOpts{} && p.MatchWithOpts(c.Subject, c.MatchOpts) != c.Match) ||
 		(c.MatchOpts == MatchOpts{} && p.Match(c.Subject) != c.Match) {
 		if c.Match {
@@ -880,7 +878,10 @@ func TestSlashEscape(t *testing.T) {
 }
 
 func TestCaseFold(t *testing.T) {
-	m := NewWildmatch("*.bin", SystemCase)
+	m, err := NewWildmatch("*.bin", SystemCase)
+	if err != nil {
+		t.Errorf("wildmatch: %v", err)
+	}
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		if !m.Match("UPCASE.BIN") {
 			t.Errorf("wildmatch: expected system case to be folding")

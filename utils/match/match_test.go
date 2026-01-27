@@ -345,7 +345,11 @@ func TestFnMatch(t *testing.T) {
 	}
 	match := func(pattern string) {
 		fmt.Fprintf(os.Stderr, "------------- check match: %s --------\n", pattern)
-		w := wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents)
+		w, err := wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "bad wildcard: %v\n", err)
+			return
+		}
 		for _, name := range matchPaths {
 			fmt.Fprintf(os.Stderr, "%s | %s Wildmatch: %v\n", pattern, name, w.Match(name))
 		}
@@ -353,7 +357,11 @@ func TestFnMatch(t *testing.T) {
 	for _, p := range patterns {
 		match(p)
 	}
-	w2 := wildmatch.NewWildmatch("utils/viewport/main.go", wildmatch.SystemCase, wildmatch.Contents)
+	w2, err := wildmatch.NewWildmatch("utils/viewport/main.go", wildmatch.SystemCase, wildmatch.Contents)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "bad wildcard: %v\n", err)
+		return
+	}
 	fmt.Fprintf(os.Stderr, "%v\n", w2.Match("utils/viewport/main.go"))
 }
 

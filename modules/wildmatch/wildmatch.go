@@ -1,6 +1,7 @@
 package wildmatch
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -89,7 +90,7 @@ type MatchOpts struct {
 //
 // If the pattern is malformed, for instance, it has an unclosed character
 // group, escape sequence, or character class, NewWildmatch will panic().
-func NewWildmatch(p string, opts ...opt) *Wildmatch {
+func NewWildmatch(p string, opts ...opt) (*Wildmatch, error) {
 	w := &Wildmatch{p: slashEscape(p)}
 
 	for _, opt := range opts {
@@ -105,9 +106,12 @@ func NewWildmatch(p string, opts ...opt) *Wildmatch {
 	if len(parts) > 1 {
 		w.basename = false
 	}
-	w.ts = w.parseTokens(parts)
+	var err error
+	if w.ts, err = w.parseTokens(parts); err != nil {
+		return nil, err
+	}
 
-	return w
+	return w, nil
 }
 
 const (
@@ -118,10 +122,10 @@ const (
 // slashEscape converts paths "p" to POSIX-compliant path, independent of which
 // escape character the host machine uses.
 //
-// slashEscape resepcts escapable sequences, and thus will not transform
+// slashEscape respects escapable sequences, and thus will not transform
 // `foo\*bar` to `foo/*bar` on non-Windows operating systems.
 func slashEscape(p string) string {
-	var pp string
+	var bs strings.Builder
 
 	for i := 0; i < len(p); {
 		c := p[i]
@@ -129,21 +133,21 @@ func slashEscape(p string) string {
 		switch c {
 		case '\\':
 			if i+1 < len(p) && escapable(p[i+1]) {
-				pp += `\`
-				pp += string(p[i+1])
+				_ = bs.WriteByte('\\')
+				_ = bs.WriteByte(p[i+1])
 
 				i += 2
 			} else {
-				pp += `/`
+				_ = bs.WriteByte('/')
 				i += 1
 			}
 		default:
-			pp += string([]byte{c})
+			_ = bs.WriteByte(c)
 			i += 1
 		}
 	}
 
-	return pp
+	return bs.String()
 }
 
 // escapable returns whether the given "c" is escapable.
@@ -153,9 +157,9 @@ func escapable(c byte) bool {
 
 // parseTokens parses a separated list of patterns into a sequence of
 // representative Tokens that will compose the pattern when applied in sequence.
-func (w *Wildmatch) parseTokens(dirs []string) []token {
+func (w *Wildmatch) parseTokens(dirs []string) ([]token, error) {
 	if len(dirs) == 0 {
-		return make([]token, 0)
+		return make([]token, 0), nil
 	}
 
 	var finalComponents []token
@@ -179,7 +183,10 @@ func (w *Wildmatch) parseTokens(dirs []string) []token {
 			// We don't have a slash in the middle, so this can go
 			// anywhere in the hierarchy.  If there had been a slash
 			// here, it would have been anchored at the root.
-			rest := w.parseTokensSimple(dirs)
+			rest, err := w.parseTokensSimple(dirs)
+			if err != nil {
+				return nil, err
+			}
 			tokens := []token{&unanchoredDirectory{
 				Until: rest[0],
 			}}
@@ -189,32 +196,38 @@ func (w *Wildmatch) parseTokens(dirs []string) []token {
 			if finalComponents == nil && len(rest) > 1 {
 				finalComponents = rest[1:]
 			}
-			return append(tokens, finalComponents...)
+			return append(tokens, finalComponents...), nil
 		}
 	}
-	components := w.parseTokensSimple(dirs)
-	return append(components, finalComponents...)
+	components, err := w.parseTokensSimple(dirs)
+	if err != nil {
+		return nil, err
+	}
+	return append(components, finalComponents...), nil
 }
 
-func (w *Wildmatch) parseTokensSimple(dirs []string) []token {
+func (w *Wildmatch) parseTokensSimple(dirs []string) ([]token, error) {
 	if len(dirs) == 0 {
-		return make([]token, 0)
+		return make([]token, 0), nil
 	}
 
 	switch dirs[0] {
 	case "":
 		if len(dirs) == 1 {
-			return []token{&component{fns: []componentFn{substring("")}}}
+			return []token{&component{fns: []componentFn{substring("")}}}, nil
 		}
 		return w.parseTokensSimple(dirs[1:])
 	case "**":
-		rest := w.parseTokensSimple(dirs[1:])
+		rest, err := w.parseTokensSimple(dirs[1:])
+		if err != nil {
+			return nil, err
+		}
 		if len(rest) == 0 {
 			// If there are no remaining tokens, return a lone
 			// doubleStar token.
 			return []token{&doubleStar{
 				Until: nil,
-			}}
+			}}, nil
 		}
 
 		// Otherwise, return a doubleStar token that will match greedily
@@ -222,13 +235,21 @@ func (w *Wildmatch) parseTokensSimple(dirs []string) []token {
 		// and then the remainder of the pattern.
 		return append([]token{&doubleStar{
 			Until: rest[0],
-		}}, rest[1:]...)
+		}}, rest[1:]...), nil
 	default:
 		// Ordinarily, simply return the appropriate component, and
 		// continue on.
+		cc, err := parseComponent(dirs[0])
+		if err != nil {
+			return nil, err
+		}
+		tokens, err := w.parseTokensSimple(dirs[1:])
+		if err != nil {
+			return nil, err
+		}
 		return append([]token{&component{
-			fns: parseComponent(dirs[0]),
-		}}, w.parseTokensSimple(dirs[1:])...)
+			fns: cc,
+		}}, tokens...), nil
 	}
 }
 
@@ -390,7 +411,7 @@ func (d *doubleStar) String() string {
 	if d.Until == nil {
 		return "**"
 	}
-	return "**/" + d.Until.String()
+	return fmt.Sprintf("**/%s", d.Until.String())
 }
 
 // unanchoredDirectory is an implementation of the Token interface which
@@ -409,7 +430,7 @@ func (d *unanchoredDirectory) Consume(path []string, isDir bool) ([]string, bool
 
 // String implements Component.String.
 func (d *unanchoredDirectory) String() string {
-	return d.Until.String() + "/"
+	return fmt.Sprintf("%s/", d.Until.String())
 }
 
 // trailingComponents is an implementation of the Token interface which
@@ -467,10 +488,10 @@ type component struct {
 // parseComponent parses a single component from its string representation,
 // including wildcards, character classes, string literals, and escape
 // sequences.
-func parseComponent(s string) []componentFn {
+func parseComponent(s string) ([]componentFn, error) {
 	if len(s) == 0 {
 		// The empty string represents the absence of componentFn's.
-		return make([]componentFn, 0)
+		return make([]componentFn, 0), nil
 	}
 
 	switch s[0] {
@@ -478,7 +499,7 @@ func parseComponent(s string) []componentFn {
 		// If the first character is a '\', the following character is a
 		// part of an escape sequence, or it is unclosed.
 		if len(s) < 2 {
-			panic("wildmatch: unclosed escape sequence")
+			return nil, errors.New("wildmatch: unclosed escape sequence")
 		}
 
 		literal := substring(string(s[1]))
@@ -487,9 +508,12 @@ func parseComponent(s string) []componentFn {
 		if len(s) > 2 {
 			// If there is more to follow, i.e., "\*foo", then parse
 			// the remainder.
-			rest = parseComponent(s[2:])
+			var err error
+			if rest, err = parseComponent(s[2:]); err != nil {
+				return nil, err
+			}
 		}
-		return cons(literal, rest)
+		return cons(literal, rest), nil
 	case '[':
 		var (
 			// i will denote the currently-inspected index of the character
@@ -509,15 +533,18 @@ func parseComponent(s string) []componentFn {
 		)
 
 		for i < len(s) {
-			if s[i] == '^' || s[i] == '!' {
+			c := s[i]
+			if c == '^' || c == '!' {
 				// Once a '^' or '!' character has been seen,
 				// anything following it will be negated.
 				neg = !neg
-				i += 1
-			} else if strings.HasPrefix(s[i:], "[:") {
+				i++
+				continue
+			}
+			if strings.HasPrefix(s[i:], "[:") {
 				close := strings.Index(s[i:], ":]")
 				if close < 0 {
-					panic("unclosed character class")
+					return nil, errors.New("unclosed character class")
 				}
 
 				if close == 1 {
@@ -540,14 +567,16 @@ func parseComponent(s string) []componentFn {
 					strings.ToLower(s[i:i+close]), "[:")
 				fn, ok := classes[name]
 				if !ok {
-					panic(fmt.Sprintf("wildmatch: unknown class: %q", name))
+					return nil, fmt.Errorf("wildmatch: unknown class: %q", name)
 				}
 
 				include, exclude = appendMaybe(!neg, include, exclude, fn)
 				// Advance to the first index beyond the closing
 				// ":]".
 				i = i + close + 2
-			} else if s[i] == '-' {
+				continue
+			}
+			if c == '-' {
 				if i < len(s) {
 					// If there is a range marker at the
 					// non-final position, construct a range
@@ -561,6 +590,9 @@ func parseComponent(s string) []componentFn {
 						// run.
 						start = run[len(run)-1]
 						run = run[:len(run)-1]
+					}
+					if i+1 >= len(s) {
+						return nil, errors.New("wildmatch: invalid range, missing end")
 					}
 					end = s[i+1]
 
@@ -578,8 +610,7 @@ func parseComponent(s string) []componentFn {
 					// Finally, construct the rune range and
 					// add it appropriately.
 					bfn := between(rune(start), rune(end))
-					include, exclude = appendMaybe(!neg,
-						include, exclude, bfn)
+					include, exclude = appendMaybe(!neg, include, exclude, bfn)
 
 					i += 2
 				} else {
@@ -588,25 +619,28 @@ func parseComponent(s string) []componentFn {
 					run += "-"
 					i += 2
 				}
-			} else if s[i] == '\\' {
+				continue
+			}
+			if c == '\\' {
 				// If we encounter an escape sequence in the
 				// group, check its bounds and add it to the
 				// run.
 				if i+1 >= len(s) {
-					panic("wildmatch: unclosed escape")
+					return nil, errors.New("wildmatch: unclosed escape")
 				}
 				run += string(s[i+1])
 				i += 2
-			} else if s[i] == ']' {
+				continue
+			}
+			if c == ']' {
 				// If we encounter a closing ']', then stop
 				// parsing the group.
 				break
-			} else {
-				// Otherwise, add the character to the run and
-				// advance forward.
-				run += string(s[i])
-				i += 1
 			}
+			// Otherwise, add the character to the run and
+			// advance forward.
+			run += string(s[i])
+			i++
 		}
 
 		if len(run) > 0 {
@@ -620,11 +654,23 @@ func parseComponent(s string) []componentFn {
 		}
 		// Assemble a character class, and cons it in front of the
 		// remainder of the component pattern.
-		return cons(charClass(include, exclude), parseComponent(rest))
+		cc, err := parseComponent(rest)
+		if err != nil {
+			return nil, err
+		}
+		return cons(charClass(include, exclude), cc), nil
 	case '?':
-		return []componentFn{wildcard(1, parseComponent(s[1:]))}
+		cc, err := parseComponent(s[1:])
+		if err != nil {
+			return nil, err
+		}
+		return []componentFn{wildcard(1, cc)}, nil
 	case '*':
-		return []componentFn{wildcard(-1, parseComponent(s[1:]))}
+		cc, err := parseComponent(s[1:])
+		if err != nil {
+			return nil, err
+		}
+		return []componentFn{wildcard(-1, cc)}, nil
 	default:
 		// Advance forward until we encounter a special character
 		// (either '*', '[', '*', or '?') and parse across the divider.
@@ -637,8 +683,11 @@ func parseComponent(s string) []componentFn {
 				break
 			}
 		}
-
-		return cons(substring(s[:i]), parseComponent(s[i:]))
+		cc, err := parseComponent(s[i:])
+		if err != nil {
+			return nil, err
+		}
+		return cons(substring(s[:i]), cc), nil
 	}
 }
 
@@ -692,12 +741,12 @@ func (c *component) Consume(path []string, isDir bool) ([]string, bool) {
 
 // String implements token.String.
 func (c *component) String() string {
-	var str string
+	var bs strings.Builder
 
 	for _, fn := range c.fns {
-		str += fn.String()
+		bs.WriteString(fn.String())
 	}
-	return str
+	return bs.String()
 }
 
 // substring returns a componentFn that matches a prefix of "sub".
@@ -732,9 +781,10 @@ func wildcard(n int, fns []componentFn) componentFn {
 		return "", true
 	}
 
-	var str = "*"
+	var bs strings.Builder
+	bs.WriteString("*")
 	for _, fn := range fns {
-		str += fn.String()
+		bs.WriteString(fn.String())
 	}
 
 	return &cfn{
@@ -754,7 +804,7 @@ func wildcard(n int, fns []componentFn) componentFn {
 			}
 			return until(s)
 		},
-		str: str,
+		str: bs.String(),
 	}
 }
 

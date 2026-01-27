@@ -3,6 +3,8 @@
 package replay
 
 import (
+	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -72,7 +74,12 @@ func NewMatcher(patterns []string) Matcher {
 			m.prefix = append(m.prefix, strings.TrimSuffix(pattern, "/"))
 			continue
 		}
-		m.ws = append(m.ws, wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents))
+		w, err := wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Ignore bad wildcard '%s' error: %v\n", pattern, err)
+			continue
+		}
+		m.ws = append(m.ws, w)
 	}
 	return m
 }

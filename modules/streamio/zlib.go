@@ -12,7 +12,7 @@ var (
 	zlibReader    = sync.Pool{
 		New: func() any {
 			r, _ := zlib.NewReader(bytes.NewReader(zlibInitBytes))
-			return ZLibReader{
+			return &ZLibReader{
 				Reader: r.(zlibReadCloser),
 			}
 		},

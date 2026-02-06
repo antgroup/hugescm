@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -513,4 +514,410 @@ func TestCommitEqualReturnsTrueWhenBothCommitsAreNil(t *testing.T) {
 	c2 := (*Commit)(nil)
 
 	assert.True(t, c1.Equal(c2))
+}
+
+func TestBadCommit(t *testing.T) {
+	cc := `tree 2aedfd35087c75d17bdbaf4dd56069d44fc75b71
+parent 75158117eb8efe60453f8c077527ac3530c81e38
+author Credit Card Account <Credit Card Account> 1722305889 +0800
+committer \346\244\260\346\235\215
+ <Credit Card Account> 1722305889 +0800
+
+Credit Card Account`
+	var c Commit
+	_, err := c.Decode(sha1.New(), strings.NewReader(cc), int64(len(cc)))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "bad commit: '%v'\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "%v\n", c)
+}
+
+func TestBad2Commit(t *testing.T) {
+	cc := `tree 2aedfd35087c75d17bdbaf4dd56069d44fc75b71
+parent 75158117eb8efe60453f8c077527ac3530c81e38
+author Credit Card Account <Credit Card Account> 1722305889 +0800
+committer Credit Card Account <Credit Card Account> 1722305889 +0800
+V  
+ 
+D
+---`
+	var c Commit
+	_, err := c.Decode(sha1.New(), strings.NewReader(cc), int64(len(cc)))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "bad commit: '%v'\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "%v\n", c)
+}
+
+// TestCommitDecodeWithLeadingWhitespaceWithoutPreviousHeader
+// Tests handling lines starting with space after standard headers but before empty line
+// This test verifies the code does not panic and handles this case correctly
+func TestCommitDecodeWithLeadingWhitespaceWithoutPreviousHeader(t *testing.T) {
+	cc := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+  extra line without previous header
+
+test message`
+
+	flen := len(cc)
+	commit := new(Commit)
+
+	// This call should not panic
+	n, err := commit.Decode(sha1.New(), strings.NewReader(cc), int64(flen))
+
+	// May return error or success, but should not panic
+	_ = n
+	_ = err
+}
+
+// TestCommitDecodePanicOnContinuationWithoutPreviousHeader
+// Attempts to trigger commit.go:119 panic: when encountering blank line without previous header
+func TestCommitDecodePanicOnContinuationWithoutPreviousHeader(t *testing.T) {
+	cc := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+  first continuation line before any extra header
+
+test message`
+
+	flen := len(cc)
+	commit := new(Commit)
+
+	// Try to see if it will panic
+	n, err := commit.Decode(sha1.New(), strings.NewReader(cc), int64(flen))
+	fmt.Printf("Result: n=%d, err=%v\n", n, err)
+	fmt.Printf("Commit: %+v\n", commit)
+}
+
+// TestSplitBehavior
+// Directly tests strings.Split behavior to confirm if it can return empty array
+func TestSplitBehavior(t *testing.T) {
+	testCases := []struct {
+		input  string
+		sep    string
+		expect int
+	}{
+		{"", " ", 1},
+		{" ", " ", 2},
+		{"  ", " ", 3},
+		{"\t", " ", 1},
+		{"\n", " ", 1},
+		{"\r\n", " ", 1},
+		{"\u0000", " ", 1},
+	}
+
+	for _, tc := range testCases {
+		fields := strings.Split(tc.input, tc.sep)
+		fmt.Printf("Split(%q, %q): len=%d\n", tc.input, tc.sep, len(fields))
+		if len(fields) == 0 {
+			fmt.Printf("  >>> EMPTY ARRAY! <<<\n")
+		}
+		assert.Equal(t, tc.expect, len(fields))
+	}
+}
+
+// TestCommitDecodePanicOnEmptyFields
+// 测试是否能触发 len(fields) == 0 的情况
+func TestCommitDecodePanicOnEmptyFields(t *testing.T) {
+	// 尝试构造特殊输入
+	testCases := []string{
+		`tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+`, // 在 header 区域结尾只有空行
+		`tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+
+message`,
+	}
+
+	for i, cc := range testCases {
+		fmt.Printf("\n=== Test case %d ===\n", i)
+		fmt.Printf("Input:\n%s\n", cc)
+
+		flen := len(cc)
+		commit := new(Commit)
+
+		// Check if it will panic
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("PANIC CAUGHT: %v\n", r)
+				}
+			}()
+
+			n, err := commit.Decode(sha1.New(), strings.NewReader(cc), int64(flen))
+			fmt.Printf("Result: n=%d, err=%v\n", n, err)
+			fmt.Printf("Commit: %+v\n", commit)
+		}()
+	}
+}
+
+// TestCommitDecodePanicWithMalformedInput
+// Attempts to trigger panic using various malformed inputs
+func TestCommitDecodePanicWithMalformedInput(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input string
+	}{
+		{
+			name: "Extra header followed by pure space line",
+			input: `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+custom value
+
+message`,
+		},
+		{
+			name: "Multiple spaces line after extra header",
+			input: `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+custom value
+  
+message`,
+		},
+		{
+			name: "Only tab after extra header",
+			input: `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+custom value
+	
+message`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fmt.Printf("\n=== %s ===\n", tc.name)
+			fmt.Printf("Input:\n%s\n", tc.input)
+
+			commit := new(Commit)
+			flen := len(tc.input)
+
+			// 使用 recover 捕获 panic
+			defer func() {
+				if r := recover(); r != nil {
+					t.Logf(">>> PANIC CAUGHT: %v <<<", r)
+					t.Logf("This proves the panic can be triggered!")
+					t.FailNow()
+				}
+			}()
+
+			n, err := commit.Decode(sha1.New(), strings.NewReader(tc.input), int64(flen))
+			t.Logf("Result: n=%d, err=%v", n, err)
+			t.Logf("ExtraHeaders count: %d", len(commit.ExtraHeaders))
+			if len(commit.ExtraHeaders) > 0 {
+				for i, h := range commit.ExtraHeaders {
+					t.Logf("  [%d] K=%q, V=%q", i, h.K, h.V)
+				}
+			}
+		})
+	}
+}
+
+// TestCommitDecodeWithEmptyAuthor tests decoding with empty author
+func TestCommitDecodeWithEmptyAuthor(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+
+test message`
+	commit := new(Commit)
+	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+	require.NoError(t, err)
+	assert.Equal(t, "", commit.Author)
+	assert.Equal(t, "Pat Doe <pdoe@example.org> 1337892984 -0700", commit.Committer)
+}
+
+// TestCommitDecodeWithEmptyCommitter tests decoding with empty committer
+func TestCommitDecodeWithEmptyCommitter(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer
+
+test message`
+	commit := new(Commit)
+	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+	require.NoError(t, err)
+	assert.Equal(t, "Pat Doe <pdoe@example.org> 1337892984 -0700", commit.Author)
+	assert.Equal(t, "", commit.Committer)
+}
+
+// TestCommitDecodeWithMultipleParents tests decoding with multiple parents
+func TestCommitDecodeWithMultipleParents(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+parent a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+parent b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3
+parent c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+
+test message`
+	commit := new(Commit)
+	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+	require.NoError(t, err)
+	assert.Equal(t, 3, len(commit.ParentIDs))
+	assert.Equal(t, "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", hex.EncodeToString(commit.ParentIDs[0]))
+	assert.Equal(t, "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3", hex.EncodeToString(commit.ParentIDs[1]))
+	assert.Equal(t, "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", hex.EncodeToString(commit.ParentIDs[2]))
+}
+
+// TestCommitDecodeWithSpecialCharacters tests decoding with special characters
+func TestCommitDecodeWithSpecialCharacters(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author 张三 <zhangsan@example.com> 1337892984 +0800
+committer 张三 <zhangsan@example.com> 1337892984 +0800
+custom value with spaces & special!@#$%^&*()_+-=[]{}|;':",./<>?
+
+test message with 中文 and 日本語`
+
+	commit := new(Commit)
+	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+	require.NoError(t, err)
+	assert.Contains(t, commit.Author, "张三")
+	assert.Equal(t, 1, len(commit.ExtraHeaders))
+	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
+	assert.Equal(t, "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?", commit.ExtraHeaders[0].V)
+	assert.Contains(t, commit.Message, "中文")
+	assert.Contains(t, commit.Message, "日本語")
+}
+
+// TestCommitDecodeWithExtraHeaderBeforeStandard tests extra header before standard headers
+func TestCommitDecodeWithExtraHeaderBeforeStandard(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+custom extra header before standard
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+
+test message`
+	commit := new(Commit)
+	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(commit.ExtraHeaders))
+	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
+	assert.Equal(t, "extra header before standard", commit.ExtraHeaders[0].V)
+}
+
+// TestCommitDecodeMultilineExtraHeaders tests correct parsing of multi-line extra headers
+// This is a test case for fixing multi-line header bug
+func TestCommitDecodeMultilineExtraHeaders(t *testing.T) {
+	// Construct a commit with multi-line GPG signature
+	// Note: In Git format, leading spaces in multi-line header continuation are removed
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+gpgsig -----BEGIN PGP SIGNATURE-----
+ Version: GnuPG v1.4.11 (GNU/Linux)
+ iQIcBAABAgAGBQJR9JqnAAoJEJyGw4i5t8hW3KUP/0XuWjE4kM6G8J7E6H4P2J8
+ =i9Jh
+ -----END PGP SIGNATURE-----
+
+test message`
+
+	commit := new(Commit)
+	n, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+
+	require.NoError(t, err)
+	require.Equal(t, len(input), n)
+	require.Equal(t, 1, len(commit.ExtraHeaders))
+
+	// Verify multi-line header value is correctly concatenated
+	// Note: Leading spaces are removed, but empty lines in continuation are preserved
+	gpgsig := commit.ExtraHeaders[0]
+	assert.Equal(t, "gpgsig", gpgsig.K)
+	expectedValue := "-----BEGIN PGP SIGNATURE-----\n" +
+		"Version: GnuPG v1.4.11 (GNU/Linux)\n" +
+		"iQIcBAABAgAGBQJR9JqnAAoJEJyGw4i5t8hW3KUP/0XuWjE4kM6G8J7E6H4P2J8\n" +
+		"=i9Jh\n" +
+		"-----END PGP SIGNATURE-----"
+	assert.Equal(t, expectedValue, gpgsig.V)
+	assert.Equal(t, "test message", commit.Message)
+}
+
+// TestCommitDecodeMultipleExtraHeaders tests multiple extra headers
+func TestCommitDecodeMultipleExtraHeaders(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+encoding utf-8
+gpgsig -----BEGIN PGP SIGNATURE-----
+ signature
+ -----END PGP SIGNATURE-----
+custom value1
+custom value2
+
+test message`
+
+	commit := new(Commit)
+	n, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
+
+	require.NoError(t, err)
+	require.Equal(t, len(input), n)
+	require.Equal(t, 4, len(commit.ExtraHeaders))
+
+	assert.Equal(t, "encoding", commit.ExtraHeaders[0].K)
+	assert.Equal(t, "utf-8", commit.ExtraHeaders[0].V)
+
+	assert.Equal(t, "gpgsig", commit.ExtraHeaders[1].K)
+	assert.Contains(t, commit.ExtraHeaders[1].V, "-----BEGIN PGP SIGNATURE-----")
+	assert.Contains(t, commit.ExtraHeaders[1].V, "signature")
+	assert.Contains(t, commit.ExtraHeaders[1].V, "-----END PGP SIGNATURE-----")
+
+	assert.Equal(t, "custom", commit.ExtraHeaders[2].K)
+	assert.Equal(t, "value1", commit.ExtraHeaders[2].V)
+
+	assert.Equal(t, "custom", commit.ExtraHeaders[3].K)
+	assert.Equal(t, "value2", commit.ExtraHeaders[3].V)
+
+	assert.Equal(t, "test message", commit.Message)
+}
+
+// TestCommitDecodeWithStringsCut validates correct usage of strings.Cut
+func TestCommitDecodeWithStringsCut(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantTree string
+		wantErr  bool
+	}{
+		{
+			name:     "standard commit",
+			input:    "tree abc123\nauthor test\n\nmsg",
+			wantTree: "abc123",
+			wantErr:  false,
+		},
+		{
+			name:     "tree with value",
+			input:    "tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb\nauthor test\n\nmsg",
+			wantTree: "e8ad84c41c2acde27c77fa212b8865cd3acfe6fb",
+			wantErr:  false,
+		},
+		{
+			name:     "tree without value (should be skipped)",
+			input:    "tree\ntree abc123\nauthor test\n\nmsg",
+			wantTree: "abc123",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			commit := new(Commit)
+			_, err := commit.Decode(sha1.New(), strings.NewReader(tt.input), int64(len(tt.input)))
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantTree, hex.EncodeToString(commit.TreeID))
+			}
+		})
+	}
 }

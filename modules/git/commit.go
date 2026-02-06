@@ -131,52 +131,47 @@ func (c *Commit) Decode(hash string, reader io.Reader, size int64) error {
 			finishedHeaders = true
 			continue
 		}
-		if fields := strings.Split(text, " "); !finishedHeaders {
-			if len(fields) == 0 {
-				// Executing in this block means that we got a
-				// whitespace-only line, while parsing a header.
-				//
-				// Append it to the last-parsed header, and
-				// continue.
-				c.ExtraHeaders[len(c.ExtraHeaders)-1].V += "\n" + text[1:]
+		if !finishedHeaders {
+			// Check if this is a continuation line (starts with space)
+			// Do this before strings.Cut to avoid unnecessary parsing
+			if len(text) > 0 && text[0] == ' ' && len(c.ExtraHeaders) != 0 {
+				last := c.ExtraHeaders[len(c.ExtraHeaders)-1]
+				last.V += "\n" + text[1:]
 				continue
 			}
-			if len(fields) < 2 {
-				continue
-			}
-			switch fields[0] {
-			case "tree":
-				if len(fields) != 2 {
-					return fmt.Errorf("error parsing tree: %s", text)
-				}
-				c.Tree = fields[1]
-			case "parent":
-				if len(fields) != 2 {
-					return fmt.Errorf("error parsing parent: %s", text)
-				}
-				c.Parents = append(c.Parents, fields[1])
-			case "author":
-				c.Author.Decode([]byte(text[7:]))
-			case "committer":
-				c.Committer.Decode([]byte(text[10:]))
-			default:
-				if strings.HasPrefix(text, " ") && len(c.ExtraHeaders) != 0 {
-					idx := len(c.ExtraHeaders) - 1
-					hdr := c.ExtraHeaders[idx]
 
-					// Append the line of text (removing the
-					// leading space) to the last header
-					// that we parsed, adding a newline
-					// between the two.
-					hdr.V = strings.Join(append(
-						[]string{hdr.V}, text[1:],
-					), "\n")
-				} else {
-					c.ExtraHeaders = append(c.ExtraHeaders, &ExtraHeader{
-						K: fields[0],
-						V: strings.Join(fields[1:], " "),
-					})
+			key, value, ok := strings.Cut(text, " ")
+			switch key {
+			case "tree":
+				if !ok || len(value) == 0 {
+					continue
 				}
+				c.Tree = value
+			case "parent":
+				if !ok || len(value) == 0 {
+					continue
+				}
+				c.Parents = append(c.Parents, value)
+			case "author":
+				if !ok || len(value) == 0 {
+					continue
+				}
+				c.Author.Decode([]byte(value))
+			case "committer":
+				if !ok || len(value) == 0 {
+					continue
+				}
+				c.Committer.Decode([]byte(value))
+			default:
+				// Skip malformed header lines (no space separator) or empty key
+				if !ok || len(key) == 0 {
+					continue
+				}
+				// New header
+				c.ExtraHeaders = append(c.ExtraHeaders, &ExtraHeader{
+					K: key,
+					V: value,
+				})
 			}
 		} else {
 			_, _ = message.WriteString(line)

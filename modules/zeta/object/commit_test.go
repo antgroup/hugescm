@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/streamio"
 	"github.com/emirpasic/gods/trees/binaryheap"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCommitCompress(t *testing.T) {
@@ -101,4 +104,131 @@ func TestBinaryHeap(t *testing.T) {
 		}
 		fmt.Fprintf(os.Stderr, "%v\n", v)
 	}
+}
+
+// TestCommitDecodeWithMultipleParents tests decoding a commit with multiple parents
+func TestCommitDecodeWithMultipleParents(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+parent a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+parent b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3
+parent c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+
+test message`
+
+	// Create a reader that implements the Reader interface
+	r := strings.NewReader(input)
+	reader := &testReader{
+		Reader:  r,
+		hash:    plumbing.NewHash("test"),
+		objType: CommitObject,
+	}
+
+	commit := new(Commit)
+	err := commit.Decode(reader)
+	require.NoError(t, err)
+	assert.Equal(t, 3, len(commit.Parents))
+}
+
+// TestCommitDecodeWithSpecialCharacters tests decoding a commit with special characters
+func TestCommitDecodeWithSpecialCharacters(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+author 张三 <zhangsan@example.com> 1337892984 +0800
+committer 张三 <zhangsan@example.com> 1337892984 +0800
+custom value with spaces & special!@#$%^&*()_+-=[]{}|;':",./<>?
+
+test message with 中文 and 日本語`
+
+	// Create a reader that implements the Reader interface
+	r := strings.NewReader(input)
+	reader := &testReader{
+		Reader:  r,
+		hash:    plumbing.NewHash("test"),
+		objType: CommitObject,
+	}
+
+	commit := new(Commit)
+	err := commit.Decode(reader)
+	require.NoError(t, err)
+	assert.Contains(t, commit.Author.String(), "张三")
+	assert.Equal(t, 1, len(commit.ExtraHeaders))
+	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
+	assert.Equal(t, "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?", commit.ExtraHeaders[0].V)
+	assert.Contains(t, commit.Message, "中文")
+	assert.Contains(t, commit.Message, "日本語")
+}
+
+// TestCommitDecodeWithExtraHeaderBeforeStandard tests decoding a commit with extra header before standard headers
+func TestCommitDecodeWithExtraHeaderBeforeStandard(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+custom extra header before standard
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+
+test message`
+
+	// Create a reader that implements the Reader interface
+	r := strings.NewReader(input)
+	reader := &testReader{
+		Reader:  r,
+		hash:    plumbing.NewHash("test"),
+		objType: CommitObject,
+	}
+
+	commit := new(Commit)
+	err := commit.Decode(reader)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(commit.ExtraHeaders))
+	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
+	assert.Equal(t, "extra header before standard", commit.ExtraHeaders[0].V)
+}
+
+// TestCommitDecodeWithComplexHeaders tests decoding a commit with complex multi-line headers
+func TestCommitDecodeWithComplexHeaders(t *testing.T) {
+	input := `tree e8ad84c41c2acde27c77fa212b8865cd3acfe6fb
+parent b343c8beec664ef6f0e9964d3001c7c7966331ae
+author Pat Doe <pdoe@example.org> 1337892984 -0700
+committer Pat Doe <pdoe@example.org> 1337892984 -0700
+mergetag object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd
+ type commit
+ tag random
+ tagger J. Roe <jroe@example.ca> 1337889148 -0600
+
+Random changes`
+
+	// Create a reader that implements the Reader interface
+	r := strings.NewReader(input)
+	reader := &testReader{
+		Reader:  r,
+		hash:    plumbing.NewHash("test"),
+		objType: CommitObject,
+	}
+
+	commit := new(Commit)
+	err := commit.Decode(reader)
+	require.NoError(t, err)
+
+	// Verify ExtraHeaders
+	require.Equal(t, 1, len(commit.ExtraHeaders))
+	require.Equal(t, "mergetag", commit.ExtraHeaders[0].K)
+	require.Contains(t, commit.ExtraHeaders[0].V, "object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd")
+	require.Contains(t, commit.ExtraHeaders[0].V, "type commit")
+	require.Contains(t, commit.ExtraHeaders[0].V, "tag random")
+	require.Contains(t, commit.ExtraHeaders[0].V, "tagger J. Roe <jroe@example.ca> 1337889148 -0600")
+}
+
+// testReader implements the Reader interface for testing purposes
+type testReader struct {
+	io.Reader
+	hash    plumbing.Hash
+	objType ObjectType
+}
+
+func (r *testReader) Hash() plumbing.Hash {
+	return r.hash
+}
+
+func (r *testReader) Type() ObjectType {
+	return r.objType
 }

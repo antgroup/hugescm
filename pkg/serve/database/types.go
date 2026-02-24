@@ -78,7 +78,7 @@ type Command struct {
 	ReferenceName plumbing.ReferenceName `json:"reference_name"`
 	OldRev        string                 `json:"old_rev"`
 	NewRev        string                 `json:"new_rev"`
-	Subject       string                 `json:"subject,"`
+	Subject       string                 `json:"subject"`
 	Description   string                 `json:"description"`
 	RID           int64                  `json:"rid"`
 	UID           int64                  `json:"uid"`

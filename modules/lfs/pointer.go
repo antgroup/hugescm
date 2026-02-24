@@ -82,12 +82,12 @@ func (p *Pointer) Encoded() string {
 	}
 
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("version %s\n", latest))
+	fmt.Fprintf(&buffer, "version %s\n", latest)
 	for _, ext := range p.Extensions {
-		buffer.WriteString(fmt.Sprintf("ext-%d-%s %s:%s\n", ext.Priority, ext.Name, ext.OidType, ext.Oid))
+		fmt.Fprintf(&buffer, "ext-%d-%s %s:%s\n", ext.Priority, ext.Name, ext.OidType, ext.Oid)
 	}
-	buffer.WriteString(fmt.Sprintf("oid %s:%s\n", p.OidType, p.Oid))
-	buffer.WriteString(fmt.Sprintf("size %d\n", p.Size))
+	fmt.Fprintf(&buffer, "oid %s:%s\n", p.OidType, p.Oid)
+	fmt.Fprintf(&buffer, "size %d\n", p.Size)
 	return buffer.String()
 }
 

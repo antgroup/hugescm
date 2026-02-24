@@ -778,7 +778,7 @@ func (p *ProgressBar) renderDetails() error {
 
 	// render the details row
 	for _, detail := range p.state.details {
-		b.WriteString(fmt.Sprintf("\u001B[K\r%s\n", detail))
+		fmt.Fprintf(&b, "\u001B[K\r%s\n", detail)
 	}
 	// add empty lines to fill the maxDetailRow
 	for i := len(p.state.details); i < p.config.maxDetailRow; i++ {
@@ -786,7 +786,7 @@ func (p *ProgressBar) renderDetails() error {
 	}
 
 	// move the cursor up to the start of the details row
-	b.WriteString(fmt.Sprintf("\u001B[%dF", p.config.maxDetailRow+1))
+	fmt.Fprintf(&b, "\u001B[%dF", p.config.maxDetailRow+1)
 
 	_ = writeString(p.config, b.String())
 
@@ -1065,31 +1065,28 @@ func renderProgressBar(c config, s *state) (int, error) {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				if currentSuffix == c.maxHumanizedSuffix {
 					if c.showTotalBytes {
-						sb.WriteString(fmt.Sprintf("%s/%s%s",
-							currentHumanize, c.maxHumanized, c.maxHumanizedSuffix))
+						fmt.Fprintf(&sb, "%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
 					} else {
-						sb.WriteString(fmt.Sprintf("%s%s",
-							currentHumanize, c.maxHumanizedSuffix))
+						fmt.Fprintf(&sb, "%s%s", currentHumanize, c.maxHumanizedSuffix)
 					}
 				} else if c.showTotalBytes {
-					sb.WriteString(fmt.Sprintf("%s%s/%s%s",
-						currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix))
+					fmt.Fprintf(&sb, "%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
 				} else {
-					sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
+					fmt.Fprintf(&sb, "%s%s", currentHumanize, currentSuffix)
 				}
 			} else if c.showTotalBytes {
-				sb.WriteString(fmt.Sprintf("%.0f/%d", s.currentBytes, c.max))
+				fmt.Fprintf(&sb, "%.0f/%d", s.currentBytes, c.max)
 			} else {
-				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				fmt.Fprintf(&sb, "%.0f", s.currentBytes)
 			}
 		} else {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
-				sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
+				fmt.Fprintf(&sb, "%s%s", currentHumanize, currentSuffix)
 			} else if c.showTotalBytes {
-				sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
+				fmt.Fprintf(&sb, "%.0f/%s", s.currentBytes, "-")
 			} else {
-				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				fmt.Fprintf(&sb, "%.0f", s.currentBytes)
 			}
 		}
 	}
@@ -1102,7 +1099,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			sb.WriteString(", ")
 		}
 		currentHumanize, currentSuffix := humanizeBytes(averageRate, c.useIECUnits)
-		sb.WriteString(fmt.Sprintf("%s%s/s", currentHumanize, currentSuffix))
+		fmt.Fprintf(&sb, "%s%s/s", currentHumanize, currentSuffix)
 	}
 
 	// show iterations rate
@@ -1113,11 +1110,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 			sb.WriteString(", ")
 		}
 		if averageRate > 1 {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString))
+			fmt.Fprintf(&sb, "%0.0f %s/s", averageRate, c.iterationString)
 		} else if averageRate*60 > 1 {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString))
+			fmt.Fprintf(&sb, "%0.0f %s/min", 60*averageRate, c.iterationString)
 		} else {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString))
+			fmt.Fprintf(&sb, "%0.0f %s/hr", 3600*averageRate, c.iterationString)
 		}
 	}
 	if sb.Len() > 0 {

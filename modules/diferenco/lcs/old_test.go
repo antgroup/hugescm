@@ -106,7 +106,7 @@ func TestRegressionOld003(t *testing.T) {
 }
 
 func TestRandOld(t *testing.T) {
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		// TODO(adonovan): use ASCII and bytesSeqs here? The use of
 		// non-ASCII isn't relevant to the property exercised by the test.
 		a := []rune(randstr("abω", 16))
@@ -158,7 +158,7 @@ func TestDiffAPI(t *testing.T) {
 
 func BenchmarkTwoOld(b *testing.B) {
 	tests := genBench("abc", 96)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		for _, tt := range tests {
 			_, two := compute(stringSeqs{tt.before, tt.after}, twosided, 100)
 			if !two.valid() {
@@ -170,7 +170,7 @@ func BenchmarkTwoOld(b *testing.B) {
 
 func BenchmarkForwOld(b *testing.B) {
 	tests := genBench("abc", 96)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		for _, tt := range tests {
 			_, two := compute(stringSeqs{tt.before, tt.after}, forward, 100)
 			if !two.valid() {
@@ -184,7 +184,7 @@ func genBench(set string, n int) []struct{ before, after string } {
 	// before and after for benchmarks. 24 strings of length n with
 	// before and after differing at least once, and about 5%
 	var ans []struct{ before, after string }
-	for i := 0; i < 24; i++ {
+	for range 24 {
 		// maybe b should have an approximately known number of diffs
 		a := randstr(set, n)
 		cnt := 0
@@ -226,7 +226,7 @@ func BenchmarkLargeFileSmallDiff(b *testing.B) {
 	src := string(data)
 	dst := src[:n*49/100] + src[n*51/100:] // remove 2% from the middle
 	b.Run("string", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			compute(stringSeqs{src, dst}, twosided, len(src)+len(dst))
 		}
 	})
@@ -234,7 +234,7 @@ func BenchmarkLargeFileSmallDiff(b *testing.B) {
 	srcBytes := []byte(src)
 	dstBytes := []byte(dst)
 	b.Run("bytes", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			compute(bytesSeqs{srcBytes, dstBytes}, twosided, len(srcBytes)+len(dstBytes))
 		}
 	})
@@ -242,7 +242,7 @@ func BenchmarkLargeFileSmallDiff(b *testing.B) {
 	srcRunes := []rune(src)
 	dstRunes := []rune(dst)
 	b.Run("runes", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			compute(runesSeqs{srcRunes, dstRunes}, twosided, len(srcRunes)+len(dstRunes))
 		}
 	})

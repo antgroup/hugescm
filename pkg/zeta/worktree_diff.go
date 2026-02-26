@@ -51,7 +51,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool)
 			return f, "", false, true, nil
 		}
 		content, err = w.openText(name, a.Size(), textconv)
-		if err == diferenco.ErrNonTextContent {
+		if errors.Is(err, diferenco.ErrBinaryData) {
 			return f, "", false, true, nil
 		}
 		return f, content, false, false, nil
@@ -65,7 +65,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool)
 		}
 		content, err = w.openBlobText(ctx, a.HashRaw(), textconv)
 		// When the current repository uses an incomplete checkout mechanism, we treat these files as binary files, i.e. no differences can be calculated.
-		if err == diferenco.ErrNonTextContent || plumbing.IsNoSuchObject(err) {
+		if errors.Is(err, diferenco.ErrBinaryData) || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
 		return f, content, false, false, nil
@@ -78,7 +78,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool)
 			return f, "", false, true, nil
 		}
 		content, err = w.openBlobText(ctx, a.HashRaw(), textconv)
-		if err == diferenco.ErrNonTextContent || plumbing.IsNoSuchObject(err) {
+		if errors.Is(err, diferenco.ErrBinaryData) || plumbing.IsNoSuchObject(err) {
 			return f, "", false, true, nil
 		}
 		return f, content, a.IsFragments(), false, nil

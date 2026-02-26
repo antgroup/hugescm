@@ -5,6 +5,7 @@ package zeta
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -349,7 +350,7 @@ func ReadContent(p string, textconv bool) (*Content, error) {
 		return nil, err
 	}
 	if fc.Text, _, err = diferenco.ReadUnifiedText(fd, si.Size(), textconv); err != nil {
-		if err == diferenco.ErrNonTextContent {
+		if errors.Is(err, diferenco.ErrBinaryData) {
 			fc.IsBinary = true
 			return fc, nil
 		}

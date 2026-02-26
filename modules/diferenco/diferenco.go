@@ -38,6 +38,7 @@ const (
 )
 
 var (
+	// ErrUnsupportedAlgorithm is returned when an unsupported diff algorithm is specified
 	ErrUnsupportedAlgorithm = errors.New("unsupported algorithm")
 )
 
@@ -68,10 +69,18 @@ func (a Algorithm) String() string {
 }
 
 func AlgorithmFromName(s string) (Algorithm, error) {
-	if a, ok := algorithmValueMap[strings.ToLower(s)]; ok {
+	s = strings.TrimSpace(strings.ToLower(s))
+	if a, ok := algorithmValueMap[s]; ok {
 		return a, nil
 	}
-	return Unspecified, fmt.Errorf("unsupported algorithm '%s' %w", s, ErrUnsupportedAlgorithm)
+
+	// Provide helpful error message with available options
+	var options []string
+	for name := range algorithmValueMap {
+		options = append(options, name)
+	}
+
+	return Unspecified, fmt.Errorf("%w: '%s' (available options: %s)", ErrUnsupportedAlgorithm, s, strings.Join(options, ", "))
 }
 
 // commonPrefixLength returns the length of the common prefix of two T slices.
@@ -120,8 +129,17 @@ type Options struct {
 }
 
 func diffInternal[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm) ([]Change, error) {
+	// Check context before starting
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Select algorithm based on input size
 	switch algo {
 	case Unspecified:
+		// Automatically select best algorithm based on input size
 		if len(L1) < 5000 && len(L2) < 5000 {
 			return HistogramDiff(ctx, L1, L2)
 		}
@@ -137,7 +155,7 @@ func diffInternal[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm)
 	case Patience:
 		return PatienceDiff(ctx, L1, L2)
 	default:
-		return nil, ErrUnsupportedAlgorithm
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedAlgorithm, algo.String())
 	}
 }
 

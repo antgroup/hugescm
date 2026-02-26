@@ -109,7 +109,7 @@ func lcslen(l lcs) int {
 func randstr(s string, n int) string {
 	src := []rune(s)
 	x := make([]rune, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		x[i] = src[rand.IntN(len(src))]
 	}
 	return string(x)

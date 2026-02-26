@@ -5,6 +5,7 @@ package object
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -74,14 +75,14 @@ func fileStatWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*F
 		return s, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
 		return s, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
 		return s, nil
 	}
 	if err != nil {
@@ -132,14 +133,14 @@ func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || err == diferenco.ErrNonTextContent {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
 		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {

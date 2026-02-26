@@ -5,6 +5,7 @@ package odb
 
 import (
 	"context"
+	"errors"
 	"path"
 	"runtime"
 	"sort"
@@ -380,7 +381,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 			M:        opts.MergeDriver,
 			G:        opts.TextGetter,
 		})
-		if err == diferenco.ErrNonTextContent {
+		if errors.Is(err, diferenco.ErrBinaryData) {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil
@@ -428,7 +429,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 				M:        opts.MergeDriver,
 				G:        opts.TextGetter,
 			})
-		if err == diferenco.ErrNonTextContent {
+		if errors.Is(err, diferenco.ErrBinaryData) {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
 			result.Conflicts = append(result.Conflicts, ch.makeConflict(CONFLICT_BINARY))
 			return &TreeEntry{Path: ch.Path, TreeEntry: ch.Our}, nil

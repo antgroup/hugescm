@@ -109,7 +109,7 @@ func (c *commitPathIter) getNextFileCommit(ctx context.Context) (*Commit, error)
 		}
 
 		// Find diff between current and parent trees
-		changes, diffErr := DiffTree(currentTree, parentTree, nil)
+		changes, diffErr := DiffTreeContext(ctx, currentTree, parentTree, nil)
 		if diffErr != nil {
 			return nil, diffErr
 		}

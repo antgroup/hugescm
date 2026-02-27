@@ -13,16 +13,42 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta/refs"
 )
 
+// lookupIter implements CommitIter by looking up commits from a Backend
+// based on a predefined list of commit hashes. This is useful when you already
+// know the exact commit hashes you want to traverse and don't need to discover
+// the commit graph dynamically.
 type lookupIter struct {
-	b      Backend
-	series []plumbing.Hash
-	pos    int
+	b      Backend         // Backend to fetch commits from
+	series []plumbing.Hash // List of commit hashes to iterate over
+	pos    int             // Current position in the series
 }
 
+// NewCommitIter creates a new CommitIter that iterates over commits with the
+// given hashes in the specified order. This is a simple iterator that directly
+// fetches commits from the backend without any graph traversal logic.
+//
+// Parameters:
+//   - b: Backend to fetch commits from
+//   - hashes: Ordered list of commit hashes to iterate over
+//
+// Returns:
+//   - CommitIter that yields commits in the order provided
 func NewCommitIter(b Backend, hashes []plumbing.Hash) CommitIter {
 	return &lookupIter{b: b, series: hashes}
 }
 
+// Next returns the next commit in the series. If all commits have been returned
+// or a commit cannot be found in the backend (ErrNoSuchObject), it returns io.EOF.
+//
+// This method is designed to be called repeatedly until io.EOF is returned,
+// indicating that there are no more commits to iterate over.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout
+//
+// Returns:
+//   - *Commit: The next commit in the series
+//   - error: io.EOF if no more commits, or an error if the commit cannot be fetched
 func (iter *lookupIter) Next(ctx context.Context) (*Commit, error) {
 	if iter.pos >= len(iter.series) {
 		return nil, io.EOF
@@ -30,6 +56,9 @@ func (iter *lookupIter) Next(ctx context.Context) (*Commit, error) {
 	oid := iter.series[iter.pos]
 	cc, err := iter.b.Commit(ctx, oid)
 	if plumbing.IsNoSuchObject(err) {
+		// If the commit doesn't exist in the backend, treat it as EOF
+		// This is important for shallow clone scenarios where some commits
+		// may be missing
 		return nil, io.EOF
 	}
 	if err == nil {
@@ -38,6 +67,21 @@ func (iter *lookupIter) Next(ctx context.Context) (*Commit, error) {
 	return cc, err
 }
 
+// ForEach iterates over all commits in the series, calling the provided callback
+// function for each commit. The iteration stops when the callback returns an error
+// or when all commits have been processed.
+//
+// Special handling for error returns:
+//   - plumbing.ErrStop: Stops iteration without error
+//   - io.EOF: Marks the end of iteration, not an error
+//   - Other errors: Stops iteration and returns the error
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout
+//   - cb: Callback function called for each commit
+//
+// Returns:
+//   - error: Any error returned by the callback, or nil if iteration completes
 func (iter *lookupIter) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	defer iter.Close()
 	for {
@@ -57,24 +101,45 @@ func (iter *lookupIter) ForEach(ctx context.Context, cb func(*Commit) error) err
 	}
 }
 
+// Close marks the iterator as closed by advancing the position to the end
+// of the series. After calling Close, subsequent calls to Next will return io.EOF.
 func (iter *lookupIter) Close() {
 	iter.pos = len(iter.series)
 }
 
+// commitPreIterator implements CommitIter with pre-order traversal of the commit graph.
+// Pre-order means that a commit is visited before its parents. This iterator uses
+// a depth-first search (DFS) approach with an explicit stack to avoid recursion.
+//
+// Deduplication: Each commit is visited at most once using two seen maps:
+//   - seen: Commits already visited by this iterator
+//   - seenExternal: Commits already visited by other iterators (for complex traversals)
+//
+// Shallow clone support: Missing commits (ErrNoSuchObject) are handled gracefully,
+// allowing the traversal to continue with available commits.
 type commitPreIterator struct {
-	seenExternal map[plumbing.Hash]bool
-	seen         map[plumbing.Hash]bool
-	stack        []CommitIter
-	start        *Commit
+	seenExternal map[plumbing.Hash]bool // Commits seen by external iterators
+	seen         map[plumbing.Hash]bool // Commits already visited by this iterator
+	stack        []CommitIter           // Stack for DFS traversal
+	start        *Commit                // Starting commit to process first
 }
 
-// NewCommitPreorderIter returns a CommitIter that walks the commit history,
-// starting at the given commit and visiting its parents in pre-order.
-// The given callback will be called for each visited commit. Each commit will
-// be visited only once. If the callback returns an error, walking will stop
-// and will return the error. Other errors might be returned if the history
-// cannot be traversed (e.g. missing objects). Ignore allows to skip some
-// commits from being iterated.
+// NewCommitPreorderIter creates a new CommitIter that walks the commit history
+// in pre-order (depth-first), starting at the given commit and visiting its parents.
+//
+// Pre-order traversal characteristics:
+//   - Commits are visited before their parents
+//   - Uses depth-first search with explicit stack
+//   - Each commit is visited exactly once (deduplication)
+//   - Handles missing commits gracefully (shallow clone support)
+//
+// Parameters:
+//   - c: Starting commit for the traversal
+//   - seenExternal: Map of commits already seen by other iterators (can be nil)
+//   - ignore: List of commit hashes to skip during traversal
+//
+// Returns:
+//   - CommitIter that yields commits in pre-order
 func NewCommitPreorderIter(
 	c *Commit,
 	seenExternal map[plumbing.Hash]bool,
@@ -93,6 +158,23 @@ func NewCommitPreorderIter(
 	}
 }
 
+// Next returns the next commit in pre-order. This method implements depth-first
+// traversal using an explicit stack to avoid recursion.
+//
+// Algorithm:
+//  1. If this is the first call, return the start commit
+//  2. Pop the top iterator from the stack and get its next commit
+//  3. If the iterator is exhausted, pop it and continue
+//  4. If the commit has already been seen, skip it
+//  5. Mark the commit as seen and push its parents onto the stack
+//  6. Return the commit
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout
+//
+// Returns:
+//   - *Commit: The next commit in pre-order
+//   - error: io.EOF if no more commits, or an error if traversal fails
 func (w *commitPreIterator) Next(ctx context.Context) (*Commit, error) {
 	var c *Commit
 	for {
@@ -131,6 +213,20 @@ func (w *commitPreIterator) Next(ctx context.Context) (*Commit, error) {
 	}
 }
 
+// filteredParentIter creates an iterator for a commit's parents, excluding any
+// commits that have already been seen. This is a key optimization for commit graph
+// traversal that prevents revisiting the same commit multiple times.
+//
+// This function is particularly important for merge commits, which have multiple
+// parents. By filtering out already-seen parents, we avoid redundant work and
+// ensure that each commit is visited exactly once.
+//
+// Parameters:
+//   - c: The commit whose parents should be iterated
+//   - seen: Map of commit hashes that have already been visited
+//
+// Returns:
+//   - CommitIter that yields the commit's unseen parents
 func filteredParentIter(c *Commit, seen map[plumbing.Hash]bool) CommitIter {
 	var hashes []plumbing.Hash
 	for _, h := range c.Parents {
@@ -142,6 +238,21 @@ func filteredParentIter(c *Commit, seen map[plumbing.Hash]bool) CommitIter {
 	return NewCommitIter(c.b, hashes)
 }
 
+// ForEach iterates over all commits reachable from the starting commit in pre-order,
+// calling the provided callback function for each commit. The iteration stops when
+// the callback returns an error or when all reachable commits have been processed.
+//
+// Special handling for error returns:
+//   - plumbing.ErrStop: Stops iteration without error
+//   - io.EOF: Marks the end of iteration, not an error
+//   - Other errors: Stops iteration and returns the error
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout
+//   - cb: Callback function called for each commit
+//
+// Returns:
+//   - error: Any error returned by the callback, or nil if iteration completes
 func (w *commitPreIterator) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		c, err := w.Next(ctx)
@@ -164,18 +275,46 @@ func (w *commitPreIterator) ForEach(ctx context.Context, cb func(*Commit) error)
 	return nil
 }
 
+// Close is a no-op for commitPreIterator as it doesn't hold any external
+// resources that need to be explicitly cleaned up.
 func (w *commitPreIterator) Close() {}
 
+// commitPostIterator implements CommitIter with post-order traversal of the commit graph.
+// Post-order means that a commit is visited after all its descendants (parents in git's
+// terminology). This is useful when you want to see the history in chronological order,
+// where older commits are visited after newer commits.
+//
+// Post-order traversal characteristics:
+//   - Commits are visited after their parents
+//   - Uses depth-first search with explicit stack
+//   - Each commit is visited exactly once (deduplication)
+//   - Particularly useful for chronological history viewing
 type commitPostIterator struct {
-	stack []*Commit
-	seen  map[plumbing.Hash]bool
+	stack []*Commit              // Stack for DFS traversal
+	seen  map[plumbing.Hash]bool // Commits already visited
 }
 
-// NewCommitPostorderIter returns a CommitIter that walks the commit
-// history like WalkCommitHistory but in post-order. This means that after
-// walking a merge commit, the merged commit will be walked before the base
-// it was merged on. This can be useful if you wish to see the history in
-// chronological order. Ignore allows to skip some commits from being iterated.
+// NewCommitPostorderIter creates a new CommitIter that walks the commit history
+// in post-order (depth-first), starting at the given commit.
+//
+// Post-order traversal characteristics:
+//   - Commits are visited after their parents
+//   - Useful for chronological history viewing (older commits after newer ones)
+//   - Uses depth-first search with explicit stack
+//   - Each commit is visited exactly once (deduplication)
+//
+// Example:
+//
+//	For a commit graph: C3 <- C2 <- C1
+//	Pre-order visits: C3, C2, C1
+//	Post-order visits: C1, C2, C3
+//
+// Parameters:
+//   - c: Starting commit for the traversal
+//   - ignore: List of commit hashes to skip during traversal
+//
+// Returns:
+//   - CommitIter that yields commits in post-order
 func NewCommitPostorderIter(c *Commit, ignore []plumbing.Hash) CommitIter {
 	seen := make(map[plumbing.Hash]bool)
 	for _, h := range ignore {

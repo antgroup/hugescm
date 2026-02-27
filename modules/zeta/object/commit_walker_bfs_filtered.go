@@ -50,15 +50,26 @@ func NewFilterCommitIter(
 	}
 }
 
-// CommitFilter returns a boolean for the passed Commit
+// CommitFilter is a predicate function that determines whether a commit should be
+// included in iteration results. Returns true if the commit passes the filter.
 type CommitFilter func(*Commit) bool
 
-// filterCommitIter implements CommitIter
+// filterCommitIter implements CommitIter with BFS traversal and custom filtering.
+// It supports two types of filters:
+//   - isValid: Determines if a commit should be yielded to the caller
+//   - isLimit: Determines if traversal should stop at a commit (don't visit its parents)
+//
+// This is used to implement commands like "git log --merges-only" or "git log --no-merges".
 type filterCommitIter struct {
+	// isValid determines if a commit should be yielded to the caller
 	isValid CommitFilter
+	// isLimit determines if traversal should stop at a commit (don't visit parents)
 	isLimit CommitFilter
+	// visited tracks commits that have already been processed to avoid duplicates
 	visited map[plumbing.Hash]struct{}
-	queue   []*Commit
+	// queue holds commits to be processed in BFS order (FIFO)
+	queue []*Commit
+	// lastErr stores the last error encountered during iteration
 	lastErr error
 }
 
@@ -117,7 +128,8 @@ func (w *filterCommitIter) Error() error {
 	return w.lastErr
 }
 
-// Close closes the CommitIter
+// Close cleans up the iterator's internal state, releasing references to commits
+// and filters. After calling Close, the iterator cannot be used further.
 func (w *filterCommitIter) Close() {
 	w.visited = map[plumbing.Hash]struct{}{}
 	w.queue = []*Commit{}
@@ -125,15 +137,30 @@ func (w *filterCommitIter) Close() {
 	w.isValid = nil
 }
 
-// close closes the CommitIter with an error
+// close is an internal helper that closes the iterator and records an error.
+// This is used when an error occurs during iteration.
+//
+// Parameters:
+//   - err: The error to record
+//
+// Returns:
+//   - error: The same error passed in
 func (w *filterCommitIter) close(err error) error {
 	w.Close()
 	w.lastErr = err
 	return err
 }
 
-// popNewFromQueue returns the first new commit from the internal fifo queue,
-// or an io.EOF error if the queue is empty
+// popNewFromQueue removes and returns the first unvisited commit from the FIFO queue.
+//
+// This method implements the FIFO queue behavior for BFS traversal:
+//   - Returns the first commit in the queue (oldest)
+//   - Skips commits that have already been visited (deduplication)
+//   - Returns io.EOF when the queue is empty
+//
+// Returns:
+//   - *Commit: The first unvisited commit
+//   - error: io.EOF if queue is empty, or the last error if one occurred
 func (w *filterCommitIter) popNewFromQueue() (*Commit, error) {
 	var first *Commit
 	for {
@@ -157,6 +184,8 @@ func (w *filterCommitIter) popNewFromQueue() (*Commit, error) {
 
 // addToQueue adds the passed commits to the internal fifo queue if they weren't seen
 // or returns an error if the passed hashes could not be used to get valid commits
+// In shallow clone scenarios (where some commits are missing), missing commits are
+// skipped instead of returning an error, allowing the traversal to continue.
 func (w *filterCommitIter) addToQueue(
 	ctx context.Context,
 	b Backend,
@@ -169,7 +198,10 @@ func (w *filterCommitIter) addToQueue(
 
 		commit, err := b.Commit(ctx, hash)
 		if plumbing.IsNoSuchObject(err) {
-			return io.EOF
+			// In shallow clone scenarios, missing commits are skipped
+			// instead of returning an error. This allows the traversal
+			// to continue with available commits.
+			continue
 		}
 		if err != nil {
 			return err

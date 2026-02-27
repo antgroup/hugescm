@@ -119,6 +119,9 @@ func (n *Node) TrueMode() filemode.FileMode {
 }
 
 func (n *Node) ModifiedAt() time.Time {
+	if n.entry == nil {
+		return time.Time{}
+	}
 	return n.entry.ModifiedAt
 }
 

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -433,4 +434,18 @@ func Merge(ctx context.Context, opts *MergeOptions) (string, bool, error) {
 // DefaultMerge implements the diff3 algorithm to merge two texts into a common base.
 func DefaultMerge(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (string, bool, error) {
 	return Merge(ctx, &MergeOptions{TextO: o, TextA: a, TextB: b, LabelO: labelO, LabelA: labelA, LabelB: labelB, A: Histogram})
+}
+
+func HasConflict(ctx context.Context, textO, textA, textB string) (bool, error) {
+	s := NewSink(NEWLINE_RAW)
+	slicesO := s.SplitLines(textO)
+	slicesA := s.SplitLines(textA)
+	slicesB := s.SplitLines(textB)
+	regions, err := Diff3Merge(ctx, slicesO, slicesA, slicesB, Histogram, true)
+	if err != nil {
+		return false, err
+	}
+	return slices.ContainsFunc(regions, func(result *Diff3MergeResult[int]) bool {
+		return result.conflict != nil
+	}), nil
 }

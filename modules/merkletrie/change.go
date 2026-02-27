@@ -28,7 +28,7 @@ const (
 func (a Action) Byte() byte {
 	switch a {
 	case Insert:
-		return 'M'
+		return 'A'
 	case Delete:
 		return 'D'
 	case Modify:

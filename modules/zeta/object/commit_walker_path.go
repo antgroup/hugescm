@@ -11,19 +11,32 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 )
 
+// commitPathIter implements a commit iterator that filters commits by file path.
+// It performs tree diffing between consecutive commits to find commits that modified
+// specific files matching a path filter. This is similar to "git log -- <path>".
 type commitPathIter struct {
-	pathFilter    func(string) bool
-	sourceIter    CommitIter
+	// pathFilter is a function that returns true for file paths we're interested in
+	pathFilter func(string) bool
+	// sourceIter is the underlying commit iterator providing commits in chronological order
+	sourceIter CommitIter
+	// currentCommit is the commit currently being processed
 	currentCommit *Commit
-	checkParent   bool
+	// checkParent if true, verifies that the parent commit is actually in the commit tree
+	// This is used for "git log --all" to filter commits that are not ancestors
+	checkParent bool
 }
 
 // NewCommitPathIterFromIter returns a commit iterator which performs diffTree between
-// successive trees returned from the commit iterator from the argument. The purpose of this is
-// to find the commits that explain how the files that match the path came to be.
-// If checkParent is true then the function double checks if potential parent (next commit in a path)
-// is one of the parents in the tree (it's used by `git log --all`).
-// pathFilter is a function that takes path of file as argument and returns true if we want it
+// successive trees returned from the commit iterator. The purpose of this is to find
+// the commits that explain how the files that match the path came to be.
+//
+// If checkParent is true, the function double checks if the potential parent (next commit in a path)
+// is one of the parents in the commit tree (used by "git log --all").
+//
+// Parameters:
+//   - pathFilter: A function that takes a file path and returns true if we want commits that modified it
+//   - commitIter: The source commit iterator to filter
+//   - checkParent: If true, verify parent relationship (for "git log --all")
 func NewCommitPathIterFromIter(pathFilter func(string) bool, commitIter CommitIter, checkParent bool) CommitIter {
 	iterator := new(commitPathIter)
 	iterator.sourceIter = commitIter
@@ -32,7 +45,9 @@ func NewCommitPathIterFromIter(pathFilter func(string) bool, commitIter CommitIt
 	return iterator
 }
 
-// NewCommitFileIterFromIter is kept for compatibility, can be replaced with NewCommitPathIterFromIter
+// NewCommitFileIterFromIter is kept for backward compatibility.
+// It creates a path iterator that filters for a single specific file.
+// Can be replaced with NewCommitPathIterFromIter.
 func NewCommitFileIterFromIter(fileName string, commitIter CommitIter, checkParent bool) CommitIter {
 	return NewCommitPathIterFromIter(
 		func(path string) bool {
@@ -99,10 +114,10 @@ func (c *commitPathIter) getNextFileCommit(ctx context.Context) (*Commit, error)
 			return nil, diffErr
 		}
 
+		// Check if any changes match our path filter
 		found := c.hasFileChange(changes, parentCommit)
 
-		// Storing the current-commit in-case a change is found, and
-		// Updating the current-commit for the next-iteration
+		// Save current commit for return, update for next iteration
 		prevCommit := c.currentCommit
 		c.currentCommit = parentCommit
 
@@ -110,22 +125,24 @@ func (c *commitPathIter) getNextFileCommit(ctx context.Context) (*Commit, error)
 			return prevCommit, nil
 		}
 
-		// If not matches found and if parent-commit is beyond the initial commit, then return with EOF
+		// If no match and no more parent commits, we're done
 		if parentCommit == nil {
 			return nil, io.EOF
 		}
 	}
 }
 
+// hasFileChange checks if any of the changes match the path filter and, if checkParent is true,
+// verifies the parent relationship.
 func (c *commitPathIter) hasFileChange(changes Changes, parent *Commit) bool {
 	for _, change := range changes {
 		if !c.pathFilter(change.name()) {
 			continue
 		}
 
-		// filename matches, now check if source iterator contains all commits (from all refs)
+		// File path matches, now verify parent if needed
 		if c.checkParent {
-			// Check if parent is beyond the initial commit
+			// Check if parent is beyond the initial commit or is an actual parent
 			if parent == nil || isParentHash(parent.Hash, c.currentCommit) {
 				return true
 			}
@@ -138,10 +155,13 @@ func (c *commitPathIter) hasFileChange(changes Changes, parent *Commit) bool {
 	return false
 }
 
+// isParentHash checks if the given hash is one of the commit's parent hashes.
 func isParentHash(hash plumbing.Hash, commit *Commit) bool {
 	return slices.Contains(commit.Parents, hash)
 }
 
+// ForEach iterates through all commits that modified files matching the path filter,
+// calling the callback for each one. Iteration stops if the callback returns an error or ErrStop.
 func (c *commitPathIter) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		commit, nextErr := c.Next(ctx)
@@ -161,6 +181,7 @@ func (c *commitPathIter) ForEach(ctx context.Context, cb func(*Commit) error) er
 	return nil
 }
 
+// Close closes the underlying source iterator.
 func (c *commitPathIter) Close() {
 	c.sourceIter.Close()
 }

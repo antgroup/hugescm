@@ -8,6 +8,8 @@ import (
 	"github.com/emirpasic/gods/trees/binaryheap"
 )
 
+// commitStacker is an interface for commit collection data structures used by
+// the topological order iterator. It provides basic stack/heap operations.
 type commitStacker interface {
 	Push(c *Commit)
 	Pop() (*Commit, bool)
@@ -15,6 +17,7 @@ type commitStacker interface {
 	Size() int
 }
 
+// commitStack implements a LIFO stack for commits.
 type commitStack struct {
 	stack []*Commit
 }
@@ -23,7 +26,8 @@ func (cs *commitStack) Push(c *Commit) {
 	cs.stack = append(cs.stack, c)
 }
 
-// Pop pops the most recently added CommitNode from the stack
+// Pop removes and returns the most recently added commit from the stack.
+// Returns false if the stack is empty.
 func (cs *commitStack) Pop() (*Commit, bool) {
 	if len(cs.stack) == 0 {
 		return nil, false
@@ -33,7 +37,8 @@ func (cs *commitStack) Pop() (*Commit, bool) {
 	return c, true
 }
 
-// Peek returns the most recently added CommitNode from the stack without removing it
+// Peek returns the most recently added commit from the stack without removing it.
+// Returns false if the stack is empty.
 func (cs *commitStack) Peek() (*Commit, bool) {
 	if len(cs.stack) == 0 {
 		return nil, false
@@ -41,23 +46,25 @@ func (cs *commitStack) Peek() (*Commit, bool) {
 	return cs.stack[len(cs.stack)-1], true
 }
 
-// Size returns the number of CommitNodes in the stack
+// Size returns the number of commits currently in the stack.
 func (cs *commitStack) Size() int {
 	return len(cs.stack)
 }
 
-// commitHeap is a stack implementation using an underlying binary heap
+// commitHeap implements commitStacker using a binary heap (priority queue).
+// The heap is ordered by commit timestamp to ensure commits are visited
+// in chronological order.
 type commitHeap struct {
 	*binaryheap.Heap
 }
 
-// Push pushes a new CommitNode to the heap
+// Push adds a new commit to the heap.
 func (h *commitHeap) Push(c *Commit) {
 	h.Heap.Push(c)
 }
 
-// Pop removes top element on heap and returns it, or nil if heap is empty.
-// Second return parameter is true, unless the heap was empty and there was nothing to pop.
+// Pop removes and returns the top element from the heap.
+// Returns false if the heap is empty.
 func (h *commitHeap) Pop() (*Commit, bool) {
 	c, ok := h.Heap.Pop()
 	if !ok {
@@ -66,8 +73,8 @@ func (h *commitHeap) Pop() (*Commit, bool) {
 	return c.(*Commit), true
 }
 
-// Peek returns top element on the heap without removing it, or nil if heap is empty.
-// Second return parameter is true, unless the heap was empty and there was nothing to peek.
+// Peek returns the top element from the heap without removing it.
+// Returns false if the heap is empty.
 func (h *commitHeap) Peek() (*Commit, bool) {
 	c, ok := h.Heap.Peek()
 	if !ok {
@@ -76,12 +83,13 @@ func (h *commitHeap) Peek() (*Commit, bool) {
 	return c.(*Commit), true
 }
 
-// Size returns number of elements within the heap.
+// Size returns the number of elements in the heap.
 func (h *commitHeap) Size() int {
 	return h.Heap.Size()
 }
 
-// composeIgnores composes the ignore list with the provided seenExternal list
+// composeIgnores combines the explicit ignore list with the seenExternal set
+// to create a unified map of commits to skip during traversal.
 func composeIgnores(ignore []plumbing.Hash, seenExternal map[plumbing.Hash]bool) map[plumbing.Hash]bool {
 	seen := make(map[plumbing.Hash]bool)
 	for _, h := range ignore {
@@ -93,14 +101,28 @@ func composeIgnores(ignore []plumbing.Hash, seenExternal map[plumbing.Hash]bool)
 	return seen
 }
 
+// commitTopoOrderIterator implements topological sorting of commits in the commit graph.
+// It ensures that a commit is only visited after all commits that point to it have been
+// visited (i.e., parent commits are visited before their children).
+// This is the standard "git log --topo-order" behavior.
 type commitTopoOrderIterator struct {
+	// explorerStack is a heap ordered by commit time, used to discover commits
 	explorerStack commitStacker
-	visitStack    commitStacker
-	inCounts      map[plumbing.Hash]int
-	seen          map[plumbing.Hash]bool
+	// visitStack is a LIFO stack that holds commits ready to be visited
+	visitStack commitStacker
+	// inCounts tracks how many unvisited children each commit has
+	// A commit with inCount == 0 is ready to visit
+	inCounts map[plumbing.Hash]int
+	// seen tracks commits that should be skipped (ignore list or seenExternal)
+	seen map[plumbing.Hash]bool
 }
 
+// NewCommitIterTopoOrder creates a new iterator that walks commits in topological order.
+// This means commits are output such that they appear in reverse chronological order,
+// but with a constraint that a commit appears before any of its descendants.
+// This is similar to "git log --topo-order".
 func NewCommitIterTopoOrder(c *Commit, seenExternal map[plumbing.Hash]bool, ignore []plumbing.Hash) *commitTopoOrderIterator {
+	// Create a heap ordered by commit timestamp (newest first)
 	heap := &commitHeap{
 		Heap: binaryheap.NewWith(func(a, b any) int {
 			return b.(*Commit).Committer.When.Compare(a.(*Commit).Committer.When)
@@ -122,8 +144,20 @@ func NewCommitIterTopoOrder(c *Commit, seenExternal map[plumbing.Hash]bool, igno
 	}
 }
 
+// Next returns the next commit in topological order.
+//
+// Algorithm:
+//  1. Pop from visitStack until we find a commit with inCount == 0
+//  2. Load the commit's parents (nil if missing in shallow clone)
+//  3. EXPLORE phase: Pop from explorerStack, increment inCounts for all parents
+//     This counts how many unvisited children each parent has
+//  4. Decrement inCounts for the current commit's parents
+//     If a parent's inCount reaches 0, it's ready to visit, so push to visitStack
+//
+// This ensures a commit is only visited after all commits pointing to it have been visited.
 func (w *commitTopoOrderIterator) Next(ctx context.Context) (*Commit, error) {
 	var next *Commit
+	// Step 1: Find a commit ready to visit (inCount == 0)
 	for {
 		var ok bool
 		next, ok = w.visitStack.Pop()
@@ -134,11 +168,13 @@ func (w *commitTopoOrderIterator) Next(ctx context.Context) (*Commit, error) {
 			break
 		}
 	}
+
+	// Step 2: Load parent commits (nil if missing in shallow clone)
 	parents := make([]*Commit, 0, len(next.Parents))
 	for _, h := range next.Parents {
 		pc, err := next.b.Commit(ctx, h)
 		if plumbing.IsNoSuchObject(err) {
-			parents = append(parents, nil) // no such object --> shallow checkout
+			parents = append(parents, nil) // Missing commit in shallow clone
 			continue
 		}
 		if err != nil {
@@ -146,7 +182,9 @@ func (w *commitTopoOrderIterator) Next(ctx context.Context) (*Commit, error) {
 		}
 		parents = append(parents, pc)
 	}
-	// EXPLORE
+
+	// Step 3: EXPLORE phase - discover commits and count references
+	// Pop commits from explorerStack until we're at the same level as next
 	for {
 		toExplore, ok := w.explorerStack.Peek()
 		if !ok {
@@ -156,14 +194,17 @@ func (w *commitTopoOrderIterator) Next(ctx context.Context) (*Commit, error) {
 			break
 		}
 		w.explorerStack.Pop()
+		// For each parent, increment inCount (counting how many children reference it)
 		for _, h := range toExplore.Parents {
 			if w.seen[h] {
 				continue
 			}
 			w.inCounts[h]++
 			if w.inCounts[h] == 1 {
+				// First time seeing this commit, add to explorerStack
 				pc, err := toExplore.b.Commit(ctx, h)
 				if plumbing.IsNoSuchObject(err) {
+					// Skip missing commits in shallow clone
 					continue
 				}
 				if err != nil {
@@ -173,6 +214,9 @@ func (w *commitTopoOrderIterator) Next(ctx context.Context) (*Commit, error) {
 			}
 		}
 	}
+
+	// Step 4: Decrement inCounts for current commit's parents
+	// If inCount reaches 0, the parent is ready to visit
 	for i, h := range next.Parents {
 		if w.seen[h] {
 			continue
@@ -189,6 +233,8 @@ func (w *commitTopoOrderIterator) Next(ctx context.Context) (*Commit, error) {
 	return next, nil
 }
 
+// ForEach iterates through all commits in topological order, calling the callback for each one.
+// Iteration stops if the callback returns an error or ErrStop.
 func (w *commitTopoOrderIterator) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		c, err := w.Next(ctx)
@@ -211,4 +257,5 @@ func (w *commitTopoOrderIterator) ForEach(ctx context.Context, cb func(*Commit) 
 	return nil
 }
 
+// Close is a no-op for the topological order iterator.
 func (w *commitTopoOrderIterator) Close() {}

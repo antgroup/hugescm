@@ -11,16 +11,25 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 )
 
+// commitLimitIter implements a commit iterator that filters commits by time range.
+// This is similar to "git log --since=... --until=...".
 type commitLimitIter struct {
-	sourceIter   CommitIter
+	// sourceIter is the underlying commit iterator providing commits
+	sourceIter CommitIter
+	// limitOptions contains the time range constraints for filtering commits
 	limitOptions LogLimitOptions
 }
 
+// LogLimitOptions defines time-based filtering options for commit iteration.
 type LogLimitOptions struct {
+	// Only include commits after this timestamp (inclusive)
 	Since *time.Time
+	// Only include commits before this timestamp (inclusive)
 	Until *time.Time
 }
 
+// NewCommitLimitIterFromIter creates a new commit iterator that filters commits
+// by the specified time range. This is used to implement "git log --since=... --until=...".
 func NewCommitLimitIterFromIter(commitIter CommitIter, limitOptions LogLimitOptions) CommitIter {
 	iterator := new(commitLimitIter)
 	iterator.sourceIter = commitIter
@@ -28,6 +37,8 @@ func NewCommitLimitIterFromIter(commitIter CommitIter, limitOptions LogLimitOpti
 	return iterator
 }
 
+// Next returns the next commit that falls within the specified time range.
+// Commits outside the time range are silently skipped.
 func (c *commitLimitIter) Next(ctx context.Context) (*Commit, error) {
 	for {
 		commit, err := c.sourceIter.Next(ctx)
@@ -35,9 +46,11 @@ func (c *commitLimitIter) Next(ctx context.Context) (*Commit, error) {
 			return nil, err
 		}
 
+		// Skip commits before the Since time
 		if c.limitOptions.Since != nil && commit.Committer.When.Before(*c.limitOptions.Since) {
 			continue
 		}
+		// Skip commits after the Until time
 		if c.limitOptions.Until != nil && commit.Committer.When.After(*c.limitOptions.Until) {
 			continue
 		}
@@ -45,6 +58,8 @@ func (c *commitLimitIter) Next(ctx context.Context) (*Commit, error) {
 	}
 }
 
+// ForEach iterates through all commits within the time range, calling the callback for each one.
+// Iteration stops if the callback returns an error or ErrStop.
 func (c *commitLimitIter) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		commit, nextErr := c.Next(ctx)
@@ -64,6 +79,7 @@ func (c *commitLimitIter) ForEach(ctx context.Context, cb func(*Commit) error) e
 	return nil
 }
 
+// Close closes the underlying source iterator.
 func (c *commitLimitIter) Close() {
 	c.sourceIter.Close()
 }

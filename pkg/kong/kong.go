@@ -198,8 +198,10 @@ func checkOverlappingXorAnd(k *Kong) error {
 					}
 				}
 			}
+			// Disallow multiple overlapping entries between xor and and groups
+			// to avoid ambiguous validation behavior
 			if len(overlappingEntries) > 1 {
-				return fmt.Errorf("invalid xor and combination, %s and %s overlap with more than one: %s", xor, and, overlappingEntries)
+				return fmt.Errorf("invalid xor and combination: group '%s' and group '%s' share multiple flags: %v. This can lead to ambiguous validation behavior", xor, and, overlappingEntries)
 			}
 		}
 	}
@@ -464,8 +466,7 @@ func (k *Kong) FatalIfErrorf(err error, args ...any) {
 		msg = fmt.Sprintf(args[0].(string), args[1:]...) + ": " + err.Error() //nolint
 	}
 	// Maybe display usage information.
-	var parseErr *ParseError
-	if errors.As(err, &parseErr) {
+	if parseErr, ok := errors.AsType[*ParseError](err); ok {
 		switch k.usageOnError {
 		case fullUsage:
 			_ = k.help(k.helpOptions, parseErr.Context)
@@ -483,12 +484,28 @@ func (k *Kong) FatalIfErrorf(err error, args ...any) {
 //
 // "path" will have ~ and any variables expanded.
 func (k *Kong) LoadConfig(path string) (Resolver, error) {
+	if k.loader == nil {
+		return nil, fmt.Errorf("no configuration loader configured, use kong.Configuration() option")
+	}
+
+	// Security: Check original path for absolute path to prevent unauthorized access
+	if filepath.IsAbs(path) {
+		return nil, fmt.Errorf("absolute path not allowed for config file: %s", path)
+	}
+	// Security: Check original path for path traversal attempts
+	if strings.Contains(path, "..") {
+		return nil, fmt.Errorf("path with '..' not allowed for config file: %s", path)
+	}
+
 	var err error
 	path = ExpandPath(path)
 	path, err = interpolate(path, k.vars, nil)
 	if err != nil {
 		return nil, err
 	}
+	// Security: Clean the path to prevent directory traversal
+	path = filepath.Clean(path)
+
 	r, err := os.Open(path) // nolint
 	if err != nil {
 		return nil, err

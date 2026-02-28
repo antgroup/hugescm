@@ -3,6 +3,7 @@ package kong
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 var interpolationRegex = regexp.MustCompile(`(\$\$)|((?:\${([[:alpha:]_][[:word:]]*))(?:=([^}]+))?})|(\$)|([^$]+)`)
@@ -20,20 +21,18 @@ func HasInterpolatedVar(s string, v string) bool {
 
 // Interpolate variables from vars into s for substrings in the form ${var} or ${var=default}.
 func interpolate(s string, vars Vars, updatedVars map[string]string) (string, error) {
-	out := ""
+	var out strings.Builder
 	matches := interpolationRegex.FindAllStringSubmatch(s, -1)
 	if len(matches) == 0 {
 		return s, nil
 	}
-	for key, val := range updatedVars {
-		if vars[key] != val {
-			vars = vars.CloneWith(updatedVars)
-			break
-		}
+	// Clone vars with updatedVars if there are any updates
+	if len(updatedVars) > 0 {
+		vars = vars.CloneWith(updatedVars)
 	}
 	for _, match := range matches {
 		if dollar := match[1]; dollar != "" {
-			out += "$"
+			out.WriteString("$")
 		} else if name := match[3]; name != "" {
 			value, ok := vars[name]
 			if !ok {
@@ -43,10 +42,10 @@ func interpolate(s string, vars Vars, updatedVars map[string]string) (string, er
 				}
 				value = match[4]
 			}
-			out += value
+			out.WriteString(value)
 		} else {
-			out += match[0]
+			out.WriteString(match[0])
 		}
 	}
-	return out, nil
+	return out.String(), nil
 }

@@ -189,18 +189,14 @@ func findField(s reflect.Value, name string) (reflect.Value, reflect.StructField
 
 func flattenFields(s reflect.Value) []reflectField {
 	sType := s.Type()
-	numField := sType.NumField()
-	fields := make([]reflectField, 0, numField)
-	for i := range numField {
-		fieldType := sType.Field(i)
-		field := s.Field(i)
-
-		if field.Kind() == reflect.Struct && fieldType.Anonymous {
+	fields := make([]reflectField, 0, sType.NumField())
+	for fieldType, fieldValue := range s.Fields() {
+		if fieldValue.Kind() == reflect.Struct && fieldType.Anonymous {
 			// field is a promoted structure
-			fields = append(fields, flattenFields(field)...)
+			fields = append(fields, flattenFields(fieldValue)...)
 			continue
 		}
-		fields = append(fields, reflectField{field, fieldType})
+		fields = append(fields, reflectField{fieldValue, fieldType})
 	}
 	return fields
 }

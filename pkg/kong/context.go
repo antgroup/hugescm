@@ -251,15 +251,16 @@ func (c *Context) Validate() error { //nolint: gocyclo
 		switch {
 		case path.Flag != nil:
 			value = path.Flag.Value
-
 		case path.Positional != nil:
 			value = path.Positional
 		}
-		if value != nil && value.Tag.Enum != "" {
+		// Check enum for values that were actually set
+		if value != nil && value.Tag.Enum != "" && value.Set {
 			if err := checkEnum(value, value.Target); err != nil {
 				return err
 			}
 		}
+		// Check missing flags for each path element
 		if err := checkMissingFlags(path.Flags); err != nil {
 			return err
 		}
@@ -791,8 +792,7 @@ func (c *Context) parseFlag(flags []*Flag, match string) (err error) {
 		}
 		err := flag.Parse(c.scan, c.getValue(flag.Value))
 		if err != nil {
-			var expected *expectedError
-			if errors.As(err, &expected) && expected.token.InferredType().IsAny(FlagToken, ShortFlagToken) {
+			if expected, ok := errors.AsType[*expectedError](err); ok && expected.token.InferredType().IsAny(FlagToken, ShortFlagToken) {
 				return fmt.Errorf("%s; perhaps try %s=%q?", err.Error(), flag.ShortSummary(), expected.token)
 			}
 			return err
@@ -815,8 +815,8 @@ func (c *Context) parseFlag(flags []*Flag, match string) (err error) {
 }
 
 func isUnknownFlagError(err error) bool {
-	var unknown *unknownFlagError
-	return errors.As(err, &unknown)
+	_, ok := errors.AsType[*unknownFlagError](err)
+	return ok
 }
 
 type unknownFlagError struct{ Cause error }
@@ -851,14 +851,12 @@ func (c *Context) RunNode(node *Node, binds ...any) (err error) {
 		for p := node; p != nil; p = p.Parent {
 			methodBinds = methodBinds.add(p.Target.Addr().Interface())
 			// Try value and pointer to value.
-			for _, p := range []reflect.Value{p.Target, p.Target.Addr()} {
-				t := p.Type()
-				for i := range p.NumMethod() {
-					methodt := t.Method(i)
+			for _, pv := range []reflect.Value{p.Target, p.Target.Addr()} {
+				for methodt := range pv.Methods() {
 					if strings.HasPrefix(methodt.Name, "Provide") {
-						method := p.Method(i)
+						method := methodt.Func
 						if err := methodBinds.addProvider(method.Interface(), false /* singleton */); err != nil {
-							return fmt.Errorf("%s.%s: %w", t.Name(), methodt.Name, err)
+							return fmt.Errorf("%s.%s: %w", pv.Type().Name(), methodt.Name, err)
 						}
 					}
 				}

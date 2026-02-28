@@ -176,8 +176,7 @@ func isRetryErr(err error) bool {
 	if os.IsPermission(err) {
 		return true
 	}
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
+	if errno, ok := errors.AsType[syscall.Errno](err); ok {
 		switch errno {
 		case ERROR_ACCESS_DENIED,
 			ERROR_SHARING_VIOLATION,

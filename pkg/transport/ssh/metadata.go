@@ -37,8 +37,7 @@ func (c *client) FetchReference(ctx context.Context, refname plumbing.ReferenceN
 	var r transport.Reference
 	if err := json.NewDecoder(stdout).Decode(&r); err != nil {
 		_ = cmd.Close()
-		var lastErr *zeta.ErrExitCode
-		if errors.As(cmd.lastError, &lastErr) && lastErr.Code == 404 {
+		if lastErr, ok := errors.AsType[*zeta.ErrExitCode](cmd.lastError); ok && lastErr.Code == 404 {
 			return nil, transport.ErrReferenceNotExist
 		}
 		return nil, cmd.lastError

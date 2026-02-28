@@ -38,8 +38,7 @@ func IsErrRevisionNotFound(err error) bool {
 }
 
 func IsErrorCode(err error, code uint16) bool {
-	var merr *mysql.MySQLError
-	if errors.As(err, &merr) {
+	if merr, ok := errors.AsType[*mysql.MySQLError](err); ok {
 		return merr.Number == code
 	}
 	return false

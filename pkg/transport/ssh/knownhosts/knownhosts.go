@@ -127,8 +127,7 @@ func (hkdb *HostKeyDB) HostKeyCallback() ssh.HostKeyCallback {
 			}
 		}
 		callbackErr = hkdb.callback(justHost+":22", remote, key)
-		var keyErr *xknownhosts.KeyError
-		if errors.As(callbackErr, &keyErr) && len(keyErr.Want) > 0 {
+		if keyErr, ok := errors.AsType[*xknownhosts.KeyError](callbackErr); ok && len(keyErr.Want) > 0 {
 			wildcardKeys := make([]xknownhosts.KnownKey, 0, len(keyErr.Want))
 			for _, wantKey := range keyErr.Want {
 				if hkdb.isWildcard[fmt.Sprintf("%s:%d", wantKey.Filename, wantKey.Line)] {
@@ -160,12 +159,13 @@ type PublicKey struct {
 // each result entry reports whether the key corresponded to a @cert-authority
 // line. If hkdb was NOT obtained from NewDB, then Cert will always be false.
 func (hkdb *HostKeyDB) HostKeys(hostWithPort string) (keys []PublicKey) {
-	var keyErr *xknownhosts.KeyError
 	placeholderAddr := &net.TCPAddr{IP: []byte{0, 0, 0, 0}}
 	placeholderPubKey := &fakePublicKey{}
 	var kkeys []xknownhosts.KnownKey
 	callback := hkdb.HostKeyCallback()
-	if hkcbErr := callback(hostWithPort, placeholderAddr, placeholderPubKey); errors.As(hkcbErr, &keyErr) {
+	hkcbErr := callback(hostWithPort, placeholderAddr, placeholderPubKey)
+	keyErr, ok := errors.AsType[*xknownhosts.KeyError](hkcbErr)
+	if ok {
 		kkeys = append(kkeys, keyErr.Want...)
 		knownKeyLess := func(i, j int) bool {
 			if kkeys[i].Filename < kkeys[j].Filename {
@@ -353,19 +353,22 @@ func HostKeyAlgorithms(cb ssh.HostKeyCallback, hostWithPort string) []string {
 }
 
 // IsHostKeyChanged returns a boolean indicating whether the error indicates
+// IsHostKeyChanged returns a boolean indicating whether the error indicates
 // the host key has changed. It is intended to be called on the error returned
 // from invoking a host key callback, to check whether an SSH host is known.
 func IsHostKeyChanged(err error) bool {
-	var keyErr *xknownhosts.KeyError
-	return errors.As(err, &keyErr) && len(keyErr.Want) > 0
+	keyErr, ok := errors.AsType[*xknownhosts.KeyError](err)
+	return ok && len(keyErr.Want) > 0
 }
 
 // IsHostUnknown returns a boolean indicating whether the error represents an
 // unknown host. It is intended to be called on the error returned from invoking
+// IsHostUnknown returns a boolean indicating whether the error represents an
+// unknown host. It is intended to be called on the error returned from invoking
 // a host key callback to check whether an SSH host is known.
 func IsHostUnknown(err error) bool {
-	var keyErr *xknownhosts.KeyError
-	return errors.As(err, &keyErr) && len(keyErr.Want) == 0
+	keyErr, ok := errors.AsType[*xknownhosts.KeyError](err)
+	return ok && len(keyErr.Want) == 0
 }
 
 // Normalize normalizes an address into the form used in known_hosts. Supports

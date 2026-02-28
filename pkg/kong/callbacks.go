@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -148,19 +149,15 @@ func getMethods(value reflect.Value, name string) (methods []reflect.Value) {
 	//
 	//   - standard Go embedded fields
 	//   - fields tagged with `embed:""`
-	t := value.Type()
-	for i := range value.NumField() {
-		fieldValue := value.Field(i)
-		field := t.Field(i)
-
-		if !field.IsExported() {
+	for fieldStruct, fieldValue := range value.Fields() {
+		if !fieldStruct.IsExported() {
 			continue
 		}
 
 		// Consider a field embedded if it's actually embedded
 		// or if it's tagged with `embed:""`.
-		_, isEmbedded := field.Tag.Lookup("embed")
-		isEmbedded = isEmbedded || field.Anonymous
+		_, isEmbedded := fieldStruct.Tag.Lookup("embed")
+		isEmbedded = isEmbedded || fieldStruct.Anonymous
 		if isEmbedded {
 			methods = append(methods, getMethods(fieldValue, name)...)
 		}
@@ -193,8 +190,7 @@ func callAnyFunction(f reflect.Value, bindings bindings) (out []any, err error) 
 	}
 	in := []reflect.Value{}
 	t := f.Type()
-	for i := range t.NumIn() {
-		pt := t.In(i)
+	for i, pt := range slices.Collect(t.Ins()) {
 		binding, ok := bindings[pt]
 		if !ok {
 			return nil, fmt.Errorf("couldn't find binding of type %s for parameter %d of %s(), use kong.Bind(%s)", pt, i, t, pt)

@@ -55,9 +55,7 @@ func flattenedFields(v reflect.Value, ptag *Tag) (out []flattenedField, err erro
 		return out, nil
 	}
 	ignored := map[string]bool{}
-	for i := range v.NumField() {
-		ft := v.Type().Field(i)
-		fv := v.Field(i)
+	for ft, fv := range v.Fields() {
 		tag, err := parseTag(v, ft)
 		if err != nil {
 			return nil, err

@@ -505,8 +505,8 @@ func reflectValueIsZero(v reflect.Value) bool {
 	case reflect.String:
 		return v.Len() == 0
 	case reflect.Struct:
-		for i := range v.NumField() {
-			if !reflectValueIsZero(v.Field(i)) {
+		for _, fv := range v.Fields() {
+			if !reflectValueIsZero(fv) {
 				return false
 			}
 		}

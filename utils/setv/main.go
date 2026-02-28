@@ -42,11 +42,9 @@ func parseKeyValue(str string, result any) error {
 
 	for _, key := range keys {
 		found := false
-		for i := range v.NumField() {
-			typeField := v.Type().Field(i)
+		for typeField, fieldValue := range v.Fields() {
 			tag := typeField.Tag.Get("name")
 			if tag == key {
-				fieldValue := v.Field(i)
 				if fieldValue.Kind() == reflect.Struct {
 					v = fieldValue // 如果字段是结构体，将它设置为下一次迭代的目标
 					found = true

@@ -1,3 +1,5 @@
+//go:build !386
+
 package zeta
 
 import (
@@ -244,7 +246,7 @@ func TestTreeNode(t *testing.T) {
 
 func TestCalculateChunk(t *testing.T) {
 	chunks := calculateChunk(strengthen.GiByte*10+strengthen.MiByte, strengthen.GiByte)
-	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*10+strengthen.MiByte)
+	fmt.Fprintf(os.Stderr, "size: %d\n", int64(strengthen.GiByte)*10+int64(strengthen.MiByte))
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
@@ -262,12 +264,12 @@ func TestCalculateChunk(t *testing.T) {
 
 func TestCalculateChunk2(t *testing.T) {
 	chunks := calculateChunk(strengthen.GiByte*10-strengthen.MiByte, strengthen.GiByte)
-	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*10+strengthen.MiByte)
+	fmt.Fprintf(os.Stderr, "size: %d\n", int64(strengthen.GiByte)*10+int64(strengthen.MiByte))
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}
 	chunks = calculateChunk(strengthen.GiByte*1, config.FragmentSize)
-	fmt.Fprintf(os.Stderr, "size: %d\n", strengthen.GiByte*1+strengthen.MiByte)
+	fmt.Fprintf(os.Stderr, "size: %d\n", int64(strengthen.GiByte)*1+int64(strengthen.MiByte))
 	for i, c := range chunks {
 		fmt.Fprintf(os.Stderr, "%d: offset: %d size: %s\n", i, c.offset, strengthen.FormatSize(c.size))
 	}

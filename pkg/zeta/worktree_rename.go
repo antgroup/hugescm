@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/antgroup/hugescm/modules/strengthen"
 )
@@ -66,7 +65,7 @@ func (w *Worktree) validateRenameable(source string, destination string, force b
 			return false, false, ErrAborting
 		}
 		// same file
-		if caseInsensitive && strings.EqualFold(source, destination) {
+		if systemCaseEqual(source, destination) {
 			return true, true, nil
 		}
 		die("destination already exists, source=%s, destination=%s", source, destination)
@@ -85,7 +84,7 @@ func (w *Worktree) validateRenameable(source string, destination string, force b
 		return false, false, ErrAborting
 	}
 	// same file
-	if caseInsensitive && strings.EqualFold(source, destination) {
+	if systemCaseEqual(source, destination) {
 		return true, false, nil
 	}
 	if !force {

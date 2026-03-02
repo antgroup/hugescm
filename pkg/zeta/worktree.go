@@ -511,7 +511,7 @@ func validPath(paths ...string) error {
 func (w *Worktree) validChange(ch merkletrie.Change) error {
 	action, err := ch.Action()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	switch action {
@@ -526,16 +526,21 @@ func (w *Worktree) validChange(ch merkletrie.Change) error {
 	return nil
 }
 
-func cleanFiles(ss []string) []string {
-	ns := make([]string, 0, len(ss))
-	for _, s := range ss {
-		ns = append(ns, filepath.Clean(s))
+func buildFileSet(files []string) map[string]struct{} {
+	if len(files) == 0 {
+		return nil
 	}
-	return ns
+	fileSet := make(map[string]struct{}, len(files))
+	for _, f := range files {
+		// Clean path and use canonical name as key for O(1) lookup
+		cleanPath := filepath.Clean(f)
+		fileSet[canonicalName(cleanPath)] = struct{}{}
+	}
+	return fileSet
 }
 
 func (w *Worktree) resetWorktree(ctx context.Context, t *object.Tree, files []string, bar ProgressBar) error {
-	files = cleanFiles(files)
+	fileSet := buildFileSet(files)
 	changes, err := w.diffStagingWithWorktree(ctx, true, false)
 	if err != nil {
 		return err
@@ -548,17 +553,22 @@ func (w *Worktree) resetWorktree(ctx context.Context, t *object.Tree, files []st
 	b := newIndexBuilder(idx)
 
 	for _, ch := range changes {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		if err := w.validChange(ch); err != nil {
 			return err
 		}
-		if len(files) > 0 {
+		if fileSet != nil {
 			file := nameFromAction(&ch)
 			if file == "" {
 				continue
 			}
-			if !slices.ContainsFunc(files, func(s string) bool {
-				return systemCaseEqual(s, file)
-			}) {
+			// Use canonical name for O(1) lookup
+			if _, ok := fileSet[canonicalName(file)]; !ok {
 				continue
 			}
 		}

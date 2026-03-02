@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
@@ -184,26 +183,6 @@ func (m *Matcher) Match(name string) bool {
 		}
 	}
 	return false
-}
-
-var (
-	caseInsensitive = func() bool {
-		return runtime.GOOS == "windows" || runtime.GOOS == "darwin"
-	}()
-)
-
-func canonicalName(name string) string {
-	if caseInsensitive {
-		return strings.ToLower(name)
-	}
-	return name
-}
-
-func systemCaseEqual(a, b string) bool {
-	if caseInsensitive {
-		return strings.EqualFold(a, b)
-	}
-	return a == b
 }
 
 func shortHash(h plumbing.Hash) string {

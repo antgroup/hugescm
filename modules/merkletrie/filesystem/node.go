@@ -67,7 +67,10 @@ func (n *Node) Mode() filemode.FileMode {
 	return m
 }
 
-func (n *Node) HijackMode(mode filemode.FileMode) {
+// UnifyMode overrides the file mode with the given mode.
+// This is used on Windows to unify POSIX permission modes to eliminate
+// false-positive changes, since Windows doesn't use the POSIX permission model.
+func (n *Node) UnifyMode(mode filemode.FileMode) {
 	n.mode, _ = mode.ToOSFileMode()
 }
 

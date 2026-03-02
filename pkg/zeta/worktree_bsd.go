@@ -29,8 +29,22 @@ func init() {
 	}
 }
 
-func isSymlinkWindowsNonAdmin(error) bool {
+func isSymlinkWindowsNonAdmin(_ error) bool {
 	return false
+}
+
+// canonicalName returns the canonical form of a filename.
+// On FreeBSD and NetBSD, filenames are case-sensitive, so we return the name unchanged.
+// This ensures that "File.txt" and "file.txt" are treated as different files.
+func canonicalName(name string) string {
+	return name
+}
+
+// systemCaseEqual compares two filenames using platform-specific case sensitivity.
+// On FreeBSD and NetBSD, filenames are case-sensitive, so we use exact string comparison.
+// This matches the operating system's filesystem behavior.
+func systemCaseEqual(a, b string) bool {
+	return a == b
 }
 
 func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.Changes {
@@ -56,6 +70,12 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 		if len(path) != 0 {
 			isDir := (len(ch.To) > 0 && ch.To.IsDir()) || (len(ch.From) > 0 && ch.From.IsDir())
 			if m.Match(path, isDir) {
+				// Skip new files that match ignore rules.
+				// However, keep deletions and modifications of ignored files.
+				// This design allows users to intentionally track deletions of ignored files,
+				// which is consistent with common VCS behavior (e.g., Git's `git add -A`).
+				// If you want to skip all changes to ignored files including deletions,
+				// consider adding a configuration option to control this behavior.
 				if len(ch.From) == 0 {
 					continue
 				}

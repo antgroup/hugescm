@@ -12,7 +12,7 @@ import (
 func NewSystemDialer(forward *net.Dialer) Dialer {
 	allProxy := getEnvAny("ALL_PROXY", "all_proxy")
 	noProxy := getEnvAny("NO_PROXY", "no_proxy")
-	if len(allProxy) == 0 {
+	if allProxy == "" {
 		return forward
 	}
 	proxyURL, err := ParseURL(allProxy, "http://")

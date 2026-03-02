@@ -5,6 +5,7 @@
 package socks
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"io"
@@ -161,7 +162,7 @@ func splitHostPort(address string) (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	if 1 > portnum || portnum > 0xffff {
+	if cmp.Compare(portnum, 1) < 0 || cmp.Compare(portnum, 0xffff) > 0 {
 		return "", 0, errors.New("port number out of range " + port)
 	}
 	return host, portnum, nil

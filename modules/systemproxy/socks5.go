@@ -22,15 +22,8 @@ func SOCKS5(network, address string, auth *Auth, forward Dialer) (Dialer, error)
 		}
 	}
 	if auth != nil {
-		up := socks.UsernamePassword{
-			Username: auth.User,
-			Password: auth.Password,
-		}
-		d.AuthMethods = []socks.AuthMethod{
-			socks.AuthMethodNotRequired,
-			socks.AuthMethodUsernamePassword,
-		}
-		d.Authenticate = up.Authenticate
+		d.AuthMethods = []socks.AuthMethod{socks.AuthMethodNotRequired, socks.AuthMethodUsernamePassword}
+		d.Authenticate = (&socks.UsernamePassword{Username: auth.User, Password: auth.Password}).Authenticate
 	}
 	return d, nil
 }

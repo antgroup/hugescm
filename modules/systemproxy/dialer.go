@@ -25,7 +25,7 @@ func newDialerForHosts(proxyURL *url.URL, forward *net.Dialer, hosts []string, b
 	p.SetBypassSimpleHostnames(bypassSimpleHostnames)
 	for _, host := range hosts {
 		host = strings.TrimSpace(host)
-		if len(host) == 0 {
+		if host == "" {
 			continue
 		}
 		if strings.Contains(host, "/") {

@@ -3,6 +3,7 @@
 package systemproxy
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"net"
@@ -43,7 +44,7 @@ type MacProxySettings struct {
 }
 
 func joinHostPort(u, p string) string {
-	if len(p) != 0 {
+	if p != "" {
 		return net.JoinHostPort(u, p)
 	}
 	return u
@@ -54,12 +55,13 @@ func joinProxyURL(defaultScheme, host, port, user string) *url.URL {
 		Scheme: defaultScheme,
 		Host:   joinHostPort(host, port),
 	}
-	if len(user) != 0 {
+	if user != "" {
 		u.User = url.User(user)
 	}
 	return u
 }
 
+// section represents a key-value map from scutil output
 type section map[string]any
 
 type arrayItem struct {
@@ -113,7 +115,7 @@ func (se section) array(name string) []string {
 		// e.g., "10" < "2" is wrong in string comparison, but correct in numeric sorting
 		ai, _ := strconv.Atoi(a.i)
 		bi, _ := strconv.Atoi(b.i)
-		return ai - bi
+		return cmp.Compare(ai, bi)
 	})
 	arr := make([]string, 0, len(items))
 	for _, i := range items {
@@ -123,12 +125,11 @@ func (se section) array(name string) []string {
 }
 
 func parseOut(out string) section {
-	lines := strings.Split(out, "\n")
 	var cur section
 	stack := make([]section, 0)
-	for _, line := range lines {
+	for line := range strings.Lines(out) {
 		line = strings.TrimSpace(line)
-		fields := strings.Fields(line)
+		fields := slices.Collect(strings.FieldsSeq(line))
 		if len(fields) == 0 {
 			continue
 		}
@@ -200,7 +201,7 @@ func newSystemDialer(forward *net.Dialer) Dialer {
 	if err != nil {
 		return forward
 	}
-	if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
+	if systemProxy.SOCKSEnable && systemProxy.SOCKSProxy != "" {
 		proxyURL := joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser)
 		return newDialerForHosts(proxyURL, forward, systemProxy.ExceptionsList, systemProxy.ExcludeSimpleHostnames)
 	}
@@ -210,7 +211,7 @@ func newSystemDialer(forward *net.Dialer) Dialer {
 func NewSystemDialer(forward *net.Dialer) Dialer {
 	allProxy := getEnvAny("ALL_PROXY", "all_proxy") // follow ALL_PROXY
 	noProxy := getEnvAny("NO_PROXY", "no_proxy")
-	if len(allProxy) == 0 {
+	if allProxy == "" {
 		return newSystemDialer(forward)
 	}
 	proxyURL, err := ParseURL(allProxy, "http://")
@@ -231,7 +232,7 @@ func systemProxyConfig() *httpproxy.Config {
 	if err != nil {
 		return cfg
 	}
-	if len(cfg.NoProxy) == 0 {
+	if cfg.NoProxy == "" {
 		cfg.NoProxy = strings.Join(systemProxy.ExceptionsList, ",")
 	}
 
@@ -241,20 +242,20 @@ func systemProxyConfig() *httpproxy.Config {
 	// Reference: Apple CFNetwork framework behavior
 
 	// Configure HTTP proxy
-	if len(cfg.HTTPProxy) == 0 {
-		if systemProxy.HTTPEnable && len(systemProxy.HTTPProxy) != 0 {
+	if cfg.HTTPProxy == "" {
+		if systemProxy.HTTPEnable && systemProxy.HTTPProxy != "" {
 			cfg.HTTPProxy = joinProxyURL("http", systemProxy.HTTPProxy, systemProxy.HTTPPort, systemProxy.HTTPUser).String()
-		} else if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
+		} else if systemProxy.SOCKSEnable && systemProxy.SOCKSProxy != "" {
 			// Fallback to SOCKS if no HTTP proxy configured
 			cfg.HTTPProxy = joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser).String()
 		}
 	}
 
 	// Configure HTTPS proxy
-	if len(cfg.HTTPSProxy) == 0 {
-		if systemProxy.HTTPSEnable && len(systemProxy.HTTPSProxy) != 0 {
+	if cfg.HTTPSProxy == "" {
+		if systemProxy.HTTPSEnable && systemProxy.HTTPSProxy != "" {
 			cfg.HTTPSProxy = joinProxyURL("https", systemProxy.HTTPSProxy, systemProxy.HTTPSPort, systemProxy.HTTPSUser).String()
-		} else if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
+		} else if systemProxy.SOCKSEnable && systemProxy.SOCKSProxy != "" {
 			// Fallback to SOCKS if no HTTPS proxy configured
 			cfg.HTTPSProxy = joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser).String()
 		}

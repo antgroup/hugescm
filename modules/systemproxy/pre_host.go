@@ -7,6 +7,7 @@ package systemproxy
 import (
 	"context"
 	"net"
+	"slices"
 	"strings"
 )
 
@@ -59,15 +60,15 @@ func (p *PerHost) dialerForRequest(host string) Dialer {
 	// Check if this is an IP address first
 	// IP addresses are NOT simple hostnames
 	if ip := net.ParseIP(host); ip != nil {
-		for _, net := range p.bypassNetworks {
-			if net.Contains(ip) {
-				return p.bypass
-			}
+		if slices.ContainsFunc(p.bypassNetworks, func(net *net.IPNet) bool {
+			return net.Contains(ip)
+		}) {
+			return p.bypass
 		}
-		for _, bypassIP := range p.bypassIPs {
-			if bypassIP.Equal(ip) {
-				return p.bypass
-			}
+		if slices.ContainsFunc(p.bypassIPs, func(bypassIP net.IP) bool {
+			return bypassIP.Equal(ip)
+		}) {
+			return p.bypass
 		}
 		return p.def
 	}
@@ -79,20 +80,13 @@ func (p *PerHost) dialerForRequest(host string) Dialer {
 		return p.bypass
 	}
 
-	for _, zone := range p.bypassZones {
-		if strings.HasSuffix(host, zone) {
-			return p.bypass
-		}
-		if host == zone[1:] {
-			// For a zone ".example.com", we match "example.com"
-			// too.
-			return p.bypass
-		}
+	if slices.ContainsFunc(p.bypassZones, func(zone string) bool {
+		return strings.HasSuffix(host, zone) || host == zone[1:]
+	}) {
+		return p.bypass
 	}
-	for _, bypassHost := range p.bypassHosts {
-		if bypassHost == host {
-			return p.bypass
-		}
+	if slices.Contains(p.bypassHosts, host) {
+		return p.bypass
 	}
 	return p.def
 }
@@ -105,7 +99,7 @@ func (p *PerHost) dialerForRequest(host string) Dialer {
 func (p *PerHost) AddFromString(s string) {
 	for host := range strings.SplitSeq(s, ",") {
 		host = strings.TrimSpace(host)
-		if len(host) == 0 {
+		if host == "" {
 			continue
 		}
 		if strings.Contains(host, "/") {

@@ -54,11 +54,11 @@ func fromWindowsProxy() (values windowsProxyConfig, err error) {
 	var proxySettingsPerUser uint64 = 1 // 1 is the default value to consider current user
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.QUERY_VALUE)
 	if err == nil {
-		//We had used the below variable tempPrxUsrSettings, because the Golang method GetIntegerValue
-		//sets the value to zero even it fails.
+		// We had used the below variable tempPrxUsrSettings, because the Golang method GetIntegerValue
+		// sets the value to zero even it fails.
 		tempPrxUsrSettings, _, err := k.GetIntegerValue("ProxySettingsPerUser")
 		if err == nil {
-			//consider the value of tempPrxUsrSettings if it is a success
+			// consider the value of tempPrxUsrSettings if it is a success
 			proxySettingsPerUser = tempPrxUsrSettings
 		}
 		_ = k.Close()
@@ -130,12 +130,12 @@ func newSystemDialer(forward *net.Dialer) Dialer {
 	// Priority: socks proxy > default proxy
 	// SOCKS proxy is preferred for general dialing as it supports more protocols (TCP, UDP, etc.)
 	// Default proxy (without protocol prefix) is typically HTTP proxy
-	if socksProxy := getProtocolAny(protocol, "socks"); len(socksProxy) != 0 {
+	if socksProxy := getProtocolAny(protocol, "socks"); socksProxy != "" {
 		if proxyURL, err := ParseURL(socksProxy, "socks5://"); err == nil {
 			return newDialerForHosts(proxyURL, forward, noProxy, bypassLocal)
 		}
 	}
-	if defaultProxy := getProtocolAny(protocol, ""); len(defaultProxy) != 0 {
+	if defaultProxy := getProtocolAny(protocol, ""); defaultProxy != "" {
 		if proxyURL, err := ParseURL(defaultProxy, "http://"); err == nil {
 			return newDialerForHosts(proxyURL, forward, noProxy, bypassLocal)
 		}
@@ -146,7 +146,7 @@ func newSystemDialer(forward *net.Dialer) Dialer {
 func NewSystemDialer(forward *net.Dialer) Dialer {
 	allProxy := getEnvAny("ALL_PROXY", "all_proxy")
 	noProxy := getEnvAny("NO_PROXY", "no_proxy")
-	if len(allProxy) == 0 {
+	if allProxy == "" {
 		return newSystemDialer(forward)
 	}
 	proxyURL, err := ParseURL(allProxy, "http://")
@@ -163,7 +163,7 @@ func systemProxyConfig() *httpproxy.Config {
 		NoProxy:    getEnvAny("NO_PROXY", "no_proxy"),
 		CGI:        os.Getenv("REQUEST_METHOD") != "",
 	}
-	if len(cfg.HTTPProxy) != 0 || len(cfg.HTTPSProxy) != 0 {
+	if cfg.HTTPProxy != "" || cfg.HTTPSProxy != "" {
 		return cfg
 	}
 	values, err := fromWindowsProxy()
@@ -172,7 +172,7 @@ func systemProxyConfig() *httpproxy.Config {
 		return cfg
 	}
 	protocol := parseProxyServer(values.ProxyServer)
-	if len(cfg.NoProxy) == 0 {
+	if cfg.NoProxy == "" {
 		// Parse ProxyOverride and convert to standard NoProxy format
 		noProxyHosts, bypassLocal := parseProxyOverride(values.ProxyOverride)
 		var noProxyParts []string
@@ -194,25 +194,25 @@ func systemProxyConfig() *httpproxy.Config {
 	// Reference: WinHTTP proxy configuration behavior
 
 	// Configure HTTP proxy
-	if len(cfg.HTTPProxy) == 0 {
-		if httpProxy := getProtocolAny(protocol, "http"); len(httpProxy) != 0 {
+	if cfg.HTTPProxy == "" {
+		if httpProxy := getProtocolAny(protocol, "http"); httpProxy != "" {
 			cfg.HTTPProxy = httpProxy
-		} else if socksProxy := getProtocolAny(protocol, "socks"); len(socksProxy) != 0 {
+		} else if socksProxy := getProtocolAny(protocol, "socks"); socksProxy != "" {
 			// Fallback to SOCKS if no HTTP proxy configured
 			cfg.HTTPProxy = "socks5://" + socksProxy
-		} else if defaultProxy := getProtocolAny(protocol, ""); len(defaultProxy) != 0 {
+		} else if defaultProxy := getProtocolAny(protocol, ""); defaultProxy != "" {
 			cfg.HTTPProxy = defaultProxy
 		}
 	}
 
 	// Configure HTTPS proxy
-	if len(cfg.HTTPSProxy) == 0 {
-		if httpsProxy := getProtocolAny(protocol, "https"); len(httpsProxy) != 0 {
+	if cfg.HTTPSProxy == "" {
+		if httpsProxy := getProtocolAny(protocol, "https"); httpsProxy != "" {
 			cfg.HTTPSProxy = httpsProxy
-		} else if socksProxy := getProtocolAny(protocol, "socks"); len(socksProxy) != 0 {
+		} else if socksProxy := getProtocolAny(protocol, "socks"); socksProxy != "" {
 			// Fallback to SOCKS if no HTTPS proxy configured
 			cfg.HTTPSProxy = "socks5://" + socksProxy
-		} else if defaultProxy := getProtocolAny(protocol, ""); len(defaultProxy) != 0 {
+		} else if defaultProxy := getProtocolAny(protocol, ""); defaultProxy != "" {
 			cfg.HTTPSProxy = defaultProxy
 		}
 	}

@@ -38,10 +38,14 @@ func NewDialerFromURL(u *url.URL, forward *net.Dialer) (Dialer, error) {
 		}
 		var auth *Auth
 		if u.User != nil {
-			auth = new(Auth)
-			auth.User = u.User.Username()
-			if p, ok := u.User.Password(); ok {
-				auth.Password = p
+			auth = &Auth{
+				User: u.User.Username(),
+				Password: func() string {
+					if p, ok := u.User.Password(); ok {
+						return p
+					}
+					return ""
+				}(),
 			}
 		}
 		return SOCKS5("tcp", net.JoinHostPort(addr, port), auth, forward)

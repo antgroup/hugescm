@@ -17,8 +17,8 @@ import (
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/keyring"
-	"github.com/antgroup/hugescm/modules/survey"
 	"github.com/antgroup/hugescm/modules/trace"
+	"github.com/antgroup/hugescm/modules/tui"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/version"
 )
@@ -105,18 +105,12 @@ func (c *client) credentialAskOne() (*Credentials, error) {
 		username = c.baseURL.User.Username()
 		c.baseURL.User = nil
 	} else {
-		pu := &survey.Input{
-			Message: fmt.Sprintf("Username for '%s://%s':", c.baseURL.Scheme, c.baseURL.Host),
-		}
-		if err := survey.AskOne(pu, &username); err != nil {
+		if err := tui.AskInput(&username, "Username for '%s://%s':", c.baseURL.Scheme, c.baseURL.Host); err != nil {
 			return nil, err
 		}
 	}
 	var password string
-	prompt := &survey.Password{
-		Message: fmt.Sprintf("Password for '%s://%s@%s':", c.baseURL.Scheme, url.PathEscape(username), c.baseURL.Host),
-	}
-	if err := survey.AskOne(prompt, &password); err != nil {
+	if err := tui.AskPassword(&password, "Password for '%s://%s@%s':", c.baseURL.Scheme, url.PathEscape(username), c.baseURL.Host); err != nil {
 		return nil, err
 	}
 	return &Credentials{UserName: username, Password: password}, nil

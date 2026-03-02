@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
+	"github.com/charmbracelet/glamour"
 )
 
 const (
@@ -113,6 +115,51 @@ func (c *Cat) showObject(a any) error {
 	return hud.Display(fd, a, termLevel)
 }
 
+func (c *Cat) isMarkdown() bool {
+	if _, filename, ok := strings.Cut(c.Object, ":"); ok {
+		return strings.EqualFold(filename, "README") || strings.EqualFold(filepath.Ext(filename), ".md")
+	}
+	return false
+}
+
+var termWidth = func() (width int, err error) {
+	width, _, err = term.GetSize(int(os.Stdout.Fd()))
+	if err == nil {
+		return width, nil
+	}
+
+	return 0, err
+}
+
+func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
+	width, err := termWidth()
+	if err != nil {
+		width = 80
+	}
+	if width > 120 {
+		width = 120
+	}
+	r, err := glamour.NewTermRenderer(
+		// detect background color and pick either the default dark or light theme
+		glamour.WithAutoStyle(),
+		// wrap output at specific width (default is 80)
+		glamour.WithWordWrap(width),
+	)
+	if err != nil {
+		return err
+	}
+	b, err := io.ReadAll(input)
+	if err != nil {
+		return err
+	}
+	out, err := r.RenderBytes(b)
+	if err != nil {
+		return err
+	}
+	_, _ = w.Write(out)
+	return nil
+}
+
 func (c *Cat) formatObject(o *git.Object) error {
 	if c.Size {
 		return c.Println(o.Size)
@@ -139,11 +186,14 @@ func (c *Cat) formatObject(o *git.Object) error {
 		}
 		return nil
 	}
-	fd, _, err := c.NewFD()
+	fd, termLevel, err := c.NewFD()
 	if err != nil {
 		return err
 	}
 	defer fd.Close() // nolint
+	if termLevel != term.LevelNone && charset != diferenco.BINARY && c.isMarkdown() {
+		return c.markdownOut(fd, io.LimitReader(reader, c.Limit))
+	}
 	if _, err = io.Copy(fd, io.LimitReader(reader, c.Limit)); err != nil {
 		return err
 	}

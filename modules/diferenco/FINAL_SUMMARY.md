@@ -338,7 +338,7 @@ opts.A = Minimal    // Minimal 算法
 === RUN   TestNewMergeEdgeModifications
 --- PASS: TestNewMergeEdgeModifications (0.00s)
 PASS
-ok      code.alipay.com/zeta/zeta/modules/diferenco     0.613s
+ok      github.com/antgroup/hugescm/modules/diferenco     0.613s
 ```
 
 ### 性能基准测试

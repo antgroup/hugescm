@@ -13,8 +13,8 @@ import (
 
 	"github.com/antgroup/hugescm/modules/env"
 	"github.com/antgroup/hugescm/modules/strengthen"
-	"github.com/antgroup/hugescm/modules/survey"
 	"github.com/antgroup/hugescm/modules/trace"
+	"github.com/antgroup/hugescm/modules/tui"
 	"github.com/antgroup/hugescm/pkg/transport/ssh/knownhosts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -143,12 +143,7 @@ func (c *client) prepareAuthMethod() ([]ssh.AuthMethod, error) {
 		return auth, nil
 	}
 	auth = append(auth, ssh.PasswordCallback(func() (secret string, err error) {
-		prompt := &survey.Password{
-			Message: fmt.Sprintf("Password for '%s@%s':", c.User, c.Endpoint),
-		}
-		if err = survey.AskOne(prompt, &secret); err != nil {
-			return
-		}
+		err = tui.AskPassword(&secret, "Password for '%s@%s':", c.User, c.Endpoint)
 		return
 	}))
 	return auth, nil

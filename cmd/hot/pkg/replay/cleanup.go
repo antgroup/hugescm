@@ -10,15 +10,14 @@ import (
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/command"
 	"github.com/antgroup/hugescm/modules/strengthen"
-	"github.com/antgroup/hugescm/modules/survey"
+	"github.com/antgroup/hugescm/modules/tui"
 )
 
 func (r *Replayer) cleanup(prune bool) error {
 	if !prune {
-		prompt := &survey.Confirm{
-			Message: tr.W("Do you want to prune the repository right away"),
+		if err := tui.AskConfirm(&prune, "%s", tr.W("Do you want to prune the repository right away")); err != nil {
+			return err
 		}
-		_ = survey.AskOne(prompt, &prune)
 		if !prune {
 			return nil
 		}

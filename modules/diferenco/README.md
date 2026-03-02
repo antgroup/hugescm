@@ -36,7 +36,7 @@
 ## Installation / 安装
 
 ```bash
-go get code.alipay.com/zeta/zeta/modules/diferenco
+go get github.com/antgroup/hugescm/modules/diferenco
 ```
 
 ## Quick Start / 快速开始
@@ -49,7 +49,7 @@ package main
 import (
     "context"
     "fmt"
-    "code.alipay.com/zeta/zeta/modules/diferenco"
+    "github.com/antgroup/hugescm/modules/diferenco"
 )
 
 func main() {

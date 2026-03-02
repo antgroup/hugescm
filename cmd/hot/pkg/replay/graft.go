@@ -12,7 +12,7 @@ import (
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/git/gitobj"
-	"github.com/antgroup/hugescm/modules/survey"
+	"github.com/antgroup/hugescm/modules/tui"
 )
 
 func (r *Replayer) resolveCommit(ref *git.Reference) ([]byte, *gitobj.Commit, error) {
@@ -167,10 +167,9 @@ func (r *Replayer) Graft(m Matcher, confirm bool, prune bool, headOnly bool) err
 		return err
 	}
 	if !confirm {
-		prompt := &survey.Confirm{
-			Message: tr.W("Do you want to rewrite local branches and tags"),
+		if err := tui.AskConfirm(&confirm, "%s", tr.W("Do you want to rewrite local branches and tags")); err != nil {
+			return err
 		}
-		_ = survey.AskOne(prompt, &confirm)
 		if !confirm {
 			return nil
 		}

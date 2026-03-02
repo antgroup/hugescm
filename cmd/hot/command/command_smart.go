@@ -11,8 +11,8 @@ import (
 	"github.com/antgroup/hugescm/cmd/hot/pkg/stat"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
-	"github.com/antgroup/hugescm/modules/survey"
 	"github.com/antgroup/hugescm/modules/trace"
+	"github.com/charmbracelet/huh"
 )
 
 type Smart struct {
@@ -33,36 +33,48 @@ func (c *Smart) Run(g *Globals) error {
 	return nil
 }
 
-func newMatcher(e *stat.SizeExecutor, all bool) replay.Matcher {
-	if all {
-		return e
+func multiSelect(i int, totalBatches int, input []string) ([]string, error) {
+	var paths []string
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title(fmt.Sprintf("%s [%s - %d/%d]:", tr.W("Which files need to be deleted"), tr.W("Batch"), i+1, totalBatches)).
+				Options(huh.NewOptions(input...)...).
+				Value(&paths)))
+	if err := form.Run(); err != nil {
+		return nil, err
 	}
-	largePaths := e.Paths()
-	removedPaths := make([]string, 0, len(largePaths))
-	for i := range 40 {
-		pathsLen := len(largePaths)
+	return paths, nil
+}
+
+func newMatcher(sz *stat.SizeExecutor, matchAll bool) replay.Matcher {
+	if matchAll {
+		return sz
+	}
+	larges := sz.Paths()
+	selected := make([]string, 0, len(larges))
+	totalBatches := (len(larges) + 19) / 20
+	for i := range totalBatches {
+		pathsLen := len(larges)
 		if pathsLen == 0 {
 			break
 		}
-		minSelect := min(20, pathsLen)
+		minGroup := min(20, pathsLen)
 		var paths []string
-		prompt := &survey.MultiSelect{
-			Message:  fmt.Sprintf("%s [%s - %d]:", tr.W("Which files need to be deleted"), tr.W("Batch"), i+1),
-			Options:  largePaths[0:minSelect],
-			PageSize: 20,
-		}
-		largePaths = largePaths[minSelect:]
-		if err := survey.AskOne(prompt, &paths); err != nil {
-			fmt.Fprintf(os.Stderr, "abort: %v\n", err)
+		var err error
+		paths, err = multiSelect(i, totalBatches, larges[0:minGroup])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "multi select error: %v\n", err)
 			return nil
 		}
-		removedPaths = append(removedPaths, paths...)
+		larges = larges[minGroup:]
+		selected = append(selected, paths...)
 	}
-	if len(removedPaths) == 0 {
+	if len(selected) == 0 {
 		return nil
 	}
-	fmt.Fprintf(os.Stderr, "%s %d\n", tr.W("The total number of files that will be deleted is:"), len(removedPaths))
-	return replay.NewEqualer(removedPaths)
+	fmt.Fprintf(os.Stderr, "%s %d\n", tr.W("The total number of files that will be deleted is:"), len(selected))
+	return replay.NewEqualer(selected)
 }
 
 func (c *Smart) doOnce(g *Globals, p string) error {

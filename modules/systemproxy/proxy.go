@@ -9,9 +9,11 @@ package systemproxy
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 )
 
@@ -65,10 +67,12 @@ var (
 
 func NewSystemProxy(proxyURL string) func(*http.Request) (*url.URL, error) {
 	if len(proxyURL) != 0 {
-		if u, err := url.Parse(proxyURL); err == nil {
-			// Use proxyURL
+		u, err := url.Parse(proxyURL)
+		if err == nil {
 			return http.ProxyURL(u)
 		}
+		// Log warning to stderr and fallback to system proxy
+		fmt.Fprintf(os.Stderr, "systemproxy: failed to parse proxyURL %q: %v, falling back to system proxy\n", proxyURL, err)
 	}
 	return func(r *http.Request) (*url.URL, error) {
 		return systemProxyFunc()(r.URL)

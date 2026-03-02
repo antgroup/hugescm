@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -108,7 +109,11 @@ func (se section) array(name string) []string {
 		items = append(items, &arrayItem{i: k, v: s})
 	}
 	slices.SortFunc(items, func(a, b *arrayItem) int {
-		return strings.Compare(a.i, b.i)
+		// Convert indices to integers for numeric sorting to avoid string comparison issues
+		// e.g., "10" < "2" is wrong in string comparison, but correct in numeric sorting
+		ai, _ := strconv.Atoi(a.i)
+		bi, _ := strconv.Atoi(b.i)
+		return ai - bi
 	})
 	arr := make([]string, 0, len(items))
 	for _, i := range items {
@@ -147,7 +152,9 @@ func parseOut(out string) section {
 			continue
 		}
 		if len(fields) == 3 && fields[1] == ":" {
-			cur[firstField] = lastField
+			if cur != nil {
+				cur[firstField] = lastField
+			}
 		}
 	}
 	return cur
@@ -172,7 +179,7 @@ func findSystemProxy() (*MacProxySettings, error) {
 		HTTPEnable:               se.boolean("HTTPEnable"),
 		HTTPPort:                 se.string("HTTPPort"),
 		HTTPProxy:                se.string("HTTPProxy"),
-		HTTPUser:                 se.string("HTTPSUser"),
+		HTTPUser:                 se.string("HTTPUser"),
 		HTTPSEnable:              se.boolean("HTTPSEnable"),
 		HTTPSPort:                se.string("HTTPSPort"),
 		HTTPSProxy:               se.string("HTTPSProxy"),
@@ -195,7 +202,7 @@ func newSystemDialer(forward *net.Dialer) Dialer {
 	}
 	if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
 		proxyURL := joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser)
-		return newDialerForHosts(proxyURL, forward, systemProxy.ExceptionsList)
+		return newDialerForHosts(proxyURL, forward, systemProxy.ExceptionsList, systemProxy.ExcludeSimpleHostnames)
 	}
 	return forward
 }
@@ -227,23 +234,31 @@ func systemProxyConfig() *httpproxy.Config {
 	if len(cfg.NoProxy) == 0 {
 		cfg.NoProxy = strings.Join(systemProxy.ExceptionsList, ",")
 	}
-	if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
-		proxyURL := joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser).String()
-		if len(cfg.HTTPProxy) == 0 {
-			cfg.HTTPProxy = proxyURL
+
+	// macOS proxy priority: protocol-specific proxy takes precedence over SOCKS
+	// HTTP requests use HTTP proxy, HTTPS requests use HTTPS proxy
+	// SOCKS is only used as fallback when no protocol-specific proxy is configured
+	// Reference: Apple CFNetwork framework behavior
+
+	// Configure HTTP proxy
+	if len(cfg.HTTPProxy) == 0 {
+		if systemProxy.HTTPEnable && len(systemProxy.HTTPProxy) != 0 {
+			cfg.HTTPProxy = joinProxyURL("http", systemProxy.HTTPProxy, systemProxy.HTTPPort, systemProxy.HTTPUser).String()
+		} else if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
+			// Fallback to SOCKS if no HTTP proxy configured
+			cfg.HTTPProxy = joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser).String()
 		}
-		if len(cfg.HTTPSProxy) == 0 {
-			cfg.HTTPSProxy = proxyURL
+	}
+
+	// Configure HTTPS proxy
+	if len(cfg.HTTPSProxy) == 0 {
+		if systemProxy.HTTPSEnable && len(systemProxy.HTTPSProxy) != 0 {
+			cfg.HTTPSProxy = joinProxyURL("https", systemProxy.HTTPSProxy, systemProxy.HTTPSPort, systemProxy.HTTPSUser).String()
+		} else if systemProxy.SOCKSEnable && len(systemProxy.SOCKSProxy) != 0 {
+			// Fallback to SOCKS if no HTTPS proxy configured
+			cfg.HTTPSProxy = joinProxyURL("socks5", systemProxy.SOCKSProxy, systemProxy.SOCKSPort, systemProxy.SOCKSUser).String()
 		}
-		return cfg
 	}
-	if len(cfg.HTTPProxy) == 0 && systemProxy.HTTPEnable && len(systemProxy.HTTPProxy) != 0 {
-		proxyURL := joinProxyURL("http", systemProxy.HTTPProxy, systemProxy.HTTPPort, systemProxy.HTTPUser).String()
-		cfg.HTTPProxy = proxyURL
-	}
-	if len(cfg.HTTPSProxy) == 0 && systemProxy.HTTPSEnable && len(systemProxy.HTTPSProxy) != 0 {
-		proxyURL := joinProxyURL("https", systemProxy.HTTPSProxy, systemProxy.HTTPSPort, systemProxy.HTTPSUser).String()
-		cfg.HTTPSProxy = proxyURL
-	}
+
 	return cfg
 }

@@ -15,10 +15,11 @@ import (
 type PerHost struct {
 	def, bypass Dialer
 
-	bypassNetworks []*net.IPNet
-	bypassIPs      []net.IP
-	bypassZones    []string
-	bypassHosts    []string
+	bypassNetworks        []*net.IPNet
+	bypassIPs             []net.IP
+	bypassZones           []string
+	bypassHosts           []string
+	bypassSimpleHostnames bool // bypass proxy for simple hostnames (no dots)
 }
 
 // NewPerHost returns a PerHost Dialer that directs connections to either
@@ -42,7 +43,21 @@ func (p *PerHost) DialContext(ctx context.Context, network, addr string) (c net.
 	return d.DialContext(ctx, network, addr)
 }
 
+// normalizeHost normalizes a hostname for comparison
+// - converts to lowercase (DNS is case-insensitive)
+// - removes trailing dot (FQDN canonical form)
+func normalizeHost(host string) string {
+	host = strings.ToLower(host)
+	host = strings.TrimSuffix(host, ".")
+	return host
+}
+
 func (p *PerHost) dialerForRequest(host string) Dialer {
+	// Normalize host for consistent comparison
+	host = normalizeHost(host)
+
+	// Check if this is an IP address first
+	// IP addresses are NOT simple hostnames
 	if ip := net.ParseIP(host); ip != nil {
 		for _, net := range p.bypassNetworks {
 			if net.Contains(ip) {
@@ -55,6 +70,13 @@ func (p *PerHost) dialerForRequest(host string) Dialer {
 			}
 		}
 		return p.def
+	}
+
+	// Check if this is a simple hostname (no dots) and bypass is enabled
+	// This implements macOS ExcludeSimpleHostnames and Windows <local> behavior
+	// Simple hostname = hostname without dots, not an IP address
+	if p.bypassSimpleHostnames && !strings.Contains(host, ".") {
+		return p.bypass
 	}
 
 	for _, zone := range p.bypassZones {
@@ -81,8 +103,7 @@ func (p *PerHost) dialerForRequest(host string) Dialer {
 // (localhost). A best effort is made to parse the string and errors are
 // ignored.
 func (p *PerHost) AddFromString(s string) {
-	hosts := strings.Split(s, ",")
-	for _, host := range hosts {
+	for host := range strings.SplitSeq(s, ",") {
 		host = strings.TrimSpace(host)
 		if len(host) == 0 {
 			continue
@@ -123,7 +144,8 @@ func (p *PerHost) AddNetwork(net *net.IPNet) {
 // AddZone specifies a DNS suffix that will use the bypass proxy. A zone of
 // "example.com" matches "example.com" and all of its subdomains.
 func (p *PerHost) AddZone(zone string) {
-	zone = strings.TrimSuffix(zone, ".")
+	// Normalize: lowercase and remove trailing dot
+	zone = normalizeHost(zone)
 	if !strings.HasPrefix(zone, ".") {
 		zone = "." + zone
 	}
@@ -132,6 +154,14 @@ func (p *PerHost) AddZone(zone string) {
 
 // AddHost specifies a host name that will use the bypass proxy.
 func (p *PerHost) AddHost(host string) {
-	host = strings.TrimSuffix(host, ".")
+	// Normalize: lowercase and remove trailing dot
+	host = normalizeHost(host)
 	p.bypassHosts = append(p.bypassHosts, host)
+}
+
+// SetBypassSimpleHostnames sets whether to bypass proxy for simple hostnames.
+// A simple hostname is a hostname without any dots (e.g., "server", "localhost").
+// This implements macOS ExcludeSimpleHostnames and Windows <local> behavior.
+func (p *PerHost) SetBypassSimpleHostnames(bypass bool) {
+	p.bypassSimpleHostnames = bypass
 }

@@ -16,12 +16,13 @@ func newDialer(proxyURL *url.URL, forward *net.Dialer, noProxy string) Dialer {
 	return perHost
 }
 
-func newDialerForHosts(proxyURL *url.URL, forward *net.Dialer, hosts []string) Dialer {
+func newDialerForHosts(proxyURL *url.URL, forward *net.Dialer, hosts []string, bypassSimpleHostnames bool) Dialer {
 	pd, err := NewDialerFromURL(proxyURL, forward)
 	if err != nil {
 		return forward
 	}
 	p := NewPerHost(pd, forward)
+	p.SetBypassSimpleHostnames(bypassSimpleHostnames)
 	for _, host := range hosts {
 		host = strings.TrimSpace(host)
 		if len(host) == 0 {

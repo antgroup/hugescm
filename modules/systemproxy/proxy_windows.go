@@ -18,6 +18,38 @@ type windowsProxyConfig struct {
 	AutoConfigURL string
 }
 
+// parseProxyServer parses Windows proxy server string into a map
+// Windows proxy format: "http=proxy.example.com:8080;https=proxy.example.com:8443;socks=proxy.example.com:1080"
+// or just "proxy.example.com:8080" for all protocols
+// Note: Keys are normalized to lowercase for case-insensitive matching
+func parseProxyServer(proxyServer string) map[string]string {
+	protocol := make(map[string]string)
+	for s := range strings.SplitSeq(proxyServer, ";") {
+		if s == "" {
+			continue
+		}
+		pair := strings.SplitN(s, "=", 2)
+		if len(pair) > 1 {
+			// Normalize key to lowercase for case-insensitive matching
+			protocol[strings.ToLower(pair[0])] = pair[1]
+		} else {
+			protocol[""] = pair[0]
+		}
+	}
+	return protocol
+}
+
+// getProtocolAny returns the first matching protocol value from the map
+// Keys are checked in order, returns empty string if none found
+func getProtocolAny(protocol map[string]string, keys ...string) string {
+	for _, key := range keys {
+		if v, ok := protocol[key]; ok {
+			return v
+		}
+	}
+	return ""
+}
+
 func fromWindowsProxy() (values windowsProxyConfig, err error) {
 	var proxySettingsPerUser uint64 = 1 // 1 is the default value to consider current user
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.QUERY_VALUE)
@@ -65,36 +97,47 @@ func fromWindowsProxy() (values windowsProxyConfig, err error) {
 	return
 }
 
+// parseProxyOverride parses Windows ProxyOverride string and handles <local> special tag
+// Windows format: "localhost;127.0.0.1;<local>;*.example.com"
+// <local> means bypass proxy for all local addresses (simple hostnames without dots)
+func parseProxyOverride(proxyOverride string) (hosts []string, bypassLocal bool) {
+	for item := range strings.SplitSeq(proxyOverride, ";") {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		// <local> is a special tag in Windows that means bypass proxy for:
+		// - Hostnames without dots (e.g., "server", "localhost")
+		// - Does NOT include FQDNs or IP addresses
+		if strings.EqualFold(item, "<local>") {
+			bypassLocal = true
+			continue
+		}
+		hosts = append(hosts, item)
+	}
+	return hosts, bypassLocal
+}
+
 func newSystemDialer(forward *net.Dialer) Dialer {
 	values, err := fromWindowsProxy()
 	if err != nil || values.ProxyEnable < 1 {
 		// not config or disabled
 		return forward
 	}
-	noProxy := strings.Split(values.ProxyOverride, ";")
-	protocol := make(map[string]string)
-	for s := range strings.SplitSeq(values.ProxyServer, ";") {
-		if s == "" {
-			continue
-		}
-		pair := strings.SplitN(s, "=", 2)
-		if len(pair) > 1 {
-			protocol[pair[0]] = pair[1]
-		} else {
-			protocol[""] = pair[0]
+	noProxy, bypassLocal := parseProxyOverride(values.ProxyOverride)
+	protocol := parseProxyServer(values.ProxyServer)
+
+	// Priority: socks proxy > default proxy
+	// SOCKS proxy is preferred for general dialing as it supports more protocols (TCP, UDP, etc.)
+	// Default proxy (without protocol prefix) is typically HTTP proxy
+	if socksProxy := getProtocolAny(protocol, "socks"); len(socksProxy) != 0 {
+		if proxyURL, err := ParseURL(socksProxy, "socks5://"); err == nil {
+			return newDialerForHosts(proxyURL, forward, noProxy, bypassLocal)
 		}
 	}
-	getProtocolAny := func(keys ...string) string {
-		for _, a := range keys {
-			if v, ok := protocol[a]; ok {
-				return v
-			}
-		}
-		return ""
-	}
-	if s := getProtocolAny(""); len(s) != 0 {
-		if proxyURL, err := ParseURL(s, "http://"); err == nil {
-			return newDialerForHosts(proxyURL, forward, noProxy)
+	if defaultProxy := getProtocolAny(protocol, ""); len(defaultProxy) != 0 {
+		if proxyURL, err := ParseURL(defaultProxy, "http://"); err == nil {
+			return newDialerForHosts(proxyURL, forward, noProxy, bypassLocal)
 		}
 	}
 	return forward
@@ -128,34 +171,51 @@ func systemProxyConfig() *httpproxy.Config {
 		// not config or disabled
 		return cfg
 	}
-	protocol := make(map[string]string)
-	for s := range strings.SplitSeq(values.ProxyServer, ";") {
-		if s == "" {
-			continue
-		}
-		pair := strings.SplitN(s, "=", 2)
-		if len(pair) > 1 {
-			protocol[pair[0]] = pair[1]
-		} else {
-			protocol[""] = pair[0]
-		}
-	}
-	getProtocolAny := func(keys ...string) string {
-		for _, a := range keys {
-			if v, ok := protocol[a]; ok {
-				return v
-			}
-		}
-		return ""
-	}
+	protocol := parseProxyServer(values.ProxyServer)
 	if len(cfg.NoProxy) == 0 {
-		cfg.NoProxy = strings.ReplaceAll(values.ProxyOverride, ";", ",")
+		// Parse ProxyOverride and convert to standard NoProxy format
+		noProxyHosts, bypassLocal := parseProxyOverride(values.ProxyOverride)
+		var noProxyParts []string
+		for _, host := range noProxyHosts {
+			// Convert Windows format to standard format
+			noProxyParts = append(noProxyParts, host)
+		}
+		if bypassLocal {
+			// For <local>, add common local patterns
+			// Note: httpproxy.Config doesn't natively support "simple hostname" concept,
+			// so we add common local addresses
+			noProxyParts = append(noProxyParts, "localhost", "127.0.0.1", "::1")
+		}
+		cfg.NoProxy = strings.Join(noProxyParts, ",")
 	}
+	// Windows proxy priority: protocol-specific proxy takes precedence over SOCKS
+	// HTTP requests use HTTP proxy, HTTPS requests use HTTPS proxy
+	// SOCKS is only used as fallback when no protocol-specific proxy is configured
+	// Reference: WinHTTP proxy configuration behavior
+
+	// Configure HTTP proxy
 	if len(cfg.HTTPProxy) == 0 {
-		cfg.HTTPProxy = getProtocolAny("http", "")
+		if httpProxy := getProtocolAny(protocol, "http"); len(httpProxy) != 0 {
+			cfg.HTTPProxy = httpProxy
+		} else if socksProxy := getProtocolAny(protocol, "socks"); len(socksProxy) != 0 {
+			// Fallback to SOCKS if no HTTP proxy configured
+			cfg.HTTPProxy = "socks5://" + socksProxy
+		} else if defaultProxy := getProtocolAny(protocol, ""); len(defaultProxy) != 0 {
+			cfg.HTTPProxy = defaultProxy
+		}
 	}
+
+	// Configure HTTPS proxy
 	if len(cfg.HTTPSProxy) == 0 {
-		cfg.HTTPSProxy = getProtocolAny("https", "")
+		if httpsProxy := getProtocolAny(protocol, "https"); len(httpsProxy) != 0 {
+			cfg.HTTPSProxy = httpsProxy
+		} else if socksProxy := getProtocolAny(protocol, "socks"); len(socksProxy) != 0 {
+			// Fallback to SOCKS if no HTTPS proxy configured
+			cfg.HTTPSProxy = "socks5://" + socksProxy
+		} else if defaultProxy := getProtocolAny(protocol, ""); len(defaultProxy) != 0 {
+			cfg.HTTPSProxy = defaultProxy
+		}
 	}
+
 	return cfg
 }

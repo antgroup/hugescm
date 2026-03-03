@@ -15,8 +15,8 @@ import (
 	"github.com/antgroup/hugescm/modules/command"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/clipperhouse/displaywidth"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/rivo/uniseg"
 )
 
 type Item struct {

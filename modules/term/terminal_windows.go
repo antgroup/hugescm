@@ -14,10 +14,12 @@ var (
 	procGetFileInformationByHandleEx = kernel32.NewProc("GetFileInformationByHandleEx")
 )
 
-// Check pipe name is used for cygwin/msys2 pty.
-// Cygwin/MSYS2 PTY has a name like:
+// isCygwinPipeName checks if a pipe name indicates a Cygwin/MSYS2 pseudo-terminal.
+// Cygwin/MSYS2 PTY pipe names follow the pattern:
 //
 //	\{cygwin,msys}-XXXXXXXXXXXXXXXX-ptyN-{from,to}-master
+//
+// This function is used by IsCygwinTerminal to detect these emulated terminals.
 func isCygwinPipeName(name string) bool {
 	token := strings.Split(name, "-")
 	if len(token) < 5 {
@@ -50,13 +52,15 @@ func isCygwinPipeName(name string) bool {
 	return true
 }
 
+// FILE_NAME_INFO structure used by GetFileInformationByHandleEx.
 // Receives the file name. Used for any handles.
-// Use only when calling GetFileInformationByHandleEx.
 type FILE_NAME_INFO struct {
 	FileNameLength uint32
 	FileName       [512]uint16
 }
 
+// GetFileInformationByHandleEx retrieves file information for the specified file.
+// This is a wrapper around the Windows API of the same name.
 func GetFileInformationByHandleEx(hFile syscall.Handle,
 	fileInformationClass uint32,
 	lpFileInformation unsafe.Pointer,
@@ -77,8 +81,9 @@ const (
 	FILE_NAME_INFO_BY_HANDLE = 2
 )
 
-// IsCygwinTerminal() return true if the file descriptor is a cygwin or msys2
-// terminal.
+// IsCygwinTerminal returns true if the file descriptor is connected to a
+// Cygwin or MSYS2 pseudo-terminal. These terminals use named pipes rather
+// than native Windows console APIs.
 func IsCygwinTerminal(fd uintptr) bool {
 	var fi FILE_NAME_INFO
 	bufferSize := uint32(unsafe.Sizeof(fi))
@@ -89,14 +94,26 @@ func IsCygwinTerminal(fd uintptr) bool {
 	return isCygwinPipeName(fileName)
 }
 
-// https://github.com/microsoft/terminal/issues/11057#issuecomment-1493118152
-// https://github.com/microsoft/terminal/issues/13006
+// detectColorLevelHijack detects Windows console color support and enables
+// virtual terminal processing if needed.
+//
+// This function:
+//  1. Attempts to get the current console mode
+//  2. Enables virtual terminal processing (VT100/ANSI escape sequences) if disabled
+//  3. Determines color support based on Windows version:
+//     - Windows 10 build 14931+: 16M colors (truecolor)
+//     - Windows 10 build 10586+: 256 colors
+//     - Earlier versions: No color support
+//
+// References:
+//   - https://github.com/microsoft/terminal/issues/11057#issuecomment-1493118152
+//   - https://github.com/microsoft/terminal/issues/13006
 func detectColorLevelHijack() Level {
 	var mode uint32
 	handle := windows.Handle(os.Stderr.Fd())
 	if err := windows.GetConsoleMode(handle, &mode); err != nil {
 		handle = windows.Handle(os.Stdout.Fd())
-		if err := windows.GetConsoleMode(windows.Handle(os.Stdout.Fd()), &mode); err != nil {
+		if err := windows.GetConsoleMode(handle, &mode); err != nil {
 			return LevelNone
 		}
 	}

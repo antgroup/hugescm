@@ -13,6 +13,8 @@ const (
 )
 
 var (
+	// charIndex is a lookup table for quick character classification.
+	// Index corresponds to ASCII code (0-255), values are CHAR_* constants.
 	charIndex = []byte{
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -33,8 +35,15 @@ var (
 	}
 )
 
-// https://github.com/gitgitgadget/git/pull/1853
-// https://public-inbox.org/git/Z4bqMYKRP7Gva5St@tapette.crustytoothpaste.net/T/#t
+// handleAnsiColorSequence parses an ANSI color sequence at the start of text.
+// If the sequence is valid and allowColor is true, it's written to b.
+// Returns the length of the sequence consumed, or 0 if invalid.
+//
+// Valid format: ESC [ [<n> [; <n>]*] m
+//
+// References:
+//   - https://github.com/gitgitgadget/git/pull/1853
+//   - https://public-inbox.org/git/Z4bqMYKRP7Gva5St@tapette.crustytoothpaste.net/T/#t
 func handleAnsiColorSequence(b *strings.Builder, text []byte, allowColor bool) int {
 	/*
 	 * Valid ANSI color sequences are of the form
@@ -59,6 +68,14 @@ func handleAnsiColorSequence(b *strings.Builder, text []byte, allowColor bool) i
 	return 0
 }
 
+// SanitizeANSI sanitizes ANSI sequences in content for safe terminal output.
+//
+// Behavior:
+//   - If allowColor is true: ANSI color sequences are preserved
+//   - If allowColor is false: All ANSI sequences are removed
+//   - Control characters (except tab and newline) are converted to caret notation (^G, etc.)
+//
+// This is useful for displaying untrusted or external output safely in a TUI.
 func SanitizeANSI(content string, allowColor bool) string {
 	b := &strings.Builder{}
 	text := []byte(content)
@@ -79,6 +96,11 @@ func SanitizeANSI(content string, allowColor bool) string {
 	return b.String()
 }
 
+// SanitizedF formats according to a format specifier, sanitizes the result,
+// and writes it to stderr. Color sequences are preserved based on StderrLevel.
+//
+// This is a convenience function for safely printing formatted output to stderr
+// in TUI applications, ensuring control characters are converted to caret notation.
 func SanitizedF(format string, a ...any) (int, error) {
 	content := fmt.Sprintf(format, a...)
 	return os.Stderr.WriteString(SanitizeANSI(content, StderrLevel != LevelNone))

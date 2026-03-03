@@ -1,5 +1,10 @@
 package term
 
+// Red returns the string s wrapped in red ANSI color codes.
+// The color format depends on the Level:
+//   - Level16M: Uses RGB #f43b47 (truecolor)
+//   - Level256: Uses standard ANSI red
+//   - LevelNone: Returns s unchanged
 func (v Level) Red(s string) string {
 	switch v {
 	case Level16M:
@@ -13,6 +18,11 @@ func (v Level) Red(s string) string {
 	return s
 }
 
+// Green returns the string s wrapped in green ANSI color codes.
+// The color format depends on the Level:
+//   - Level16M: Uses RGB #43e97a (truecolor)
+//   - Level256: Uses standard ANSI green
+//   - LevelNone: Returns s unchanged
 func (v Level) Green(s string) string {
 	switch v {
 	case Level16M:
@@ -26,6 +36,11 @@ func (v Level) Green(s string) string {
 	return s
 }
 
+// Yellow returns the string s wrapped in yellow ANSI color codes.
+// The color format depends on the Level:
+//   - Level16M: Uses RGB #fee240 (truecolor)
+//   - Level256: Uses standard ANSI yellow
+//   - LevelNone: Returns s unchanged
 func (v Level) Yellow(s string) string {
 	switch v {
 	case Level16M:
@@ -39,6 +54,11 @@ func (v Level) Yellow(s string) string {
 	return s
 }
 
+// Blue returns the string s wrapped in blue ANSI color codes.
+// The color format depends on the Level:
+//   - Level16M: Uses RGB #00c8ff (truecolor)
+//   - Level256: Uses standard ANSI blue
+//   - LevelNone: Returns s unchanged
 func (v Level) Blue(s string) string {
 	switch v {
 	case Level16M:
@@ -52,6 +72,11 @@ func (v Level) Blue(s string) string {
 	return s
 }
 
+// Purple returns the string s wrapped in purple ANSI color codes.
+// The color format depends on the Level:
+//   - Level16M: Uses RGB #7028e4 (truecolor)
+//   - Level256: Uses standard ANSI purple
+//   - LevelNone: Returns s unchanged
 func (v Level) Purple(s string) string {
 	switch v {
 	case Level16M:

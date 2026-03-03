@@ -130,6 +130,13 @@ func (s secretServiceProvider) Delete(ctx context.Context, service, user string)
 
 const (
 	ZetaUserName = "ZetaUserName"
+	// MaxUnixUserNameLength is the maximum username length for Unix/Linux systems.
+	// Matched with Windows CRED_MAX_USERNAME_LENGTH for consistency.
+	MaxUnixUserNameLength = 513
+	// MaxUnixPasswordLength is the maximum password length for Unix/Linux systems.
+	// While there's no theoretical limit, performance suffers with big values (>100KiB).
+	// We set a reasonable limit of 100KiB.
+	MaxUnixPasswordLength = 100 * 1024 // 100 KiB
 )
 
 func unixTargetName(targetName string) string {
@@ -149,12 +156,24 @@ func (s secretServiceProvider) Find(ctx context.Context, targetName string) (*Cr
 	if !ok {
 		return nil, errors.New("bad store data")
 	}
+	// Additional validation: ensure password is not empty
+	if password == "" {
+		return nil, errors.New("invalid password: empty password not allowed")
+	}
 	return &Cred{UserName: userName, Password: password}, nil
 }
 
 func (s secretServiceProvider) Store(ctx context.Context, targetName string, c *Cred) error {
 	if strings.Contains(c.UserName, "\x00") {
 		return errors.New("invalid username")
+	}
+	// Validate username length for consistency with Windows implementation
+	if len(c.UserName) > MaxUnixUserNameLength {
+		return ErrSetDataTooBig
+	}
+	// Validate password length to match the limit from keyring.go:20
+	if len(c.Password) > MaxUnixPasswordLength {
+		return ErrSetDataTooBig
 	}
 	body := fmt.Sprintf("%s\x00%s", c.UserName, c.Password)
 	encoded := base64.StdEncoding.EncodeToString([]byte(body))

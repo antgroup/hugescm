@@ -114,6 +114,11 @@ func parseKeychainOut(r io.Reader) (*Cred, error) {
 		}
 	}
 
+	// Validate that both fields were parsed successfully
+	if cred.UserName == "" && cred.Password == "" {
+		return nil, ErrNotFound
+	}
+
 	return cred, nil
 }
 
@@ -146,25 +151,35 @@ func (k macOSXKeychain) Store(ctx context.Context, targetName string, c *Cred) e
 
 	command := fmt.Sprintf("add-internet-password -U -s %s -a %s -w %s\n", Quote(targetName), Quote(c.UserName), Quote(c.Password))
 	if len(command) > 4096 {
+		// Ensure stdin is closed before returning
+		_ = stdin.Close()
+		_ = cmd.Wait()
 		return ErrSetDataTooBig
 	}
 
 	if _, err := io.WriteString(stdin, command); err != nil {
+		// Ensure stdin is closed before returning
+		_ = stdin.Close()
+		_ = cmd.Wait()
 		return err
 	}
 
 	if err = stdin.Close(); err != nil {
+		_ = cmd.Wait()
 		return err
 	}
 
-	err = cmd.Wait()
-	return err
+	if err = cmd.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (k macOSXKeychain) Discard(ctx context.Context, targetName string) error {
 	out, err := exec.CommandContext(ctx,
 		execPathKeychain,
-		"delete-generic-password",
+		"delete-internet-password",
 		"-s", targetName).CombinedOutput()
 	if strings.Contains(string(out), "could not be found") {
 		err = ErrNotFound

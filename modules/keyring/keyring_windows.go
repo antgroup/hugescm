@@ -4,6 +4,7 @@ package keyring
 
 import (
 	"context"
+	"errors"
 	"syscall"
 
 	"github.com/danieljoos/wincred"
@@ -38,6 +39,15 @@ func (k windowsKeychain) Find(ctx context.Context, targetName string) (*Cred, er
 	if err != nil {
 		return nil, err
 	}
+
+	// Validate credential integrity
+	if cred.UserName == "" && string(password) == "" {
+		return nil, ErrNotFound
+	}
+	if string(password) == "" {
+		return nil, errors.New("invalid credential: empty password not allowed")
+	}
+
 	return &Cred{UserName: cred.UserName, Password: string(password)}, nil
 }
 

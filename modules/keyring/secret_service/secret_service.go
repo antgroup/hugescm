@@ -2,6 +2,7 @@ package ss
 
 import (
 	"fmt"
+	"slices"
 
 	"errors"
 
@@ -22,7 +23,7 @@ const (
 	collectionBasePath   = "/org/freedesktop/secrets/collection/"
 )
 
-// Secret defines a org.freedesk.Secret.Item secret struct.
+// Secret defines a org.freedesktop.Secret.Item secret struct.
 type Secret struct {
 	Session     dbus.ObjectPath
 	Parameters  []byte
@@ -80,10 +81,8 @@ func (s *SecretService) CheckCollectionPath(path dbus.ObjectPath) error {
 		return err
 	}
 	paths := val.Value().([]dbus.ObjectPath)
-	for _, p := range paths {
-		if p == path {
-			return nil
-		}
+	if slices.Contains(paths, path) {
+		return nil
 	}
 	return errors.New("path not found")
 }

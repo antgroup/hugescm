@@ -54,7 +54,7 @@ func TestListConfig(t *testing.T) {
 	checkRemote(vals)
 }
 
-func TestTruncatedName(t *testing.T) {
+func TestTruncateName(t *testing.T) {
 	sss := []string{
 		"cmd/hot/pkg/size/render.go",
 		"Understand that enabling this registry setting will only affect applications that have been",
@@ -65,6 +65,6 @@ func TestTruncatedName(t *testing.T) {
 		"doc/org.aspectj/aspectjweaver/1.8.10/org/aspectj/weaver/patterns/HasThisTypePatternTriedToSneakInSomeGenericOrParameterizedTypePatternMatching/StuffAnywhereVisitor.html",
 	}
 	for _, s := range sss {
-		fmt.Fprintf(os.Stderr, "%s\n", truncatedName(s, 80))
+		fmt.Fprintf(os.Stderr, "%s\n", truncateName(s, 80))
 	}
 }

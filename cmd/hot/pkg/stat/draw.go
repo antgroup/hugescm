@@ -49,22 +49,36 @@ type summer struct {
 	fullPath bool
 }
 
-func truncatedName(s string, maxWidth int) string {
-	w := uniseg.StringWidth(s)
-	if w < maxWidth {
+// truncateName safely truncates a path string to fit within maxWidth
+// by preserving as much of the path structure as possible.
+func truncateName(s string, maxWidth int) string {
+	if maxWidth <= 0 || displaywidth.String(s) <= maxWidth {
 		return s
 	}
+
+	// Handle the case of a single path segment or no path
 	vv := strengthen.SplitPath(s)
-	if len(vv) <= 1 {
-		return s
-	}
-	for i := 1; i < len(vv); i++ {
-		ss := ".../" + path.Join(vv[i:]...)
-		if uniseg.StringWidth(ss) <= maxWidth {
-			return ss
+	var lastPart string
+	if len(vv) > 1 {
+		// Try to keep path segments from the end, adding "..." prefix
+		for i := 1; i <= len(vv); i++ {
+			ss := ".../" + path.Join(vv[len(vv)-i:]...)
+			if displaywidth.String(ss) <= maxWidth {
+				return ss
+			}
 		}
+		lastPart = vv[len(vv)-1]
+	} else {
+		lastPart = s
 	}
-	return vv[len(vv)-1]
+
+	// If path still too wide, truncate the last part with ellipsis
+	ellipsis := "..."
+	if maxWidth <= 3 {
+		return ellipsis[:maxWidth]
+	}
+
+	return displaywidth.TruncateString(lastPart, maxWidth, ellipsis)
 }
 
 func newSummer(fullPath bool) *summer {
@@ -96,7 +110,7 @@ func (s *summer) draw(w io.Writer) {
 	}
 	sort.Sort(Items(items))
 	for i, item := range items {
-		t.AppendRow(table.Row{i + 1, truncatedName(item.Path, 100), strconv.Itoa(item.Count), strengthen.FormatSize(item.Total)})
+		t.AppendRow(table.Row{i + 1, truncateName(item.Path, 100), strconv.Itoa(item.Count), strengthen.FormatSize(item.Total)})
 	}
 	t.AppendRow(table.Row{strings.ToUpper(tr.W("total")), "", strconv.Itoa(s.count), strengthen.FormatSize(s.total)})
 	t.Render()
@@ -110,7 +124,7 @@ func (s *summer) printName(name, oid string, size int64) {
 		return
 	}
 	if !s.fullPath {
-		name = truncatedName(name, 100)
+		name = truncateName(name, 100)
 	}
 	fmt.Fprintf(os.Stderr, "%s [%s] %s: %s\n", yellow(oid), blue(name), tr.W("size"), red(strengthen.FormatSize(size)))
 }

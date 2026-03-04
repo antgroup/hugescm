@@ -110,13 +110,13 @@ func AskPassword(password *string, format string, a ...any) error {
 		for {
 			r, _, err := reader.ReadRune()
 			if err != nil {
-				term.Restore(fd, oldState)
+				_ = term.Restore(fd, oldState)
 				return fmt.Errorf("read error: %w", err)
 			}
 
 			switch r {
 			case '\r', '\n':
-				term.Restore(fd, oldState)
+				_ = term.Restore(fd, oldState)
 				fmt.Println()
 
 				input := string(passwordRunes)
@@ -135,7 +135,7 @@ func AskPassword(password *string, format string, a ...any) error {
 				}
 
 			case 3: // Ctrl+C
-				term.Restore(fd, oldState)
+				_ = term.Restore(fd, oldState)
 				fmt.Println()
 				return errors.New("input cancelled")
 

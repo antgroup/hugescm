@@ -11,12 +11,11 @@ import (
 )
 
 const (
-	NoZetaDir               = ""
-	FragmentThreshold int64 = 1 * strengthen.GiByte //1G
-	FragmentSize      int64 = 1 * strengthen.GiByte //1G
+	FragmentThreshold int64 = 1 * strengthen.GiByte // 1G
+	FragmentSize      int64 = 1 * strengthen.GiByte // 1G
 )
 
-// ErrNotExist commit not exist error
+// ErrBadConfigKey indicates an invalid configuration key was provided.
 type ErrBadConfigKey struct {
 	key string
 }
@@ -46,11 +45,11 @@ func (u *User) Empty() bool {
 	return u == nil || len(u.Email) == 0 || len(u.Name) == 0
 }
 
-func overwrite(a, b string) string {
-	if len(b) != 0 {
-		return b
+func overwrite(current, override string) string {
+	if override != "" {
+		return override
 	}
-	return a
+	return current
 }
 
 func (u *User) Overwrite(o *User) {
@@ -96,7 +95,7 @@ func (c *Core) Overwrite(o *Core) {
 
 // IsExtreme: Extreme cleanup strategy to delete large object snapshots in the repository. Typically used in AI scenarios, it is no longer necessary to save blobs when downloading models.
 func (c *Core) IsExtreme() bool {
-	return c.OptimizeStrategy == STRATEGY_EXTREME
+	return c.OptimizeStrategy == StrategyExtreme
 }
 
 type Fragment struct {
@@ -105,26 +104,26 @@ type Fragment struct {
 }
 
 func (f *Fragment) Overwrite(o *Fragment) {
-	if o.ThresholdRaw.Size > 0 {
-		f.ThresholdRaw.Size = o.ThresholdRaw.Size
+	if o.ThresholdRaw > 0 {
+		f.ThresholdRaw = o.ThresholdRaw
 	}
-	if o.SizeRaw.Size > 0 {
-		f.SizeRaw.Size = o.SizeRaw.Size
+	if o.SizeRaw > 0 {
+		f.SizeRaw = o.SizeRaw
 	}
 }
 
 func (f Fragment) Threshold() int64 {
-	if f.ThresholdRaw.Size < strengthen.MiByte {
+	if f.ThresholdRaw < strengthen.MiByte {
 		return FragmentThreshold
 	}
-	return f.ThresholdRaw.Size
+	return int64(f.ThresholdRaw)
 }
 
 func (f Fragment) Size() int64 {
-	if f.SizeRaw.Size < strengthen.MiByte {
+	if f.SizeRaw < strengthen.MiByte {
 		return FragmentSize
 	}
-	return f.SizeRaw.Size
+	return int64(f.SizeRaw)
 }
 
 type HTTP struct {
@@ -152,7 +151,7 @@ func (u *SSH) Overwrite(o *SSH) {
 type Transport struct {
 	MaxEntries    int    `toml:"maxEntries,omitempty"`
 	LargeSizeRaw  Size   `toml:"largeSize,omitempty"`
-	ExternalProxy string `toml:"externalProxy,omitempty"` // externalProxy
+	ExternalProxy string `toml:"externalProxy,omitempty"`
 }
 
 const (
@@ -161,15 +160,15 @@ const (
 )
 
 func (t Transport) LargeSize() int64 {
-	if t.LargeSizeRaw.Size < minLargeSize {
+	if t.LargeSizeRaw < minLargeSize {
 		return largeSize
 	}
-	return t.LargeSizeRaw.Size
+	return int64(t.LargeSizeRaw)
 }
 
 func (t *Transport) Overwrite(o *Transport) {
-	if o.LargeSizeRaw.Size >= minLargeSize {
-		t.LargeSizeRaw.Size = o.LargeSizeRaw.Size
+	if o.LargeSizeRaw >= minLargeSize {
+		t.LargeSizeRaw = o.LargeSizeRaw
 	}
 	if o.MaxEntries > 0 {
 		t.MaxEntries = o.MaxEntries
@@ -205,13 +204,13 @@ type Config struct {
 }
 
 // Overwrite: use local config overwrite config
-func (c *Config) Overwrite(co *Config) {
-	c.Core.Overwrite(&co.Core)
-	c.User.Overwrite(&co.User)
-	c.Fragment.Overwrite(&co.Fragment)
-	c.HTTP.Overwrite(&co.HTTP)
-	c.SSH.Overwrite(&co.SSH)
-	c.Transport.Overwrite(&co.Transport)
-	c.Diff.Overwrite(&co.Diff)
-	c.Merge.Overwrite(&co.Merge)
+func (c *Config) Overwrite(other *Config) {
+	c.Core.Overwrite(&other.Core)
+	c.User.Overwrite(&other.User)
+	c.Fragment.Overwrite(&other.Fragment)
+	c.HTTP.Overwrite(&other.HTTP)
+	c.SSH.Overwrite(&other.SSH)
+	c.Transport.Overwrite(&other.Transport)
+	c.Diff.Overwrite(&other.Diff)
+	c.Merge.Overwrite(&other.Merge)
 }

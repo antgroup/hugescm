@@ -63,6 +63,8 @@ func LoadGlobal() (*Config, error) {
 	return &cfg, nil
 }
 
+// LoadBaseline loads config with priority: Global > System.
+// System config provides defaults, Global config overrides them.
 func LoadBaseline() (*Config, error) {
 	gc, err := LoadGlobal()
 	if err != nil {
@@ -75,6 +77,7 @@ func LoadBaseline() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Global config (gc) overrides System config (cfg)
 	cfg.Overwrite(gc)
 	return cfg, nil
 }

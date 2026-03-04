@@ -121,16 +121,15 @@ func (a *StringArray) UnmarshalTOML(data any) error {
 	return nil
 }
 
-type Size struct {
-	Size int64
-}
+type Size int64
 
-func (s *Size) UnmarshalText(text []byte) (err error) {
+func (s *Size) UnmarshalText(text []byte) error {
 	if bytes.HasSuffix(text, []byte("b")) || bytes.HasSuffix(text, []byte("B")) {
 		text = text[0 : len(text)-1]
 	}
-	s.Size, err = strengthen.ParseSize(string(text))
-	return
+	size, err := strengthen.ParseSize(string(text))
+	*s = Size(size)
+	return err
 }
 
 type Accelerator string
@@ -144,10 +143,10 @@ const (
 type Strategy string // Prune strategy
 
 const (
-	STRATEGY_UNSPECIFIED Strategy = "unspecified"
-	STRATEGY_HEURISTICAL Strategy = "heuristical"
-	STRATEGY_EAGER       Strategy = "eager"
-	STRATEGY_EXTREME     Strategy = "extreme"
+	StrategyUnspecified Strategy = "unspecified"
+	StrategyHeuristical Strategy = "heuristical"
+	StrategyEager       Strategy = "eager"
+	StrategyExtreme     Strategy = "extreme"
 )
 
 type Section map[string]any
@@ -253,6 +252,9 @@ func (ss Sections) deleteKey(key string) (bool, error) {
 	return deleted, nil
 }
 
+// valuesToStringArray converts a value to []string.
+// It handles nested []any for the valuesAppend scenario where multiple values
+// are appended to the same config key through repeated command-line options.
 func valuesToStringArray(o any) []string {
 	switch v := o.(type) {
 	case string:
@@ -269,6 +271,9 @@ func valuesToStringArray(o any) []string {
 	return nil
 }
 
+// valuesToInt64Array converts a value to []int64.
+// It handles nested []any for the valuesAppend scenario where multiple values
+// are appended to the same config key through repeated command-line options.
 func valuesToInt64Array(o any) []int64 {
 	switch v := o.(type) {
 	case int:
@@ -293,6 +298,9 @@ func valuesToInt64Array(o any) []int64 {
 	return nil
 }
 
+// valuesToBoolArray converts a value to []bool.
+// Note: TOML arrays are homogeneous, so this does not handle nested []any
+// since boolean arrays cannot contain mixed types in valid TOML.
 func valuesToBoolArray(o any) []bool {
 	switch v := o.(type) {
 	case string:
@@ -317,6 +325,9 @@ func valuesToBoolArray(o any) []bool {
 	return nil
 }
 
+// valuesToFloatArray converts a value to []float64.
+// It handles nested []any for the valuesAppend scenario where multiple values
+// are appended to the same config key through repeated command-line options.
 func valuesToFloatArray(o any) []float64 {
 	switch v := o.(type) {
 	case float32:
@@ -341,6 +352,8 @@ func valuesToFloatArray(o any) []float64 {
 	return nil
 }
 
+// valuesAppend appends a value to an existing config value, converting both to slices.
+// This enables "zeta config core.sparse dir1" followed by "zeta config --append core.sparse dir2".
 func valuesAppend(raw any, val any) any {
 	switch nv := val.(type) {
 	case string:

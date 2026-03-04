@@ -22,31 +22,46 @@ type DisplayOptions struct {
 }
 
 const (
-	NUL = '\x00'
+	NUL             = '\x00'
+	maxDisplayDepth = 20
 )
 
+// formatKey converts a reflect.Value key to string.
+// For string keys, it returns the value directly to avoid fmt.Sprintf overhead.
+func formatKey(key reflect.Value) string {
+	if key.Kind() == reflect.String {
+		return key.String()
+	}
+	return fmt.Sprintf("%v", key.Interface())
+}
+
 func (opts *DisplayOptions) Show(a any, keys ...string) error {
+	if len(keys) > maxDisplayDepth {
+		return nil
+	}
 	prefixKey := strings.Join(keys, ".")
 	v := reflect.ValueOf(a)
 	switch v.Kind() {
-	case reflect.Array:
+	case reflect.Array, reflect.Slice:
 		for i := range v.Len() {
 			if err := opts.Show(v.Index(i).Interface(), keys...); err != nil {
 				return err
 			}
 		}
 		return nil
-	case reflect.Slice:
-		for i := range v.Len() {
-			if err := opts.Show(v.Index(i).Interface(), keys...); err != nil {
+	case reflect.Map:
+		for _, key := range v.MapKeys() {
+			mv := v.MapIndex(key)
+			newKeys := append(keys, formatKey(key))
+			if err := opts.Show(mv.Interface(), newKeys...); err != nil {
 				return err
 			}
 		}
 		return nil
 	case reflect.Struct:
-		// don't support
+		// structs are not supported for direct output
+		return nil
 	default:
-		// nothing
 	}
 	if opts.Z {
 		_, _ = fmt.Fprintf(opts.Writer, "%s\n%v%c", prefixKey, v, NUL)

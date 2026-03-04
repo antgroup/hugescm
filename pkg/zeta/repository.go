@@ -595,7 +595,7 @@ func (r *Repository) Accelerator() config.Accelerator {
 
 func (r *Repository) IsExtreme() bool {
 	if s, ok := r.getFromValueOrEnv("core.optimizeStrategy", ENV_ZETA_CORE_OPTIMIZE_STRATEGY); ok {
-		return config.Strategy(s) == config.STRATEGY_EXTREME
+		return config.Strategy(s) == config.StrategyExtreme
 	}
 	return r.Core.IsExtreme()
 }

@@ -15,31 +15,31 @@ import (
 )
 
 func atomicEncode(zf string, a any) error {
-	name, err := func() (string, error) {
-		now := time.Now()
-		zfd := filepath.Dir(zf)
-		_ = os.MkdirAll(zfd, 0755)
-		cachePath := fmt.Sprintf("%s/.zeta-%d.toml", zfd, now.UnixNano())
-		fd, err := os.Create(cachePath)
-		if err != nil {
-			return "", err
-		}
-		defer fd.Close() // nolint
-		enc := toml.NewEncoder(fd)
-		enc.Indent = ""
-		if err := enc.Encode(a); err != nil {
-			return cachePath, err
-		}
-		return cachePath, nil
-	}()
+	zfd := filepath.Dir(zf)
+	_ = os.MkdirAll(zfd, 0755)
+
+	cachePath := fmt.Sprintf("%s/.zeta-%d.toml", zfd, time.Now().UnixNano())
+	fd, err := os.Create(cachePath)
 	if err != nil {
-		if len(name) != 0 {
-			_ = os.Remove(name)
-		}
 		return err
 	}
-	if err := os.Rename(name, zf); err != nil {
-		_ = os.Remove(name)
+
+	enc := toml.NewEncoder(fd)
+	enc.Indent = ""
+	if err := enc.Encode(a); err != nil {
+		fd.Close()
+		_ = os.Remove(cachePath)
+		return err
+	}
+
+	// Close the file before rename to ensure data is flushed to disk
+	if err := fd.Close(); err != nil {
+		_ = os.Remove(cachePath)
+		return err
+	}
+
+	if err := os.Rename(cachePath, zf); err != nil {
+		_ = os.Remove(cachePath)
 		return err
 	}
 	return nil

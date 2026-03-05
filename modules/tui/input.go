@@ -65,6 +65,11 @@ func askTitle(format string, a ...any) string {
 	return "? " + fmt.Sprintf(format, a...)
 }
 
+// AskInput prompts for a text input using huh library.
+// It provides a user-friendly input interface with validation.
+//
+// Note: Output goes to stderr to avoid interfering with stdout piping.
+// This also allows colors to work correctly when stdout is piped but stderr is a TTY.
 func AskInput(value *string, format string, a ...any) error {
 	i := huh.NewInput().Title(askTitle(format, a...)).Inline(true).Value(value).
 		Validate(func(s string) error {
@@ -74,18 +79,25 @@ func AskInput(value *string, format string, a ...any) error {
 			return nil
 		})
 	i.WithTheme(baseTheme())
-	return i.RunAccessible(os.Stdout, os.Stdin)
+	return i.RunAccessible(os.Stderr, os.Stdin)
 }
 
 // AskPassword prompts for a password input with asterisk masking.
-// It uses the huh theme for styling and displays asterisks (*) for each character entered.
-// Unlike RunAccessible, this implementation shows visual feedback while still preserving
-// the terminal output (no screen refresh on Enter).
+// It uses lipgloss for styling and displays asterisks (*) for each character entered.
+// This implementation shows visual feedback while preserving the terminal output.
 // It properly handles non-ANSI characters (UTF-8, Chinese, Emoji) by using rune-level processing.
 // Cross-platform support: Windows, Linux, macOS (via golang.org/x/term).
+//
+// Note: Output goes to stderr to avoid interfering with stdout piping.
+// This also allows colors to work correctly when stdout is piped but stderr is a TTY.
 func AskPassword(password *string, format string, a ...any) error {
-	theme := baseTheme()
-	styles := theme.Focused
+	// Use stderr-based renderer to ensure colors work when stdout is piped
+	renderer := lipgloss.NewRenderer(os.Stderr)
+	blue := lipgloss.AdaptiveColor{Light: "#ace0f9", Dark: "#ace0f9"}
+	red := lipgloss.AdaptiveColor{Light: "#FF4672", Dark: "#ED567A"}
+
+	titleStyle := renderer.NewStyle().Foreground(blue).Bold(true).PaddingRight(1)
+	errorStyle := renderer.NewStyle().Foreground(red)
 
 	validator := func(input string) error {
 		if input == "" {
@@ -95,8 +107,8 @@ func AskPassword(password *string, format string, a ...any) error {
 	}
 
 	for {
-		title := styles.Title.PaddingRight(1).Render(askTitle(format, a...))
-		fmt.Print(title)
+		title := titleStyle.Render(askTitle(format, a...))
+		fmt.Fprint(os.Stderr, title)
 
 		fd := int(os.Stdin.Fd())
 		oldState, err := term.MakeRaw(fd)
@@ -117,11 +129,11 @@ func AskPassword(password *string, format string, a ...any) error {
 			switch r {
 			case '\r', '\n':
 				_ = term.Restore(fd, oldState)
-				fmt.Println()
+				fmt.Fprintln(os.Stderr)
 
 				input := string(passwordRunes)
 				if err := validator(input); err != nil {
-					fmt.Println(styles.ErrorMessage.Render(err.Error()))
+					fmt.Fprintln(os.Stderr, errorStyle.Render(err.Error()))
 					break
 				}
 
@@ -131,12 +143,12 @@ func AskPassword(password *string, format string, a ...any) error {
 			case 127, 8: // Backspace/Delete (DEL=127 Unix, Backspace=8 Windows)
 				if len(passwordRunes) > 0 {
 					passwordRunes = passwordRunes[:len(passwordRunes)-1]
-					fmt.Print("\b \b")
+					fmt.Fprint(os.Stderr, "\b \b")
 				}
 
 			case 3: // Ctrl+C
 				_ = term.Restore(fd, oldState)
-				fmt.Println()
+				fmt.Fprintln(os.Stderr)
 				return errors.New("input cancelled")
 
 			default:
@@ -146,7 +158,7 @@ func AskPassword(password *string, format string, a ...any) error {
 				}
 				if !unicode.IsControl(r) {
 					passwordRunes = append(passwordRunes, r)
-					fmt.Print("*")
+					fmt.Fprint(os.Stderr, "*")
 				}
 			}
 		}

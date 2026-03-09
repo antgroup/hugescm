@@ -7,9 +7,12 @@ import (
 )
 
 const (
+	// ENV_GIT_QUARANTINE_PATH is the environment variable used by Git for incoming objects
 	ENV_GIT_QUARANTINE_PATH = "GIT_QUARANTINE_PATH"
 )
 
+// ReadDir reads directory entries from the specified path
+// Returns a slice of directory entries or an error
 func ReadDir(name string) ([]os.DirEntry, error) {
 	f, err := os.Open(name)
 	if err != nil {
@@ -21,9 +24,21 @@ func ReadDir(name string) ([]os.DirEntry, error) {
 	return dirs, err
 }
 
-func (f *Filter) duObject(p, name string, hugeReject, deltaSUM bool) error {
+// duObject analyzes loose Git objects in a single hash prefix directory (e.g., objects/ab/)
+// Parameters:
+//   - p: path to the hash prefix directory
+//   - name: hash prefix (2 characters) for constructing object IDs
+//   - hugeReject: whether to reject files exceeding size limit
+//   - deltaSUM: whether to accumulate sizes for quarantine mode
+//
+// Note: This function silently skips directories that cannot be read because:
+// 1. Git objects directory may not contain all 256 hash prefix directories
+// 2. Some prefix directories may not exist or be temporarily inaccessible
+// 3. Partial statistics are preferable to complete failure in this context
+func (a *Auditor) duObject(p, name string, hugeReject, deltaSUM bool) error {
 	ds, err := ReadDir(p)
 	if err != nil {
+		// Silently skip directories that cannot be read - this is intentional design
 		return nil
 	}
 	for _, d := range ds {
@@ -34,17 +49,17 @@ func (f *Filter) duObject(p, name string, hugeReject, deltaSUM bool) error {
 		if err != nil {
 			continue
 		}
-		f.counts++
+		a.counts++
 		size := fi.Size()
-		f.size += size
+		a.size += size
 		if deltaSUM {
-			f.delta += size
+			a.delta += size
 		}
 		if size > hugeSizeLimit {
-			f.hugeSum += size
+			a.hugeSum += size
 		}
-		if hugeReject && size > f.Limit {
-			if err := f.reject(name+d.Name(), size); err != nil {
+		if hugeReject && size > a.Limit {
+			if err := a.onOversized(name+d.Name(), size); err != nil {
 				return err
 			}
 		}
@@ -52,7 +67,7 @@ func (f *Filter) duObject(p, name string, hugeReject, deltaSUM bool) error {
 	return nil
 }
 
-func (f *Filter) duPacks(packdir string, hugeReject, deltaSUM bool) error {
+func (a *Auditor) duPacks(packdir string, hugeReject, deltaSUM bool) error {
 	ds, err := ReadDir(packdir)
 	if err != nil {
 		return err
@@ -66,13 +81,13 @@ func (f *Filter) duPacks(packdir string, hugeReject, deltaSUM bool) error {
 			return err
 		}
 		size := fi.Size()
-		f.size += size
+		a.size += size
 		if deltaSUM {
-			f.delta += size
+			a.delta += size
 		}
 		dirName := fi.Name()
 		if strings.HasPrefix(dirName, "tmp_") {
-			f.tmpPacks++
+			a.tmpPacks++
 		}
 		if filepath.Ext(dirName) != ".pack" {
 			continue
@@ -81,10 +96,10 @@ func (f *Filter) duPacks(packdir string, hugeReject, deltaSUM bool) error {
 			continue
 		}
 		// quarantine environment mode optimization： skip small pack
-		if f.QuarantineMode && size < f.Limit {
+		if a.QuarantineMode && size < a.Limit {
 			continue
 		}
-		f.packs = append(f.packs, pack{path: filepath.Join(packdir, fi.Name()), size: size})
+		a.packs = append(a.packs, pack{path: filepath.Join(packdir, fi.Name()), size: size})
 	}
 	return nil
 }
@@ -99,7 +114,14 @@ func (f *Filter) duPacks(packdir string, hugeReject, deltaSUM bool) error {
 //              |- pack-$hash.bitmap
 //        |-info
 
-func (f *Filter) duInternal(objectsDir string, hugeReject, deltaSUM bool) error {
+// duInternal analyzes the Git objects directory structure
+// Parameters:
+//   - objectsDir: path to the objects directory (main or quarantine)
+//   - hugeReject: whether to analyze for large objects
+//   - deltaSUM: whether to accumulate sizes (for quarantine mode)
+//
+// This function traverses both loose object directories (00-ff) and pack files
+func (a *Auditor) duInternal(objectsDir string, hugeReject, deltaSUM bool) error {
 	ds, err := ReadDir(objectsDir)
 	if err != nil {
 		return err
@@ -111,13 +133,13 @@ func (f *Filter) duInternal(objectsDir string, hugeReject, deltaSUM bool) error 
 		name := d.Name()
 		if len(name) == 2 {
 			p := filepath.Join(objectsDir, name)
-			if err := f.duObject(p, name, hugeReject, deltaSUM); err != nil {
+			if err := a.duObject(p, name, hugeReject, deltaSUM); err != nil {
 				return err
 			}
 			continue
 		}
 		if name == "pack" {
-			if err := f.duPacks(filepath.Join(objectsDir, "pack"), hugeReject, deltaSUM); err != nil {
+			if err := a.duPacks(filepath.Join(objectsDir, "pack"), hugeReject, deltaSUM); err != nil {
 				return err
 			}
 		}
@@ -125,18 +147,20 @@ func (f *Filter) duInternal(objectsDir string, hugeReject, deltaSUM bool) error 
 	return nil
 }
 
-func (f *Filter) Du() error {
-	if err := f.duInternal(filepath.Join(f.repoPath, "objects"), !f.QuarantineMode, false); err != nil {
+// Du performs disk usage analysis of the Git repository
+// In quarantine mode, also analyzes incoming objects in GIT_QUARANTINE_PATH
+func (a *Auditor) Du() error {
+	if err := a.duInternal(filepath.Join(a.repoPath, "objects"), !a.QuarantineMode, false); err != nil {
 		return err
 	}
-	if !f.QuarantineMode {
+	if !a.QuarantineMode {
 		return nil
 	}
 	incomingPath := os.Getenv(ENV_GIT_QUARANTINE_PATH)
 	if len(incomingPath) == 0 {
 		return nil
 	}
-	if err := f.duInternal(incomingPath, true, true); err != nil {
+	if err := a.duInternal(incomingPath, true, true); err != nil {
 		return err
 	}
 	return nil

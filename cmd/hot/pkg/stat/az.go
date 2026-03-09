@@ -27,22 +27,18 @@ func showHugeObjects(ctx context.Context, repoPath string, objects map[string]in
 
 func Az(ctx context.Context, repoPath string, limit int64, fullPath bool) error {
 	objects := make(map[string]int64)
-	filter, err := deflect.NewFilter(repoPath, git.HashFormatOK(repoPath), &deflect.FilterOption{
+	au := deflect.NewAuditor(repoPath, git.HashFormatOK(repoPath), &deflect.Option{
 		Limit: limit,
-		Rejector: func(oid string, size int64) error {
+		OnOversized: func(oid string, size int64) error {
 			objects[oid] = size
 			return nil
 		},
 	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "hot az: new filter: %v\n", err)
-		return err
-	}
-	if err := filter.Execute(nil); err != nil {
+	if err := au.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "hot az: check large file: %v\n", err)
 		return err
 	}
 	_ = showHugeObjects(ctx, repoPath, objects, fullPath)
-	fmt.Fprintf(os.Stderr, "%s%s\n", tr.W("Size: "), blue(strengthen.FormatSize(filter.Size())))
+	fmt.Fprintf(os.Stderr, "%s%s\n", tr.W("Size: "), blue(strengthen.FormatSize(au.Size())))
 	return nil
 }

@@ -211,22 +211,18 @@ func Stat(ctx context.Context, o *StatOptions) error {
 		_, _ = tr.Fprintf(os.Stdout, "downloaded lfs size:    %s\n", colorSizeU(si.LFS.Size))
 	}
 	objects := make(map[string]int64)
-	filter, err := deflect.NewFilter(o.RepoPath, shaFormat, &deflect.FilterOption{
+	au := deflect.NewAuditor(o.RepoPath, shaFormat, &deflect.Option{
 		Limit: o.Limit,
-		Rejector: func(oid string, size int64) error {
+		OnOversized: func(oid string, size int64) error {
 			objects[oid] = size
 			return nil
 		},
 	})
-	if err := filter.Execute(nil); err != nil {
+	if err := au.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "hot stat: check large file: %v\n", err)
 		return err
 	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "hot stat: new filter: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(os.Stderr, "%s%s\n", tr.W("repository disk size:   "), colorSize(filter.Size()))
+	fmt.Fprintf(os.Stderr, "%s%s\n", tr.W("repository disk size:   "), colorSize(au.Size()))
 	if !careful {
 		_ = showHugeObjects(ctx, o.RepoPath, objects, false)
 	}

@@ -8,61 +8,48 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 	"golang.org/x/term"
 )
 
-func baseTheme() *huh.Theme {
-	t := huh.ThemeBase()
-
-	var (
-		normalFg = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
-		blue     = lipgloss.AdaptiveColor{Light: "#ace0f9", Dark: "#ace0f9"}
-		cream    = lipgloss.AdaptiveColor{Light: "#FFFDF5", Dark: "#FFFDF5"}
-		fuchsia  = lipgloss.Color("#F780E2")
-		green    = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
-		red      = lipgloss.AdaptiveColor{Light: "#FF4672", Dark: "#ED567A"}
-	)
-
-	t.Focused.Base = t.Focused.Base.BorderForeground(lipgloss.Color("238"))
-	t.Focused.Card = t.Focused.Base
-	t.Focused.Title = t.Focused.Title.Foreground(blue).Bold(true)
-	t.Focused.NoteTitle = t.Focused.NoteTitle.Foreground(blue).Bold(true).MarginBottom(1)
-	t.Focused.Directory = t.Focused.Directory.Foreground(blue)
-	t.Focused.Description = t.Focused.Description.Foreground(lipgloss.AdaptiveColor{Light: "", Dark: "243"})
-	t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(red)
-	t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(red)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(fuchsia)
-	t.Focused.NextIndicator = t.Focused.NextIndicator.Foreground(fuchsia)
-	t.Focused.PrevIndicator = t.Focused.PrevIndicator.Foreground(fuchsia)
-	t.Focused.Option = t.Focused.Option.Foreground(normalFg)
-	t.Focused.MultiSelectSelector = t.Focused.MultiSelectSelector.Foreground(fuchsia)
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(green)
-	t.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#02CF92", Dark: "#02A877"}).SetString("✓ ")
-	t.Focused.UnselectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "", Dark: "243"}).SetString("• ")
-	t.Focused.UnselectedOption = t.Focused.UnselectedOption.Foreground(normalFg)
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(cream).Background(fuchsia)
-	t.Focused.Next = t.Focused.FocusedButton
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(normalFg).Background(lipgloss.AdaptiveColor{Light: "252", Dark: "237"})
-
-	t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(green)
-	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(lipgloss.AdaptiveColor{Light: "248", Dark: "238"})
-	t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(fuchsia)
-
-	t.Blurred = t.Focused
-	t.Blurred.Base = t.Focused.Base.BorderStyle(lipgloss.HiddenBorder())
-	t.Blurred.Card = t.Blurred.Base
-	t.Blurred.NextIndicator = lipgloss.NewStyle()
-	t.Blurred.PrevIndicator = lipgloss.NewStyle()
-
-	t.Group.Title = t.Focused.Title
-	t.Group.Description = t.Focused.Description
-	return t
-}
-
+// askTitle formats a title with a prefix.
 func askTitle(format string, a ...any) string {
 	return "? " + fmt.Sprintf(format, a...)
+}
+
+// baseTheme returns a custom theme for huh input fields.
+func baseTheme() huh.Theme {
+	return huh.ThemeFunc(func(isDark bool) *huh.Styles {
+		t := huh.ThemeBase(isDark)
+
+		var (
+			blue     = compat.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
+			red      = compat.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
+			normalFg = compat.AdaptiveColor{Light: lipgloss.Color("235"), Dark: lipgloss.Color("252")}
+			fuchsia  = lipgloss.Color("#F780E2")
+			green    = compat.AdaptiveColor{Light: lipgloss.Color("#02BA84"), Dark: lipgloss.Color("#02BF87")}
+		)
+
+		// Title styling
+		t.Focused.Title = t.Focused.Title.Foreground(blue).Bold(true)
+		t.Focused.Description = t.Focused.Description.Foreground(compat.AdaptiveColor{Light: lipgloss.Color(""), Dark: lipgloss.Color("243")})
+		t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(red)
+		t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(red)
+
+		// Text input styling
+		t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(green)
+		t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(compat.AdaptiveColor{Light: lipgloss.Color("248"), Dark: lipgloss.Color("238")})
+		t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(fuchsia)
+		t.Focused.TextInput.Text = t.Focused.TextInput.Text.Foreground(normalFg)
+
+		// Copy to blurred state
+		t.Blurred = t.Focused
+		t.Blurred.TextInput.Cursor = lipgloss.NewStyle()
+
+		return t
+	})
 }
 
 // AskInput prompts for a text input using huh library.
@@ -77,8 +64,7 @@ func AskInput(value *string, format string, a ...any) error {
 				return fmt.Errorf("input cannot be empty")
 			}
 			return nil
-		})
-	i.WithTheme(baseTheme())
+		}).WithTheme(baseTheme())
 	return i.RunAccessible(os.Stderr, os.Stdin)
 }
 
@@ -91,13 +77,13 @@ func AskInput(value *string, format string, a ...any) error {
 // Note: Output goes to stderr to avoid interfering with stdout piping.
 // This also allows colors to work correctly when stdout is piped but stderr is a TTY.
 func AskPassword(password *string, format string, a ...any) error {
-	// Use stderr-based renderer to ensure colors work when stdout is piped
-	renderer := lipgloss.NewRenderer(os.Stderr)
-	blue := lipgloss.AdaptiveColor{Light: "#ace0f9", Dark: "#ace0f9"}
-	red := lipgloss.AdaptiveColor{Light: "#FF4672", Dark: "#ED567A"}
+	// Color definitions
+	blue := compat.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
+	red := compat.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
 
-	titleStyle := renderer.NewStyle().Foreground(blue).Bold(true).PaddingRight(1)
-	errorStyle := renderer.NewStyle().Foreground(red)
+	// Use lipgloss styles - no renderer needed in v2
+	titleStyle := lipgloss.NewStyle().Foreground(blue).Bold(true).PaddingRight(1)
+	errorStyle := lipgloss.NewStyle().Foreground(red)
 
 	validator := func(input string) error {
 		if input == "" {

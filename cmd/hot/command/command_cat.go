@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"charm.land/lipgloss/v2"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/git"
@@ -139,10 +140,15 @@ func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
 	if width > 120 {
 		width = 120
 	}
+	// Detect background color to pick appropriate style
+	style := "dark"
+	if lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
+		style = "dark"
+	} else {
+		style = "light"
+	}
 	r, err := glamour.NewTermRenderer(
-		// detect background color and pick either the default dark or light theme
-		glamour.WithAutoStyle(),
-		// wrap output at specific width (default is 80)
+		glamour.WithStylePath(style),
 		glamour.WithWordWrap(width),
 	)
 	if err != nil {
@@ -156,7 +162,13 @@ func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
 	if err != nil {
 		return err
 	}
-	_, _ = w.Write(out)
+	// Use lipgloss.Print for automatic color downsampling when outputting to stdout
+	// Otherwise, write directly to the writer
+	if w == os.Stdout {
+		lipgloss.Print(string(out))
+	} else {
+		_, _ = w.Write(out)
+	}
 	return nil
 }
 

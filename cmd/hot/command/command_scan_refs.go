@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/paginator"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/refs"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/fnmatch"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/trace"
-	"github.com/charmbracelet/bubbles/paginator"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
@@ -23,8 +24,8 @@ func newModel(references *refs.References) model {
 	p := paginator.New()
 	p.Type = paginator.Dots
 	p.PerPage = 20
-	p.ActiveDot = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "235", Dark: "252"}).Render("•")
-	p.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "250", Dark: "238"}).Render("•")
+	p.ActiveDot = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("235"), Dark: lipgloss.Color("252")}).Render("•")
+	p.InactiveDot = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("250"), Dark: lipgloss.Color("238")}).Render("•")
 	p.SetTotalPages(len(references.Items))
 
 	return model{
@@ -45,7 +46,7 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
@@ -55,7 +56,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n  %s\x1b[38;2;32;225;215m%d\x1b[0m\n\n", tr.W("Matched references: "), len(m.references.Items))
 	start, end := m.paginator.GetSliceBounds(len(m.references.Items))
@@ -82,7 +83,7 @@ func (m model) View() string {
 	b.WriteString("\n\n")
 	b.WriteString("  " + m.paginator.View())
 	b.WriteString("\n\n  h/l ←/→ page • q: quit\n")
-	return b.String()
+	return tea.NewView(b.String())
 }
 
 type ScanRefs struct {

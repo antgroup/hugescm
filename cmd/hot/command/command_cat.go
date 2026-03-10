@@ -133,19 +133,14 @@ var termWidth = func() (width int, err error) {
 }
 
 func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
-	width, err := termWidth()
-	if err != nil {
+	width, _ := termWidth()
+	if width == 0 || width > 120 {
 		width = 80
 	}
-	if width > 120 {
-		width = 120
-	}
 	// Detect background color to pick appropriate style
-	style := "dark"
+	style := "light"
 	if lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
 		style = "dark"
-	} else {
-		style = "light"
 	}
 	r, err := glamour.NewTermRenderer(
 		glamour.WithStylePath(style),
@@ -154,22 +149,23 @@ func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
 	if err != nil {
 		return err
 	}
-	b, err := io.ReadAll(input)
-	if err != nil {
+	defer func() { _ = r.Close() }()
+	// Write input to renderer
+	if _, err = io.Copy(r, input); err != nil {
 		return err
 	}
-	out, err := r.RenderBytes(b)
-	if err != nil {
+	// Close to trigger rendering
+	if err = r.Close(); err != nil {
 		return err
 	}
-	// Use lipgloss.Print for automatic color downsampling when outputting to stdout
+	// Use lipgloss.Writer for automatic color downsampling when outputting to stdout
 	// Otherwise, write directly to the writer
+	dest := w
 	if w == os.Stdout {
-		lipgloss.Print(string(out))
-	} else {
-		_, _ = w.Write(out)
+		dest = lipgloss.Writer
 	}
-	return nil
+	_, err = io.Copy(dest, r)
+	return err
 }
 
 func (c *Cat) formatObject(o *git.Object) error {

@@ -17,6 +17,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/shlex"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/tui"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -170,8 +171,9 @@ func NewPrinter(ctx context.Context) *printer {
 	if ok && len(pager) == 0 {
 		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
+	// If pager is not set (not PAGER or ZETA_PAGER), use builtin pager
 	if len(pager) == 0 {
-		pager = "less"
+		return newBuiltinPrinter(ctx)
 	}
 	pagerArgs := make([]string, 0, 4)
 	if cmdArgs, _ := shlex.Split(pager, true); len(cmdArgs) > 0 {
@@ -180,7 +182,8 @@ func NewPrinter(ctx context.Context) *printer {
 	}
 	pagerExe, err := env.LookupPager(pager)
 	if err != nil {
-		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
+		// Fallback to builtin pager when external pager is not found
+		return newBuiltinPrinter(ctx)
 	}
 	cmd := exec.CommandContext(ctx, pagerExe, pagerArgs...)
 	cmd.Env = env.SanitizeEnv("PAGER", "LESS", "LV") // AVOID PAGER ENV
@@ -203,4 +206,16 @@ func NewPrinter(ctx context.Context) *printer {
 		}
 		return nil
 	}}
+}
+
+// newBuiltinPrinter creates a Printer using the built-in tui.Pager
+func newBuiltinPrinter(context.Context) *printer {
+	builtinPager := tui.NewPager(term.StdoutLevel)
+	return &printer{
+		w:         builtinPager,
+		colorMode: builtinPager.ColorMode(),
+		closeFn: func() error {
+			return builtinPager.Close()
+		},
+	}
 }

@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
+	"charm.land/huh/v2"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/replay"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/stat"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/trace"
-	"github.com/charmbracelet/huh"
 )
 
 type Smart struct {

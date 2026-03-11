@@ -1,24 +1,28 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
+	"charm.land/glamour/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/alecthomas/chroma/v2"
+	"github.com/alecthomas/chroma/v2/formatters"
+	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/hud"
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
-	"github.com/charmbracelet/glamour"
+	"github.com/antgroup/hugescm/modules/tui"
 )
 
 const (
@@ -123,6 +127,15 @@ func (c *Cat) isMarkdown() bool {
 	return false
 }
 
+func (c *Cat) getLexer() chroma.Lexer {
+	_, filename, ok := strings.Cut(c.Object, ":")
+	if !ok {
+		return nil
+	}
+	lexer := lexers.Match(filename)
+	return lexer
+}
+
 var termWidth = func() (width int, err error) {
 	width, _, err = term.GetSize(int(os.Stdout.Fd()))
 	if err == nil {
@@ -158,14 +171,71 @@ func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
 	if err = r.Close(); err != nil {
 		return err
 	}
-	// Use lipgloss.Writer for automatic color downsampling when outputting to stdout
-	// Otherwise, write directly to the writer
-	dest := w
-	if w == os.Stdout {
-		dest = lipgloss.Writer
+	// Write the rendered output to the destination
+	if _, err = io.Copy(w, r); err != nil {
+		return err
 	}
-	_, err = io.Copy(dest, r)
-	return err
+
+	// Ensure proper termination for pager compatibility
+	if f, ok := w.(interface{ Flush() error }); ok {
+		_ = f.Flush()
+	}
+
+	return nil
+}
+
+func (c *Cat) syntaxHighlightOut(w io.Writer, input io.Reader, termLevel term.Level, lexer chroma.Lexer) error {
+	// Read the input into a buffer
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, input); err != nil {
+		return err
+	}
+	content := buf.String()
+
+	// Coalesce the lexer
+	lexer = chroma.Coalesce(lexer)
+
+	// Detect background color to pick appropriate style
+	styleName := "github"
+	if lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
+		styleName = "dracula"
+	}
+
+	// Get the style
+	style := styles.Get(styleName)
+	if style == nil {
+		style = styles.Fallback
+	}
+
+	// Tokenize the content
+	iterator, err := lexer.Tokenise(nil, content)
+	if err != nil {
+		return err
+	}
+
+	// Choose formatter based on terminal color support level
+	var formatter chroma.Formatter
+	switch termLevel {
+	case term.Level16M:
+		formatter = formatters.TTY16m
+	case term.Level256:
+		formatter = formatters.TTY256
+	case term.LevelNone:
+		formatter = formatters.NoOp
+	default:
+		formatter = formatters.TTY
+	}
+
+	if err := formatter.Format(w, style, iterator); err != nil {
+		return err
+	}
+
+	// Ensure proper termination for pager compatibility
+	if f, ok := w.(interface{ Flush() error }); ok {
+		_ = f.Flush()
+	}
+
+	return nil
 }
 
 func (c *Cat) formatObject(o *git.Object) error {
@@ -182,26 +252,55 @@ func (c *Cat) formatObject(o *git.Object) error {
 	if c.Limit < 0 {
 		c.Limit = o.Size
 	}
-	if len(c.Output) == 0 && term.StdoutLevel != term.LevelNone && charset == diferenco.BINARY {
-		p := NewPrinter(context.Background())
-		defer p.Close() // nolint
+
+	// Check if we should use pager (small files, no output file, color support)
+	usePager := len(c.Output) == 0 && term.StdoutLevel != term.LevelNone && o.Size <= MAX_SHOW_BINARY_BLOB
+
+	// Binary content: always use hexview, with or without pager
+	if charset == diferenco.BINARY {
 		if c.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			c.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))
 		}
-		if err := hexview.Format(reader, p, c.Limit, p.ColorMode()); err != nil && !errors.Is(err, syscall.EPIPE) {
+
+		if usePager {
+			p := tui.NewPager(term.StdoutLevel)
+			defer p.Close() // nolint
+			return hexview.Format(reader, p, c.Limit, p.ColorMode())
+		}
+
+		fd, _, err := c.NewFD()
+		if err != nil {
 			return err
 		}
-		return nil
+		defer fd.Close() // nolint
+		return hexview.Format(reader, fd, c.Limit, term.StdoutLevel)
 	}
-	fd, termLevel, err := c.NewFD()
+
+	// Markdown and source code: only with pager
+	if usePager {
+		// Markdown handling
+		if c.isMarkdown() {
+			p := tui.NewPager(term.StdoutLevel)
+			defer p.Close() // nolint
+			return c.markdownOut(p, io.LimitReader(reader, c.Limit))
+		}
+
+		// Source code handling
+		if lexer := c.getLexer(); lexer != nil {
+			p := tui.NewPager(term.StdoutLevel)
+			defer p.Close() // nolint
+			return c.syntaxHighlightOut(p, io.LimitReader(reader, c.Limit), p.ColorMode(), lexer)
+		}
+	}
+
+	// Default: output directly (large files or output to file)
+	fd, _, err := c.NewFD()
 	if err != nil {
 		return err
 	}
 	defer fd.Close() // nolint
-	if termLevel != term.LevelNone && charset != diferenco.BINARY && c.isMarkdown() {
-		return c.markdownOut(fd, io.LimitReader(reader, c.Limit))
-	}
+
 	if _, err = io.Copy(fd, io.LimitReader(reader, c.Limit)); err != nil {
 		return err
 	}

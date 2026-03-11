@@ -7,8 +7,6 @@ import (
 	"encoding/binary"
 	"hash"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -21,15 +19,21 @@ func TestIndexV1SearchExact(t *testing.T) {
 		v := &V1{hash: algo}
 		e, err := v.Entry(index, 1)
 
-		assert.NoError(t, err)
-		assert.EqualValues(t, 2, e.PackOffset)
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if e.PackOffset != 2 {
+			t.Errorf("Expected %v, got %v", 2, e.PackOffset)
+		}
 	}
 }
 
 func TestIndexVersionWidthV1(t *testing.T) {
 	for _, algo := range []hash.Hash{sha1.New(), sha256.New()} {
 		v := &V1{hash: algo}
-		assert.EqualValues(t, 0, v.Width())
+		if v.Width() != 0 {
+			t.Errorf("Expected %v, got %v", 0, v.Width())
+		}
 	}
 }
 

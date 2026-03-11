@@ -3,8 +3,6 @@ package pack
 import (
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type PackedObjectStringTestCase struct {
@@ -23,11 +21,15 @@ func (c *PackedObjectStringTestCase) Assert(t *testing.T) {
 				t.Fatalf("git/object/pack:: expected panic()")
 			}
 
-			assert.Equal(t, c.Expected, fmt.Sprintf("%s", err))
+			if c.Expected != fmt.Sprintf("%s", err) {
+				t.Errorf("Expected %v, got %v", c.Expected, fmt.Sprintf("%s", err))
+			}
 		}()
 	}
 
-	assert.Equal(t, c.Expected, c.T.String())
+	if c.Expected != c.T.String() {
+		t.Errorf("Expected %v, got %v", c.Expected, c.T.String())
+	}
 }
 
 func TestPackedObjectTypeString(t *testing.T) {

@@ -5,8 +5,6 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDecodePackfileDecodesIntegerVersion(t *testing.T) {
@@ -16,8 +14,12 @@ func TestDecodePackfileDecodesIntegerVersion(t *testing.T) {
 		0x0, 0x0, 0x0, 0x0, // Number of packed objects.
 	}), sha1.New())
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 2, p.Version)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if p.Version != 2 {
+		t.Errorf("Expected %v, got %v", 2, p.Version)
+	}
 }
 
 func TestDecodePackfileDecodesIntegerCount(t *testing.T) {
@@ -27,8 +29,12 @@ func TestDecodePackfileDecodesIntegerCount(t *testing.T) {
 		0x0, 0x0, 0x1, 0x2, // Number of packed objects.
 	}), sha256.New())
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 258, p.Objects)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if p.Objects != 258 {
+		t.Errorf("Expected %v, got %v", 258, p.Objects)
+	}
 }
 
 func TestDecodePackfileReportsBadHeaders(t *testing.T) {
@@ -38,6 +44,10 @@ func TestDecodePackfileReportsBadHeaders(t *testing.T) {
 		0x0, 0x0, 0x0, 0x0, // Number of packed objects.
 	}), sha1.New())
 
-	assert.Equal(t, errBadPackHeader, err)
-	assert.Nil(t, p)
+	if errBadPackHeader != err {
+		t.Errorf("Expected %v, got %v", errBadPackHeader, err)
+	}
+	if p != nil {
+		t.Errorf("Expected nil, got %v", p)
+	}
 }

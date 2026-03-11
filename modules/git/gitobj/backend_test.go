@@ -6,49 +6,67 @@ import (
 	"io"
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewMemoryBackend(t *testing.T) {
 	backend, err := NewMemoryBackend(nil)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	ro, rw := backend.Storage()
-	assert.Equal(t, ro, rw)
-	assert.NotNil(t, ro.(*memoryStorer))
+	if ro != rw {
+		t.Errorf("Expected %v, got %v", ro, rw)
+	}
+	if ro.(*memoryStorer) == nil {
+		t.Errorf("Expected non-nil")
+	}
 }
 
 func TestNewMemoryBackendWithReadOnlyData(t *testing.T) {
 	sha := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	oid, err := hex.DecodeString(sha)
 
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	m := map[string]io.ReadWriter{
 		sha: bytes.NewBuffer([]byte{0x1}),
 	}
 
 	backend, err := NewMemoryBackend(m)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	ro, _ := backend.Storage()
 	reader, err := ro.Open(oid)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	contents, err := io.ReadAll(reader)
-	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x1}, contents)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte{0x1}, contents) {
+		t.Errorf("Expected %v, got %v", []byte{0x1}, contents)
+	}
 }
 
 func TestNewMemoryBackendWithWritableData(t *testing.T) {
 	sha := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	oid, err := hex.DecodeString(sha)
 
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	backend, err := NewMemoryBackend(make(map[string]io.ReadWriter))
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	buf := bytes.NewBuffer([]byte{0x1})
 
@@ -56,11 +74,17 @@ func TestNewMemoryBackendWithWritableData(t *testing.T) {
 	_, _ = rw.Store(oid, buf)
 
 	reader, err := ro.Open(oid)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	contents, err := io.ReadAll(reader)
-	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x1}, contents)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte{0x1}, contents) {
+		t.Errorf("Expected %v, got %v", []byte{0x1}, contents)
+	}
 }
 
 func TestSplitAlternatesString(t *testing.T) {

@@ -2,8 +2,6 @@ package gitobj
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestUnexpectedObjectTypeErrFormatting(t *testing.T) {
@@ -11,5 +9,8 @@ func TestUnexpectedObjectTypeErrFormatting(t *testing.T) {
 		Got: TreeObjectType, Wanted: BlobObjectType,
 	}
 
-	assert.Equal(t, "git/object: unexpected object type, got: \"tree\", wanted: \"blob\"", err.Error())
+	expected := "git/object: unexpected object type, got: \"tree\", wanted: \"blob\""
+	if expected != err.Error() {
+		t.Errorf("Expected %v, got %v", expected, err.Error())
+	}
 }

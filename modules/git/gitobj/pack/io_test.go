@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestOffsetReaderAtReadsAtOffset(t *testing.T) {
@@ -17,17 +15,29 @@ func TestOffsetReaderAtReadsAtOffset(t *testing.T) {
 	var x1 [1]byte
 	n1, e1 := bo.Read(x1[:])
 
-	assert.NoError(t, e1)
-	assert.Equal(t, 1, n1)
+	if e1 != nil {
+		t.Errorf("Expected nil, got %v", e1)
+	}
+	if n1 != 1 {
+		t.Errorf("Expected %v, got %v", 1, n1)
+	}
 
-	assert.EqualValues(t, 0x1, x1[0])
+	if x1[0] != 0x1 {
+		t.Errorf("Expected %v, got %v", 0x1, x1[0])
+	}
 
 	var x2 [1]byte
 	n2, e2 := bo.Read(x2[:])
 
-	assert.NoError(t, e2)
-	assert.Equal(t, 1, n2)
-	assert.EqualValues(t, 0x2, x2[0])
+	if e2 != nil {
+		t.Errorf("Expected nil, got %v", e2)
+	}
+	if n2 != 1 {
+		t.Errorf("Expected %v, got %v", 1, n2)
+	}
+	if x2[0] != 0x2 {
+		t.Errorf("Expected %v, got %v", 0x2, x2[0])
+	}
 }
 
 func TestOffsetReaderPropogatesErrors(t *testing.T) {
@@ -39,8 +49,12 @@ func TestOffsetReaderPropogatesErrors(t *testing.T) {
 
 	n, err := bo.Read(make([]byte, 1))
 
-	assert.Equal(t, expected, err)
-	assert.Equal(t, 0, n)
+	if expected != err {
+		t.Errorf("Expected %v, got %v", expected, err)
+	}
+	if n != 0 {
+		t.Errorf("Expected %v, got %v", 0, n)
+	}
 }
 
 type ErrReaderAt struct {

@@ -58,9 +58,9 @@ func main() {
 
 	write(fi, start)
 	write(fi, nl)
-	for i := byte(0); i < 32; i++ {
+	for i := range byte(32) {
 		write(fi, tab)
-		for j := byte(0); j < 8; j++ {
+		for j := range byte(8) {
 			idx := bytes.IndexByte(alphabet, i*8+j)
 			if idx == -1 {
 				write(fi, invalid)

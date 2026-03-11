@@ -10,13 +10,12 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCommitReturnsCorrectObjectType(t *testing.T) {
-	assert.Equal(t, CommitObjectType, new(Commit).Type())
+	if new(Commit).Type() != CommitObjectType {
+		t.Errorf("Expected CommitObjectType, got %v", new(Commit).Type())
+	}
 }
 
 func TestCommitEncoding(t *testing.T) {
@@ -42,7 +41,9 @@ func TestCommitEncoding(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	_, err := c.Encode(buf)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Encode error: %v", err)
+	}
 
 	assertLine(t, buf, "tree 6363636363636363636363636363636363636363")
 	assertLine(t, buf, "parent 6161616161616161616161616161616161616161")
@@ -56,7 +57,9 @@ func TestCommitEncoding(t *testing.T) {
 	assertLine(t, buf, "")
 	assertLine(t, buf, "initial commit")
 
-	assert.Equal(t, 0, buf.Len())
+	if buf.Len() != 0 {
+		t.Errorf("Expected buffer length 0, got %d", buf.Len())
+	}
 }
 
 func TestCommitDecoding(t *testing.T) {
@@ -81,16 +84,40 @@ func TestCommitDecoding(t *testing.T) {
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	assert.Nil(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %d, got %d", flen, n)
+	}
 
-	assert.Equal(t, author.String(), commit.Author)
-	assert.Equal(t, committer.String(), commit.Committer)
-	assert.Equal(t, [][]byte{p1, p2}, commit.ParentIDs)
-	assert.Equal(t, 1, len(commit.ExtraHeaders))
-	assert.Equal(t, "foo", commit.ExtraHeaders[0].K)
-	assert.Equal(t, "bar", commit.ExtraHeaders[0].V)
-	assert.Equal(t, "initial commit", commit.Message)
+	if author.String() != commit.Author {
+		t.Errorf("Expected author %s, got %s", author.String(), commit.Author)
+	}
+	if committer.String() != commit.Committer {
+		t.Errorf("Expected committer %s, got %s", committer.String(), commit.Committer)
+	}
+	if len(commit.ParentIDs) != 2 {
+		t.Error("Expected 2 parent IDs")
+	}
+	if !bytes.Equal(p1, commit.ParentIDs[0]) {
+		t.Error("First parent ID does not match")
+	}
+	if !bytes.Equal(p2, commit.ParentIDs[1]) {
+		t.Error("Second parent ID does not match")
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Errorf("Expected 1 extra header, got %d", len(commit.ExtraHeaders))
+	}
+	if commit.ExtraHeaders[0].K != "foo" {
+		t.Errorf("Expected key 'foo', got %s", commit.ExtraHeaders[0].K)
+	}
+	if commit.ExtraHeaders[0].V != "bar" {
+		t.Errorf("Expected value 'bar', got %s", commit.ExtraHeaders[0].V)
+	}
+	if commit.Message != "initial commit" {
+		t.Errorf("Expected 'initial commit', got %s", commit.Message)
+	}
 }
 
 func TestCommitDecodingWithEmptyName(t *testing.T) {
@@ -111,12 +138,22 @@ func TestCommitDecodingWithEmptyName(t *testing.T) {
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	assert.Nil(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Fatalf("Unexpected non-nil value")
+	}
+	if flen != n {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	assert.Equal(t, author.String(), commit.Author)
-	assert.Equal(t, committer.String(), commit.Committer)
-	assert.Equal(t, "initial commit", commit.Message)
+	if author.String() != commit.Author {
+		t.Errorf("Expected %v, got %v", author.String(), commit.Author)
+	}
+	if committer.String() != commit.Committer {
+		t.Errorf("Expected %v, got %v", committer.String(), commit.Committer)
+	}
+	if commit.Message != "initial commit" {
+		t.Errorf("Expected %v, got %v", "initial commit", commit.Message)
+	}
 }
 
 func TestCommitDecodingWithLargeCommitMessage(t *testing.T) {
@@ -142,12 +179,22 @@ func TestCommitDecodingWithLargeCommitMessage(t *testing.T) {
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	assert.Nil(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Fatalf("Unexpected non-nil value")
+	}
+	if flen != n {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	assert.Equal(t, author.String(), commit.Author)
-	assert.Equal(t, committer.String(), commit.Committer)
-	assert.Equal(t, longMessage, commit.Message)
+	if author.String() != commit.Author {
+		t.Errorf("Expected %v, got %v", author.String(), commit.Author)
+	}
+	if committer.String() != commit.Committer {
+		t.Errorf("Expected %v, got %v", committer.String(), commit.Committer)
+	}
+	if longMessage != commit.Message {
+		t.Errorf("Expected %v, got %v", longMessage, commit.Message)
+	}
 }
 
 func TestCommitDecodingWithMessageKeywordPrefix(t *testing.T) {
@@ -168,13 +215,25 @@ func TestCommitDecodingWithMessageKeywordPrefix(t *testing.T) {
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	assert.NoError(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	assert.Equal(t, author.String(), commit.Author)
-	assert.Equal(t, committer.String(), commit.Committer)
-	assert.Equal(t, treeIdAscii, hex.EncodeToString(commit.TreeID))
-	assert.Equal(t, "first line\n\nsecond line", commit.Message)
+	if author.String() != commit.Author {
+		t.Errorf("Expected %v, got %v", author.String(), commit.Author)
+	}
+	if committer.String() != commit.Committer {
+		t.Errorf("Expected %v, got %v", committer.String(), commit.Committer)
+	}
+	if treeIdAscii != hex.EncodeToString(commit.TreeID) {
+		t.Errorf("Expected %v, got %v", treeIdAscii, hex.EncodeToString(commit.TreeID))
+	}
+	if commit.Message != "first line\n\nsecond line" {
+		t.Errorf("Expected %v, got %v", "first line\n\nsecond line", commit.Message)
+	}
 }
 
 func TestCommitDecodingWithWhitespace(t *testing.T) {
@@ -195,13 +254,25 @@ func TestCommitDecodingWithWhitespace(t *testing.T) {
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	assert.NoError(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	assert.Equal(t, author.String(), commit.Author)
-	assert.Equal(t, committer.String(), commit.Committer)
-	assert.Equal(t, treeIdAscii, hex.EncodeToString(commit.TreeID))
-	assert.Equal(t, "tree <- initial commit", commit.Message)
+	if author.String() != commit.Author {
+		t.Errorf("Expected %v, got %v", author.String(), commit.Author)
+	}
+	if committer.String() != commit.Committer {
+		t.Errorf("Expected %v, got %v", committer.String(), commit.Committer)
+	}
+	if treeIdAscii != hex.EncodeToString(commit.TreeID) {
+		t.Errorf("Expected %v, got %v", treeIdAscii, hex.EncodeToString(commit.TreeID))
+	}
+	if commit.Message != "tree <- initial commit" {
+		t.Errorf("Expected %v, got %v", "tree <- initial commit", commit.Message)
+	}
 }
 
 func TestCommitDecodingMultilineHeader(t *testing.T) {
@@ -225,18 +296,42 @@ func TestCommitDecodingMultilineHeader(t *testing.T) {
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	require.Nil(t, err)
-	require.Equal(t, flen, n)
-	require.Len(t, commit.ExtraHeaders, 1)
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %d, got %d", flen, n)
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Fatalf("Expected 1 extra header, got %d", len(commit.ExtraHeaders))
+	}
 
 	hdr := commit.ExtraHeaders[0]
 
-	assert.Equal(t, "gpgsig", hdr.K)
-	assert.EqualValues(t, []string{
+	if hdr.K != "gpgsig" {
+		t.Errorf("Expected key 'gpgsig', got %s", hdr.K)
+	}
+	expectedLines := []string{
 		"-----BEGIN PGP SIGNATURE-----",
 		"<signature>",
-		"-----END PGP SIGNATURE-----"},
-		strings.Split(hdr.V, "\n"))
+		"-----END PGP SIGNATURE-----"}
+	actualLines := strings.Split(hdr.V, "\n")
+	if !equalStringSlices(expectedLines, actualLines) {
+		t.Errorf("Expected %v, got %v", expectedLines, actualLines)
+	}
+}
+
+// Helper function to compare string slices
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestCommitDecodingBadMessageWithLineStartingWithTree(t *testing.T) {
@@ -274,9 +369,13 @@ Merge tag 'random' of git://git.example.ca/git/
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	require.Nil(t, err)
-	require.Equal(t, flen, n)
-	require.Equal(t, commit.ExtraHeaders, []*ExtraHeader{
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %d, got %d", flen, n)
+	}
+	expectedHeaders := []*ExtraHeader{
 		{
 			K: "mergetag",
 			V: `object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd
@@ -293,9 +392,26 @@ Version: GnuPG v1.4.11 (GNU/Linux)
 
 Not a real signature
 -----END PGP SIGNATURE-----`},
-	},
-	)
-	require.Equal(t, commit.Message, "Merge tag 'random' of git://git.example.ca/git/\n")
+	}
+	if !equalExtraHeaders(commit.ExtraHeaders, expectedHeaders) {
+		t.Error("ExtraHeaders do not match")
+	}
+	if commit.Message != "Merge tag 'random' of git://git.example.ca/git/\n" {
+		t.Errorf("Unexpected message: %s", commit.Message)
+	}
+}
+
+// Helper function to compare ExtraHeader slices
+func equalExtraHeaders(a, b []*ExtraHeader) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].K != b[i].K || a[i].V != b[i].V {
+			return false
+		}
+	}
+	return true
 }
 
 func TestCommitDecodingMessageWithLineStartingWithTree(t *testing.T) {
@@ -333,12 +449,20 @@ Merge tag 'random' of git://git.example.ca/git/
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), from, int64(flen))
 
-	require.Nil(t, err)
-	require.Equal(t, flen, n)
-	require.Equal(t, commit.ExtraHeaders, []*ExtraHeader{
-		{
-			K: "mergetag",
-			V: `object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd
+	if err != nil {
+		t.Fatalf("Unexpected non-nil value: %v", err)
+	}
+	if flen != n {
+		t.Fatalf("Expected %v, got %v", flen, n)
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Fatalf("Expected 1 extra header, got %d", len(commit.ExtraHeaders))
+	}
+	h := commit.ExtraHeaders[0]
+	if h.K != "mergetag" {
+		t.Errorf("Expected key %v, got %v", "mergetag", h.K)
+	}
+	expectedV := `object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd
 type commit
 tag random
 tagger J. Roe <jroe@example.ca> 1337889148 -0600
@@ -351,10 +475,13 @@ tree support code.
 Version: GnuPG v1.4.11 (GNU/Linux)
 
 Not a real signature
------END PGP SIGNATURE-----`},
-	},
-	)
-	require.Equal(t, commit.Message, "Merge tag 'random' of git://git.example.ca/git/\n")
+-----END PGP SIGNATURE-----`
+	if h.V != expectedV {
+		t.Errorf("Expected value %v, got %v", expectedV, h.V)
+	}
+	if commit.Message != "Merge tag 'random' of git://git.example.ca/git/\n" {
+		t.Fatalf("Expected %v, got %v", commit.Message, "Merge tag 'random' of git://git.example.ca/git/\n")
+	}
 }
 
 func assertLine(t *testing.T, buf *bytes.Buffer, wanted string, args ...any) {
@@ -363,8 +490,12 @@ func assertLine(t *testing.T, buf *bytes.Buffer, wanted string, args ...any) {
 		err = nil
 	}
 
-	assert.Nil(t, err)
-	assert.Equal(t, fmt.Sprintf(wanted, args...), strings.TrimSuffix(got, "\n"))
+	if err != nil {
+		t.Fatalf("Unexpected non-nil value")
+	}
+	if fmt.Sprintf(wanted, args...) != strings.TrimSuffix(got, "\n") {
+		t.Errorf("Expected %v, got %v", fmt.Sprintf(wanted, args...), strings.TrimSuffix(got, "\n"))
+	}
 }
 
 func TestCommitEqualReturnsTrueWithIdenticalCommits(t *testing.T) {
@@ -389,7 +520,9 @@ func TestCommitEqualReturnsTrueWithIdenticalCommits(t *testing.T) {
 		Message: "initial commit",
 	}
 
-	assert.True(t, c1.Equal(c2))
+	if !c1.Equal(c2) {
+		t.Error("Expected true")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentParentCounts(t *testing.T) {
@@ -400,7 +533,9 @@ func TestCommitEqualReturnsFalseWithDifferentParentCounts(t *testing.T) {
 		ParentIDs: [][]byte{make([]byte, 20)},
 	}
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentParentsIds(t *testing.T) {
@@ -413,7 +548,9 @@ func TestCommitEqualReturnsFalseWithDifferentParentsIds(t *testing.T) {
 
 	c1.ParentIDs[0][1] = 0x1
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentHeaderCounts(t *testing.T) {
@@ -429,7 +566,9 @@ func TestCommitEqualReturnsFalseWithDifferentHeaderCounts(t *testing.T) {
 		},
 	}
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentHeaders(t *testing.T) {
@@ -444,7 +583,9 @@ func TestCommitEqualReturnsFalseWithDifferentHeaders(t *testing.T) {
 		},
 	}
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentAuthors(t *testing.T) {
@@ -455,7 +596,9 @@ func TestCommitEqualReturnsFalseWithDifferentAuthors(t *testing.T) {
 		Author: "John Doe <john@example.com> 1503956287 -0400",
 	}
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentCommitters(t *testing.T) {
@@ -466,7 +609,9 @@ func TestCommitEqualReturnsFalseWithDifferentCommitters(t *testing.T) {
 		Committer: "John Doe <john@example.com> 1503956287 -0400",
 	}
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentMessages(t *testing.T) {
@@ -477,7 +622,9 @@ func TestCommitEqualReturnsFalseWithDifferentMessages(t *testing.T) {
 		Message: "not the initial commit",
 	}
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWithDifferentTreeIDs(t *testing.T) {
@@ -490,7 +637,9 @@ func TestCommitEqualReturnsFalseWithDifferentTreeIDs(t *testing.T) {
 
 	c1.TreeID[0] = 0x1
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsFalseWhenOneCommitIsNil(t *testing.T) {
@@ -506,14 +655,18 @@ func TestCommitEqualReturnsFalseWhenOneCommitIsNil(t *testing.T) {
 	}
 	c2 := (*Commit)(nil)
 
-	assert.False(t, c1.Equal(c2))
+	if c1.Equal(c2) {
+		t.Error("Expected false")
+	}
 }
 
 func TestCommitEqualReturnsTrueWhenBothCommitsAreNil(t *testing.T) {
 	c1 := (*Commit)(nil)
 	c2 := (*Commit)(nil)
 
-	assert.True(t, c1.Equal(c2))
+	if !c1.Equal(c2) {
+		t.Error("Expected true")
+	}
 }
 
 func TestBadCommit(t *testing.T) {
@@ -615,7 +768,9 @@ func TestSplitBehavior(t *testing.T) {
 		if len(fields) == 0 {
 			fmt.Printf("  >>> EMPTY ARRAY! <<<\n")
 		}
-		assert.Equal(t, tc.expect, len(fields))
+		if tc.expect != len(fields) {
+			t.Errorf("Expected %v, got %v", tc.expect, len(fields))
+		}
 	}
 }
 
@@ -731,9 +886,15 @@ committer Pat Doe <pdoe@example.org> 1337892984 -0700
 test message`
 	commit := new(Commit)
 	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
-	require.NoError(t, err)
-	assert.Equal(t, "", commit.Author)
-	assert.Equal(t, "Pat Doe <pdoe@example.org> 1337892984 -0700", commit.Committer)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if commit.Author != "" {
+		t.Errorf("Expected %v, got %v", "", commit.Author)
+	}
+	if commit.Committer != "Pat Doe <pdoe@example.org> 1337892984 -0700" {
+		t.Errorf("Expected %v, got %v", "Pat Doe <pdoe@example.org> 1337892984 -0700", commit.Committer)
+	}
 }
 
 // TestCommitDecodeWithEmptyCommitter tests decoding with empty committer
@@ -745,9 +906,15 @@ committer
 test message`
 	commit := new(Commit)
 	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
-	require.NoError(t, err)
-	assert.Equal(t, "Pat Doe <pdoe@example.org> 1337892984 -0700", commit.Author)
-	assert.Equal(t, "", commit.Committer)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if commit.Author != "Pat Doe <pdoe@example.org> 1337892984 -0700" {
+		t.Errorf("Expected %v, got %v", "Pat Doe <pdoe@example.org> 1337892984 -0700", commit.Author)
+	}
+	if commit.Committer != "" {
+		t.Errorf("Expected %v, got %v", "", commit.Committer)
+	}
 }
 
 // TestCommitDecodeWithMultipleParents tests decoding with multiple parents
@@ -762,11 +929,21 @@ committer Pat Doe <pdoe@example.org> 1337892984 -0700
 test message`
 	commit := new(Commit)
 	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
-	require.NoError(t, err)
-	assert.Equal(t, 3, len(commit.ParentIDs))
-	assert.Equal(t, "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", hex.EncodeToString(commit.ParentIDs[0]))
-	assert.Equal(t, "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3", hex.EncodeToString(commit.ParentIDs[1]))
-	assert.Equal(t, "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", hex.EncodeToString(commit.ParentIDs[2]))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(commit.ParentIDs) != 3 {
+		t.Errorf("Expected %v, got %v", 3, len(commit.ParentIDs))
+	}
+	if hex.EncodeToString(commit.ParentIDs[0]) != "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" {
+		t.Errorf("Expected %v, got %v", "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", hex.EncodeToString(commit.ParentIDs[0]))
+	}
+	if hex.EncodeToString(commit.ParentIDs[1]) != "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3" {
+		t.Errorf("Expected %v, got %v", "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3", hex.EncodeToString(commit.ParentIDs[1]))
+	}
+	if hex.EncodeToString(commit.ParentIDs[2]) != "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4" {
+		t.Errorf("Expected %v, got %v", "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", hex.EncodeToString(commit.ParentIDs[2]))
+	}
 }
 
 // TestCommitDecodeWithSpecialCharacters tests decoding with special characters
@@ -780,13 +957,27 @@ test message with 中文 and 日本語`
 
 	commit := new(Commit)
 	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
-	require.NoError(t, err)
-	assert.Contains(t, commit.Author, "张三")
-	assert.Equal(t, 1, len(commit.ExtraHeaders))
-	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
-	assert.Equal(t, "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?", commit.ExtraHeaders[0].V)
-	assert.Contains(t, commit.Message, "中文")
-	assert.Contains(t, commit.Message, "日本語")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if !strings.Contains(commit.Author, "张三") {
+		t.Errorf("Expected to contain %v", "张三")
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Errorf("Expected %v, got %v", 1, len(commit.ExtraHeaders))
+	}
+	if commit.ExtraHeaders[0].K != "custom" {
+		t.Errorf("Expected %v, got %v", "custom", commit.ExtraHeaders[0].K)
+	}
+	if commit.ExtraHeaders[0].V != "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?" {
+		t.Errorf("Expected %v, got %v", "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?", commit.ExtraHeaders[0].V)
+	}
+	if !strings.Contains(commit.Message, "中文") {
+		t.Errorf("Expected to contain %v", "中文")
+	}
+	if !strings.Contains(commit.Message, "日本語") {
+		t.Errorf("Expected to contain %v", "日本語")
+	}
 }
 
 // TestCommitDecodeWithExtraHeaderBeforeStandard tests extra header before standard headers
@@ -799,10 +990,18 @@ committer Pat Doe <pdoe@example.org> 1337892984 -0700
 test message`
 	commit := new(Commit)
 	_, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(commit.ExtraHeaders))
-	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
-	assert.Equal(t, "extra header before standard", commit.ExtraHeaders[0].V)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Errorf("Expected %v, got %v", 1, len(commit.ExtraHeaders))
+	}
+	if commit.ExtraHeaders[0].K != "custom" {
+		t.Errorf("Expected %v, got %v", "custom", commit.ExtraHeaders[0].K)
+	}
+	if commit.ExtraHeaders[0].V != "extra header before standard" {
+		t.Errorf("Expected %v, got %v", "extra header before standard", commit.ExtraHeaders[0].V)
+	}
 }
 
 // TestCommitDecodeMultilineExtraHeaders tests correct parsing of multi-line extra headers
@@ -824,21 +1023,33 @@ test message`
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
 
-	require.NoError(t, err)
-	require.Equal(t, len(input), n)
-	require.Equal(t, 1, len(commit.ExtraHeaders))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(input) != n {
+		t.Fatalf("Expected %v, got %v", len(input), n)
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Fatalf("Expected %v, got %v", 1, len(commit.ExtraHeaders))
+	}
 
 	// Verify multi-line header value is correctly concatenated
 	// Note: Leading spaces are removed, but empty lines in continuation are preserved
 	gpgsig := commit.ExtraHeaders[0]
-	assert.Equal(t, "gpgsig", gpgsig.K)
+	if gpgsig.K != "gpgsig" {
+		t.Errorf("Expected %v, got %v", "gpgsig", gpgsig.K)
+	}
 	expectedValue := "-----BEGIN PGP SIGNATURE-----\n" +
 		"Version: GnuPG v1.4.11 (GNU/Linux)\n" +
 		"iQIcBAABAgAGBQJR9JqnAAoJEJyGw4i5t8hW3KUP/0XuWjE4kM6G8J7E6H4P2J8\n" +
 		"=i9Jh\n" +
 		"-----END PGP SIGNATURE-----"
-	assert.Equal(t, expectedValue, gpgsig.V)
-	assert.Equal(t, "test message", commit.Message)
+	if gpgsig.V != expectedValue {
+		t.Errorf("Expected %v, got %v", expectedValue, gpgsig.V)
+	}
+	if commit.Message != "test message" {
+		t.Errorf("Expected %v, got %v", "test message", commit.Message)
+	}
 }
 
 // TestCommitDecodeMultipleExtraHeaders tests multiple extra headers
@@ -858,25 +1069,53 @@ test message`
 	commit := new(Commit)
 	n, err := commit.Decode(sha1.New(), strings.NewReader(input), int64(len(input)))
 
-	require.NoError(t, err)
-	require.Equal(t, len(input), n)
-	require.Equal(t, 4, len(commit.ExtraHeaders))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(input) != n {
+		t.Fatalf("Expected %v, got %v", len(input), n)
+	}
+	if len(commit.ExtraHeaders) != 4 {
+		t.Fatalf("Expected %v, got %v", 4, len(commit.ExtraHeaders))
+	}
 
-	assert.Equal(t, "encoding", commit.ExtraHeaders[0].K)
-	assert.Equal(t, "utf-8", commit.ExtraHeaders[0].V)
+	if commit.ExtraHeaders[0].K != "encoding" {
+		t.Errorf("Expected %v, got %v", "encoding", commit.ExtraHeaders[0].K)
+	}
+	if commit.ExtraHeaders[0].V != "utf-8" {
+		t.Errorf("Expected %v, got %v", "utf-8", commit.ExtraHeaders[0].V)
+	}
 
-	assert.Equal(t, "gpgsig", commit.ExtraHeaders[1].K)
-	assert.Contains(t, commit.ExtraHeaders[1].V, "-----BEGIN PGP SIGNATURE-----")
-	assert.Contains(t, commit.ExtraHeaders[1].V, "signature")
-	assert.Contains(t, commit.ExtraHeaders[1].V, "-----END PGP SIGNATURE-----")
+	if commit.ExtraHeaders[1].K != "gpgsig" {
+		t.Errorf("Expected %v, got %v", "gpgsig", commit.ExtraHeaders[1].K)
+	}
+	if !strings.Contains(commit.ExtraHeaders[1].V, "-----BEGIN PGP SIGNATURE-----") {
+		t.Errorf("Expected to contain %v", "-----BEGIN PGP SIGNATURE-----")
+	}
+	if !strings.Contains(commit.ExtraHeaders[1].V, "signature") {
+		t.Errorf("Expected to contain %v", "signature")
+	}
+	if !strings.Contains(commit.ExtraHeaders[1].V, "-----END PGP SIGNATURE-----") {
+		t.Errorf("Expected to contain %v", "-----END PGP SIGNATURE-----")
+	}
 
-	assert.Equal(t, "custom", commit.ExtraHeaders[2].K)
-	assert.Equal(t, "value1", commit.ExtraHeaders[2].V)
+	if commit.ExtraHeaders[2].K != "custom" {
+		t.Errorf("Expected %v, got %v", "custom", commit.ExtraHeaders[2].K)
+	}
+	if commit.ExtraHeaders[2].V != "value1" {
+		t.Errorf("Expected %v, got %v", "value1", commit.ExtraHeaders[2].V)
+	}
 
-	assert.Equal(t, "custom", commit.ExtraHeaders[3].K)
-	assert.Equal(t, "value2", commit.ExtraHeaders[3].V)
+	if commit.ExtraHeaders[3].K != "custom" {
+		t.Errorf("Expected %v, got %v", "custom", commit.ExtraHeaders[3].K)
+	}
+	if commit.ExtraHeaders[3].V != "value2" {
+		t.Errorf("Expected %v, got %v", "value2", commit.ExtraHeaders[3].V)
+	}
 
-	assert.Equal(t, "test message", commit.Message)
+	if commit.Message != "test message" {
+		t.Errorf("Expected %v, got %v", "test message", commit.Message)
+	}
 }
 
 // TestCommitDecodeWithStringsCut validates correct usage of strings.Cut
@@ -913,10 +1152,16 @@ func TestCommitDecodeWithStringsCut(t *testing.T) {
 			_, err := commit.Decode(sha1.New(), strings.NewReader(tt.input), int64(len(tt.input)))
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Error("Expected error")
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantTree, hex.EncodeToString(commit.TreeID))
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if tt.wantTree != hex.EncodeToString(commit.TreeID) {
+					t.Errorf("Expected %v, got %v", tt.wantTree, hex.EncodeToString(commit.TreeID))
+				}
 			}
 		})
 	}

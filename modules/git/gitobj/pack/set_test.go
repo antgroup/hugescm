@@ -3,9 +3,6 @@ package pack
 import (
 	"bytes"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSetOpenOpensAPackedObject(t *testing.T) {
@@ -22,12 +19,20 @@ func TestSetOpenOpensAPackedObject(t *testing.T) {
 
 	o, err := set.Object(DecodeHex(t, sha))
 
-	assert.NoError(t, err)
-	assert.Equal(t, TypeBlob, o.Type())
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if TypeBlob != o.Type() {
+		t.Errorf("Expected %v, got %v", TypeBlob, o.Type())
+	}
 
 	unpacked, err := o.Unpack()
-	assert.NoError(t, err)
-	assert.Equal(t, []byte(data), unpacked)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte(data), unpacked) {
+		t.Errorf("Expected %v, got %v", []byte(data), unpacked)
+	}
 }
 
 func TestSetOpenOpensPackedObjectsInPackOrder(t *testing.T) {
@@ -71,8 +76,16 @@ func TestSetOpenOpensPackedObjectsInPackOrder(t *testing.T) {
 		},
 	)
 
-	require.Len(t, visited, 3)
-	assert.EqualValues(t, visited[0].Objects, 3)
-	assert.EqualValues(t, visited[1].Objects, 2)
-	assert.EqualValues(t, visited[2].Objects, 1)
+	if len(visited) != 3 {
+		t.Fatalf("Expected len %v, got %v", 3, len(visited))
+	}
+	if visited[0].Objects != 3 {
+		t.Errorf("Expected %v, got %v", visited[0].Objects, 3)
+	}
+	if visited[1].Objects != 2 {
+		t.Errorf("Expected %v, got %v", visited[1].Objects, 2)
+	}
+	if visited[2].Objects != 1 {
+		t.Errorf("Expected %v, got %v", visited[2].Objects, 1)
+	}
 }

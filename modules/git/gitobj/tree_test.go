@@ -8,13 +8,12 @@ import (
 	"sort"
 	"strconv"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTreeReturnsCorrectObjectType(t *testing.T) {
-	assert.Equal(t, TreeObjectType, new(Tree).Type())
+	if TreeObjectType != new(Tree).Type() {
+		t.Errorf("Expected %v, got %v", TreeObjectType, new(Tree).Type())
+	}
 }
 
 func TestTreeEncoding(t *testing.T) {
@@ -41,14 +40,20 @@ func TestTreeEncoding(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	n, err := tree.Encode(buf)
-	assert.Nil(t, err)
-	assert.NotEqual(t, 0, n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if n == 0 {
+		t.Errorf("Expected not equal")
+	}
 
 	assertTreeEntry(t, buf, "a.dat", []byte("aaaaaaaaaaaaaaaaaaaa"), 0100644)
 	assertTreeEntry(t, buf, "subdir", []byte("bbbbbbbbbbbbbbbbbbbb"), 040000)
 	assertTreeEntry(t, buf, "submodule", []byte("cccccccccccccccccccc"), 0160000)
 
-	assert.Equal(t, 0, buf.Len())
+	if buf.Len() != 0 {
+		t.Errorf("Expected %v, got %v", 0, buf.Len())
+	}
 }
 
 func TestTreeDecoding(t *testing.T) {
@@ -71,30 +76,56 @@ func TestTreeDecoding(t *testing.T) {
 	tree := new(Tree)
 	n, err := tree.Decode(sha1.New(), from, int64(flen))
 
-	assert.Nil(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	require.Equal(t, 4, len(tree.Entries))
-	assert.Equal(t, &TreeEntry{
-		Name:     "a.dat",
-		Oid:      []byte("aaaaaaaaaaaaaaaaaaaa"),
-		Filemode: 0100644,
-	}, tree.Entries[0])
-	assert.Equal(t, &TreeEntry{
-		Name:     "subdir",
-		Oid:      []byte("bbbbbbbbbbbbbbbbbbbb"),
-		Filemode: 040000,
-	}, tree.Entries[1])
-	assert.Equal(t, &TreeEntry{
-		Name:     "symlink",
-		Oid:      []byte("cccccccccccccccccccc"),
-		Filemode: 0120000,
-	}, tree.Entries[2])
-	assert.Equal(t, &TreeEntry{
-		Name:     "submodule",
-		Oid:      []byte("dddddddddddddddddddd"),
-		Filemode: 0160000,
-	}, tree.Entries[3])
+	if len(tree.Entries) != 4 {
+		t.Fatalf("Expected %v, got %v", 4, len(tree.Entries))
+	}
+	// Check a.dat
+	if tree.Entries[0].Name != "a.dat" {
+		t.Errorf("Expected 'a.dat', got %v", tree.Entries[0].Name)
+	}
+	if !bytes.Equal([]byte("aaaaaaaaaaaaaaaaaaaa"), tree.Entries[0].Oid) {
+		t.Errorf("Expected aaaaaaaaaaaaaaaaaaaa, got %v", tree.Entries[0].Oid)
+	}
+	if tree.Entries[0].Filemode != 0100644 {
+		t.Errorf("Expected 0100644, got %v", tree.Entries[0].Filemode)
+	}
+	// Check subdir
+	if tree.Entries[1].Name != "subdir" {
+		t.Errorf("Expected 'subdir', got %v", tree.Entries[1].Name)
+	}
+	if !bytes.Equal([]byte("bbbbbbbbbbbbbbbbbbbb"), tree.Entries[1].Oid) {
+		t.Errorf("Expected bbbbbbbbbbbbbbbbbbbb, got %v", tree.Entries[1].Oid)
+	}
+	if tree.Entries[1].Filemode != 040000 {
+		t.Errorf("Expected 040000, got %v", tree.Entries[1].Filemode)
+	}
+	// Check symlink
+	if tree.Entries[2].Name != "symlink" {
+		t.Errorf("Expected 'symlink', got %v", tree.Entries[2].Name)
+	}
+	if !bytes.Equal([]byte("cccccccccccccccccccc"), tree.Entries[2].Oid) {
+		t.Errorf("Expected cccccccccccccccccccc, got %v", tree.Entries[2].Oid)
+	}
+	if tree.Entries[2].Filemode != 0120000 {
+		t.Errorf("Expected 0120000, got %v", tree.Entries[2].Filemode)
+	}
+	// Check submodule
+	if tree.Entries[3].Name != "submodule" {
+		t.Errorf("Expected 'submodule', got %v", tree.Entries[3].Name)
+	}
+	if !bytes.Equal([]byte("dddddddddddddddddddd"), tree.Entries[3].Oid) {
+		t.Errorf("Expected dddddddddddddddddddd, got %v", tree.Entries[3].Oid)
+	}
+	if tree.Entries[3].Filemode != 0160000 {
+		t.Errorf("Expected 0160000, got %v", tree.Entries[3].Filemode)
+	}
 }
 
 func TestTreeDecodingShaBoundary(t *testing.T) {
@@ -109,15 +140,26 @@ func TestTreeDecodingShaBoundary(t *testing.T) {
 	tree := new(Tree)
 	n, err := tree.Decode(sha1.New(), bufio.NewReaderSize(&from, flen-2), int64(flen))
 
-	assert.Nil(t, err)
-	assert.Equal(t, flen, n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if flen != n {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	require.Len(t, tree.Entries, 1)
-	assert.Equal(t, &TreeEntry{
-		Name:     "a.dat",
-		Oid:      []byte("aaaaaaaaaaaaaaaaaaaa"),
-		Filemode: 0100644,
-	}, tree.Entries[0])
+	if len(tree.Entries) != 1 {
+		t.Fatalf("Expected len %v, got %v", 1, len(tree.Entries))
+	}
+	entry := tree.Entries[0]
+	if entry.Name != "a.dat" {
+		t.Errorf("Expected Name %v, got %v", "a.dat", entry.Name)
+	}
+	if !bytes.Equal(entry.Oid, []byte("aaaaaaaaaaaaaaaaaaaa")) {
+		t.Errorf("Expected Oid %v, got %v", []byte("aaaaaaaaaaaaaaaaaaaa"), entry.Oid)
+	}
+	if entry.Filemode != 0100644 {
+		t.Errorf("Expected Filemode %v, got %v", 0100644, entry.Filemode)
+	}
 }
 
 func TestTreeMergeReplaceElements(t *testing.T) {
@@ -132,15 +174,31 @@ func TestTreeMergeReplaceElements(t *testing.T) {
 
 	t2 := t1.Merge(e4, e5)
 
-	require.Len(t, t1.Entries, 3)
-	assert.True(t, bytes.Equal(t1.Entries[0].Oid, []byte{0x1}))
-	assert.True(t, bytes.Equal(t1.Entries[1].Oid, []byte{0x2}))
-	assert.True(t, bytes.Equal(t1.Entries[2].Oid, []byte{0x3}))
+	if len(t1.Entries) != 3 {
+		t.Fatalf("Expected len %v, got %v", 3, len(t1.Entries))
+	}
+	if !bytes.Equal(t1.Entries[0].Oid, []byte{0x1}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t1.Entries[1].Oid, []byte{0x2}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t1.Entries[2].Oid, []byte{0x3}) {
+		t.Errorf("Expected true")
+	}
 
-	require.Len(t, t2.Entries, 3)
-	assert.True(t, bytes.Equal(t2.Entries[0].Oid, []byte{0x1}))
-	assert.True(t, bytes.Equal(t2.Entries[1].Oid, []byte{0x4}))
-	assert.True(t, bytes.Equal(t2.Entries[2].Oid, []byte{0x5}))
+	if len(t2.Entries) != 3 {
+		t.Fatalf("Expected len %v, got %v", 3, len(t2.Entries))
+	}
+	if !bytes.Equal(t2.Entries[0].Oid, []byte{0x1}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t2.Entries[1].Oid, []byte{0x4}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t2.Entries[2].Oid, []byte{0x5}) {
+		t.Errorf("Expected true")
+	}
 }
 
 func TestMergeInsertElementsInSubtreeOrder(t *testing.T) {
@@ -152,16 +210,34 @@ func TestMergeInsertElementsInSubtreeOrder(t *testing.T) {
 	t1 := &Tree{Entries: []*TreeEntry{e1, e2, e3}}
 	t2 := t1.Merge(e4)
 
-	require.Len(t, t1.Entries, 3)
-	assert.True(t, bytes.Equal(t1.Entries[0].Oid, []byte{0x1}))
-	assert.True(t, bytes.Equal(t1.Entries[1].Oid, []byte{0x2}))
-	assert.True(t, bytes.Equal(t1.Entries[2].Oid, []byte{0x3}))
+	if len(t1.Entries) != 3 {
+		t.Fatalf("Expected len %v, got %v", 3, len(t1.Entries))
+	}
+	if !bytes.Equal(t1.Entries[0].Oid, []byte{0x1}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t1.Entries[1].Oid, []byte{0x2}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t1.Entries[2].Oid, []byte{0x3}) {
+		t.Errorf("Expected true")
+	}
 
-	require.Len(t, t2.Entries, 4)
-	assert.True(t, bytes.Equal(t2.Entries[0].Oid, []byte{0x4}))
-	assert.True(t, bytes.Equal(t2.Entries[1].Oid, []byte{0x1}))
-	assert.True(t, bytes.Equal(t2.Entries[2].Oid, []byte{0x2}))
-	assert.True(t, bytes.Equal(t2.Entries[3].Oid, []byte{0x3}))
+	if len(t2.Entries) != 4 {
+		t.Fatalf("Expected len %v, got %v", 4, len(t2.Entries))
+	}
+	if !bytes.Equal(t2.Entries[0].Oid, []byte{0x4}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t2.Entries[1].Oid, []byte{0x1}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t2.Entries[2].Oid, []byte{0x2}) {
+		t.Errorf("Expected true")
+	}
+	if !bytes.Equal(t2.Entries[3].Oid, []byte{0x3}) {
+		t.Errorf("Expected true")
+	}
 }
 
 type TreeEntryTypeTestCase struct {
@@ -175,8 +251,9 @@ func (c *TreeEntryTypeTestCase) AssertType(t *testing.T) {
 
 	got := e.Type()
 
-	assert.Equal(t, c.Expected, got,
-		"git/object: expected type: %s, got: %s", c.Expected, got)
+	if c.Expected != got {
+		t.Errorf("git/object: expected type: %s, got: %s", c.Expected, got)
+	}
 }
 
 func (c *TreeEntryTypeTestCase) AssertIsLink(t *testing.T) {
@@ -184,8 +261,9 @@ func (c *TreeEntryTypeTestCase) AssertIsLink(t *testing.T) {
 
 	isLink := e.IsLink()
 
-	assert.Equal(t, c.IsLink, isLink,
-		"git/object: expected link: %v, got: %v, for type %s", c.IsLink, isLink, c.Expected)
+	if c.IsLink != isLink {
+		t.Errorf("git/object: expected link: %v, got: %v, for type %s", c.IsLink, isLink, c.Expected)
+	}
 }
 
 func TestTreeEntryTypeResolution(t *testing.T) {
@@ -220,24 +298,41 @@ func TestSubtreeOrder(t *testing.T) {
 
 	// Assert that they are in the correct order after sorting in sub-tree
 	// order:
-	require.Len(t, entries, 5)
-	assert.Equal(t, "a-", entries[0].Name)
-	assert.Equal(t, "a-b", entries[1].Name)
-	assert.Equal(t, "a", entries[2].Name)
-	assert.Equal(t, "a=", entries[3].Name)
-	assert.Equal(t, "a=b", entries[4].Name)
+	if len(entries) != 5 {
+		t.Fatalf("Expected len %v, got %v", 5, len(entries))
+	}
+	if entries[0].Name != "a-" {
+		t.Errorf("Expected %v, got %v", "a-", entries[0].Name)
+	}
+	if entries[1].Name != "a-b" {
+		t.Errorf("Expected %v, got %v", "a-b", entries[1].Name)
+	}
+	if entries[2].Name != "a" {
+		t.Errorf("Expected %v, got %v", "a", entries[2].Name)
+	}
+	if entries[3].Name != "a=" {
+		t.Errorf("Expected %v, got %v", "a=", entries[3].Name)
+	}
+	if entries[4].Name != "a=b" {
+		t.Errorf("Expected %v, got %v", "a=b", entries[4].Name)
+	}
 }
 
 func TestSubtreeOrderReturnsEmptyForOutOfBounds(t *testing.T) {
 	o := SubtreeOrder([]*TreeEntry{{Name: "a"}})
 
-	assert.Equal(t, "", o.Name(len(o)+1))
+	result := o.Name(len(o) + 1)
+	if result != "" {
+		t.Errorf("Expected %v, got %v", "", result)
+	}
 }
 
 func TestSubtreeOrderReturnsEmptyForNilElements(t *testing.T) {
 	o := SubtreeOrder([]*TreeEntry{nil})
 
-	assert.Equal(t, "", o.Name(0))
+	if o.Name(0) != "" {
+		t.Errorf("Expected %v, got %v", "", o.Name(0))
+	}
 }
 
 func TestTreeEqualReturnsTrueWithUnchangedContents(t *testing.T) {
@@ -248,7 +343,9 @@ func TestTreeEqualReturnsTrueWithUnchangedContents(t *testing.T) {
 		{Name: "a.dat", Filemode: 0100644, Oid: make([]byte, 20)},
 	}}
 
-	assert.True(t, t1.Equal(t2))
+	if !t1.Equal(t2) {
+		t.Errorf("Expected true")
+	}
 }
 
 func TestTreeEqualReturnsFalseWithChangedContents(t *testing.T) {
@@ -261,7 +358,9 @@ func TestTreeEqualReturnsFalseWithChangedContents(t *testing.T) {
 		{Name: "c.dat", Filemode: 0100644, Oid: make([]byte, 20)},
 	}}
 
-	assert.False(t, t1.Equal(t2))
+	if t1.Equal(t2) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestTreeEqualReturnsTrueWhenOneTreeIsNil(t *testing.T) {
@@ -270,29 +369,39 @@ func TestTreeEqualReturnsTrueWhenOneTreeIsNil(t *testing.T) {
 	}}
 	t2 := (*Tree)(nil)
 
-	assert.False(t, t1.Equal(t2))
-	assert.False(t, t2.Equal(t1))
+	if t1.Equal(t2) {
+		t.Errorf("Expected false")
+	}
+	if t2.Equal(t1) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestTreeEqualReturnsTrueWhenBothTreesAreNil(t *testing.T) {
 	t1 := (*Tree)(nil)
 	t2 := (*Tree)(nil)
 
-	assert.True(t, t1.Equal(t2))
+	if !t1.Equal(t2) {
+		t.Errorf("Expected true")
+	}
 }
 
 func TestTreeEntryEqualReturnsTrueWhenEntriesAreTheSame(t *testing.T) {
 	e1 := &TreeEntry{Name: "a.dat", Filemode: 0100644, Oid: make([]byte, 20)}
 	e2 := &TreeEntry{Name: "a.dat", Filemode: 0100644, Oid: make([]byte, 20)}
 
-	assert.True(t, e1.Equal(e2))
+	if !e1.Equal(e2) {
+		t.Errorf("Expected true")
+	}
 }
 
 func TestTreeEntryEqualReturnsFalseWhenDifferentNames(t *testing.T) {
 	e1 := &TreeEntry{Name: "a.dat", Filemode: 0100644, Oid: make([]byte, 20)}
 	e2 := &TreeEntry{Name: "b.dat", Filemode: 0100644, Oid: make([]byte, 20)}
 
-	assert.False(t, e1.Equal(e2))
+	if e1.Equal(e2) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestTreeEntryEqualReturnsFalseWhenDifferentOids(t *testing.T) {
@@ -301,43 +410,64 @@ func TestTreeEntryEqualReturnsFalseWhenDifferentOids(t *testing.T) {
 
 	e2.Oid[0] = 1
 
-	assert.False(t, e1.Equal(e2))
+	if e1.Equal(e2) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestTreeEntryEqualReturnsFalseWhenDifferentFilemodes(t *testing.T) {
 	e1 := &TreeEntry{Name: "a.dat", Filemode: 0100644, Oid: make([]byte, 20)}
 	e2 := &TreeEntry{Name: "a.dat", Filemode: 0100755, Oid: make([]byte, 20)}
 
-	assert.False(t, e1.Equal(e2))
+	if e1.Equal(e2) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestTreeEntryEqualReturnsFalseWhenOneEntryIsNil(t *testing.T) {
 	e1 := &TreeEntry{Name: "a.dat", Filemode: 0100644, Oid: make([]byte, 20)}
 	e2 := (*TreeEntry)(nil)
 
-	assert.False(t, e1.Equal(e2))
+	if e1.Equal(e2) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestTreeEntryEqualReturnsTrueWhenBothEntriesAreNil(t *testing.T) {
 	e1 := (*TreeEntry)(nil)
 	e2 := (*TreeEntry)(nil)
 
-	assert.True(t, e1.Equal(e2))
+	if !e1.Equal(e2) {
+		t.Errorf("Expected true")
+	}
 }
 
 func assertTreeEntry(t *testing.T, buf *bytes.Buffer,
 	name string, oid []byte, mode int32) {
 
 	fmode, err := buf.ReadBytes(' ')
-	assert.Nil(t, err)
-	assert.Equal(t, []byte(strconv.FormatInt(int64(mode), 8)+" "), fmode)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	expectedFmode := []byte(strconv.FormatInt(int64(mode), 8) + " ")
+	if !bytes.Equal(expectedFmode, fmode) {
+		t.Errorf("Expected %v, got %v", expectedFmode, fmode)
+	}
 
 	fname, err := buf.ReadBytes('\x00')
-	assert.Nil(t, err)
-	assert.Equal(t, []byte(name+"\x00"), fname)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte(name+"\x00"), fname) {
+		t.Errorf("Expected %v, got %v", []byte(name+"\x00"), fname)
+	}
 
 	var sha [20]byte
 	_, err = buf.Read(sha[:])
-	assert.Nil(t, err)
-	assert.Equal(t, oid, sha[:])
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal(oid, sha[:]) {
+		t.Errorf("Expected %v, got %v", oid, sha[:])
+	}
 }

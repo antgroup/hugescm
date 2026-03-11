@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestRepresentationExpired(t *testing.T) {
@@ -31,11 +29,15 @@ func TestTokenExpired(t *testing.T) {
 
 func TestPathJoin(t *testing.T) {
 	u, err := url.Parse("https://zeta.example.io/sigma/konfig-dev")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
 	u2 := u.JoinPath("reference", "refs/heads/master--dev")
 	fmt.Fprintf(os.Stderr, "%s\n", u2.String())
 	u3, err := url.Parse("https://zeta.example.io/sigma/konfig-dev/reference/refs/heads/master+dev")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
 	fmt.Fprintf(os.Stderr, "%s\n", u3.Path)
 }
 

@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // MockBackend is a test implementation of Backend interface for testing commit walkers
@@ -89,11 +87,21 @@ func TestCommitPreorderIter(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	require.Equal(t, 3, len(commits))
-	assert.Equal(t, "C3", commits[0].Message)
-	assert.Equal(t, "C2", commits[1].Message)
-	assert.Equal(t, "C1", commits[2].Message)
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if len(commits) != 3 {
+		t.Errorf("Expected 3 commits, got %d", len(commits))
+	}
+	if commits[0].Message != "C3" {
+		t.Errorf("Expected C3, got %s", commits[0].Message)
+	}
+	if commits[1].Message != "C2" {
+		t.Errorf("Expected C2, got %s", commits[1].Message)
+	}
+	if commits[2].Message != "C1" {
+		t.Errorf("Expected C1, got %s", commits[2].Message)
+	}
 }
 
 // TestCommitPreorderIterWithMerge tests preorder traversal with merge commits
@@ -126,12 +134,44 @@ func TestCommitPreorderIterWithMerge(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	require.Equal(t, 4, len(commits))
-	assert.Contains(t, commits, m)
-	assert.Contains(t, commits, c2)
-	assert.Contains(t, commits, c3)
-	assert.Contains(t, commits, c1)
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if len(commits) != 4 {
+		t.Errorf("Expected 4 commits, got %d", len(commits))
+	}
+
+	// Check if commits contain the expected values
+	foundM := false
+	foundC2 := false
+	foundC3 := false
+	foundC1 := false
+	for _, c := range commits {
+		if c == m {
+			foundM = true
+		}
+		if c == c2 {
+			foundC2 = true
+		}
+		if c == c3 {
+			foundC3 = true
+		}
+		if c == c1 {
+			foundC1 = true
+		}
+	}
+	if !foundM {
+		t.Error("Expected to find m in commits")
+	}
+	if !foundC2 {
+		t.Error("Expected to find c2 in commits")
+	}
+	if !foundC3 {
+		t.Error("Expected to find c3 in commits")
+	}
+	if !foundC1 {
+		t.Error("Expected to find c1 in commits")
+	}
 }
 
 // TestCommitPreorderIterDeduplication tests that commits are not visited twice
@@ -167,8 +207,12 @@ func TestCommitPreorderIterDeduplication(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	assert.Equal(t, 1, c1Count, "C1 should be visited exactly once")
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if c1Count != 1 {
+		t.Errorf("Expected C1 to be visited exactly once, got %d", c1Count)
+	}
 }
 
 // TestCommitBFSIter tests breadth-first search traversal
@@ -196,13 +240,25 @@ func TestCommitBFSIter(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	require.Equal(t, 4, len(commits))
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if len(commits) != 4 {
+		t.Errorf("Expected 4 commits, got %d", len(commits))
+	}
 	// BFS visits level by level
-	assert.Equal(t, "C4", commits[0].Message)
-	assert.Equal(t, "C3", commits[1].Message)
-	assert.Equal(t, "C2", commits[2].Message)
-	assert.Equal(t, "C1", commits[3].Message)
+	if commits[0].Message != "C4" {
+		t.Errorf("Expected C4, got %s", commits[0].Message)
+	}
+	if commits[1].Message != "C3" {
+		t.Errorf("Expected C3, got %s", commits[1].Message)
+	}
+	if commits[2].Message != "C2" {
+		t.Errorf("Expected C2, got %s", commits[2].Message)
+	}
+	if commits[3].Message != "C1" {
+		t.Errorf("Expected C1, got %s", commits[3].Message)
+	}
 }
 
 // TestCommitBFSIterWithMerge tests BFS traversal with merge commits
@@ -235,12 +291,44 @@ func TestCommitBFSIterWithMerge(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	require.Equal(t, 4, len(commits))
-	assert.Contains(t, commits, m)
-	assert.Contains(t, commits, c2)
-	assert.Contains(t, commits, c3)
-	assert.Contains(t, commits, c1)
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if len(commits) != 4 {
+		t.Errorf("Expected 4 commits, got %d", len(commits))
+	}
+
+	// Check if commits contain expected values
+	foundM := false
+	foundC2 := false
+	foundC3 := false
+	foundC1 := false
+	for _, c := range commits {
+		if c == m {
+			foundM = true
+		}
+		if c == c2 {
+			foundC2 = true
+		}
+		if c == c3 {
+			foundC3 = true
+		}
+		if c == c1 {
+			foundC1 = true
+		}
+	}
+	if !foundM {
+		t.Error("Expected to find m in commits")
+	}
+	if !foundC2 {
+		t.Error("Expected to find c2 in commits")
+	}
+	if !foundC3 {
+		t.Error("Expected to find c3 in commits")
+	}
+	if !foundC1 {
+		t.Error("Expected to find c1 in commits")
+	}
 }
 
 // TestCommitTopoOrderIter tests topological order traversal
@@ -266,12 +354,22 @@ func TestCommitTopoOrderIter(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	require.Equal(t, 3, len(commits))
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if len(commits) != 3 {
+		t.Errorf("Expected 3 commits, got %d", len(commits))
+	}
 	// Topological order should visit children before parents
-	assert.Equal(t, "C3", commits[0].Message)
-	assert.Equal(t, "C2", commits[1].Message)
-	assert.Equal(t, "C1", commits[2].Message)
+	if commits[0].Message != "C3" {
+		t.Errorf("Expected C3, got %s", commits[0].Message)
+	}
+	if commits[1].Message != "C2" {
+		t.Errorf("Expected C2, got %s", commits[1].Message)
+	}
+	if commits[2].Message != "C1" {
+		t.Errorf("Expected C1, got %s", commits[2].Message)
+	}
 }
 
 // TestFilterCommitIter tests filtering commits during traversal
@@ -304,15 +402,33 @@ func TestFilterCommitIter(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
 	// Only C2 and C4 should be returned (both have length 2)
 	// C1 and C3 have length 2 as well, but let's check actual values
 	for _, c := range commits {
-		assert.Equal(t, 2, len(c.Message), "All filtered commits should have message length 2")
+		if len(c.Message) != 2 {
+			t.Errorf("Expected message length 2, got %d", len(c.Message))
+		}
 	}
 	// C2 and C4 are definitely in the list
-	assert.Contains(t, commits, c2)
-	assert.Contains(t, commits, c4)
+	foundC2 := false
+	foundC4 := false
+	for _, c := range commits {
+		if c == c2 {
+			foundC2 = true
+		}
+		if c == c4 {
+			foundC4 = true
+		}
+	}
+	if !foundC2 {
+		t.Error("Expected to find c2 in commits")
+	}
+	if !foundC4 {
+		t.Error("Expected to find c4 in commits")
+	}
 }
 
 // TestFilterCommitIterWithLimit tests limiting commit traversal
@@ -345,14 +461,45 @@ func TestFilterCommitIterWithLimit(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
 	// BFS order: C4, C3, C2
 	// C2 is a limit, so C1 should not be visited
-	assert.Equal(t, 3, len(commits))
-	assert.Contains(t, commits, c4)
-	assert.Contains(t, commits, c3)
-	assert.Contains(t, commits, c2)
-	assert.NotContains(t, commits, c1, "C1 should not be visited as it's beyond the limit")
+	if len(commits) != 3 {
+		t.Errorf("Expected 3 commits, got %d", len(commits))
+	}
+
+	foundC4 := false
+	foundC3 := false
+	foundC2 := false
+	foundC1 := false
+	for _, c := range commits {
+		if c == c4 {
+			foundC4 = true
+		}
+		if c == c3 {
+			foundC3 = true
+		}
+		if c == c2 {
+			foundC2 = true
+		}
+		if c == c1 {
+			foundC1 = true
+		}
+	}
+	if !foundC4 {
+		t.Error("Expected to find c4 in commits")
+	}
+	if !foundC3 {
+		t.Error("Expected to find c3 in commits")
+	}
+	if !foundC2 {
+		t.Error("Expected to find c2 in commits")
+	}
+	if foundC1 {
+		t.Error("C1 should not be visited as it's beyond the limit")
+	}
 }
 
 // TestCommitWalkerShallowClone tests that commit walkers handle missing commits gracefully
@@ -380,11 +527,30 @@ func TestCommitWalkerShallowClone(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err, "Should not error on missing commits in shallow clone")
+	if err != nil {
+		t.Fatalf("Should not error on missing commits in shallow clone: %v", err)
+	}
 	// Should traverse C3 and C2, skipping missing C1 gracefully
-	assert.Equal(t, 2, len(commits))
-	assert.Contains(t, commits, c3)
-	assert.Contains(t, commits, c2)
+	if len(commits) != 2 {
+		t.Errorf("Expected 2 commits, got %d", len(commits))
+	}
+
+	foundC3 := false
+	foundC2 := false
+	for _, c := range commits {
+		if c == c3 {
+			foundC3 = true
+		}
+		if c == c2 {
+			foundC2 = true
+		}
+	}
+	if !foundC3 {
+		t.Error("Expected to find c3 in commits")
+	}
+	if !foundC2 {
+		t.Error("Expected to find c2 in commits")
+	}
 }
 
 // TestCommitWalkerShallowCloneWithMerge tests shallow clone with merge commits
@@ -417,11 +583,30 @@ func TestCommitWalkerShallowCloneWithMerge(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err, "Should not error on missing commits in shallow clone")
+	if err != nil {
+		t.Fatalf("Should not error on missing commits in shallow clone: %v", err)
+	}
 	// Should traverse M and C2, skipping missing C3 and C1 gracefully
-	assert.Equal(t, 2, len(commits))
-	assert.Contains(t, commits, m)
-	assert.Contains(t, commits, c2)
+	if len(commits) != 2 {
+		t.Errorf("Expected 2 commits, got %d", len(commits))
+	}
+
+	foundM := false
+	foundC2 := false
+	for _, c := range commits {
+		if c == m {
+			foundM = true
+		}
+		if c == c2 {
+			foundC2 = true
+		}
+	}
+	if !foundM {
+		t.Error("Expected to find m in commits")
+	}
+	if !foundC2 {
+		t.Error("Expected to find c2 in commits")
+	}
 }
 
 // TestCommitWalkerContextCancellation tests that walkers respect context cancellation
@@ -459,7 +644,9 @@ func TestCommitWalkerContextCancellation(t *testing.T) {
 
 	// Verify that iteration stopped (either immediately or after a few commits)
 	// The exact behavior depends on the implementation
-	assert.True(t, count < 100, "Should not process all commits after cancellation")
+	if count >= 100 {
+		t.Error("Should not process all commits after cancellation")
+	}
 }
 
 // TestCommitIterForEachStop tests that ErrStop stops traversal
@@ -488,8 +675,12 @@ func TestCommitIterForEachStop(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err)
-	assert.Equal(t, 2, count, "Should stop after ErrStop")
+	if err != nil {
+		t.Fatalf("ForEach error: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("Expected 2, got %d", count)
+	}
 }
 
 // TestCommitIterNextDirectly tests calling Next() directly
@@ -508,18 +699,30 @@ func TestCommitIterNextDirectly(t *testing.T) {
 
 	// First commit
 	c, err := iter.Next(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "C2", c.Message)
+	if err != nil {
+		t.Fatalf("Next error: %v", err)
+	}
+	if c.Message != "C2" {
+		t.Errorf("Expected C2, got %s", c.Message)
+	}
 
 	// Second commit
 	c, err = iter.Next(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "C1", c.Message)
+	if err != nil {
+		t.Fatalf("Next error: %v", err)
+	}
+	if c.Message != "C1" {
+		t.Errorf("Expected C1, got %s", c.Message)
+	}
 
 	// EOF
 	c, err = iter.Next(ctx)
-	require.Equal(t, io.EOF, err)
-	assert.Nil(t, c)
+	if err != io.EOF {
+		t.Errorf("Expected io.EOF, got %v", err)
+	}
+	if c != nil {
+		t.Error("Expected nil commit")
+	}
 }
 
 // TestCommitIterClose tests that Close() properly cleans up resources
@@ -535,16 +738,24 @@ func TestCommitIterClose(t *testing.T) {
 
 	// Get a commit
 	c, err := iter.Next(ctx)
-	require.NoError(t, err)
-	assert.NotNil(t, c)
+	if err != nil {
+		t.Fatalf("Next error: %v", err)
+	}
+	if c == nil {
+		t.Fatal("Expected non-nil commit")
+	}
 
 	// Close the iterator
 	iter.Close()
 
 	// Try to get another commit after close
 	c, err = iter.Next(ctx)
-	require.Error(t, err)
-	assert.Nil(t, c)
+	if err == nil {
+		t.Error("Expected error after close")
+	}
+	if c != nil {
+		t.Error("Expected nil commit after close")
+	}
 }
 
 // TestCommitWalkerErrorPropagation tests that errors are properly propagated
@@ -565,5 +776,7 @@ func TestCommitWalkerErrorPropagation(t *testing.T) {
 		return expectedErr
 	})
 
-	require.Equal(t, expectedErr, err)
+	if err != expectedErr {
+		t.Errorf("Expected %v, got %v", expectedErr, err)
+	}
 }

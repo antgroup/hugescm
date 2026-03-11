@@ -126,12 +126,12 @@ func (d *Decoder) readBatchLine() (string, string, int64, error) {
 	if strings.HasSuffix(line, missingSuffix) {
 		return "", "", 0, NewObjectNotFound(line[0 : len(line)-len(missingSuffix)])
 	}
-	pos := strings.IndexByte(line, ' ')
-	if pos < 0 {
+	before, after, ok := strings.Cut(line, " ")
+	if !ok {
 		return "", "", 0, NewObjectNotFound(line)
 	}
-	sha := line[:pos]
-	t, sizeSz, ok := strings.Cut(line[pos+1:], " ")
+	sha := before
+	t, sizeSz, ok := strings.Cut(after, " ")
 	if !ok {
 		return "", "", 0, NewObjectNotFound(sha)
 	}

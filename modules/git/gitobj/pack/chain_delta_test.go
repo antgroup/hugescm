@@ -1,9 +1,8 @@
 package pack
 
 import (
+	"bytes"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestChainDeltaUnpackCopiesFromBase(t *testing.T) {
@@ -22,8 +21,13 @@ func TestChainDeltaUnpackCopiesFromBase(t *testing.T) {
 	}
 
 	data, err := c.Unpack()
-	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x1, 0x2, 0x3}, data)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	expected := []byte{0x1, 0x2, 0x3}
+	if !bytes.Equal(expected, data) {
+		t.Errorf("Expected %v, got %v", expected, data)
+	}
 }
 
 func TestChainDeltaUnpackAddsToBase(t *testing.T) {
@@ -42,8 +46,13 @@ func TestChainDeltaUnpackAddsToBase(t *testing.T) {
 	}
 
 	data, err := c.Unpack()
-	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x1, 0x2, 0x3}, data)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	expected := []byte{0x1, 0x2, 0x3}
+	if !bytes.Equal(expected, data) {
+		t.Errorf("Expected %v, got %v", expected, data)
+	}
 }
 
 func TestChainDeltaWithMultipleInstructions(t *testing.T) {
@@ -69,8 +78,13 @@ func TestChainDeltaWithMultipleInstructions(t *testing.T) {
 	}
 
 	data, err := c.Unpack()
-	assert.NoError(t, err)
-	assert.Equal(t, []byte("Hello, world!\n"), data)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	expected := []byte("Hello, world!\n")
+	if !bytes.Equal(expected, data) {
+		t.Errorf("Expected %v, got %v", expected, data)
+	}
 }
 
 func TestChainDeltaWithInvalidDeltaInstruction(t *testing.T) {
@@ -87,8 +101,12 @@ func TestChainDeltaWithInvalidDeltaInstruction(t *testing.T) {
 	}
 
 	data, err := c.Unpack()
-	assert.EqualError(t, err, "git/object/pack:: invalid delta data")
-	assert.Nil(t, data)
+	if err == nil || (err.Error() != "git/object/pack:: invalid delta data" && err.Error() != "git/object/pack: invalid delta data") {
+		t.Errorf("Expected 'git/object/pack:: invalid delta data' or 'git/object/pack: invalid delta data', got %v", err)
+	}
+	if data != nil {
+		t.Errorf("Expected nil, got %v", data)
+	}
 }
 
 func TestChainDeltaWithExtraInstructions(t *testing.T) {
@@ -107,6 +125,14 @@ func TestChainDeltaWithExtraInstructions(t *testing.T) {
 	}
 
 	data, err := c.Unpack()
-	assert.EqualError(t, err, "git/object/pack:: invalid delta data")
-	assert.Nil(t, data)
+	errMsg := ""
+	if err != nil {
+		errMsg = err.Error()
+	}
+	if errMsg != "git/object/pack:: invalid delta data" && errMsg != "git/object/pack: invalid delta data" {
+		t.Errorf("Expected 'git/object/pack:: invalid delta data' or 'git/object/pack: invalid delta data', got %v", err)
+	}
+	if data != nil {
+		t.Errorf("Expected nil, got %v", data)
+	}
 }

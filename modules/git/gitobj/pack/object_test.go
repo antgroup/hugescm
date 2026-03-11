@@ -1,10 +1,9 @@
 package pack
 
 import (
+	"bytes"
 	"errors"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectTypeReturnsObjectType(t *testing.T) {
@@ -12,7 +11,9 @@ func TestObjectTypeReturnsObjectType(t *testing.T) {
 		typ: TypeCommit,
 	}
 
-	assert.Equal(t, TypeCommit, o.Type())
+	if TypeCommit != o.Type() {
+		t.Errorf("Expected %v, got %v", TypeCommit, o.Type())
+	}
 }
 
 func TestObjectUnpackUnpacksData(t *testing.T) {
@@ -26,8 +27,12 @@ func TestObjectUnpackUnpacksData(t *testing.T) {
 
 	data, err := o.Unpack()
 
-	assert.Equal(t, expected, data)
-	assert.NoError(t, err)
+	if !bytes.Equal(expected, data) {
+		t.Errorf("Expected %v, got %v", expected, data)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 }
 
 func TestObjectUnpackPropogatesErrors(t *testing.T) {
@@ -41,6 +46,10 @@ func TestObjectUnpackPropogatesErrors(t *testing.T) {
 
 	data, err := o.Unpack()
 
-	assert.Nil(t, data)
-	assert.Equal(t, expected, err)
+	if data != nil {
+		t.Errorf("Expected nil, got %v", data)
+	}
+	if expected != err {
+		t.Errorf("Expected %v, got %v", expected, err)
+	}
 }

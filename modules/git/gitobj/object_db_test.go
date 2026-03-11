@@ -10,9 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const roundTripCommitSha string = `561ed224a6bd39232d902ad8023c0ebe44fbf6c5`
@@ -78,21 +75,33 @@ func TestDecodeObject(t *testing.T) {
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.sha: &buf,
 		})
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		shaHex, _ := hex.DecodeString(test.sha)
 		obj, err := odb.Object(shaHex)
 		blob, ok := obj.(*Blob)
 
-		require.NoError(t, err)
-		require.True(t, ok)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
+		if !ok {
+			t.Fatalf("Expected true")
+		}
 
 		got, err := io.ReadAll(blob.Contents)
-		assert.Nil(t, err)
-		assert.Equal(t, contents, string(got))
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if contents != string(got) {
+			t.Errorf("Expected %v, got %v", contents, string(got))
+		}
 	}
 }
 
@@ -121,20 +130,32 @@ func TestDecodeBlob(t *testing.T) {
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.sha: &buf,
 		})
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		shaHex, _ := hex.DecodeString(test.sha)
 		blob, err := odb.Blob(shaHex)
 
-		assert.Nil(t, err)
-		assert.EqualValues(t, 14, blob.Size)
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if blob.Size != 14 {
+			t.Errorf("Expected %v, got %v", 14, blob.Size)
+		}
 
 		got, err := io.ReadAll(blob.Contents)
-		assert.Nil(t, err)
-		assert.Equal(t, contents, string(got))
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if contents != string(got) {
+			t.Errorf("Expected %v, got %v", contents, string(got))
+		}
 	}
 }
 
@@ -161,10 +182,14 @@ func TestDecodeTree(t *testing.T) {
 
 	for _, test := range testCases {
 		hexSha, err := hex.DecodeString(test.treeSha)
-		require.Nil(t, err)
+		if err != nil {
+			t.Fatalf("Expected nil")
+		}
 
 		hexBlobSha, err := hex.DecodeString(test.blobSha)
-		require.Nil(t, err)
+		if err != nil {
+			t.Fatalf("Expected nil")
+		}
 
 		var buf bytes.Buffer
 
@@ -177,20 +202,33 @@ func TestDecodeTree(t *testing.T) {
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.treeSha: &buf,
 		})
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		tree, err := odb.Tree(hexSha)
 
-		assert.Nil(t, err)
-		require.Equal(t, 1, len(tree.Entries))
-		assert.Equal(t, &TreeEntry{
-			Name:     "hello.txt",
-			Oid:      hexBlobSha,
-			Filemode: 0100644,
-		}, tree.Entries[0])
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if len(tree.Entries) != 1 {
+			t.Fatalf("Expected %v, got %v", 1, len(tree.Entries))
+		}
+		entry := tree.Entries[0]
+		if entry.Name != "hello.txt" {
+			t.Fatalf("Expected Name %v, got %v", "hello.txt", entry.Name)
+		}
+		if !bytes.Equal(entry.Oid, hexBlobSha) {
+			t.Fatalf("Expected Oid %v, got %v", hexBlobSha, entry.Oid)
+		}
+		if entry.Filemode != 0100644 {
+			t.Fatalf("Expected Filemode %v, got %v", 0100644, entry.Filemode)
+		}
 	}
 }
 
@@ -217,7 +255,9 @@ func TestDecodeCommit(t *testing.T) {
 
 	for _, test := range testCases {
 		commitShaHex, err := hex.DecodeString(test.commitSha)
-		assert.Nil(t, err)
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
 
 		var buf bytes.Buffer
 
@@ -232,19 +272,35 @@ func TestDecodeCommit(t *testing.T) {
 		b, err := NewMemoryBackend(map[string]io.ReadWriter{
 			test.commitSha: &buf,
 		})
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		commit, err := odb.Commit(commitShaHex)
 
-		assert.Nil(t, err)
-		assert.Equal(t, "Taylor Blau <me@ttaylorr.com> 1494620424 -0600", commit.Author)
-		assert.Equal(t, "Taylor Blau <me@ttaylorr.com> 1494620424 -0600", commit.Committer)
-		assert.Equal(t, "initial commit", commit.Message)
-		assert.Equal(t, 0, len(commit.ParentIDs))
-		assert.Equal(t, test.treeSha, hex.EncodeToString(commit.TreeID))
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if commit.Author != "Taylor Blau <me@ttaylorr.com> 1494620424 -0600" {
+			t.Errorf("Expected %v, got %v", "Taylor Blau <me@ttaylorr.com> 1494620424 -0600", commit.Author)
+		}
+		if commit.Committer != "Taylor Blau <me@ttaylorr.com> 1494620424 -0600" {
+			t.Errorf("Expected %v, got %v", "Taylor Blau <me@ttaylorr.com> 1494620424 -0600", commit.Committer)
+		}
+		if commit.Message != "initial commit" {
+			t.Errorf("Expected %v, got %v", "initial commit", commit.Message)
+		}
+		if len(commit.ParentIDs) != 0 {
+			t.Errorf("Expected %v, got %v", 0, len(commit.ParentIDs))
+		}
+		if test.treeSha != hex.EncodeToString(commit.TreeID) {
+			t.Errorf("Expected %v, got %v", test.treeSha, hex.EncodeToString(commit.TreeID))
+		}
 	}
 }
 
@@ -263,10 +319,14 @@ func TestWriteBlob(t *testing.T) {
 
 	for _, test := range testCases {
 		b, err := NewMemoryBackend(nil)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		sha, err := odb.WriteBlob(&Blob{
 			Size:     14,
@@ -275,9 +335,16 @@ func TestWriteBlob(t *testing.T) {
 
 		_, s := b.Storage()
 
-		assert.Nil(t, err)
-		assert.Equal(t, test.sha, hex.EncodeToString(sha))
-		assert.NotNil(t, s.(*memoryStorer).fs[hex.EncodeToString(sha)])
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if test.sha != hex.EncodeToString(sha) {
+			t.Errorf("Expected %v, got %v", test.sha, hex.EncodeToString(sha))
+		}
+		if s.(*memoryStorer) == nil {
+			t.Errorf("Expected non-nil")
+		}
+		_ = s.(*memoryStorer).fs[hex.EncodeToString(sha)]
 	}
 }
 
@@ -301,13 +368,19 @@ func TestWriteTree(t *testing.T) {
 
 	for _, test := range testCases {
 		b, err := NewMemoryBackend(nil)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		hexBlobSha, err := hex.DecodeString(test.blobSha)
-		require.Nil(t, err)
+		if err != nil {
+			t.Fatalf("Expected nil")
+		}
 
 		sha, err := odb.WriteTree(&Tree{Entries: []*TreeEntry{
 			{
@@ -319,9 +392,16 @@ func TestWriteTree(t *testing.T) {
 
 		_, s := b.Storage()
 
-		assert.Nil(t, err)
-		assert.Equal(t, test.treeSha, hex.EncodeToString(sha))
-		assert.NotNil(t, s.(*memoryStorer).fs[hex.EncodeToString(sha)])
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if test.treeSha != hex.EncodeToString(sha) {
+			t.Errorf("Expected %v, got %v", test.treeSha, hex.EncodeToString(sha))
+		}
+		if s.(*memoryStorer) == nil {
+			t.Errorf("Expected non-nil")
+		}
+		_ = s.(*memoryStorer).fs[hex.EncodeToString(sha)]
 	}
 }
 
@@ -345,17 +425,23 @@ func TestWriteCommit(t *testing.T) {
 
 	for _, test := range testCases {
 		b, err := NewMemoryBackend(nil)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		when := time.Unix(1257894000, 0).UTC()
 		author := &Signature{Name: "John Doe", Email: "john@example.com", When: when}
 		committer := &Signature{Name: "Jane Doe", Email: "jane@example.com", When: when}
 
 		treeHex, err := hex.DecodeString(test.treeSha)
-		assert.Nil(t, err)
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
 
 		sha, err := odb.WriteCommit(&Commit{
 			Author:    author.String(),
@@ -366,33 +452,52 @@ func TestWriteCommit(t *testing.T) {
 
 		_, s := b.Storage()
 
-		assert.Nil(t, err)
-		assert.Equal(t, test.commitSha, hex.EncodeToString(sha))
-		assert.NotNil(t, s.(*memoryStorer).fs[hex.EncodeToString(sha)])
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if test.commitSha != hex.EncodeToString(sha) {
+			t.Errorf("Expected %v, got %v", test.commitSha, hex.EncodeToString(sha))
+		}
+		if s.(*memoryStorer) == nil {
+			t.Errorf("Expected non-nil")
+		}
+		_ = s.(*memoryStorer).fs[hex.EncodeToString(sha)]
 	}
 }
 
 func TestWriteCommitWithGPGSignature(t *testing.T) {
 	b, err := NewMemoryBackend(nil)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 
 	odb, err := FromBackend(b)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 
 	commit := new(Commit)
 	_, err = commit.Decode(
 		sha1.New(),
 		strings.NewReader(roundTripCommit), int64(len(roundTripCommit)))
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 
 	buf := new(bytes.Buffer)
 	_, _ = commit.Encode(buf)
-	assert.Equal(t, roundTripCommit, buf.String())
+	if roundTripCommit != buf.String() {
+		t.Errorf("Expected %v, got %v", roundTripCommit, buf.String())
+	}
 
 	sha, err := odb.WriteCommit(commit)
 
-	assert.Nil(t, err)
-	assert.Equal(t, roundTripCommitSha, hex.EncodeToString(sha))
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if roundTripCommitSha != hex.EncodeToString(sha) {
+		t.Errorf("Expected %v, got %v", roundTripCommitSha, hex.EncodeToString(sha))
+	}
 }
 
 func TestDecodeTag(t *testing.T) {
@@ -414,20 +519,36 @@ func TestDecodeTag(t *testing.T) {
 	b, err := NewMemoryBackend(map[string]io.ReadWriter{
 		sha: &buf,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 
 	odb, err := FromBackend(b)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 
 	tag, err := odb.Tag(tagShaHex)
 
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Equal(t, []byte("aaaaaaaaaaaaaaaaaaaa"), tag.Object)
-	assert.Equal(t, CommitObjectType, tag.ObjectType)
-	assert.Equal(t, "v2.4.0", tag.Name)
-	assert.Equal(t, "A U Thor <author@example.com>", tag.Tagger)
-	assert.Equal(t, "The quick brown fox jumps over the lazy dog.\n", tag.Message)
+	if !bytes.Equal([]byte("aaaaaaaaaaaaaaaaaaaa"), tag.Object) {
+		t.Errorf("Expected %v, got %v", []byte("aaaaaaaaaaaaaaaaaaaa"), tag.Object)
+	}
+	if CommitObjectType != tag.ObjectType {
+		t.Errorf("Expected %v, got %v", CommitObjectType, tag.ObjectType)
+	}
+	if tag.Name != "v2.4.0" {
+		t.Errorf("Expected %v, got %v", "v2.4.0", tag.Name)
+	}
+	if tag.Tagger != "A U Thor <author@example.com>" {
+		t.Errorf("Expected %v, got %v", "A U Thor <author@example.com>", tag.Tagger)
+	}
+	if tag.Message != "The quick brown fox jumps over the lazy dog.\n" {
+		t.Errorf("Expected %v, got %v", "The quick brown fox jumps over the lazy dog.\n", tag.Message)
+	}
 }
 
 func TestWriteTag(t *testing.T) {
@@ -450,10 +571,14 @@ func TestWriteTag(t *testing.T) {
 
 	for _, test := range testCases {
 		b, err := NewMemoryBackend(nil)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		odb, err := FromBackend(b, test.options...)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
 
 		sha, err := odb.WriteTag(&Tag{
 			Object:     test.commitSha,
@@ -466,9 +591,16 @@ func TestWriteTag(t *testing.T) {
 
 		_, s := b.Storage()
 
-		assert.Nil(t, err)
-		assert.Equal(t, test.tagSha, hex.EncodeToString(sha))
-		assert.NotNil(t, s.(*memoryStorer).fs[hex.EncodeToString(sha)])
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if test.tagSha != hex.EncodeToString(sha) {
+			t.Errorf("Expected %v, got %v", test.tagSha, hex.EncodeToString(sha))
+		}
+		if s.(*memoryStorer) == nil {
+			t.Errorf("Expected non-nil")
+		}
+		_ = s.(*memoryStorer).fs[hex.EncodeToString(sha)]
 	}
 }
 
@@ -476,7 +608,9 @@ func TestReadingAMissingObjectAfterClose(t *testing.T) {
 	sha, _ := hex.DecodeString("af5626b4a114abcb82d63db7c8082c3c4756e51b")
 
 	b, err := NewMemoryBackend(nil)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 
 	ro, rw := b.Storage()
 
@@ -487,30 +621,53 @@ func TestReadingAMissingObjectAfterClose(t *testing.T) {
 	}
 
 	blob, err := db.Blob(sha)
-	assert.EqualError(t, err, "git/object: cannot use closed *pack.Set")
-	assert.Nil(t, blob)
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+	if err.Error() != "git/object: cannot use closed *pack.Set" {
+		t.Errorf("Expected error message %v, got %v", "git/object: cannot use closed *pack.Set", err.Error())
+	}
+	if blob != nil {
+		t.Errorf("Expected nil, got %v", blob)
+	}
 }
 
 func TestClosingAnDatabaseMoreThanOnce(t *testing.T) {
 	db, err := NewDatabase("/tmp", "")
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Nil(t, db.Close())
-	assert.EqualError(t, db.Close(), "git/object: *Database already closed")
+	if db.Close() != nil {
+		t.Errorf("Expected nil, got %v", db.Close())
+	}
+	if db.Close() == nil || db.Close().Error() != "git/object: *Database already closed" {
+		t.Errorf("Expected 'git/object: *Database already closed', got %v", db.Close())
+	}
 }
 
 func TestDatabaseRootWithRoot(t *testing.T) {
 	db, err := NewDatabase("/foo/bar/baz", "")
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	root, ok := db.Root()
-	assert.Equal(t, "/foo/bar/baz", root)
-	assert.True(t, ok)
+	if root != "/foo/bar/baz" {
+		t.Errorf("Expected %v, got %v", "/foo/bar/baz", root)
+	}
+	if !ok {
+		t.Errorf("Expected true")
+	}
 }
 
 func TestDatabaseRootWithoutRoot(t *testing.T) {
 	root, ok := new(Database).Root()
 
-	assert.Equal(t, "", root)
-	assert.False(t, ok)
+	if root != "" {
+		t.Errorf("Expected %v, got %v", "", root)
+	}
+	if ok {
+		t.Errorf("Expected false")
+	}
 }

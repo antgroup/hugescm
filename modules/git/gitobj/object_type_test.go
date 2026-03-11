@@ -3,8 +3,6 @@ package gitobj
 import (
 	"math"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectTypeFromString(t *testing.T) {
@@ -16,7 +14,9 @@ func TestObjectTypeFromString(t *testing.T) {
 		"something else": UnknownObjectType,
 	} {
 		t.Run(str, func(t *testing.T) {
-			assert.Equal(t, typ, ObjectTypeFromString(str))
+			if typ != ObjectTypeFromString(str) {
+				t.Errorf("Expected %v, got %v", typ, ObjectTypeFromString(str))
+			}
 		})
 	}
 }
@@ -31,7 +31,9 @@ func TestObjectTypeToString(t *testing.T) {
 		ObjectType(math.MaxUint8): "<unknown>",
 	} {
 		t.Run(str, func(t *testing.T) {
-			assert.Equal(t, str, typ.String())
+			if str != typ.String() {
+				t.Errorf("Expected %v, got %v", str, typ.String())
+			}
 		})
 	}
 }

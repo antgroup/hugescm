@@ -11,8 +11,6 @@ import (
 	"io"
 	"sync/atomic"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectWriterWritesHeaders(t *testing.T) {
@@ -21,19 +19,33 @@ func TestObjectWriterWritesHeaders(t *testing.T) {
 	w := NewObjectWriter(&buf, sha1.New())
 
 	n, err := w.WriteHeader(BlobObjectType, 1)
-	assert.Equal(t, 7, n)
-	assert.Nil(t, err)
+	if n != 7 {
+		t.Errorf("Expected %v, got %v", 7, n)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Nil(t, w.Close())
+	if w.Close() != nil {
+		t.Errorf("Expected nil, got %v", w.Close())
+	}
 
 	r, err := zlib.NewReader(&buf)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	all, err := io.ReadAll(r)
-	assert.Nil(t, err)
-	assert.Equal(t, []byte("blob 1\x00"), all)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte("blob 1\x00"), all) {
+		t.Errorf("Expected %v, got %v", []byte("blob 1\x00"), all)
+	}
 
-	assert.Nil(t, r.Close())
+	if r.Close() != nil {
+		t.Errorf("Expected nil, got %v", r.Close())
+	}
 }
 
 func TestObjectWriterWritesData(t *testing.T) {
@@ -56,20 +68,36 @@ func TestObjectWriterWritesData(t *testing.T) {
 		_, _ = w.WriteHeader(BlobObjectType, 1)
 
 		n, err := w.Write([]byte{0x31})
-		assert.Equal(t, 1, n)
-		assert.Nil(t, err)
+		if n != 1 {
+			t.Errorf("Expected %v, got %v", 1, n)
+		}
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
 
-		assert.Nil(t, w.Close())
+		if w.Close() != nil {
+			t.Errorf("Expected nil, got %v", w.Close())
+		}
 
 		r, err := zlib.NewReader(&buf)
-		assert.Nil(t, err)
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
 
 		all, err := io.ReadAll(r)
-		assert.Nil(t, err)
-		assert.Equal(t, []byte("blob 1\x001"), all)
+		if err != nil {
+			t.Errorf("Expected nil, got %v", err)
+		}
+		if !bytes.Equal([]byte("blob 1\x001"), all) {
+			t.Errorf("Expected %v, got %v", []byte("blob 1\x001"), all)
+		}
 
-		assert.Nil(t, r.Close())
-		assert.Equal(t, test.sha, hex.EncodeToString(w.Sha()))
+		if r.Close() != nil {
+			t.Errorf("Expected nil, got %v", r.Close())
+		}
+		if test.sha != hex.EncodeToString(w.Sha()) {
+			t.Errorf("Expected %v, got %v", test.sha, hex.EncodeToString(w.Sha()))
+		}
 	}
 }
 
@@ -77,18 +105,30 @@ func TestObjectWriterKeepsTrackOfHash(t *testing.T) {
 	w := NewObjectWriter(new(bytes.Buffer), sha1.New())
 	n, err := w.WriteHeader(BlobObjectType, 1)
 
-	assert.Nil(t, err)
-	assert.Equal(t, 7, n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if n != 7 {
+		t.Errorf("Expected %v, got %v", 7, n)
+	}
 
-	assert.Equal(t, "bb6ca78b66403a67c6281df142de5ef472186283", hex.EncodeToString(w.Sha()))
+	if hex.EncodeToString(w.Sha()) != "bb6ca78b66403a67c6281df142de5ef472186283" {
+		t.Errorf("Expected %v, got %v", "bb6ca78b66403a67c6281df142de5ef472186283", hex.EncodeToString(w.Sha()))
+	}
 
 	w = NewObjectWriter(new(bytes.Buffer), sha256.New())
 	n, err = w.WriteHeader(BlobObjectType, 1)
 
-	assert.Nil(t, err)
-	assert.Equal(t, 7, n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if n != 7 {
+		t.Errorf("Expected %v, got %v", 7, n)
+	}
 
-	assert.Equal(t, "3a68c454a6eb75cc55bda147a53756f0f581497eb80b9b67156fb8a8d3931cd7", hex.EncodeToString(w.Sha()))
+	if hex.EncodeToString(w.Sha()) != "3a68c454a6eb75cc55bda147a53756f0f581497eb80b9b67156fb8a8d3931cd7" {
+		t.Errorf("Expected %v, got %v", "3a68c454a6eb75cc55bda147a53756f0f581497eb80b9b67156fb8a8d3931cd7", hex.EncodeToString(w.Sha()))
+	}
 }
 
 type WriteCloserFn struct {
@@ -113,6 +153,10 @@ func TestObjectWriterCallsClose(t *testing.T) {
 
 	got := w.Close()
 
-	assert.EqualValues(t, 1, calls)
-	assert.Equal(t, expected, got)
+	if calls != 1 {
+		t.Errorf("Expected %v, got %v", 1, calls)
+	}
+	if expected != got {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
 }

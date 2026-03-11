@@ -8,12 +8,12 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBlobReturnsCorrectObjectType(t *testing.T) {
-	assert.Equal(t, BlobObjectType, new(Blob).Type())
+	if BlobObjectType != new(Blob).Type() {
+		t.Errorf("Expected %v, got %v", BlobObjectType, new(Blob).Type())
+	}
 }
 
 func TestBlobFromString(t *testing.T) {
@@ -22,11 +22,17 @@ func TestBlobFromString(t *testing.T) {
 
 	b := NewBlobFromBytes(given)
 
-	assert.EqualValues(t, glen, b.Size)
+	if uint64(glen) != uint64(b.Size) {
+		t.Errorf("Expected %v, got %v", glen, b.Size)
+	}
 
 	contents, err := io.ReadAll(b.Contents)
-	assert.NoError(t, err)
-	assert.Equal(t, given, contents)
+	if err != nil {
+		t.Fatalf("ReadAll error: %v", err)
+	}
+	if !bytes.Equal(given, contents) {
+		t.Errorf("Expected %v, got %v", given, contents)
+	}
 }
 
 func TestBlobEncoding(t *testing.T) {
@@ -41,7 +47,9 @@ func TestBlobEncoding(t *testing.T) {
 	if _, err := b.Encode(&buf); err != nil {
 		t.Fatal(err.Error())
 	}
-	assert.Equal(t, contents, (&buf).String())
+	if contents != (&buf).String() {
+		t.Errorf("Expected %v, got %v", contents, (&buf).String())
+	}
 }
 
 func TestBlobDecoding(t *testing.T) {
@@ -51,14 +59,24 @@ func TestBlobDecoding(t *testing.T) {
 	b := new(Blob)
 	n, err := b.Decode(sha1.New(), from, int64(len(contents)))
 
-	assert.Equal(t, 0, n)
-	assert.Nil(t, err)
+	if n != 0 {
+		t.Errorf("Expected %v, got %v", 0, n)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.EqualValues(t, len(contents), b.Size)
+	if uint64(len(contents)) != uint64(b.Size) {
+		t.Errorf("Expected %v, got %v", len(contents), b.Size)
+	}
 
 	got, err := io.ReadAll(b.Contents)
-	assert.Nil(t, err)
-	assert.Equal(t, []byte(contents), got)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte(contents), got) {
+		t.Errorf("Expected %v, got %v", []byte(contents), got)
+	}
 }
 
 func TestBlobCallCloseFn(t *testing.T) {
@@ -75,8 +93,12 @@ func TestBlobCallCloseFn(t *testing.T) {
 
 	got := b.Close()
 
-	assert.Equal(t, expected, got)
-	assert.EqualValues(t, 1, calls)
+	if expected != got {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
+	if uint32(1) != calls {
+		t.Errorf("Expected %v, got %v", 1, calls)
+	}
 }
 
 func TestBlobCanCloseWithoutCloseFn(t *testing.T) {
@@ -84,7 +106,9 @@ func TestBlobCanCloseWithoutCloseFn(t *testing.T) {
 		closeFn: nil,
 	}
 
-	assert.Nil(t, b.Close())
+	if b.Close() != nil {
+		t.Errorf("Expected nil, got %v", b.Close())
+	}
 }
 
 func TestBlobEqualReturnsTrueWithUnchangedContents(t *testing.T) {
@@ -93,7 +117,9 @@ func TestBlobEqualReturnsTrueWithUnchangedContents(t *testing.T) {
 	b1 := &Blob{Size: int64(c.Len()), Contents: c}
 	b2 := &Blob{Size: int64(c.Len()), Contents: c}
 
-	assert.True(t, b1.Equal(b2))
+	if !b1.Equal(b2) {
+		t.Errorf("Expected true")
+	}
 }
 
 func TestBlobEqualReturnsFalseWithChangedContents(t *testing.T) {
@@ -103,20 +129,28 @@ func TestBlobEqualReturnsFalseWithChangedContents(t *testing.T) {
 	b1 := &Blob{Size: int64(c1.Len()), Contents: c1}
 	b2 := &Blob{Size: int64(c2.Len()), Contents: c2}
 
-	assert.False(t, b1.Equal(b2))
+	if b1.Equal(b2) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestBlobEqualReturnsTrueWhenOneBlobIsNil(t *testing.T) {
 	b1 := &Blob{Size: 1, Contents: bytes.NewReader([]byte{0xa})}
 	b2 := (*Blob)(nil)
 
-	assert.False(t, b1.Equal(b2))
-	assert.False(t, b2.Equal(b1))
+	if b1.Equal(b2) {
+		t.Errorf("Expected false")
+	}
+	if b2.Equal(b1) {
+		t.Errorf("Expected false")
+	}
 }
 
 func TestBlobEqualReturnsTrueWhenBothBlobsAreNil(t *testing.T) {
 	b1 := (*Blob)(nil)
 	b2 := (*Blob)(nil)
 
-	assert.True(t, b1.Equal(b2))
+	if !b1.Equal(b2) {
+		t.Errorf("Expected true")
+	}
 }

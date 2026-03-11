@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPackObjectReturnsObjectWithSingleBaseAtLowOffset(t *testing.T) {
@@ -35,13 +33,21 @@ func TestPackObjectReturnsObjectWithSingleBaseAtLowOffset(t *testing.T) {
 	}
 
 	o, err := p.Object(DecodeHex(t, "cccccccccccccccccccccccccccccccccccccccc"))
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Equal(t, TypeCommit, o.Type())
+	if TypeCommit != o.Type() {
+		t.Errorf("Expected %v, got %v", TypeCommit, o.Type())
+	}
 
 	unpacked, err := o.Unpack()
-	assert.Equal(t, []byte(original), unpacked)
-	assert.NoError(t, err)
+	if !bytes.Equal([]byte(original), unpacked) {
+		t.Errorf("Expected %v, got %v", []byte(original), unpacked)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 }
 
 func TestPackObjectReturnsObjectWithSingleBaseAtHighOffset(t *testing.T) {
@@ -69,13 +75,21 @@ func TestPackObjectReturnsObjectWithSingleBaseAtHighOffset(t *testing.T) {
 	}
 
 	o, err := p.Object(DecodeHex(t, "cccccccccccccccccccccccccccccccccccccccc"))
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Equal(t, TypeCommit, o.Type())
+	if TypeCommit != o.Type() {
+		t.Errorf("Expected %v, got %v", TypeCommit, o.Type())
+	}
 
 	unpacked, err := o.Unpack()
-	assert.Equal(t, []byte(original), unpacked)
-	assert.NoError(t, err)
+	if !bytes.Equal([]byte(original), unpacked) {
+		t.Errorf("Expected %v, got %v", []byte(original), unpacked)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 }
 
 func TestPackObjectReturnsObjectWithDeltaBaseOffset(t *testing.T) {
@@ -115,13 +129,21 @@ func TestPackObjectReturnsObjectWithDeltaBaseOffset(t *testing.T) {
 	}
 
 	o, err := p.Object(DecodeHex(t, "cccccccccccccccccccccccccccccccccccccccc"))
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Equal(t, TypeBlob, o.Type())
+	if TypeBlob != o.Type() {
+		t.Errorf("Expected %v, got %v", TypeBlob, o.Type())
+	}
 
 	unpacked, err := o.Unpack()
-	assert.Equal(t, []byte(original+", world!\n"), unpacked)
-	assert.NoError(t, err)
+	if !bytes.Equal([]byte(original+", world!\n"), unpacked) {
+		t.Errorf("Expected %v, got %v", []byte(original+", world!\n"), unpacked)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 }
 
 func TestPackfileObjectReturnsObjectWithDeltaBaseReference(t *testing.T) {
@@ -168,13 +190,21 @@ func TestPackfileObjectReturnsObjectWithDeltaBaseReference(t *testing.T) {
 	}
 
 	o, err := p.Object(DecodeHex(t, "dddddddddddddddddddddddddddddddddddddddd"))
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
-	assert.Equal(t, TypeBlob, o.Type())
+	if TypeBlob != o.Type() {
+		t.Errorf("Expected %v, got %v", TypeBlob, o.Type())
+	}
 
 	unpacked, err := o.Unpack()
-	assert.Equal(t, []byte("Hello, world!\n"), unpacked)
-	assert.NoError(t, err)
+	if !bytes.Equal([]byte("Hello, world!\n"), unpacked) {
+		t.Errorf("Expected %v, got %v", []byte("Hello, world!\n"), unpacked)
+	}
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 }
 
 func TestPackfileClosesReadClosers(t *testing.T) {
@@ -183,8 +213,12 @@ func TestPackfileClosesReadClosers(t *testing.T) {
 		r: r,
 	}
 
-	assert.NoError(t, p.Close())
-	assert.EqualValues(t, 1, r.N)
+	if p.Close() != nil {
+		t.Errorf("Expected nil, got %v", p.Close())
+	}
+	if r.N != 1 {
+		t.Errorf("Expected %v, got %v", 1, r.N)
+	}
 }
 
 func TestPackfileClosePropogatesCloseErrors(t *testing.T) {
@@ -193,7 +227,9 @@ func TestPackfileClosePropogatesCloseErrors(t *testing.T) {
 		r: &ReaderAtCloser{E: e},
 	}
 
-	assert.Equal(t, e, p.Close())
+	if e != p.Close() {
+		t.Errorf("Expected %v, got %v", e, p.Close())
+	}
 }
 
 type ReaderAtCloser struct {

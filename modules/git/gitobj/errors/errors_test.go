@@ -3,22 +3,30 @@ package errors
 import (
 	"encoding/hex"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNoSuchObjectTypeErrFormatting(t *testing.T) {
 	sha := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	oid, err := hex.DecodeString(sha)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	err = NoSuchObject(oid)
 
-	assert.Equal(t, "git/object: no such object: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", err.Error())
-	assert.Equal(t, IsNoSuchObject(err), true)
+	if err.Error() != "git/object: no such object: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" {
+		t.Errorf("Expected %v, got %v", "git/object: no such object: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", err.Error())
+	}
+	if IsNoSuchObject(err) != true {
+		t.Errorf("Expected %v, got %v", IsNoSuchObject(err), true)
+	}
 }
 
 func TestIsNoSuchObjectNilHandling(t *testing.T) {
-	assert.Equal(t, IsNoSuchObject((*noSuchObject)(nil)), false)
-	assert.Equal(t, IsNoSuchObject(nil), false)
+	if IsNoSuchObject((*noSuchObject)(nil)) != false {
+		t.Errorf("Expected %v, got %v", IsNoSuchObject((*noSuchObject)(nil)), false)
+	}
+	if IsNoSuchObject(nil) != false {
+		t.Errorf("Expected %v, got %v", IsNoSuchObject(nil), false)
+	}
 }

@@ -12,8 +12,6 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/streamio"
 	"github.com/emirpasic/gods/trees/binaryheap"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCommitCompress(t *testing.T) {
@@ -127,8 +125,12 @@ test message`
 
 	commit := new(Commit)
 	err := commit.Decode(reader)
-	require.NoError(t, err)
-	assert.Equal(t, 3, len(commit.Parents))
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if len(commit.Parents) != 3 {
+		t.Errorf("Expected 3 parents, got %d", len(commit.Parents))
+	}
 }
 
 // TestCommitDecodeWithSpecialCharacters tests decoding a commit with special characters
@@ -150,13 +152,27 @@ test message with 中文 and 日本語`
 
 	commit := new(Commit)
 	err := commit.Decode(reader)
-	require.NoError(t, err)
-	assert.Contains(t, commit.Author.String(), "张三")
-	assert.Equal(t, 1, len(commit.ExtraHeaders))
-	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
-	assert.Equal(t, "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?", commit.ExtraHeaders[0].V)
-	assert.Contains(t, commit.Message, "中文")
-	assert.Contains(t, commit.Message, "日本語")
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if !strings.Contains(commit.Author.String(), "张三") {
+		t.Error("Expected author to contain 张三")
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Errorf("Expected 1 extra header, got %d", len(commit.ExtraHeaders))
+	}
+	if commit.ExtraHeaders[0].K != "custom" {
+		t.Errorf("Expected key 'custom', got %s", commit.ExtraHeaders[0].K)
+	}
+	if commit.ExtraHeaders[0].V != "value with spaces & special!@#$%^&*()_+-=[]{}|;':\",./<>?" {
+		t.Errorf("Unexpected extra header value")
+	}
+	if !strings.Contains(commit.Message, "中文") {
+		t.Error("Expected message to contain 中文")
+	}
+	if !strings.Contains(commit.Message, "日本語") {
+		t.Error("Expected message to contain 日本語")
+	}
 }
 
 // TestCommitDecodeWithExtraHeaderBeforeStandard tests decoding a commit with extra header before standard headers
@@ -178,10 +194,18 @@ test message`
 
 	commit := new(Commit)
 	err := commit.Decode(reader)
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(commit.ExtraHeaders))
-	assert.Equal(t, "custom", commit.ExtraHeaders[0].K)
-	assert.Equal(t, "extra header before standard", commit.ExtraHeaders[0].V)
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if len(commit.ExtraHeaders) != 1 {
+		t.Errorf("Expected 1 extra header, got %d", len(commit.ExtraHeaders))
+	}
+	if commit.ExtraHeaders[0].K != "custom" {
+		t.Errorf("Expected key 'custom', got %s", commit.ExtraHeaders[0].K)
+	}
+	if commit.ExtraHeaders[0].V != "extra header before standard" {
+		t.Errorf("Expected 'extra header before standard', got %s", commit.ExtraHeaders[0].V)
+	}
 }
 
 // TestCommitDecodeWithComplexHeaders tests decoding a commit with complex multi-line headers
@@ -207,15 +231,29 @@ Random changes`
 
 	commit := new(Commit)
 	err := commit.Decode(reader)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
 
 	// Verify ExtraHeaders
-	require.Equal(t, 1, len(commit.ExtraHeaders))
-	require.Equal(t, "mergetag", commit.ExtraHeaders[0].K)
-	require.Contains(t, commit.ExtraHeaders[0].V, "object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd")
-	require.Contains(t, commit.ExtraHeaders[0].V, "type commit")
-	require.Contains(t, commit.ExtraHeaders[0].V, "tag random")
-	require.Contains(t, commit.ExtraHeaders[0].V, "tagger J. Roe <jroe@example.ca> 1337889148 -0600")
+	if len(commit.ExtraHeaders) != 1 {
+		t.Errorf("Expected 1 extra header, got %d", len(commit.ExtraHeaders))
+	}
+	if commit.ExtraHeaders[0].K != "mergetag" {
+		t.Errorf("Expected key 'mergetag', got %s", commit.ExtraHeaders[0].K)
+	}
+	if !strings.Contains(commit.ExtraHeaders[0].V, "object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd") {
+		t.Error("Expected extra header to contain 'object 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd'")
+	}
+	if !strings.Contains(commit.ExtraHeaders[0].V, "type commit") {
+		t.Error("Expected extra header to contain 'type commit'")
+	}
+	if !strings.Contains(commit.ExtraHeaders[0].V, "tag random") {
+		t.Error("Expected extra header to contain 'tag random'")
+	}
+	if !strings.Contains(commit.ExtraHeaders[0].V, "tagger J. Roe <jroe@example.ca> 1337889148 -0600") {
+		t.Error("Expected extra header to contain 'tagger J. Roe <jroe@example.ca> 1337889148 -0600'")
+	}
 }
 
 // testReader implements the Reader interface for testing purposes

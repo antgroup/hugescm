@@ -8,81 +8,123 @@ import (
 	"testing"
 
 	"github.com/antgroup/hugescm/modules/git/gitobj/errors"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMemoryStorerIncludesGivenEntries(t *testing.T) {
 	sha := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	hex, err := hex.DecodeString(sha)
 
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	ms := newMemoryStorer(map[string]io.ReadWriter{
 		sha: bytes.NewBuffer([]byte{0x1}),
 	})
 
 	buf, err := ms.Open(hex)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	contents, err := io.ReadAll(buf)
-	assert.Nil(t, err)
-	assert.Equal(t, []byte{0x1}, contents)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if !bytes.Equal([]byte{0x1}, contents) {
+		t.Errorf("Expected %v, got %v", []byte{0x1}, contents)
+	}
 }
 
 func TestMemoryStorerAcceptsNilEntries(t *testing.T) {
 	ms := newMemoryStorer(nil)
 
-	assert.NotNil(t, ms)
-	assert.Equal(t, 0, len(ms.fs))
-	assert.NoError(t, ms.Close())
+	if len(ms.fs) != 0 {
+		t.Errorf("Expected 0, got %v", len(ms.fs))
+	}
+	if ms.Close() != nil {
+		t.Errorf("Expected nil, got %v", ms.Close())
+	}
 }
 
 func TestMemoryStorerDoesntOpenMissingEntries(t *testing.T) {
 	sha := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	hex, err := hex.DecodeString(sha)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	ms := newMemoryStorer(nil)
 
 	f, err := ms.Open(hex)
-	assert.Equal(t, errors.NoSuchObject(hex), err)
-	assert.Nil(t, f)
+	if !errors.IsNoSuchObject(err) {
+		t.Errorf("Expected NoSuchObject error, got %v", err)
+	}
+	if f != nil {
+		t.Errorf("Expected nil, got %v", f)
+	}
 }
 
 func TestMemoryStorerStoresNewEntries(t *testing.T) {
 	hex, err := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	ms := newMemoryStorer(nil)
 
-	assert.Equal(t, 0, len(ms.fs))
+	if len(ms.fs) != 0 {
+		t.Errorf("Expected 0, got %v", len(ms.fs))
+	}
 
 	_, err = ms.Store(hex, strings.NewReader("hello"))
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(ms.fs))
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if len(ms.fs) != 1 {
+		t.Errorf("Expected 1, got %v", len(ms.fs))
+	}
 
 	got, err := ms.Open(hex)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	contents, err := io.ReadAll(got)
-	assert.Nil(t, err)
-	assert.Equal(t, "hello", string(contents))
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if string(contents) != "hello" {
+		t.Errorf("Expected %v, got %v", "hello", string(contents))
+	}
 }
 
 func TestMemoryStorerStoresExistingEntries(t *testing.T) {
 	hex, err := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	ms := newMemoryStorer(nil)
 
-	assert.Equal(t, 0, len(ms.fs))
+	if len(ms.fs) != 0 {
+		t.Errorf("Expected 0, got %v", len(ms.fs))
+	}
 
 	_, err = ms.Store(hex, new(bytes.Buffer))
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(ms.fs))
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if len(ms.fs) != 1 {
+		t.Errorf("Expected 1, got %v", len(ms.fs))
+	}
 
 	n, err := ms.Store(hex, new(bytes.Buffer))
-	assert.Nil(t, err)
-	assert.EqualValues(t, 0, n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if int64(0) != n {
+		t.Errorf("Expected %v, got %v", 0, n)
+	}
 }

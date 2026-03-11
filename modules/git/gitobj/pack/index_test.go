@@ -6,8 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -20,8 +18,12 @@ func TestIndexEntrySearch(t *testing.T) {
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1,
 	})
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 6, e.PackOffset)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if e.PackOffset != 6 {
+		t.Errorf("Expected %v, got %v", 6, e.PackOffset)
+	}
 }
 
 func TestIndexEntrySearchClampLeft(t *testing.T) {
@@ -30,8 +32,12 @@ func TestIndexEntrySearchClampLeft(t *testing.T) {
 		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 	})
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 0, e.PackOffset)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if e.PackOffset != 0 {
+		t.Errorf("Expected %v, got %v", 0, e.PackOffset)
+	}
 }
 
 func TestIndexEntrySearchClampRight(t *testing.T) {
@@ -40,8 +46,12 @@ func TestIndexEntrySearchClampRight(t *testing.T) {
 		0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
 	})
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 0x4ff, e.PackOffset)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if e.PackOffset != 0x4ff {
+		t.Errorf("Expected %v, got %v", 0x4ff, e.PackOffset)
+	}
 }
 
 func TestIndexSearchOutOfBounds(t *testing.T) {
@@ -50,8 +60,13 @@ func TestIndexSearchOutOfBounds(t *testing.T) {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	})
 
-	assert.True(t, IsNotFound(err), "expected err to be 'not found'")
-	assert.Nil(t, e)
+	if !IsNotFound(err) {
+		t.Errorf("Expected true")
+	}
+	t.Log("expected err to be 'not found'")
+	if e != nil {
+		t.Errorf("Expected nil, got %v", e)
+	}
 }
 
 func TestIndexEntryNotFound(t *testing.T) {
@@ -60,8 +75,13 @@ func TestIndexEntryNotFound(t *testing.T) {
 		0x6, 0x6, 0x6, 0x6, 0x6, 0x6, 0x6, 0x6, 0x6, 0x6,
 	})
 
-	assert.True(t, IsNotFound(err), "expected err to be 'not found'")
-	assert.Nil(t, e)
+	if !IsNotFound(err) {
+		t.Errorf("Expected true")
+	}
+	t.Log("expected err to be 'not found'")
+	if e != nil {
+		t.Errorf("Expected nil, got %v", e)
+	}
 }
 
 func TestIndexCount(t *testing.T) {
@@ -72,17 +92,23 @@ func TestIndexCount(t *testing.T) {
 
 	idx := &Index{fanout: fanout}
 
-	assert.EqualValues(t, 255, idx.Count())
+	if idx.Count() != 255 {
+		t.Errorf("Expected %v, got %v", 255, idx.Count())
+	}
 }
 
 func TestIndexIsNotFound(t *testing.T) {
-	assert.True(t, IsNotFound(errNotFound),
-		"expected 'errNotFound' to satisfy 'IsNotFound()'")
+	if !IsNotFound(errNotFound) {
+		t.Errorf("Expected true")
+	}
+	t.Log("expected 'errNotFound' to satisfy 'IsNotFound()'")
 }
 
 func TestIndexIsNotFoundForOtherErrors(t *testing.T) {
-	assert.False(t, IsNotFound(errors.New("git/object/pack: misc")),
-		"expected 'err' not to satisfy 'IsNotFound()'")
+	if IsNotFound(errors.New("git/object/pack: misc")) {
+		t.Errorf("Expected false")
+	}
+	t.Log("expected 'err' not to satisfy 'IsNotFound()'")
 }
 
 // init generates some fixture data and then constructs an *Index instance using

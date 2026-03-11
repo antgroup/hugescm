@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"errors"
 	"io"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDecodeIndexV2(t *testing.T) {
@@ -24,8 +23,12 @@ func TestDecodeIndexV2(t *testing.T) {
 
 	idx, err := DecodeIndex(bytes.NewReader(buf), sha1.New())
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 3, idx.Count())
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if idx.Count() != 3 {
+		t.Errorf("Expected %v, got %v", 3, idx.Count())
+	}
 }
 
 func TestDecodeIndexV2InvalidFanout(t *testing.T) {
@@ -36,22 +39,34 @@ func TestDecodeIndexV2InvalidFanout(t *testing.T) {
 
 	idx, err := DecodeIndex(bytes.NewReader(buf), sha1.New())
 
-	assert.Equal(t, ErrShortFanout, err)
-	assert.Nil(t, idx)
+	if ErrShortFanout != err {
+		t.Errorf("Expected %v, got %v", ErrShortFanout, err)
+	}
+	if idx != nil {
+		t.Errorf("Expected nil, got %v", idx)
+	}
 }
 
 func TestDecodeIndexV1(t *testing.T) {
 	idx, err := DecodeIndex(bytes.NewReader(make([]byte, indexFanoutWidth)), sha1.New())
 
-	assert.NoError(t, err)
-	assert.EqualValues(t, 0, idx.Count())
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if idx.Count() != 0 {
+		t.Errorf("Expected %v, got %v", 0, idx.Count())
+	}
 }
 
 func TestDecodeIndexV1InvalidFanout(t *testing.T) {
 	idx, err := DecodeIndex(bytes.NewReader(make([]byte, indexFanoutWidth-1)), sha1.New())
 
-	assert.Equal(t, ErrShortFanout, err)
-	assert.Nil(t, idx)
+	if ErrShortFanout != err {
+		t.Errorf("Expected %v, got %v", ErrShortFanout, err)
+	}
+	if idx != nil {
+		t.Errorf("Expected nil, got %v", idx)
+	}
 }
 
 func TestDecodeIndexUnsupportedVersion(t *testing.T) {
@@ -61,13 +76,24 @@ func TestDecodeIndexUnsupportedVersion(t *testing.T) {
 
 	idx, err := DecodeIndex(bytes.NewReader(buf), sha1.New())
 
-	assert.EqualError(t, err, "git/object/pack:: unsupported version: 3")
-	assert.Nil(t, idx)
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+	if err.Error() != "git/object/pack:: unsupported version: 3" {
+		t.Errorf("Expected error message %v, got %v", "git/object/pack:: unsupported version: 3", err.Error())
+	}
+	if idx != nil {
+		t.Errorf("Expected nil, got %v", idx)
+	}
 }
 
 func TestDecodeIndexEmptyContents(t *testing.T) {
 	idx, err := DecodeIndex(bytes.NewReader(make([]byte, 0)), sha1.New())
 
-	assert.Equal(t, io.EOF, err)
-	assert.Nil(t, idx)
+	if !errors.Is(err, io.EOF) {
+		t.Errorf("Expected %v, got %v", io.EOF, err)
+	}
+	if idx != nil {
+		t.Errorf("Expected nil, got %v", idx)
+	}
 }

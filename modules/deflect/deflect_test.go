@@ -10,7 +10,6 @@ import (
 	"github.com/antgroup/hugescm/modules/deflect"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/strengthen"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDeflectFilter(t *testing.T) {
@@ -76,7 +75,9 @@ func TestRepoSize(t *testing.T) {
 		return
 	}
 	fmt.Fprintf(os.Stderr, "%s repo size: %s\n", repoPath, strengthen.FormatSize(size))
-	require.True(t, size > 0)
+	if size <= 0 {
+		t.Errorf("Expected size > 0, got %d", size)
+	}
 }
 
 func TestHousekeepingScan(t *testing.T) {

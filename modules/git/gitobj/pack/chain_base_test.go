@@ -4,26 +4,32 @@ import (
 	"bytes"
 	"compress/zlib"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestChainBaseDecompressesData(t *testing.T) {
 	const contents = "Hello, world!\n"
 
 	compressed, err := compress(contents)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	var buf bytes.Buffer
 
 	_, err = buf.Write([]byte{0x0, 0x0, 0x0, 0x0})
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	_, err = buf.Write(compressed)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	_, err = buf.Write([]byte{0x0, 0x0, 0x0, 0x0})
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	base := &ChainBase{
 		offset: 4,
@@ -33,8 +39,12 @@ func TestChainBaseDecompressesData(t *testing.T) {
 	}
 
 	unpacked, err := base.Unpack()
-	assert.NoError(t, err)
-	assert.Equal(t, contents, string(unpacked))
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if contents != string(unpacked) {
+		t.Errorf("Expected %v, got %v", contents, string(unpacked))
+	}
 }
 
 func TestChainBaseTypeReturnsType(t *testing.T) {
@@ -42,7 +52,9 @@ func TestChainBaseTypeReturnsType(t *testing.T) {
 		typ: TypeCommit,
 	}
 
-	assert.Equal(t, TypeCommit, b.Type())
+	if TypeCommit != b.Type() {
+		t.Errorf("Expected %v, got %v", TypeCommit, b.Type())
+	}
 }
 
 func compress(base string) ([]byte, error) {

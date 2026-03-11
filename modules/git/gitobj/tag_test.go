@@ -5,12 +5,12 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTagTypeReturnsCorrectObjectType(t *testing.T) {
-	assert.Equal(t, TagObjectType, new(Tag).Type())
+	if TagObjectType != new(Tag).Type() {
+		t.Errorf("Expected %v, got %v", TagObjectType, new(Tag).Type())
+	}
 }
 
 func TestTagEncode(t *testing.T) {
@@ -27,8 +27,12 @@ func TestTagEncode(t *testing.T) {
 
 	n, err := tag.Encode(buf)
 
-	assert.Nil(t, err)
-	assert.EqualValues(t, buf.Len(), n)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if int64(buf.Len()) != int64(n) {
+		t.Errorf("Expected %v, got %v", buf.Len(), n)
+	}
 
 	assertLine(t, buf, "object 6161616161616161616161616161616161616161")
 	assertLine(t, buf, "type commit")
@@ -37,7 +41,9 @@ func TestTagEncode(t *testing.T) {
 	assertLine(t, buf, "")
 	assertLine(t, buf, "The quick brown fox jumps over the lazy dog.")
 
-	assert.Equal(t, 0, buf.Len())
+	if buf.Len() != 0 {
+		t.Errorf("Expected 0, got %v", buf.Len())
+	}
 }
 
 func TestTagDecode(t *testing.T) {
@@ -55,12 +61,26 @@ func TestTagDecode(t *testing.T) {
 	tag := new(Tag)
 	n, err := tag.Decode(sha1.New(), from, int64(flen))
 
-	assert.Nil(t, err)
-	assert.Equal(t, n, flen)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if int64(n) != int64(flen) {
+		t.Errorf("Expected %v, got %v", flen, n)
+	}
 
-	assert.Equal(t, []byte("aaaaaaaaaaaaaaaaaaaa"), tag.Object)
-	assert.Equal(t, CommitObjectType, tag.ObjectType)
-	assert.Equal(t, "v2.4.0", tag.Name)
-	assert.Equal(t, "A U Thor <author@example.com>", tag.Tagger)
-	assert.Equal(t, "The quick brown fox jumps over the lazy dog.\n", tag.Message)
+	if !bytes.Equal([]byte("aaaaaaaaaaaaaaaaaaaa"), tag.Object) {
+		t.Errorf("Expected %v, got %v", []byte("aaaaaaaaaaaaaaaaaaaa"), tag.Object)
+	}
+	if CommitObjectType != tag.ObjectType {
+		t.Errorf("Expected %v, got %v", CommitObjectType, tag.ObjectType)
+	}
+	if tag.Name != "v2.4.0" {
+		t.Errorf("Expected %v, got %v", "v2.4.0", tag.Name)
+	}
+	if tag.Tagger != "A U Thor <author@example.com>" {
+		t.Errorf("Expected %v, got %v", "A U Thor <author@example.com>", tag.Tagger)
+	}
+	if tag.Message != "The quick brown fox jumps over the lazy dog.\n" {
+		t.Errorf("Expected %v, got %v", "The quick brown fox jumps over the lazy dog.\n", tag.Message)
+	}
 }

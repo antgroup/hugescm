@@ -3,25 +3,29 @@ package lfs
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func assertLine(t *testing.T, r *bufio.Reader, expected string) {
 	actual, err := r.ReadString('\n')
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
 }
 
 func TestEncode(t *testing.T) {
 	var buf bytes.Buffer
 	pointer := NewPointer("booya", 12345, nil)
 	_, err := EncodePointer(&buf, pointer)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	bufReader := bufio.NewReader(&buf)
 	assertLine(t, bufReader, "version https://git-lfs.github.com/spec/v1\n")
@@ -32,19 +36,27 @@ func TestEncode(t *testing.T) {
 	if err == nil {
 		t.Fatalf("More to read: %s", line)
 	}
-	require.Equal(t, "EOF", err.Error())
+	if !errors.Is(err, io.EOF) {
+		t.Fatalf("Expected %v, got %v", io.EOF, err)
+	}
 }
 
 func TestEncodeEmpty(t *testing.T) {
 	var buf bytes.Buffer
 	pointer := NewPointer("", 0, nil)
 	_, err := EncodePointer(&buf, pointer)
-	assert.Equal(t, nil, err)
+	if nil != err {
+		t.Errorf("Expected %v, got %v", nil, err)
+	}
 
 	bufReader := bufio.NewReader(&buf)
 	val, err := bufReader.ReadString('\n')
-	assert.Equal(t, "", val)
-	assert.Equal(t, "EOF", err.Error())
+	if val != "" {
+		t.Errorf("Expected %v, got %v", "", val)
+	}
+	if !errors.Is(err, io.EOF) {
+		t.Errorf("Expected %v, got %v", io.EOF, err)
+	}
 }
 
 func TestEncodeExtensions(t *testing.T) {
@@ -56,7 +68,9 @@ func TestEncodeExtensions(t *testing.T) {
 	}
 	pointer := NewPointer("main_oid", 12345, exts)
 	_, err := EncodePointer(&buf, pointer)
-	assert.Nil(t, err)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
 
 	bufReader := bufio.NewReader(&buf)
 	assertLine(t, bufReader, "version https://git-lfs.github.com/spec/v1\n")
@@ -70,7 +84,9 @@ func TestEncodeExtensions(t *testing.T) {
 	if err == nil {
 		t.Fatalf("More to read: %s", line)
 	}
-	assert.Equal(t, "EOF", err.Error())
+	if !errors.Is(err, io.EOF) {
+		t.Errorf("Expected %v, got %v", io.EOF, err)
+	}
 }
 
 func TestDecode(t *testing.T) {
@@ -159,10 +175,18 @@ func TestDecodeFromEmptyReader(t *testing.T) {
 	p, buf, err := DecodeFrom(strings.NewReader(""))
 	by, _ := io.ReadAll(buf)
 
-	assert.Nil(t, err)
-	assert.Equal(t, p.Oid, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
-	assert.Equal(t, p.Size, int64(0))
-	assert.Empty(t, by)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+	}
+	if p.Oid != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+		t.Errorf("Expected %v, got %v", p.Oid, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+	}
+	if p.Size != int64(0) {
+		t.Errorf("Expected %v, got %v", p.Size, int64(0))
+	}
+	if len(by) != 0 {
+		t.Errorf("Expected empty")
+	}
 }
 
 func TestDecodeCanonical(t *testing.T) {
@@ -208,7 +232,9 @@ size 12345
 		if err != nil {
 			t.Errorf("Error decoding: %v", err)
 		}
-		assert.Equal(t, p.Canonical, true)
+		if p.Canonical != true {
+			t.Errorf("Expected %v, got %v", p.Canonical, true)
+		}
 	}
 
 	for _, ex := range nonCanonicalExamples {
@@ -216,7 +242,9 @@ size 12345
 		if err != nil {
 			t.Errorf("Error decoding: %v", err)
 		}
-		assert.Equal(t, p.Canonical, false)
+		if p.Canonical != false {
+			t.Errorf("Expected %v, got %v", p.Canonical, false)
+		}
 	}
 }
 
@@ -332,5 +360,7 @@ size 177735`,
 }
 
 func assertEqualWithExample(t *testing.T, example string, expected, actual any) {
-	assert.Equal(t, expected, actual, "Example:\n%s", strings.TrimSpace(example))
+	if expected != actual {
+		t.Errorf("Expected %v, got %v\nExample:\n%s", expected, actual, strings.TrimSpace(example))
+	}
 }

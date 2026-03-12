@@ -94,7 +94,7 @@ func (b bindings) addProvider(provider any, singleton bool) error {
 		return fmt.Errorf("%T must be a function with the signature func(...)(T, error) or func(...) T", provider)
 	}
 	if t.NumOut() == 2 {
-		if t.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+		if t.Out(1) != reflect.TypeFor[error]() {
 			return fmt.Errorf("missing error; %T must be a function with the signature func(...)(T, error) or func(...) T", provider)
 		}
 	}

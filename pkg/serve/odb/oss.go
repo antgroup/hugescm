@@ -186,12 +186,10 @@ func (g *uploadGroup) upload(ctx context.Context, o *ODB) error {
 }
 
 func (g *uploadGroup) run(ctx context.Context, o *ODB) {
-	g.wg.Add(1)
-	go func() {
-		defer g.wg.Done()
+	g.wg.Go(func() {
 		err := g.upload(ctx, o)
 		g.errors <- err
-	}()
+	})
 }
 
 // BatchObjects: batch upload objects

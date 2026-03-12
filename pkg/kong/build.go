@@ -90,7 +90,7 @@ func flattenedFields(v reflect.Value, ptag *Tag) (out []flattenedField, err erro
 		// Embedded type.
 		if fv.Kind() == reflect.Interface {
 			fv = fv.Elem()
-		} else if fv.Type() == reflect.TypeOf(Plugins{}) {
+		} else if fv.Type() == reflect.TypeFor[Plugins]() {
 			for i := range fv.Len() {
 				fields, ferr := flattenedFields(fv.Index(i).Elem(), tag)
 				if ferr != nil {

@@ -10,8 +10,8 @@ import (
 // Windows format: "localhost;127.0.0.1;<local>;*.example.com"
 // <local> means bypass proxy for all local addresses (simple hostnames without dots)
 func parseProxyOverrideForTest(proxyOverride string) (hosts []string, bypassLocal bool) {
-	items := strings.Split(proxyOverride, ";")
-	for _, item := range items {
+	items := strings.SplitSeq(proxyOverride, ";")
+	for item := range items {
 		item = strings.TrimSpace(item)
 		if item == "" {
 			continue

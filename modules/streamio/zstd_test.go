@@ -29,7 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 `
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		var buf bytes.Buffer
 		z := GetZstdWriter(&buf)
 		if _, err := io.Copy(z, strings.NewReader(content)); err != nil {
@@ -62,7 +62,7 @@ SOFTWARE.
 	z := GetZstdWriter(&buf)
 	_, _ = io.Copy(z, strings.NewReader(content))
 	PutZstdWriter(z)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		z, err := GetZstdReader(bytes.NewReader(buf.Bytes()))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "decode error: %v\n", err)

@@ -52,11 +52,11 @@ func ParseRange(s string, size int64) ([]Range, error) { // nolint:gocognit
 		if ra == "" {
 			continue
 		}
-		i := strings.Index(ra, "-")
-		if i < 0 {
+		before, after, ok := strings.Cut(ra, "-")
+		if !ok {
 			return nil, ErrInvalid
 		}
-		start, end := textproto.TrimString(ra[:i]), textproto.TrimString(ra[i+1:])
+		start, end := textproto.TrimString(before), textproto.TrimString(after)
 		var r Range
 		if start == "" {
 			// If no start is specified, end specifies the

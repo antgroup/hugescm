@@ -26,7 +26,7 @@ func createZipUncompressed(content *bytes.Buffer) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer(nil)
 	w := zip.NewWriter(buf)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		file, err := w.CreateHeader(&zip.FileHeader{
 			Name:   fmt.Sprintf("file%d", i),
 			Method: zip.Store, // Store means 0 compression.

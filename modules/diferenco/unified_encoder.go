@@ -213,8 +213,8 @@ func (e *UnifiedEncoder) writeLine(b *strings.Builder, o *Line) {
 	colorKey := operationColorKey[o.Kind]
 	_, _ = b.WriteString(e.color[colorKey])
 	_ = b.WriteByte(operationChar[o.Kind])
-	if strings.HasSuffix(o.Content, "\n") {
-		_, _ = b.WriteString(strings.TrimSuffix(o.Content, "\n"))
+	if before, ok := strings.CutSuffix(o.Content, "\n"); ok {
+		_, _ = b.WriteString(before)
 		_, _ = b.WriteString(e.color.Reset(colorKey))
 		_ = b.WriteByte('\n')
 		return

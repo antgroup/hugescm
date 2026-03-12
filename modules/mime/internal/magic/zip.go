@@ -146,7 +146,7 @@ func (z zipEntries) match(file []byte) bool {
 
 func zipHas(raw scan.Bytes, searchFor zipEntries, stopAfter int) bool {
 	iter := zipIterator{raw}
-	for i := 0; i < stopAfter; i++ {
+	for range stopAfter {
 		f := iter.next()
 		if len(f) == 0 {
 			break
@@ -163,7 +163,7 @@ func zipHas(raw scan.Bytes, searchFor zipEntries, stopAfter int) bool {
 // entry can be.
 func msoxml(raw scan.Bytes, searchFor zipEntries, stopAfter int) bool {
 	iter := zipIterator{raw}
-	for i := 0; i < stopAfter; i++ {
+	for i := range stopAfter {
 		f := iter.next()
 		if len(f) == 0 {
 			break

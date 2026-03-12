@@ -144,9 +144,9 @@ func TestTrim(t *testing.T) {
 
 func TestFirstNonWS(t *testing.T) {
 	tcases := []struct {
-		name  string
-		in    string
-		c  byte
+		name string
+		in   string
+		c    byte
 	}{{
 		"empty", "", 0x00,
 	}, {

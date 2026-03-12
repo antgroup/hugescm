@@ -39,7 +39,7 @@ func NetPAM(raw []byte, _ uint32) bool {
 	s := scan.Bytes(raw)
 	var l scan.Bytes
 	// Read line by line.
-	for i := 0; i < 128; i++ {
+	for range 128 {
 		l = s.Line()
 		// If the line is empty or a comment, skip.
 		if len(l) == 0 || l.Peek() == '#' {
@@ -83,7 +83,7 @@ func netp(s scan.Bytes, prefixes ...string) bool {
 
 	var l scan.Bytes
 	// Read line by line.
-	for i := 0; i < 128; i++ {
+	for range 128 {
 		l = s.Line()
 		// If the line is a comment, skip.
 		if l.Peek() == '#' {

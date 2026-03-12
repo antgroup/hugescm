@@ -54,7 +54,7 @@ func (b *bucket) StartUpload(ctx context.Context, resourcePath, filePath string,
 	// defer cancelCtx()
 	results := make(chan UploadPart, len(chunks))
 	failed := make(chan error)
-	for i := 0; i < len(chunks); i++ {
+	for i := range chunks {
 		go func(k chunk) {
 			u, err := b.uploadFilePart(newCtx, resourcePath, filePath, mur, k)
 			if err != nil {

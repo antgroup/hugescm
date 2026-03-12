@@ -117,7 +117,7 @@ const max = 16 + (6 * (127 + 128) / 256 * 36) + (6 * (127 + 128) / 256 * 6) + (6
 var nums = make([]string, 0, max)
 
 func init() {
-	for i := 0; i < max; i++ {
+	for i := range max {
 		nums = append(nums, strconv.Itoa(i))
 	}
 }

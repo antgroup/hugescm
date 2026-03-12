@@ -36,11 +36,11 @@ func (opts *ListConfigOptions) displayInput() {
 	}
 	NUL := byte(0)
 	for _, v := range opts.Values {
-		i := strings.IndexByte(v, '=')
-		if i == -1 {
+		before, after, ok := strings.Cut(v, "=")
+		if !ok {
 			continue
 		}
-		_, _ = fmt.Fprintf(os.Stdout, "%s\n%s%c", v[0:i], v[i+1:], NUL)
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n%s%c", before, after, NUL)
 	}
 }
 
@@ -250,8 +250,8 @@ func UpdateConfig(opts *UpdateConfigOptions) error {
 	nlen := len(opts.NameAndValues)
 	for i := 0; i < nlen; {
 		kv := opts.NameAndValues[i]
-		if index := strings.IndexByte(kv, '='); index != -1 {
-			values[kv[0:index]] = valueCast(kv[index+1:])
+		if before, after, ok := strings.Cut(kv, "="); ok {
+			values[before] = valueCast(after)
 			i++
 			continue
 		}

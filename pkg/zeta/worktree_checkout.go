@@ -438,12 +438,10 @@ func (cg *checkoutGroup) coco(ctx context.Context, w *Worktree, bar ProgressBar)
 }
 
 func (cg *checkoutGroup) run(ctx context.Context, w *Worktree, bar ProgressBar) {
-	cg.wg.Add(1)
-	go func() {
-		defer cg.wg.Done()
+	cg.wg.Go(func() {
 		err := cg.coco(ctx, w, bar)
 		cg.errors <- err
-	}()
+	})
 }
 
 func (w *Worktree) addIndex(name string, entry *object.TreeEntry, recv indexRecv) error {

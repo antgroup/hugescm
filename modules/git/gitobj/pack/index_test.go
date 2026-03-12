@@ -86,7 +86,7 @@ func TestIndexEntryNotFound(t *testing.T) {
 
 func TestIndexCount(t *testing.T) {
 	fanout := make([]uint32, 256)
-	for i := 0; i < len(fanout); i++ {
+	for i := range fanout {
 		fanout[i] = uint32(i)
 	}
 

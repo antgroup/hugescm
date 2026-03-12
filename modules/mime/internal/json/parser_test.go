@@ -761,7 +761,7 @@ func TestCurrPathBounded(t *testing.T) {
 	// input has to be an incomplete json, so that currPath does not get popped.
 	input := []byte(strings.Repeat("[", count))
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		Parse(QueryGeo, input)
 		// It's not guaranteed that p is the same parser object used by the
 		// Parse call above. Reason: go runs tests packages concurrently. If

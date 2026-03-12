@@ -440,7 +440,7 @@ func toText(text string, prefix, codePrefix string, width int) string {
 
 func (h *helpWriter) Wrap(text string) {
 	newText := toText(strings.TrimSpace(text), "", "    ", h.width)
-	for _, line := range strings.Split(strings.TrimSpace(newText), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(newText), "\n") {
 		h.Print(line)
 	}
 }

@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	callbackReturnSignature = reflect.TypeOf((*error)(nil)).Elem()
+	callbackReturnSignature = reflect.TypeFor[error]()
 )
 
 func failField(parent reflect.Value, field reflect.StructField, format string, args ...any) error {
@@ -423,16 +423,16 @@ func (k *Kong) applyHookToDefaultFlags(ctx *Context, node *Node, name string) er
 
 func formatMultilineMessage(w io.Writer, leaders []string, format string, args ...any) {
 	lines := strings.Split(strings.TrimRight(fmt.Sprintf(format, args...), "\n"), "\n")
-	leader := ""
+	var leader strings.Builder
 	for _, l := range leaders {
 		if l == "" {
 			continue
 		}
-		leader += l + ": "
+		leader.WriteString(l + ": ")
 	}
-	_, _ = fmt.Fprintf(w, "%s%s\n", leader, lines[0])
+	_, _ = fmt.Fprintf(w, "%s%s\n", leader.String(), lines[0])
 	for _, line := range lines[1:] {
-		_, _ = fmt.Fprintf(w, "%*s%s\n", len(leader), " ", line)
+		_, _ = fmt.Fprintf(w, "%*s%s\n", len(leader.String()), " ", line)
 	}
 }
 

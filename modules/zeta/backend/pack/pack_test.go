@@ -28,7 +28,7 @@ func TestPackDecode(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "Fanout: %d - %d\n", i, n)
 	}
 	_, _ = fd.Seek(4+4+4*256, io.SeekStart)
-	for i := 0; i < 260; i++ {
+	for range 260 {
 		var oid [20]byte
 		if _, err := io.ReadFull(fd, oid[:]); err != nil {
 			fmt.Fprintf(os.Stderr, "read oid index error: %v\n", err)

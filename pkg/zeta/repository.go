@@ -52,12 +52,12 @@ type StringArray []string
 func valuesMapArray(values []string) map[string]StringArray {
 	m := make(map[string]StringArray)
 	for _, v := range values {
-		i := strings.IndexByte(v, '=')
-		if i == -1 {
+		before, after, ok := strings.Cut(v, "=")
+		if !ok {
 			continue
 		}
-		k := strings.ToLower(v[:i])
-		v := v[i+1:]
+		k := strings.ToLower(before)
+		v := after
 		if _, ok := m[k]; ok {
 			m[k] = append(m[k], v)
 			continue

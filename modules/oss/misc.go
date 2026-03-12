@@ -57,14 +57,14 @@ var (
 // Content-Range: <unit> <range-start>-<range-end>/*
 // Content-Range: <unit> */<size>
 func parseSizeFromRange(hdr string) (int64, error) {
-	pos := strings.IndexByte(hdr, ' ')
-	if pos == -1 {
+	before, after, ok := strings.Cut(hdr, " ")
+	if !ok {
 		return 0, ErrNoSizeFromRange
 	}
-	if hdr[:pos] != unitBytes {
+	if before != unitBytes {
 		return 0, ErrNoSizeFromRange
 	}
-	sv := strings.FieldsFunc(hdr[pos+1:], func(r rune) bool {
+	sv := strings.FieldsFunc(after, func(r rune) bool {
 		return r == '-' || r == '/'
 	})
 	if len(sv) == 2 {

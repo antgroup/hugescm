@@ -40,7 +40,7 @@ func TestBitmapGet(t *testing.T) {
 	}
 
 	// check zeroes of the first word
-	for i := int64(0); i < 5*64; i++ {
+	for i := range int64(5 * 64) {
 		if b.Get(i) {
 			t.Errorf("Expected false for bit %d", i)
 		}

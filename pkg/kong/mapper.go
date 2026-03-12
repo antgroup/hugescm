@@ -16,11 +16,11 @@ import (
 )
 
 var (
-	mapperValueType       = reflect.TypeOf((*MapperValue)(nil)).Elem()
-	boolMapperValueType   = reflect.TypeOf((*BoolMapperValue)(nil)).Elem()
-	jsonUnmarshalerType   = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
-	textUnmarshalerType   = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
-	binaryUnmarshalerType = reflect.TypeOf((*encoding.BinaryUnmarshaler)(nil)).Elem()
+	mapperValueType       = reflect.TypeFor[MapperValue]()
+	boolMapperValueType   = reflect.TypeFor[BoolMapperValue]()
+	jsonUnmarshalerType   = reflect.TypeFor[json.Unmarshaler]()
+	textUnmarshalerType   = reflect.TypeFor[encoding.TextUnmarshaler]()
+	binaryUnmarshalerType = reflect.TypeFor[encoding.BinaryUnmarshaler]()
 )
 
 // DecodeContext is passed to a Mapper's Decode().
@@ -281,10 +281,10 @@ func (r *Registry) RegisterDefaults() *Registry {
 		RegisterKind(reflect.Bool, boolMapper{}).
 		RegisterKind(reflect.Slice, sliceDecoder(r)).
 		RegisterKind(reflect.Map, mapDecoder(r)).
-		RegisterType(reflect.TypeOf(time.Time{}), timeDecoder()).
-		RegisterType(reflect.TypeOf(time.Duration(0)), durationDecoder()).
-		RegisterType(reflect.TypeOf(&url.URL{}), urlMapper()).
-		RegisterType(reflect.TypeOf(&os.File{}), fileMapper(r)).
+		RegisterType(reflect.TypeFor[time.Time](), timeDecoder()).
+		RegisterType(reflect.TypeFor[time.Duration](), durationDecoder()).
+		RegisterType(reflect.TypeFor[*url.URL](), urlMapper()).
+		RegisterType(reflect.TypeFor[*os.File](), fileMapper(r)).
 		RegisterName("path", pathMapper(r)).
 		RegisterName("existingfile", existingFileMapper(r)).
 		RegisterName("existingdir", existingDirMapper(r)).
@@ -339,7 +339,7 @@ func durationDecoder() MapperFunc {
 				return fmt.Errorf("expected duration but got %q: %v", v, err)
 			}
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			d = reflect.ValueOf(v).Convert(reflect.TypeOf(time.Duration(0))).Interface().(time.Duration) //nolint: forcetypeassert
+			d = reflect.ValueOf(v).Convert(reflect.TypeFor[time.Duration]()).Interface().(time.Duration) //nolint: forcetypeassert
 		default:
 			return fmt.Errorf("expected duration but got %q", v)
 		}

@@ -19,12 +19,12 @@ import (
 
 // parseReflogRev: stash{0}, master{0}
 func parseReflogRev(rev string) (string, int, error) {
-	pos := strings.IndexByte(rev, '@')
-	if pos == -1 {
+	before, after, ok := strings.Cut(rev, "@")
+	if !ok {
 		return "", 0, fmt.Errorf("'%s' not a valid reflog revision", rev)
 	}
-	refname := rev[:pos]
-	s := rev[pos+1:]
+	refname := before
+	s := after
 	if !strings.HasPrefix(s, "{") || !strings.HasSuffix(s, "}") {
 		return "", 0, fmt.Errorf("'%s' not a valid reflog revision", rev)
 	}
@@ -33,16 +33,16 @@ func parseReflogRev(rev string) (string, int, error) {
 }
 
 func resolveAncestor(revision string) (string, int, error) {
-	if pos := strings.IndexByte(revision, '~'); pos != -1 {
-		ns := revision[pos+1:]
+	if before, after, ok := strings.Cut(revision, "~"); ok {
+		ns := after
 		if len(ns) == 0 {
-			return revision[0:pos], 1, nil
+			return before, 1, nil
 		}
 		num, err := strconv.Atoi(ns)
 		if err != nil {
 			return "", 0, fmt.Errorf("not a valid object name %s", revision)
 		}
-		return revision[0:pos], num, nil
+		return before, num, nil
 	}
 	if pos := strings.IndexByte(revision, '^'); pos != -1 {
 		for _, c := range revision[pos:] {
@@ -64,7 +64,7 @@ func newOID(s string) plumbing.Hash {
 
 func (r *Repository) PickAncestor(ctx context.Context, oid plumbing.Hash, n int) (plumbing.Hash, error) {
 	cur := oid
-	for i := 0; i < n; i++ {
+	for range n {
 		cc, err := r.odb.ParseRevExhaustive(ctx, cur)
 		if err != nil {
 			return plumbing.ZeroHash, err

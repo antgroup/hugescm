@@ -179,7 +179,7 @@ func stdlibLines(data string, comma, comment byte) ([]line, [][]string, error) {
 			return nil, nil, err
 		}
 		indexes := []int{}
-		for i := 0; i < len(l); i++ {
+		for i := range l {
 			_, c := r.FieldPos(i)
 			// FieldPos starts counting from 1, but our parser counts from 0.
 			// Adjust -1 so tests match.

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -159,10 +160,8 @@ func verifyVersion(version string) error {
 		return NewNotAPointerError("Missing version")
 	}
 
-	for _, v := range v1Aliases {
-		if v == version {
-			return nil
-		}
+	if slices.Contains(v1Aliases, version) {
+		return nil
 	}
 
 	return fmt.Errorf("invalid version: %s", version)

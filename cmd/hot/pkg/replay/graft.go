@@ -20,7 +20,7 @@ func (r *Replayer) resolveCommit(ref *git.Reference) ([]byte, *gitobj.Commit, er
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not decode: %q", ref.Target)
 	}
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		obj, err := r.odb.Object(sha)
 		if err != nil {
 			return nil, nil, fmt.Errorf("open git object error: %w", err)

@@ -618,7 +618,7 @@ func TestCommitWalkerContextCancellation(t *testing.T) {
 
 	// Create a long chain of commits
 	var commits []*Commit
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		hash := plumbing.NewHash(string(rune(0x11 + i)))
 		c := NewTestCommit(hash.String(), "C"+string(rune('0'+i)))
 		if len(commits) > 0 {

@@ -262,7 +262,7 @@ func IndexWith(offsets map[string]uint32) *Index {
 	})
 
 	fanout := make([]uint32, 256)
-	for i := 0; i < len(fanout); i++ {
+	for i := range fanout {
 		var n uint32
 
 		for _, name := range ns {

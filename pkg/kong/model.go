@@ -150,9 +150,10 @@ func (n *Node) customSummary() string {
 
 // Summary help string for the node (not including application name).
 func (n *Node) Summary() string {
-	summary := n.Path()
+	var summary strings.Builder
+	summary.WriteString(n.Path())
 	if flags := n.FlagSummary(true); flags != "" {
-		summary += " " + flags
+		summary.WriteString(" " + flags)
 	}
 	args := []string{}
 	optional := 0
@@ -165,9 +166,9 @@ func (n *Node) Summary() string {
 		args = append(args, argSummary)
 	}
 	if len(args) != 0 {
-		summary += " " + strings.Join(args, " ") + strings.Repeat("]", optional)
+		summary.WriteString(" " + strings.Join(args, " ") + strings.Repeat("]", optional))
 	} else if len(n.Children) > 0 {
-		summary += " <command>"
+		summary.WriteString(" <command>")
 	}
 	allFlags := n.Flags
 	if n.Parent != nil {
@@ -178,11 +179,11 @@ func (n *Node) Summary() string {
 			continue
 		}
 		if !flag.Required {
-			summary += " [flags]"
+			summary.WriteString(" [flags]")
 			break
 		}
 	}
-	return summary
+	return summary.String()
 }
 
 // FlagSummary for the node.

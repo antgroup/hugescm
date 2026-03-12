@@ -55,7 +55,7 @@ func newV1Index(hash hash.Hash) *Index {
 	entrylen := hashlen + indexObjectCRCWidth
 	entries := make([]byte, entrylen*3)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		// For each entry, set the first three bytes to 0 and the
 		// remainder to the same value.  That creates an initial 4-byte
 		// CRC field with the value of i+1, followed by a series of data

@@ -58,21 +58,12 @@ func (r *recognizerMultiByte) matchConfidence(input *recognizerInput) int {
 		return 0
 	}
 	if r.commonChars == nil {
-		confidence := 30 + doubleByteCharCount - 20*badCharCount
-		if confidence > 100 {
-			confidence = 100
-		}
+		confidence := min(30+doubleByteCharCount-20*badCharCount, 100)
 		return confidence
 	}
 	maxVal := math.Log(float64(doubleByteCharCount) / 4)
 	scaleFactor := 90 / maxVal
-	confidence := int(math.Log(float64(commonCharCount)+1)*scaleFactor + 10)
-	if confidence > 100 {
-		confidence = 100
-	}
-	if confidence < 0 {
-		confidence = 0
-	}
+	confidence := max(min(int(math.Log(float64(commonCharCount)+1)*scaleFactor+10), 100), 0)
 	return confidence
 }
 

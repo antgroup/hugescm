@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"strings"
 )
 
 // Define state functions
@@ -21,15 +22,15 @@ type sshLexer struct {
 
 func (s *sshLexer) lexComment(previousState sshLexStateFn) sshLexStateFn {
 	return func() sshLexStateFn {
-		growingString := ""
+		var growingString strings.Builder
 		for next := s.peek(); next != '\n' && next != eof; next = s.peek() {
 			if next == '\r' && s.follow("\r\n") {
 				break
 			}
-			growingString += string(next)
+			growingString.WriteString(string(next))
 			s.next()
 		}
-		s.emitWithValue(tokenComment, growingString)
+		s.emitWithValue(tokenComment, growingString.String())
 		s.skip()
 		return previousState
 	}

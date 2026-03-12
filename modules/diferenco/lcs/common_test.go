@@ -7,6 +7,7 @@ package lcs
 import (
 	"log"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -72,10 +73,8 @@ func check(t *testing.T, str string, lcs lcs, want []string) {
 		got.WriteString(str[dd.X : dd.X+dd.Len])
 	}
 	ans := got.String()
-	for _, w := range want {
-		if ans == w {
-			return
-		}
+	if slices.Contains(want, ans) {
+		return
 	}
 	t.Fatalf("str=%q lcs=%v want=%q got=%q", str, lcs, want, ans)
 }

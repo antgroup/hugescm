@@ -1,188 +1,573 @@
 //go:build darwin
 
-// Copyright 2013 Google Inc. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// Package keyring provides cross-platform credential storage for Zeta.
+// This file implements the macOS (Darwin) backend using purego without CGO.
 package keyring
 
 import (
-	"bufio"
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"io"
-	"os/exec"
-	"regexp"
-	"strconv"
 	"strings"
-	"unicode"
+	"sync"
+	"unsafe"
+
+	"github.com/ebitengine/purego"
 )
 
-var pattern *regexp.Regexp
+// Core Foundation and Security framework constants
+const (
+	kCFStringEncodingUTF8 = 0x08000100
+	kCFAllocatorDefault   = 0
+)
 
-func init() {
-	pattern = regexp.MustCompile(`[^\w@%+=:,./-]`)
-}
-
-// Quote returns a shell-escaped version of the string s. The returned value
-// is a string that can safely be used as one token in a shell command line.
-func Quote(s string) string {
-	if len(s) == 0 {
-		return "''"
-	}
-
-	if pattern.MatchString(s) {
-		return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
-	}
-
-	return s
-}
+type osStatus int32
 
 const (
-	execPathKeychain = "/usr/bin/security"
+	errSecSuccess       osStatus = 0      // No error.
+	errSecDuplicateItem osStatus = -25299 // The specified item already exists in the keychain.
+	errSecItemNotFound  osStatus = -25300 // The specified item could not be found in the keychain.
 )
 
-type macOSXKeychain struct{}
-
-// func (*MacOSXKeychain) IsAvailable() bool {
-// 	return exec.Command(execPathKeychain).Run() != exec.ErrNotFound
-// }
-
-func init() {
-	provider = macOSXKeychain{}
+type _CFRange struct {
+	location int64
+	length   int64
 }
 
-// security find-internet-password -s 'appstoreconnect.apple.com' -g 2>&1 | grep -E 'acct|password' |  sed 's/^ *//' | sort | rev  | cut -d'"' -f2 | rev
+type _CFNumberType int32
 
-// keychain: "/Users/**/Library/Keychains/login.keychain-db"
-// version: 512
-// class: "inet"
-// attributes:
-//     0x00000007 <blob>="**"
-//     0x00000008 <blob>=<NULL>
-//     "acct"<blob>="ZetaPseudo"
-//     "atyp"<blob>="dflt"
-//     "cdat"<timedate>=0x32303234303731303130353331345A00  "20240710105314Z\000"
-//     "crtr"<uint32>=<NULL>
-//     "cusi"<sint32>=<NULL>
-//     "desc"<blob>=<NULL>
-//     "icmt"<blob>=<NULL>
-//     "invi"<sint32>=<NULL>
-//     "mdat"<timedate>=0x32303234303731303130353331345A00  "20240710105314Z\000"
-//     "nega"<sint32>=<NULL>
-//     "path"<blob>=<NULL>
-//     "port"<uint32>=0x00000000
-//     "prot"<blob>=<NULL>
-//     "ptcl"<uint32>=0x00000000
-//     "scrp"<sint32>=<NULL>
-//     "sdmn"<blob>=<NULL>
-//     "srvr"<blob>="https://zeta.example.io"
-//     "type"<uint32>=<NULL>
-// password: "**"
+const (
+	// CFNumber type constants (only kCFNumberShortType is used)
+	// kCFNumberSInt8Type  _CFNumberType = 1 // unused
+	// kCFNumberSInt16Type _CFNumberType = 2 // unused
+	// kCFNumberSInt32Type _CFNumberType = 3 // unused
+	// kCFNumberSInt64Type _CFNumberType = 4 // unused
+	kCFNumberShortType _CFNumberType = 2 // SInt16Type (used for port numbers)
+)
 
-func parseKeychainOut(r io.Reader) (*Cred, error) {
-	br := bufio.NewScanner(r)
-	cred := &Cred{}
-	var err error
-	for br.Scan() {
-		line := strings.TrimFunc(br.Text(), unicode.IsSpace)
-		if suffix, ok := strings.CutPrefix(line, `"acct"`); ok {
-			_, acct, _ := strings.Cut(suffix, "=")
-			if cred.UserName, err = strconv.Unquote(strings.TrimFunc(acct, unicode.IsSpace)); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		// password: "**"
-		if password, ok := strings.CutPrefix(line, "password:"); ok {
-			// 'password: "**"' --> ' "**"' --> '"**"' --> '**'
-			if cred.Password, err = strconv.Unquote(strings.TrimFunc(password, unicode.IsSpace)); err != nil {
-				return nil, err
-			}
-			continue
-		}
-	}
+var (
+	kCFTypeDictionaryKeyCallBacks   uintptr
+	kCFTypeDictionaryValueCallBacks uintptr
+	kCFBooleanTrue                  uintptr
+)
 
-	// Validate that both fields were parsed successfully
-	if cred.UserName == "" && cred.Password == "" {
-		return nil, ErrNotFound
-	}
+var (
+	kSecClass                         uintptr
+	kSecClassInternetPassword         uintptr
+	kSecAttrServer                    uintptr
+	kSecAttrAccount                   uintptr
+	kSecAttrProtocol                  uintptr
+	kSecAttrProtocolHTTP              uintptr
+	kSecAttrProtocolHTTPS             uintptr
+	kSecAttrProtocolFTP               uintptr
+	kSecAttrProtocolFTPS              uintptr
+	kSecAttrProtocolIMAP              uintptr
+	kSecAttrProtocolIMAPS             uintptr
+	kSecAttrProtocolSMTP              uintptr
+	kSecAttrPort                      uintptr
+	kSecAttrPath                      uintptr
+	kSecAttrAuthenticationType        uintptr
+	kSecAttrAuthenticationTypeDefault uintptr
+	kSecValueData                     uintptr
+	kSecReturnData                    uintptr
+	kSecReturnAttributes              uintptr
+	kSecMatchLimitAll                 uintptr
+)
 
-	return cred, nil
+var (
+	CFDictionaryCreate        func(allocator uintptr, keys, values *uintptr, numValues int64, keyCallBacks, valueCallBacks uintptr) uintptr
+	CFStringCreateWithCString func(allocator uintptr, cStr string, encoding uint32) uintptr
+	CFDataCreate              func(alloc uintptr, bytes []byte, length int64) uintptr
+	CFDataGetLength           func(theData uintptr) int64
+	CFDataGetBytes            func(theData uintptr, range_ _CFRange, buffer []byte)
+	CFRelease                 func(cf uintptr)
+	CFNumberCreate            func(allocator uintptr, theType _CFNumberType, valuePtr *int16) uintptr
+)
+
+var (
+	SecItemCopyMatching  func(query uintptr, result *uintptr) osStatus
+	SecItemAdd           func(query uintptr, result uintptr) osStatus
+	SecItemUpdate        func(query uintptr, attributesToUpdate uintptr) osStatus
+	SecItemDelete        func(query uintptr) osStatus
+	CFDictionaryGetValue func(theDict uintptr, key uintptr) uintptr
+	CFStringGetCString   func(theString uintptr, buffer *byte, bufferSize int64, encoding uint32) int64
+	CFStringGetLength    func(theString uintptr) int64
+)
+
+var (
+	puregoOnce sync.Once
+	puregoErr  error
+)
+
+// ensureInitialized ensures the keyring is initialized.
+// It uses sync.Once to ensure initialization happens only once.
+// Returns an error if initialization fails.
+func ensureInitialized() error {
+	puregoOnce.Do(func() {
+		puregoErr = initializeKeyring()
+	})
+	return puregoErr
 }
 
-func (k macOSXKeychain) Find(ctx context.Context, targetName string) (*Cred, error) {
-	cmd := exec.CommandContext(ctx, execPathKeychain, "find-internet-password", "-s", targetName, "-g")
-	out, err := cmd.CombinedOutput()
+// initializeKeyring initializes the PureGo bindings for macOS Security framework.
+func initializeKeyring() error {
+	cfLib, err := purego.Dlopen("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation", purego.RTLD_NOW|purego.RTLD_GLOBAL)
 	if err != nil {
-		if cmd.ProcessState.ExitCode() == 44 {
-			return nil, ErrNotFound
-		}
-		return nil, err
+		return fmt.Errorf("failed to load CoreFoundation framework: %w", err)
 	}
-	return parseKeychainOut(bytes.NewReader(out))
-}
 
-func (k macOSXKeychain) Store(ctx context.Context, targetName string, c *Cred) error {
-	// if the added secret has multiple lines or some non ascii,
-	// osx will hex encode it on return. To avoid getting garbage, we
-	// encode all passwords
-
-	cmd := exec.CommandContext(ctx, execPathKeychain, "-i")
-	stdin, err := cmd.StdinPipe()
+	// Load CoreFoundation constants
+	ptr, err := purego.Dlsym(cfLib, "kCFTypeDictionaryKeyCallBacks")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load kCFTypeDictionaryKeyCallBacks: %w", err)
+	}
+	kCFTypeDictionaryKeyCallBacks = deref(ptr)
+
+	ptr, err = purego.Dlsym(cfLib, "kCFTypeDictionaryValueCallBacks")
+	if err != nil {
+		return fmt.Errorf("failed to load kCFTypeDictionaryValueCallBacks: %w", err)
+	}
+	kCFTypeDictionaryValueCallBacks = deref(ptr)
+
+	ptr, err = purego.Dlsym(cfLib, "kCFBooleanTrue")
+	if err != nil {
+		return fmt.Errorf("failed to load kCFBooleanTrue: %w", err)
+	}
+	kCFBooleanTrue = deref(ptr)
+
+	purego.RegisterLibFunc(&CFDictionaryCreate, cfLib, "CFDictionaryCreate")
+	purego.RegisterLibFunc(&CFStringCreateWithCString, cfLib, "CFStringCreateWithCString")
+	purego.RegisterLibFunc(&CFDataCreate, cfLib, "CFDataCreate")
+	purego.RegisterLibFunc(&CFDataGetLength, cfLib, "CFDataGetLength")
+	purego.RegisterLibFunc(&CFDataGetBytes, cfLib, "CFDataGetBytes")
+	purego.RegisterLibFunc(&CFRelease, cfLib, "CFRelease")
+	purego.RegisterLibFunc(&CFNumberCreate, cfLib, "CFNumberCreate")
+
+	secLib, err := purego.Dlopen("/System/Library/Frameworks/Security.framework/Security", purego.RTLD_NOW|purego.RTLD_GLOBAL)
+	if err != nil {
+		return fmt.Errorf("failed to load Security framework: %w", err)
 	}
 
-	if err = cmd.Start(); err != nil {
-		return err
+	// Load Security constants
+	symbols := []struct {
+		sym  string
+		addr *uintptr
+	}{
+		{"kSecClass", &kSecClass},
+		{"kSecClassInternetPassword", &kSecClassInternetPassword},
+		{"kSecAttrServer", &kSecAttrServer},
+		{"kSecAttrAccount", &kSecAttrAccount},
+		{"kSecAttrProtocol", &kSecAttrProtocol},
+		{"kSecAttrProtocolHTTP", &kSecAttrProtocolHTTP},
+		{"kSecAttrProtocolHTTPS", &kSecAttrProtocolHTTPS},
+		{"kSecAttrProtocolFTP", &kSecAttrProtocolFTP},
+		{"kSecAttrProtocolFTPS", &kSecAttrProtocolFTPS},
+		{"kSecAttrProtocolIMAP", &kSecAttrProtocolIMAP},
+		{"kSecAttrProtocolIMAPS", &kSecAttrProtocolIMAPS},
+		{"kSecAttrProtocolSMTP", &kSecAttrProtocolSMTP},
+		{"kSecAttrPort", &kSecAttrPort},
+		{"kSecAttrPath", &kSecAttrPath},
+		{"kSecAttrAuthenticationType", &kSecAttrAuthenticationType},
+		{"kSecAttrAuthenticationTypeDefault", &kSecAttrAuthenticationTypeDefault},
+		{"kSecValueData", &kSecValueData},
+		{"kSecReturnData", &kSecReturnData},
+		{"kSecReturnAttributes", &kSecReturnAttributes},
+		{"kSecMatchLimitAll", &kSecMatchLimitAll},
 	}
 
-	command := fmt.Sprintf("add-internet-password -U -s %s -a %s -w %s\n", Quote(targetName), Quote(c.UserName), Quote(c.Password))
-	if len(command) > 4096 {
-		// Ensure stdin is closed before returning
-		_ = stdin.Close()
-		_ = cmd.Wait()
-		return ErrSetDataTooBig
+	for _, s := range symbols {
+		ptr, err := purego.Dlsym(secLib, s.sym)
+		if err != nil {
+			return fmt.Errorf("failed to load %s: %w", s.sym, err)
+		}
+		*s.addr = deref(ptr)
 	}
 
-	if _, err := io.WriteString(stdin, command); err != nil {
-		// Ensure stdin is closed before returning
-		_ = stdin.Close()
-		_ = cmd.Wait()
-		return err
-	}
-
-	if err = stdin.Close(); err != nil {
-		_ = cmd.Wait()
-		return err
-	}
-
-	if err = cmd.Wait(); err != nil {
-		return err
-	}
+	purego.RegisterLibFunc(&SecItemCopyMatching, secLib, "SecItemCopyMatching")
+	purego.RegisterLibFunc(&SecItemAdd, secLib, "SecItemAdd")
+	purego.RegisterLibFunc(&SecItemUpdate, secLib, "SecItemUpdate")
+	purego.RegisterLibFunc(&SecItemDelete, secLib, "SecItemDelete")
+	purego.RegisterLibFunc(&CFDictionaryGetValue, cfLib, "CFDictionaryGetValue")
+	purego.RegisterLibFunc(&CFStringGetCString, cfLib, "CFStringGetCString")
+	purego.RegisterLibFunc(&CFStringGetLength, cfLib, "CFStringGetLength")
 
 	return nil
 }
 
-func (k macOSXKeychain) Discard(ctx context.Context, targetName string) error {
-	out, err := exec.CommandContext(ctx,
-		execPathKeychain,
-		"delete-internet-password",
-		"-s", targetName).CombinedOutput()
-	if strings.Contains(string(out), "could not be found") {
-		err = ErrNotFound
+// Get implements Keyring interface for darwinKeychain
+func Get(ctx context.Context, cred *Cred) (*Cred, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
-	return err
+
+	if err := ensureInitialized(); err != nil {
+		return nil, fmt.Errorf("failed to initialize keyring: %w", err)
+	}
+
+	if cred == nil {
+		return nil, errors.New("credential cannot be nil")
+	}
+
+	// Use server from cred (server should not include port)
+	if cred.Server == "" {
+		return nil, errors.New("server is required")
+	}
+
+	cfServer := CFStringCreateWithCString(kCFAllocatorDefault, cred.Server, kCFStringEncodingUTF8)
+	defer CFRelease(cfServer)
+
+	// Build query following git-credential-osxkeychain pattern:
+	// Use kSecClassInternetPassword, kSecAttrServer as base
+	// Add optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
+	// Add kSecReturnAttributes and kSecReturnData to get both metadata and password
+	keys := []uintptr{
+		kSecClass,
+		kSecAttrServer,
+		kSecReturnAttributes,
+		kSecReturnData,
+	}
+	values := []uintptr{
+		kSecClassInternetPassword,
+		cfServer,
+		kCFBooleanTrue,
+		kCFBooleanTrue,
+	}
+
+	// Add optional fields and track CF objects for cleanup
+	optionalFields := newOptionalFields(cred, &keys, &values)
+	defer optionalFields.Release()
+
+	// Add authentication type (required for git-credential-osxkeychain compatibility)
+	keys = append(keys, kSecAttrAuthenticationType)
+	values = append(values, kSecAttrAuthenticationTypeDefault)
+
+	query := CFDictionaryCreate(
+		kCFAllocatorDefault,
+		&keys[0], &values[0], int64(len(keys)),
+		kCFTypeDictionaryKeyCallBacks,
+		kCFTypeDictionaryValueCallBacks,
+	)
+	defer CFRelease(query)
+
+	var result uintptr
+	st := SecItemCopyMatching(query, &result)
+	if st == errSecItemNotFound {
+		return nil, ErrNotFound
+	}
+	if st != errSecSuccess {
+		return nil, fmt.Errorf("error SecItemCopyMatching: %d", st)
+	}
+	defer CFRelease(result)
+
+	// Extract username from result
+	accountValue := CFDictionaryGetValue(result, kSecAttrAccount)
+	username := ""
+	if accountValue != 0 {
+		if length := CFStringGetLength(accountValue); length > 0 {
+			buffer := make([]byte, length+1)
+			CFStringGetCString(accountValue, &buffer[0], int64(len(buffer)), kCFStringEncodingUTF8)
+			username = string(buffer[:length])
+		}
+	}
+
+	// Extract password from result
+	passwordValue := CFDictionaryGetValue(result, kSecValueData)
+	password := ""
+	if passwordValue != 0 {
+		length := CFDataGetLength(passwordValue)
+		if length > 0 {
+			buffer := make([]byte, length)
+			CFDataGetBytes(passwordValue, _CFRange{0, length}, buffer)
+			password = string(buffer)
+		}
+	}
+
+	return &Cred{
+		UserName: username,
+		Password: password,
+		Protocol: cred.Protocol,
+		Server:   cred.Server,
+		Path:     cred.Path,
+		Port:     cred.Port,
+	}, nil
+}
+
+// Store stores credentials in macOS Keychain.
+// Follows git-credential-osxkeychain pattern:
+// - Uses kSecClassInternetPassword
+// - Sets kSecAttrServer, kSecAttrAccount, kSecAttrProtocol
+// - Optionally sets kSecAttrPath, kSecAttrPort
+// - Uses kSecAttrAuthenticationTypeDefault for compatibility
+// If credential already exists, updates it.
+func Store(ctx context.Context, cred *Cred) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if err := ensureInitialized(); err != nil {
+		return fmt.Errorf("failed to initialize keyring: %w", err)
+	}
+
+	if cred == nil {
+		return errors.New("credential cannot be nil")
+	}
+
+	// Validate input
+	if cred.UserName == "" {
+		return errors.New("username cannot be empty")
+	}
+	if cred.Password == "" {
+		return errors.New("password cannot be empty")
+	}
+	if cred.Server == "" {
+		return errors.New("server cannot be empty")
+	}
+
+	// Validate username cannot contain null byte
+	if strings.Contains(cred.UserName, "\x00") {
+		return errors.New("invalid username: contains null byte")
+	}
+
+	cfServer := CFStringCreateWithCString(kCFAllocatorDefault, cred.Server, kCFStringEncodingUTF8)
+	defer CFRelease(cfServer)
+	cfPasswordData := CFDataCreate(kCFAllocatorDefault, []byte(cred.Password), int64(len(cred.Password)))
+	defer CFRelease(cfPasswordData)
+
+	// Build attributes following git-credential-osxkeychain pattern:
+	// Always include: kSecClass, kSecAttrServer, kSecAttrAccount, kSecAttrProtocol, kSecAttrAuthenticationType
+	// Optionally include: kSecAttrPath, kSecAttrPort
+	// Then update with: kSecValueData
+	keys := []uintptr{
+		kSecClass,
+		kSecAttrServer,
+		kSecValueData,
+	}
+	values := []uintptr{
+		kSecClassInternetPassword,
+		cfServer,
+		cfPasswordData,
+	}
+
+	// Add optional fields and track CF objects for cleanup
+	optionalFields := newOptionalFields(cred, &keys, &values)
+	defer optionalFields.Release()
+
+	// Add authentication type (required for git-credential-osxkeychain compatibility)
+	keys = append(keys, kSecAttrAuthenticationType)
+	values = append(values, kSecAttrAuthenticationTypeDefault)
+
+	query := CFDictionaryCreate(
+		kCFAllocatorDefault,
+		&keys[0], &values[0], int64(len(keys)),
+		kCFTypeDictionaryKeyCallBacks,
+		kCFTypeDictionaryValueCallBacks,
+	)
+	defer CFRelease(query)
+
+	sa := SecItemAdd(query, 0)
+	if sa == errSecSuccess {
+		return nil
+	}
+
+	if sa != errSecDuplicateItem {
+		return fmt.Errorf("error SecItemAdd: %d", sa)
+	}
+
+	// Build update query matching same criteria as add query
+	updateKeys := []uintptr{kSecClass, kSecAttrServer}
+	updateValues := []uintptr{kSecClassInternetPassword, cfServer}
+
+	// Add optional fields and track CF objects for cleanup
+	updateOptionalFields := newOptionalFields(cred, &updateKeys, &updateValues)
+	defer updateOptionalFields.Release()
+
+	// Add authentication type (required for git-credential-osxkeychain compatibility)
+	updateKeys = append(updateKeys, kSecAttrAuthenticationType)
+	updateValues = append(updateValues, kSecAttrAuthenticationTypeDefault)
+
+	updateQuery := CFDictionaryCreate(
+		kCFAllocatorDefault,
+		&updateKeys[0], &updateValues[0], int64(len(updateKeys)),
+		kCFTypeDictionaryKeyCallBacks,
+		kCFTypeDictionaryValueCallBacks,
+	)
+	defer CFRelease(updateQuery)
+
+	// Build attributes to update (only password)
+	attrsToUpdateKeys := []uintptr{kSecValueData}
+	attrsToUpdateValues := []uintptr{cfPasswordData}
+	attrsToUpdate := CFDictionaryCreate(
+		kCFAllocatorDefault,
+		&attrsToUpdateKeys[0], &attrsToUpdateValues[0], int64(len(attrsToUpdateKeys)),
+		kCFTypeDictionaryKeyCallBacks,
+		kCFTypeDictionaryValueCallBacks,
+	)
+	defer CFRelease(attrsToUpdate)
+
+	su := SecItemUpdate(updateQuery, attrsToUpdate)
+	if su != errSecSuccess {
+		return fmt.Errorf("error SecItemUpdate: %d", su)
+	}
+	return nil
+}
+
+// Erase removes credentials from macOS Keychain.
+// Follows git-credential-osxkeychain pattern:
+// - Uses kSecClassInternetPassword, kSecAttrServer as base
+// - Adds optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
+// If multiple credentials match, removes all of them.
+func Erase(ctx context.Context, cred *Cred) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if err := ensureInitialized(); err != nil {
+		return fmt.Errorf("failed to initialize keyring: %w", err)
+	}
+
+	if cred == nil {
+		return errors.New("credential cannot be nil")
+	}
+
+	// Use server from cred
+	server := cred.Server
+	if server == "" {
+		return errors.New("server is required")
+	}
+
+	cfServer := CFStringCreateWithCString(kCFAllocatorDefault, server, kCFStringEncodingUTF8)
+	defer CFRelease(cfServer)
+
+	// Build query following git-credential-osxkeychain pattern:
+	// Use kSecClass, kSecAttrServer as base
+	// Add optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
+	// Use kSecMatchLimitAll to delete all matching credentials
+	keys := []uintptr{
+		kSecClass,
+		kSecAttrServer,
+		kSecMatchLimitAll, // Delete all matching credentials
+	}
+	values := []uintptr{
+		kSecClassInternetPassword,
+		cfServer,
+		kCFBooleanTrue, // kSecMatchLimitAll value
+	}
+
+	// Add optional fields and track CF objects for cleanup
+	optionalFields := newOptionalFields(cred, &keys, &values)
+	defer optionalFields.Release()
+
+	// Add authentication type (required for git-credential-osxkeychain compatibility)
+	keys = append(keys, kSecAttrAuthenticationType)
+	values = append(values, kSecAttrAuthenticationTypeDefault)
+
+	query := CFDictionaryCreate(
+		kCFAllocatorDefault,
+		&keys[0], &values[0], int64(len(keys)),
+		kCFTypeDictionaryKeyCallBacks,
+		kCFTypeDictionaryValueCallBacks,
+	)
+	defer CFRelease(query)
+
+	st := SecItemDelete(query)
+	if st == errSecItemNotFound {
+		return ErrNotFound
+	}
+	if st != errSecSuccess {
+		return fmt.Errorf("error SecItemDelete: %d", st)
+	}
+	return nil
+}
+
+// darwinProtocolFromScheme converts protocol string to keychain protocol constant.
+func darwinProtocolFromScheme(protocol string) uintptr {
+	switch strings.ToLower(protocol) {
+	case "https":
+		return kSecAttrProtocolHTTPS
+	case "http":
+		return kSecAttrProtocolHTTP
+	case "ftp":
+		return kSecAttrProtocolFTP
+	case "ftps":
+		return kSecAttrProtocolFTPS
+	case "imap":
+		return kSecAttrProtocolIMAP
+	case "imaps":
+		return kSecAttrProtocolIMAPS
+	case "smtp":
+		return kSecAttrProtocolSMTP
+	default:
+		return 0 // Unknown protocol
+	}
+}
+
+// ========== Helper Functions ==========
+
+// darwinOptionalFields holds optional CF objects that may be added to queries.
+type darwinOptionalFields struct {
+	cfProtocol uintptr
+	cfAccount  uintptr
+	cfPath     uintptr
+	cfPort     uintptr
+}
+
+// Release releases all CF objects held by darwinOptionalFields.
+// Note: cfProtocol is a constant value, not a CF object, so it's not released.
+func (f *darwinOptionalFields) Release() {
+	if f.cfAccount != 0 {
+		CFRelease(f.cfAccount)
+		f.cfAccount = 0
+	}
+	if f.cfPath != 0 {
+		CFRelease(f.cfPath)
+		f.cfPath = 0
+	}
+	if f.cfPort != 0 {
+		CFRelease(f.cfPort)
+		f.cfPort = 0
+	}
+}
+
+// newOptionalFields creates and returns darwinOptionalFields with optional credential fields.
+// It appends the fields to the provided keys and values slices.
+// The caller should call fields.Release() when no longer needed.
+func newOptionalFields(cred *Cred, keys, values *[]uintptr) *darwinOptionalFields {
+	fields := &darwinOptionalFields{}
+
+	// Add protocol if specified
+	if cred.Protocol != "" {
+		if protocol := darwinProtocolFromScheme(cred.Protocol); protocol != 0 {
+			fields.cfProtocol = protocol
+			*keys = append(*keys, kSecAttrProtocol)
+			*values = append(*values, protocol)
+		}
+	}
+
+	// Add username if specified
+	if cred.UserName != "" {
+		fields.cfAccount = CFStringCreateWithCString(kCFAllocatorDefault, cred.UserName, kCFStringEncodingUTF8)
+		*keys = append(*keys, kSecAttrAccount)
+		*values = append(*values, fields.cfAccount)
+	}
+
+	// Add path if specified
+	if cred.Path != "" {
+		fields.cfPath = CFStringCreateWithCString(kCFAllocatorDefault, cred.Path, kCFStringEncodingUTF8)
+		*keys = append(*keys, kSecAttrPath)
+		*values = append(*values, fields.cfPath)
+	}
+
+	// Add port if specified
+	if cred.Port != 0 {
+		portInt16 := int16(cred.Port)
+		fields.cfPort = CFNumberCreate(kCFAllocatorDefault, kCFNumberShortType, &portInt16)
+		*keys = append(*keys, kSecAttrPort)
+		*values = append(*values, fields.cfPort)
+	}
+
+	return fields
+}
+
+func deref(ptr uintptr) uintptr {
+	return **(**uintptr)(unsafe.Pointer(&ptr))
 }

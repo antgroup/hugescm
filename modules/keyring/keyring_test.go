@@ -15,9 +15,12 @@ const (
 	password = "test-password"
 )
 
-// TestStore tests setting a user and password in the keyring.
+// TestStore tests setting a user and password in keyring.
 func TestStore(t *testing.T) {
-	err := Store(t.Context(), service, &Cred{UserName: user, Password: password})
+	cred := NewCredFromURL("https://" + service)
+	cred.UserName = user
+	cred.Password = password
+	err := Store(t.Context(), cred)
 	if err != nil {
 		t.Errorf("Should not fail, got: %s", err)
 	}

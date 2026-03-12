@@ -120,9 +120,28 @@ func (c *Cat) showObject(a any) error {
 	return hud.Display(fd, a, termLevel)
 }
 
+var markdownFiles = map[string]bool{
+	"README":       true,
+	"CHANGELOG":    true,
+	"CONTRIBUTING": true,
+	"CHANGES":      true,
+	"AUTHORS":      true,
+	"HISTORY":      true,
+}
+
 func (c *Cat) isMarkdown() bool {
 	if _, filename, ok := strings.Cut(c.Object, ":"); ok {
-		return strings.EqualFold(filename, "README") || strings.EqualFold(filepath.Ext(filename), ".md")
+		// Get base filename without extension
+		base := strings.TrimSuffix(filename, filepath.Ext(filename))
+		ext := strings.ToLower(filepath.Ext(filename))
+
+		// Check for common markdown files by name (case-insensitive)
+		if markdownFiles[strings.ToUpper(base)] {
+			return true
+		}
+
+		// Check for markdown extensions
+		return ext == ".md" || ext == ".markdown" || ext == ".mdown" || ext == ".mkd"
 	}
 	return false
 }
@@ -176,11 +195,6 @@ func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
 		return err
 	}
 
-	// Ensure proper termination for pager compatibility
-	if f, ok := w.(interface{ Flush() error }); ok {
-		_ = f.Flush()
-	}
-
 	return nil
 }
 
@@ -228,11 +242,6 @@ func (c *Cat) syntaxHighlightOut(w io.Writer, input io.Reader, termLevel term.Le
 
 	if err := formatter.Format(w, style, iterator); err != nil {
 		return err
-	}
-
-	// Ensure proper termination for pager compatibility
-	if f, ok := w.(interface{ Flush() error }); ok {
-		_ = f.Flush()
 	}
 
 	return nil
@@ -286,7 +295,7 @@ func (c *Cat) formatObject(o *git.Object) error {
 			return c.markdownOut(p, io.LimitReader(reader, c.Limit))
 		}
 
-		// Source code handling
+		// Source code handling (only if not markdown)
 		if lexer := c.getLexer(); lexer != nil {
 			p := tui.NewPager(term.StdoutLevel)
 			defer p.Close() // nolint

@@ -8,9 +8,8 @@ import (
 	"testing"
 )
 
-func TestFind(t *testing.T) {
-	o := &macOSXKeychain{}
-	cred, err := o.Find(t.Context(), "http://zeta.io")
+func TestGet(t *testing.T) {
+	cred, err := Get(t.Context(), &Cred{Server: "http://zeta.io"})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "find cred error: %v\n", err)
 		return

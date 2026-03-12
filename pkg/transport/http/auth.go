@@ -23,10 +23,6 @@ import (
 	"github.com/antgroup/hugescm/pkg/version"
 )
 
-const (
-	PseudoUserName = "ZetaPseudo"
-)
-
 var (
 	ErrNoValidCredentials = errors.New("no valid credentials")
 	ErrRedirect           = errors.New("redirect")
@@ -50,10 +46,6 @@ func basicAuth(username, password string) string {
 func (cred *Credentials) BasicAuth() string {
 	if cred == nil {
 		return ""
-	}
-	// Compatible with the old Keyring mechanism
-	if cred.UserName == PseudoUserName && strings.HasPrefix(cred.Password, "Basic ") {
-		return cred.Password
 	}
 	return "Basic " + basicAuth(cred.UserName, cred.Password)
 }
@@ -84,15 +76,61 @@ func (c *client) baseCredentialsURL() string {
 }
 
 func (c *client) readCredentials0(ctx context.Context) (*Credentials, error) {
-	if cred, err := keyring.Find(ctx, c.baseCredentialsURL()); err == nil {
+	baseURL := c.baseCredentialsURL()
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	queryCred := &keyring.Cred{
+		Protocol: u.Scheme,
+		Server:   u.Hostname(),
+		Port:     getPortFromURL(u),
+		Path:     u.Path,
+	}
+
+	cred, err := keyring.Get(ctx, queryCred)
+	if err == nil {
 		trace.DbgPrint("Got credentials from keyring, username: %s", cred.UserName)
 		return &Credentials{UserName: cred.UserName, Password: cred.Password}, nil
+	}
+	if !errors.Is(err, keyring.ErrNotFound) {
+		trace.DbgPrint("Keyring lookup failed: %v, falling back to netrc", err)
 	}
 	return c.readCredentialsFromNetrc()
 }
 
+func getPortFromURL(u *url.URL) int {
+	if u.Port() != "" {
+		port, err := parsePort(u.Port())
+		if err == nil {
+			return port
+		}
+	}
+	return 0
+}
+
+func parsePort(portStr string) (int, error) {
+	var port int
+	_, err := fmt.Sscanf(portStr, "%d", &port)
+	return port, err
+}
+
 func (c *client) storeCredentials(ctx context.Context, cred *Credentials) error {
-	return keyring.Store(ctx, c.baseCredentialsURL(), &keyring.Cred{UserName: cred.UserName, Password: cred.Password})
+	baseURL := c.baseCredentialsURL()
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return err
+	}
+
+	return keyring.Store(ctx, &keyring.Cred{
+		Protocol: u.Scheme,
+		Server:   u.Hostname(),
+		Port:     getPortFromURL(u),
+		Path:     u.Path,
+		UserName: cred.UserName,
+		Password: cred.Password,
+	})
 }
 
 func (c *client) credentialAskOne() (*Credentials, error) {

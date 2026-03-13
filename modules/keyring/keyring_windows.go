@@ -72,7 +72,8 @@ type CREDENTIALW struct {
 // - Uses CRED_TYPE_GENERIC
 // - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
 // - Returns nil, ErrNotFound if credential doesn't exist
-func Get(ctx context.Context, cred *Cred) (*Cred, error) {
+// Note: opts are ignored on Windows as the native credential manager is always used.
+func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -144,7 +145,8 @@ func Get(ctx context.Context, cred *Cred) (*Cred, error) {
 // - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
 // - Stores username and password
 // - If credential exists, it will be overwritten
-func Store(ctx context.Context, cred *Cred) error {
+// Note: opts are ignored on Windows as the native credential manager is always used.
+func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -228,7 +230,8 @@ func Store(ctx context.Context, cred *Cred) error {
 // - Uses CRED_TYPE_GENERIC
 // - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
 // - Returns nil if credential doesn't exist (no error)
-func Erase(ctx context.Context, cred *Cred) error {
+// Note: opts are ignored on Windows as the native credential manager is always used.
+func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

@@ -60,14 +60,17 @@ var (
 
 type client struct {
 	*http.Client
-	baseURL      *url.URL
-	extraHeader  map[string]string
-	credentials  *Credentials // User Credentials
-	tokenPayload *transport.SASPayload
-	userAgent    string
-	language     string
-	termEnv      string
-	verbose      bool
+	baseURL                 *url.URL
+	extraHeader             map[string]string
+	credentials             *Credentials // User Credentials
+	tokenPayload            *transport.SASPayload
+	userAgent               string
+	language                string
+	termEnv                 string
+	verbose                 bool
+	credentialStorage       string
+	credentialEncryptionKey string
+	credentialStoragePath   string
 }
 
 func (c *client) hasAuth() bool {
@@ -112,12 +115,15 @@ func newClient(ctx context.Context, endpoint *transport.Endpoint, operation tran
 				return http.ErrUseLastResponse
 			},
 		},
-		baseURL:     cloneURL(&endpoint.URL),
-		extraHeader: endpoint.ExtraHeader,
-		userAgent:   version.GetUserAgent(),
-		language:    tr.Language(),
-		termEnv:     os.Getenv("TERM"),
-		verbose:     verbose,
+		baseURL:                 cloneURL(&endpoint.URL),
+		extraHeader:             endpoint.ExtraHeader,
+		userAgent:               version.GetUserAgent(),
+		language:                tr.Language(),
+		termEnv:                 os.Getenv("TERM"),
+		verbose:                 verbose,
+		credentialStorage:       endpoint.CredentialStorage,
+		credentialEncryptionKey: endpoint.CredentialEncryptionKey,
+		credentialStoragePath:   endpoint.CredentialStoragePath,
 	}
 	if c.extraHeader == nil {
 		c.extraHeader = make(map[string]string)

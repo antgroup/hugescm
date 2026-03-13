@@ -2,6 +2,40 @@
 
 基于 purego 的跨平台密钥管理库，完全兼容 git credential 工具。
 
+## Linux 特殊说明
+
+**重要：Linux 下的默认行为**
+
+在 Linux 系统上，keyring 默认**不存储密码**，以避免在无 GUI 或服务器环境中出现 DBUS 连接错误。
+
+### 启用密码存储
+
+如需在 Linux 上启用密码存储，有以下两种方式：
+
+#### 1. 使用环境变量（推荐用于 CI/CD 或临时使用）
+
+```bash
+export ZETA_CREDENTIAL_STORAGE=secret-service
+```
+
+#### 2. 使用配置文件（推荐用于长期使用）
+
+```bash
+# 全局配置
+zeta config --global credential.storage secret-service
+
+# 或本地配置
+zeta config credential.storage secret-service
+```
+
+### 存储模式说明
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `auto` | 自动选择（默认） | 自动检测环境，Linux 下默认不存储 |
+| `secret-service` | 使用 libsecret/Secret Service | 有桌面环境的 Linux（需要 DBUS） |
+| `none` | 禁用存储 | 完全禁用凭据存储 |
+
 ## 与 zalando/go-keyring 的重大差异
 
 ### 1. 完全兼容 Git Credential 工具
@@ -136,11 +170,22 @@ err := keyring.Store(context.Background(), cred)
 
 ### Linux/Unix
 
-- 使用 Secret Service API (libsecret)
+- **默认行为**：不存储密码，避免 DBUS 错误
+- 可选使用 Secret Service API (libsecret)
 - 完全兼容 `git-credential-libsecret`
-- JSON 格式存储凭据信息
+- 需要显式配置才能启用存储
 
-**目标名称格式：** 基于 Secret Service 的 schema
+**启用存储：**
+
+```bash
+# 方式1：环境变量
+export ZETA_CREDENTIAL_STORAGE=secret-service
+
+# 方式2：配置文件
+zeta config credential.storage secret-service
+```
+
+**目标名称格式：** `zeta:<protocol>:<server>[:<port>][<path>]`
 
 ## 错误处理
 
@@ -152,6 +197,13 @@ _, err := keyring.Get(context.Background(), cred)
 if errors.Is(err, keyring.ErrNotFound) {
     fmt.Println("Credential not found")
 }
+
+// 检查存储是否被禁用（Linux 默认行为）
+err = keyring.Store(context.Background(), cred)
+if errors.Is(err, keyring.ErrStorageDisabled) {
+    fmt.Println("Credential storage is disabled on Linux")
+    fmt.Println("To enable: export ZETA_CREDENTIAL_STORAGE=secret-service")
+}
 ```
 
 ## 最佳实践
@@ -159,8 +211,10 @@ if errors.Is(err, keyring.ErrNotFound) {
 1. **始终使用完整的凭据信息**：包括 protocol、server、username 等
 2. **使用 NewCredFromURL**：从 URL 自动解析，避免手动构造错误
 3. **处理 ErrNotFound**：区分"找不到"和"其他错误"
-4. **使用 context**：支持超时和取消操作
-5. **不要硬编码密码**：始终使用 keyring 存储敏感信息
+4. **处理 ErrStorageDisabled**：在 Linux 上检查存储是否启用
+5. **使用 context**：支持超时和取消操作
+6. **不要硬编码密码**：始终使用 keyring 存储敏感信息
+7. **Linux 环境**：明确告知用户如何启用凭据存储
 
 ## 限制
 

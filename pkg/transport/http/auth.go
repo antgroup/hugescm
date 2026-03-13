@@ -89,7 +89,8 @@ func (c *client) readCredentials0(ctx context.Context) (*Credentials, error) {
 		Path:     u.Path,
 	}
 
-	cred, err := keyring.Get(ctx, queryCred)
+	opts := c.keyringOptions()
+	cred, err := keyring.Get(ctx, queryCred, opts...)
 	if err == nil {
 		trace.DbgPrint("Got credentials from keyring, username: %s", cred.UserName)
 		return &Credentials{UserName: cred.UserName, Password: cred.Password}, nil
@@ -98,6 +99,21 @@ func (c *client) readCredentials0(ctx context.Context) (*Credentials, error) {
 		trace.DbgPrint("Keyring lookup failed: %v, falling back to netrc", err)
 	}
 	return c.readCredentialsFromNetrc()
+}
+
+// keyringOptions returns keyring options based on client configuration.
+func (c *client) keyringOptions() []keyring.Option {
+	var opts []keyring.Option
+	if c.credentialStorage != "" {
+		opts = append(opts, keyring.WithStorage(c.credentialStorage))
+	}
+	if c.credentialEncryptionKey != "" {
+		opts = append(opts, keyring.WithEncryptionKey(c.credentialEncryptionKey))
+	}
+	if c.credentialStoragePath != "" {
+		opts = append(opts, keyring.WithStoragePath(c.credentialStoragePath))
+	}
+	return opts
 }
 
 func getPortFromURL(u *url.URL) int {
@@ -123,14 +139,25 @@ func (c *client) storeCredentials(ctx context.Context, cred *Credentials) error 
 		return err
 	}
 
-	return keyring.Store(ctx, &keyring.Cred{
+	opts := c.keyringOptions()
+	err = keyring.Store(ctx, &keyring.Cred{
 		Protocol: u.Scheme,
 		Server:   u.Hostname(),
 		Port:     getPortFromURL(u),
 		Path:     u.Path,
 		UserName: cred.UserName,
 		Password: cred.Password,
-	})
+	}, opts...)
+
+	// On Linux, provide helpful message if storage is disabled
+	if errors.Is(err, keyring.ErrStorageDisabled) {
+		trace.DbgPrint("Credential storage is disabled on Linux")
+		trace.DbgPrint("To enable: export ZETA_CREDENTIAL_STORAGE=secret-service")
+		// Don't return error - this is expected behavior on Linux
+		return nil
+	}
+
+	return err
 }
 
 func (c *client) credentialAskOne() (*Credentials, error) {

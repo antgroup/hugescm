@@ -11,14 +11,14 @@ import (
 
 const (
 	service  = "test-service"
-	user     = "test-user"
+	testuser = "test-user"
 	password = "test-password"
 )
 
 // TestStore tests setting a user and password in keyring.
 func TestStore(t *testing.T) {
 	cred := NewCredFromURL("https://" + service)
-	cred.UserName = user
+	cred.UserName = testuser
 	cred.Password = password
 	err := Store(t.Context(), cred)
 	if err != nil {

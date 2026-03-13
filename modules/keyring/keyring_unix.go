@@ -1,7 +1,14 @@
 //go:build (dragonfly && cgo) || (freebsd && cgo) || linux || netbsd || openbsd
 
 // Package keyring provides cross-platform credential storage for Zeta.
-// This file implements Unix/Linux backend using libsecret (Secret Service API).
+// This file implements Unix/Linux storage with configurable storage storages.
+//
+// Linux Behavior:
+// - By default (storage="auto"): Does NOT store credentials unless explicitly configured
+// - To enable storage, set: zeta config credential.storage secret-service
+// - Or set environment variable: ZETA_CREDENTIAL_STORAGE=secret-service
+//
+// This design avoids DBUS errors on systems without Secret Service.
 package keyring
 
 import (
@@ -30,13 +37,50 @@ const (
 	maxUnixPasswordLength = 100 * 1024 // 100 KiB
 )
 
-// Get retrieves credentials from libsecret (Secret Service API).
-// Follows git-credential-libsecret pattern:
-// - Uses fixed username "zeta-credential-manager"
-// - Encodes username and password as "username\0password"
-// - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
-// Returns nil, ErrNotFound if credential doesn't exist
-func Get(ctx context.Context, cred *Cred) (*Cred, error) {
+// Storage mode constants
+const (
+	storageAuto          = "auto"
+	storageSecretService = "secret-service"
+	storageFile          = "file"
+	storageNone          = "none"
+)
+
+// storageConfig holds configuration for credential storage
+type storageConfig struct {
+	mode          string
+	encryptionKey string
+	storagePath   string
+}
+
+// resolveStorageConfig determines the credential storage configuration.
+// Priority: opts parameters > default (none)
+// Note: Environment variables are already handled by upper layer (repository.go)
+func resolveStorageConfig(opts ...Option) *storageConfig {
+	options := applyOptions(opts...)
+
+	cfg := &storageConfig{
+		mode:          strings.ToLower(strings.TrimSpace(options.Storage)),
+		encryptionKey: options.EncryptionKey,
+		storagePath:   options.StoragePath,
+	}
+
+	// Default to "none" if not configured
+	if cfg.mode == "" {
+		cfg.mode = storageNone
+	}
+
+	return cfg
+}
+
+// getCredentialStorageWithConfig returns a credential storage instance with the given config.
+func getCredentialStorageWithConfig(cfg *storageConfig) (*credentialStorage, error) {
+	return newCredentialStorage(cfg.encryptionKey, cfg.storagePath)
+}
+
+// Get retrieves credentials from the configured storage.
+// On Linux, this will only attempt to read if storage is configured.
+// Returns ErrNotFound if credential doesn't exist or storage is disabled.
+func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -45,6 +89,128 @@ func Get(ctx context.Context, cred *Cred) (*Cred, error) {
 		return nil, errors.New("credential cannot be nil")
 	}
 
+	cfg := resolveStorageConfig(opts...)
+	mode := cfg.mode
+
+	switch mode {
+	case storageNone, storageAuto:
+		// For "auto" or "none", don't attempt to read by default
+		// This prevents DBUS errors on systems without Secret Service
+		return nil, ErrNotFound
+
+	case storageSecretService:
+		return getFromSecretService(cred)
+
+	case storageFile:
+		storage, err := getCredentialStorageWithConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Get(ctx, cred)
+
+	default:
+		// Unknown storage mode, treat as disabled
+		return nil, ErrNotFound
+	}
+}
+
+// Store saves credentials to the configured storage.
+// On Linux, this will only attempt to store if storage is explicitly configured.
+// Returns ErrStorageDisabled if storage is not enabled.
+func Store(ctx context.Context, cred *Cred, opts ...Option) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if cred == nil {
+		return errors.New("credential cannot be nil")
+	}
+
+	// Validate input
+	if cred.UserName == "" {
+		return errors.New("username cannot be empty")
+	}
+	if cred.Password == "" {
+		return errors.New("password cannot be empty")
+	}
+	if cred.Server == "" {
+		return errors.New("server cannot be empty")
+	}
+
+	// Validate username cannot contain null byte
+	if strings.Contains(cred.UserName, "\x00") {
+		return errors.New("invalid username: contains null byte")
+	}
+
+	// Validate size limits
+	if len(cred.UserName) > maxUnixUserNameLength {
+		return fmt.Errorf("username too long (max %d bytes)", maxUnixUserNameLength)
+	}
+	if len(cred.Password) > maxUnixPasswordLength {
+		return fmt.Errorf("password too long (max %d bytes)", maxUnixPasswordLength)
+	}
+
+	cfg := resolveStorageConfig(opts...)
+	mode := cfg.mode
+
+	switch mode {
+	case storageNone, storageAuto:
+		// For "auto" or "none", don't store credentials by default
+		// This prevents DBUS errors and is the safe default for Linux
+		return ErrStorageDisabled
+
+	case storageSecretService:
+		return storeToSecretService(cred)
+
+	case storageFile:
+		storage, err := getCredentialStorageWithConfig(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Store(ctx, cred)
+
+	default:
+		// Unknown storage mode, treat as disabled
+		return ErrStorageDisabled
+	}
+}
+
+// Erase removes credentials from the configured storage.
+// Returns ErrStorageDisabled if storage is not enabled.
+func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if cred == nil {
+		return errors.New("credential cannot be nil")
+	}
+
+	cfg := resolveStorageConfig(opts...)
+	mode := cfg.mode
+
+	switch mode {
+	case storageNone, storageAuto:
+		return ErrStorageDisabled
+
+	case storageSecretService:
+		return eraseFromSecretService(cred)
+
+	case storageFile:
+		storage, err := getCredentialStorageWithConfig(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Erase(ctx, cred)
+
+	default:
+		return ErrStorageDisabled
+	}
+}
+
+// getFromSecretService retrieves credentials from libsecret (Secret Service API).
+// Note: libsecret API is synchronous and doesn't support context cancellation.
+func getFromSecretService(cred *Cred) (*Cred, error) {
 	svc, err := ss.NewSecretService()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to secret service: %w", err)
@@ -96,45 +262,9 @@ func Get(ctx context.Context, cred *Cred) (*Cred, error) {
 	}, nil
 }
 
-// Store saves credentials in libsecret (Secret Service API).
-// Follows git-credential-libsecret pattern:
-// - Uses fixed username "zeta-credential-manager"
-// - Encodes username and password as "username\0password"
-// - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
-// - If credential exists, it will be overwritten
-func Store(ctx context.Context, cred *Cred) error {
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	if cred == nil {
-		return errors.New("credential cannot be nil")
-	}
-
-	// Validate input
-	if cred.UserName == "" {
-		return errors.New("username cannot be empty")
-	}
-	if cred.Password == "" {
-		return errors.New("password cannot be empty")
-	}
-	if cred.Server == "" {
-		return errors.New("server cannot be empty")
-	}
-
-	// Validate username cannot contain null byte
-	if strings.Contains(cred.UserName, "\x00") {
-		return errors.New("invalid username: contains null byte")
-	}
-
-	// Validate size limits
-	if len(cred.UserName) > maxUnixUserNameLength {
-		return fmt.Errorf("username too long (max %d bytes)", maxUnixUserNameLength)
-	}
-	if len(cred.Password) > maxUnixPasswordLength {
-		return fmt.Errorf("password too long (max %d bytes)", maxUnixPasswordLength)
-	}
-
+// storeToSecretService saves credentials in libsecret (Secret Service API).
+// Note: libsecret API is synchronous and doesn't support context cancellation.
+func storeToSecretService(cred *Cred) error {
 	svc, err := ss.NewSecretService()
 	if err != nil {
 		return fmt.Errorf("failed to connect to secret service: %w", err)
@@ -205,20 +335,9 @@ func Store(ctx context.Context, cred *Cred) error {
 	return nil
 }
 
-// Erase removes credentials from libsecret (Secret Service API).
-// Follows git-credential-libsecret pattern:
-// - Uses fixed username "zeta-credential-manager"
-// - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
-// - Returns ErrNotFound if credential doesn't exist
-func Erase(ctx context.Context, cred *Cred) error {
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	if cred == nil {
-		return errors.New("credential cannot be nil")
-	}
-
+// eraseFromSecretService removes credentials from libsecret (Secret Service API).
+// Note: libsecret API is synchronous and doesn't support context cancellation.
+func eraseFromSecretService(cred *Cred) error {
 	svc, err := ss.NewSecretService()
 	if err != nil {
 		return fmt.Errorf("failed to connect to secret service: %w", err)

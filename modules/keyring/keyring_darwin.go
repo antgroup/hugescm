@@ -194,8 +194,9 @@ func initializeKeyring() error {
 	return nil
 }
 
-// Get implements Keyring interface for darwinKeychain
-func Get(ctx context.Context, cred *Cred) (*Cred, error) {
+// Get implements Keyring interface for darwinKeychain.
+// Note: opts are ignored on macOS as the native keychain is always used.
+func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -299,7 +300,8 @@ func Get(ctx context.Context, cred *Cred) (*Cred, error) {
 // - Optionally sets kSecAttrPath, kSecAttrPort
 // - Uses kSecAttrAuthenticationTypeDefault for compatibility
 // If credential already exists, updates it.
-func Store(ctx context.Context, cred *Cred) error {
+// Note: opts are ignored on macOS as the native keychain is always used.
+func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -416,7 +418,8 @@ func Store(ctx context.Context, cred *Cred) error {
 // - Uses kSecClassInternetPassword, kSecAttrServer as base
 // - Adds optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
 // If multiple credentials match, removes all of them.
-func Erase(ctx context.Context, cred *Cred) error {
+// Note: opts are ignored on macOS as the native keychain is always used.
+func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

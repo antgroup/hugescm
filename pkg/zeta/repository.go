@@ -99,6 +99,16 @@ func getFromValueOrEnv(k, e string, values map[string]StringArray) (string, bool
 	return os.LookupEnv(e)
 }
 
+func resolveString(k, e, defaultValue string, values map[string]StringArray) string {
+	if s, ok := getStringFromValues(k, values); ok {
+		return s
+	}
+	if s, ok := os.LookupEnv(e); ok {
+		return s
+	}
+	return defaultValue
+}
+
 type NewOptions struct {
 	Remote      string
 	Branch      string
@@ -195,6 +205,14 @@ func parseExtraEnv(cfg *config.Config, values map[string]StringArray) []string {
 	return extraEnv
 }
 
+func parseCredentialConfig(cfg *config.Config, values map[string]StringArray) (storage, encryptionKey, storagePath string) {
+	// Priority: command line values > environment variables > config file
+	storage = resolveString("credential.storage", ENV_ZETA_CREDENTIAL_STORAGE, cfg.Credential.Storage, values)
+	encryptionKey = resolveString("credential.encryptionKey", ENV_ZETA_CREDENTIAL_ENCRYPTION_KEY, cfg.Credential.EncryptionKey, values)
+	storagePath = resolveString("credential.storagePath", ENV_ZETA_CREDENTIAL_STORAGE_PATH, cfg.Credential.StoragePath, values)
+	return
+}
+
 func parseSharingRoot(cfg *config.Config, values map[string]StringArray) (string, bool) {
 	if sharingRoot, ok := getStringFromValues("core.sharingRoot", values); ok && len(sharingRoot) > 0 && filepath.IsAbs(sharingRoot) {
 		return sharingRoot, true
@@ -222,10 +240,14 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	}
 	values := valuesMapArray(opts.Values)
 	target := plumbing.NewHash(opts.Commit)
+	credStorage, credEncryptionKey, credStoragePath := parseCredentialConfig(cfg, values)
 	endpoint, err := transport.NewEndpoint(opts.Remote, &transport.Options{
-		InsecureSkipTLS: parseInsecureSkipTLS(cfg, values),
-		ExtraHeader:     parseExtraHeader(cfg, values),
-		ExtraEnv:        parseExtraEnv(cfg, values),
+		InsecureSkipTLS:         parseInsecureSkipTLS(cfg, values),
+		ExtraHeader:             parseExtraHeader(cfg, values),
+		ExtraEnv:                parseExtraEnv(cfg, values),
+		CredentialStorage:       credStorage,
+		CredentialEncryptionKey: credEncryptionKey,
+		CredentialStoragePath:   credStoragePath,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bad remote: %v\n", err)
@@ -757,10 +779,14 @@ func (r *Repository) cleanedRemote() string {
 }
 
 func (r *Repository) newTransport(ctx context.Context, operation transport.Operation) (transport.Transport, error) {
+	credStorage, credEncryptionKey, credStoragePath := parseCredentialConfig(r.Config, r.values)
 	endpoint, err := transport.NewEndpoint(r.Core.Remote, &transport.Options{
-		InsecureSkipTLS: parseInsecureSkipTLS(r.Config, r.values),
-		ExtraHeader:     parseExtraHeader(r.Config, r.values),
-		ExtraEnv:        parseExtraEnv(r.Config, r.values),
+		InsecureSkipTLS:         parseInsecureSkipTLS(r.Config, r.values),
+		ExtraHeader:             parseExtraHeader(r.Config, r.values),
+		ExtraEnv:                parseExtraEnv(r.Config, r.values),
+		CredentialStorage:       credStorage,
+		CredentialEncryptionKey: credEncryptionKey,
+		CredentialStoragePath:   credStoragePath,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bad remote: %v\n", err)

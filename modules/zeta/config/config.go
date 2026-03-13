@@ -192,15 +192,65 @@ func (m *Merge) Overwrite(o *Merge) {
 	m.ConflictStyle = overwrite(m.ConflictStyle, o.ConflictStyle)
 }
 
+// Credential configures credential storage behavior, especially on Linux systems.
+// On macOS and Windows, the native keychain is always used.
+// On Linux, multiple storage backends are available to handle environments without DBUS/Secret Service.
+type Credential struct {
+	// Storage specifies the credential storage backend.
+	// Options:
+	//   - "auto" (default): Automatically select the best available backend
+	//     Priority: secret-service > file (if key set) > memory
+	//   - "secret-service": Use libsecret/Secret Service API (requires DBUS)
+	//   - "file": Use encrypted file storage (requires encryptionKey)
+	//   - "memory": In-memory cache only (credentials lost on exit)
+	//   - "none": Disable credential storage completely
+	//
+	// Can be set via: zeta config credential.storage <value>
+	// Or environment: ZETA_CREDENTIAL_STORAGE=<value>
+	Storage string `toml:"storage,omitempty"`
+
+	// EncryptionKey specifies the key used for encrypting credentials in file storage.
+	// Required when storage="file". If not set, falls back to "memory" mode.
+	//
+	// Security note: Store this key securely! Consider using environment variable:
+	//   ZETA_CREDENTIAL_ENCRYPTION_KEY=<key>
+	//
+	// To generate a secure key: openssl rand -base64 32
+	EncryptionKey string `toml:"encryptionKey,omitempty"`
+
+	// StoragePath specifies the path for encrypted credential file storage.
+	// Only used when storage="file".
+	// Default: ~/.config/zeta/credentials.enc
+	//
+	// Can be set via: zeta config credential.storagePath <path>
+	// Or environment: ZETA_CREDENTIAL_STORAGE_PATH=<path>
+	StoragePath string `toml:"storagePath,omitempty"`
+}
+
+// CredentialStorageConstants defines valid storage backend values
+const (
+	CredentialStorageAuto          = "auto"
+	CredentialStorageSecretService = "secret-service"
+	CredentialStorageFile          = "file"
+	CredentialStorageNone          = "none"
+)
+
+func (c *Credential) Overwrite(o *Credential) {
+	c.Storage = overwrite(c.Storage, o.Storage)
+	c.EncryptionKey = overwrite(c.EncryptionKey, o.EncryptionKey)
+	c.StoragePath = overwrite(c.StoragePath, o.StoragePath)
+}
+
 type Config struct {
-	Core      Core      `toml:"core,omitempty"`
-	User      User      `toml:"user,omitempty"`
-	Fragment  Fragment  `toml:"fragment,omitempty"`
-	HTTP      HTTP      `toml:"http,omitempty"`
-	SSH       SSH       `toml:"ssh,omitempty"`
-	Transport Transport `toml:"transport,omitempty"`
-	Diff      Diff      `toml:"diff,omitempty"`
-	Merge     Merge     `toml:"merge,omitempty"`
+	Core       Core       `toml:"core,omitempty"`
+	User       User       `toml:"user,omitempty"`
+	Fragment   Fragment   `toml:"fragment,omitempty"`
+	HTTP       HTTP       `toml:"http,omitempty"`
+	SSH        SSH        `toml:"ssh,omitempty"`
+	Transport  Transport  `toml:"transport,omitempty"`
+	Diff       Diff       `toml:"diff,omitempty"`
+	Merge      Merge      `toml:"merge,omitempty"`
+	Credential Credential `toml:"credential,omitempty"`
 }
 
 // Overwrite: use local config overwrite config
@@ -213,4 +263,5 @@ func (c *Config) Overwrite(other *Config) {
 	c.Transport.Overwrite(&other.Transport)
 	c.Diff.Overwrite(&other.Diff)
 	c.Merge.Overwrite(&other.Merge)
+	c.Credential.Overwrite(&other.Credential)
 }

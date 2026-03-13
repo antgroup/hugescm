@@ -63,6 +63,9 @@ func parseSCPLike(endpoint string, opts *Options) (*Endpoint, bool) {
 	if opts != nil {
 		// SSH protocol only support parseExtraEnv
 		e.ExtraEnv = opts.parseExtraEnv()
+		e.CredentialStorage = opts.CredentialStorage
+		e.CredentialEncryptionKey = opts.CredentialEncryptionKey
+		e.CredentialStoragePath = opts.CredentialStoragePath
 	}
 	return e, true
 }
@@ -76,6 +79,12 @@ type Endpoint struct {
 	ExtraHeader map[string]string
 	// ExtraEnv extra env
 	ExtraEnv map[string]string
+	// CredentialStorage specifies the credential storage backend (Linux only)
+	CredentialStorage string
+	// CredentialEncryptionKey specifies the encryption key for file storage
+	CredentialEncryptionKey string
+	// CredentialStoragePath specifies the path for encrypted credential file
+	CredentialStoragePath string
 	// origin endpoint: only scp like url --> zeta@domain.com:namespace/repo
 	origin string
 }
@@ -84,6 +93,10 @@ type Options struct {
 	InsecureSkipTLS bool
 	ExtraHeader     []string
 	ExtraEnv        []string
+	// Credential configuration
+	CredentialStorage       string
+	CredentialEncryptionKey string
+	CredentialStoragePath   string
 }
 
 func (opts *Options) parseExtraHeader() map[string]string {
@@ -134,6 +147,9 @@ func parseURL(endpoint string, opts *Options) (*Endpoint, error) {
 		e.InsecureSkipTLS = opts.InsecureSkipTLS
 		e.ExtraHeader = opts.parseExtraHeader()
 		e.ExtraEnv = opts.parseExtraEnv()
+		e.CredentialStorage = opts.CredentialStorage
+		e.CredentialEncryptionKey = opts.CredentialEncryptionKey
+		e.CredentialStoragePath = opts.CredentialStoragePath
 	}
 	return e, nil
 }

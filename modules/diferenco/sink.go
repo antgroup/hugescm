@@ -197,32 +197,38 @@ func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int,
 	return u
 }
 
-// Split string by non-letternumeric characters keeping delimiters
+// SplitWords splits string by non-word characters (keeping delimiters).
+// Word characters include letters, digits, and underscore.
 func SplitWords(text string) []string {
 	words := make([]string, 0, 10)
-	var hit bool
+	var inWord bool
 	var offset int
 	for i, c := range text {
-		if unicode.IsLetter(c) || unicode.IsDigit(c) {
-			if !hit {
+		if isWordChar(c) {
+			if !inWord {
 				if i > offset {
 					words = append(words, text[offset:i])
 				}
 				offset = i
-				hit = true
+				inWord = true
 			}
 			continue
 		}
-		if hit {
+		if inWord {
 			if i > offset {
 				words = append(words, text[offset:i])
 			}
 			offset = i
-			hit = false
+			inWord = false
 		}
 	}
 	if offset < len(text) {
 		words = append(words, text[offset:])
 	}
 	return words
+}
+
+// isWordChar returns true if c is a word character (letter, digit, or underscore).
+func isWordChar(c rune) bool {
+	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
 }

@@ -82,15 +82,6 @@ func WithStoragePath(path string) Option {
 	}
 }
 
-// applyOptions applies the given options to an Options struct.
-func applyOptions(opts ...Option) *Options {
-	o := &Options{}
-	for _, opt := range opts {
-		opt(o)
-	}
-	return o
-}
-
 // NewCredFromURL creates a Cred from a URL, extracting protocol, server, and port.
 func NewCredFromURL(targetURL string) *Cred {
 	u, err := url.Parse(targetURL)

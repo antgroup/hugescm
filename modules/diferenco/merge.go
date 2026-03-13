@@ -15,12 +15,12 @@ SPDX-License-Identifier: MIT
 package diferenco
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"slices"
-	"sort"
 	"strings"
 )
 
@@ -75,11 +75,6 @@ const (
 )
 
 type hunk [5]int
-type hunkList []*hunk
-
-func (h hunkList) Len() int           { return len(h) }
-func (h hunkList) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-func (h hunkList) Less(i, j int) bool { return h[i][0] < h[j][0] }
 
 // Given three files, A, O, and B, where both A and B are
 // independently derived from O, returns a fairly complicated
@@ -101,17 +96,16 @@ func diff3MergeIndices[E comparable](ctx context.Context, o, a, b []E, algo Algo
 	if err != nil {
 		return nil, err
 	}
-	var hunks []*hunk
-	addHunk := func(h Change, side int) {
-		hunks = append(hunks, &hunk{h.P1, side, h.Del, h.P2, h.Ins})
-	}
+	hunks := make([]hunk, 0, len(m1)+len(m2))
 	for i := range m1 {
-		addHunk(m1[i], 0)
+		hunks = append(hunks, hunk{m1[i].P1, 0, m1[i].Del, m1[i].P2, m1[i].Ins})
 	}
 	for i := range m2 {
-		addHunk(m2[i], 2)
+		hunks = append(hunks, hunk{m2[i].P1, 2, m2[i].Del, m2[i].P2, m2[i].Ins})
 	}
-	sort.Sort(hunkList(hunks))
+	slices.SortFunc(hunks, func(a, b hunk) int {
+		return cmp.Compare(a[0], b[0])
+	})
 
 	var result [][]int
 	var commonOffset = 0

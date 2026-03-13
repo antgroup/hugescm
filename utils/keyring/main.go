@@ -62,7 +62,7 @@ func main() {
 
 	// Create a temporary test file
 	tmpFile := "/tmp/zeta-credentials-test-" + time.Now().Format("20060102-150405") + ".toml"
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	// Test 1: Create storage with auto-derived key
 	fmt.Println("Test 1: Create storage with auto-derived key")
@@ -228,7 +228,7 @@ func main() {
 		fmt.Printf("❌ Failed to create storage with custom key: %v\n", err)
 		os.Exit(1)
 	}
-	defer os.Remove(tmpFile + ".2")
+	defer func() { _ = os.Remove(tmpFile + ".2") }()
 
 	if err := storage2.Store(ctx, &Cred{
 		Protocol: "https",
@@ -250,7 +250,7 @@ func main() {
 		fmt.Printf("❌ Failed to create storage with base58 key: %v\n", err)
 		os.Exit(1)
 	}
-	defer os.Remove(tmpFile + ".3")
+	defer func() { _ = os.Remove(tmpFile + ".3") }()
 
 	if err := storage3.Store(ctx, &Cred{
 		Protocol: "https",
@@ -397,7 +397,7 @@ func (s *credentialStorage) readCredentials() (map[string]*Cred, error) {
 		}
 		return nil, fmt.Errorf("failed to open credentials file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var credFile credentialsFile
 	if _, err := toml.NewDecoder(file).Decode(&credFile); err != nil {
@@ -472,7 +472,7 @@ func (s *credentialStorage) writeCredentials(credentials map[string]*Cred) error
 	if err != nil {
 		return fmt.Errorf("failed to create credentials file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if err := toml.NewEncoder(file).Encode(credFile); err != nil {
 		return fmt.Errorf("failed to encode credentials to TOML: %w", err)

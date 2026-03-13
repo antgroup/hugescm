@@ -47,46 +47,80 @@ func uniqueElements[E comparable](a []E) ([]E, []int) {
 
 // patienceLCS computes the longest common subsequence of two string
 // slices and returns the index pairs of the patienceLCS.
+// Uses O(n log n) LIS algorithm for better performance.
 func patienceLCS[E comparable](a, b []E) [][2]int {
-	// Initialize the LCS table.
-	lcs := make([][]int, len(a)+1)
-	for i := 0; i <= len(a); i++ {
-		lcs[i] = make([]int, len(b)+1)
+	// Build index map for unique elements in b
+	pos := make(map[E]int, len(b))
+	count := make(map[E]int, len(b))
+	for _, e := range b {
+		count[e]++
+	}
+	for i, e := range b {
+		if count[e] == 1 {
+			pos[e] = i
+		}
 	}
 
-	// Populate the LCS table.
-	for i := 1; i < len(lcs); i++ {
-		for j := 1; j < len(lcs[i]); j++ {
-			if a[i-1] == b[j-1] {
-				lcs[i][j] = lcs[i-1][j-1] + 1
+	// Build sequence of matching pairs (unique elements that appear in both)
+	type pair struct {
+		i int
+		j int
+	}
+	pairs := make([]pair, 0, len(a))
+	for i, e := range a {
+		if j, ok := pos[e]; ok {
+			pairs = append(pairs, pair{i, j})
+		}
+	}
+
+	if len(pairs) == 0 {
+		return nil
+	}
+
+	// LIS on j values using O(n log n) algorithm
+	n := len(pairs)
+	tails := make([]int, 0, n)
+	prev := make([]int, n)
+	for i := range prev {
+		prev[i] = -1
+	}
+
+	for i, p := range pairs {
+		j := p.j
+
+		// Binary search for the position to insert
+		lo, hi := 0, len(tails)
+		for lo < hi {
+			mid := (lo + hi) / 2
+			if pairs[tails[mid]].j < j {
+				lo = mid + 1
 			} else {
-				lcs[i][j] = max(lcs[i-1][j], lcs[i][j-1])
+				hi = mid
 			}
 		}
-	}
 
-	// Backtrack to find the LCS.
-	i, j := len(a), len(b)
-	s := make([][2]int, 0, lcs[i][j])
-	for i > 0 && j > 0 {
-		switch {
-		case a[i-1] == b[j-1]:
-			s = append(s, [2]int{i - 1, j - 1})
-			i--
-			j--
-		case lcs[i-1][j] > lcs[i][j-1]:
-			i--
-		default:
-			j--
+		if lo == len(tails) {
+			tails = append(tails, i)
+		} else {
+			tails[lo] = i
+		}
+
+		if lo > 0 {
+			prev[i] = tails[lo-1]
 		}
 	}
 
-	// Reverse the backtracked LCS.
-	slices.Reverse(s)
-	// for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-	// 	s[i], s[j] = s[j], s[i]
-	// }
-	return s
+	// Reconstruct LIS
+	res := make([][2]int, 0, len(tails))
+	k := tails[len(tails)-1]
+	for k >= 0 {
+		p := pairs[k]
+		res = append(res, [2]int{p.i, p.j})
+		k = prev[k]
+	}
+
+	slices.Reverse(res)
+	return res
 }
 
 func patienceCompute[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, P2 int) ([]Change, error) {

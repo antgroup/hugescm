@@ -35,6 +35,7 @@ const (
 	Myers
 	Minimal
 	Patience
+	SuffixArray
 )
 
 var (
@@ -44,11 +45,12 @@ var (
 
 var (
 	algorithmValueMap = map[string]Algorithm{
-		"histogram": Histogram,
-		"onp":       ONP,
-		"myers":     Myers,
-		"patience":  Patience,
-		"minimal":   Minimal,
+		"histogram":   Histogram,
+		"onp":         ONP,
+		"myers":       Myers,
+		"patience":    Patience,
+		"minimal":     Minimal,
+		"suffixarray": SuffixArray,
 	}
 	algorithmNameMap = map[Algorithm]string{
 		Unspecified: "unspecified",
@@ -57,6 +59,7 @@ var (
 		Myers:       "myers",
 		Minimal:     "minimal",
 		Patience:    "patience",
+		SuffixArray: "suffixarray",
 	}
 )
 
@@ -154,6 +157,8 @@ func diffInternal[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm)
 		return MinimalDiff(ctx, L1, L2)
 	case Patience:
 		return PatienceDiff(ctx, L1, L2)
+	case SuffixArray:
+		return SuffixArrayDiff(ctx, L1, L2)
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedAlgorithm, algo.String())
 	}

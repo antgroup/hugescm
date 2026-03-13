@@ -1,7 +1,7 @@
 // Copyright ©️ Ant Group. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !windows && !darwin
+//go:build dragonfly || freebsd || linux || netbsd || openbsd
 
 package keyring
 

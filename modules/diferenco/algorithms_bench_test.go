@@ -9,7 +9,6 @@ import (
 )
 
 // Benchmark helpers to generate test data
-// 生成测试数据的基准测试辅助函数
 
 func generateSequence(size int, changeRate float64) []string {
 	seq := make([]string, size)
@@ -36,7 +35,6 @@ func generateModifiedSequence(base []string, changeRate float64) []string {
 }
 
 // BenchmarkMyersAlgorithm benchmarks the Myers algorithm
-// Myers 算法基准测试
 func BenchmarkMyersAlgorithm(b *testing.B) {
 	ctx := context.Background()
 	algos := []struct {
@@ -70,7 +68,6 @@ func BenchmarkMyersAlgorithm(b *testing.B) {
 }
 
 // BenchmarkHistogramAlgorithm benchmarks the Histogram algorithm
-// Histogram 算法基准测试
 func BenchmarkHistogramAlgorithm(b *testing.B) {
 	ctx := context.Background()
 	algos := []struct {
@@ -104,7 +101,6 @@ func BenchmarkHistogramAlgorithm(b *testing.B) {
 }
 
 // BenchmarkONPAlgorithm benchmarks the ONP algorithm
-// ONP 算法基准测试
 func BenchmarkONPAlgorithm(b *testing.B) {
 	ctx := context.Background()
 	algos := []struct {
@@ -138,7 +134,6 @@ func BenchmarkONPAlgorithm(b *testing.B) {
 }
 
 // BenchmarkPatienceAlgorithm benchmarks the Patience algorithm
-// Patience 算法基准测试
 func BenchmarkPatienceAlgorithm(b *testing.B) {
 	ctx := context.Background()
 	algos := []struct {
@@ -172,7 +167,6 @@ func BenchmarkPatienceAlgorithm(b *testing.B) {
 }
 
 // BenchmarkMinimalAlgorithm benchmarks the Minimal algorithm
-// Minimal 算法基准测试
 func BenchmarkMinimalAlgorithm(b *testing.B) {
 	ctx := context.Background()
 	algos := []struct {
@@ -205,8 +199,40 @@ func BenchmarkMinimalAlgorithm(b *testing.B) {
 	}
 }
 
+// BenchmarkSuffixArrayAlgorithm benchmarks the SuffixArray algorithm
+func BenchmarkSuffixArrayAlgorithm(b *testing.B) {
+	ctx := context.Background()
+	algos := []struct {
+		name   string
+		algo   Algorithm
+		size   int
+		change float64
+	}{
+		{"small_10pct_change", SuffixArray, 100, 0.1},
+		{"small_50pct_change", SuffixArray, 100, 0.5},
+		{"medium_10pct_change", SuffixArray, 1000, 0.1},
+		{"medium_50pct_change", SuffixArray, 1000, 0.5},
+		{"large_10pct_change", SuffixArray, 5000, 0.1},
+		{"large_50pct_change", SuffixArray, 5000, 0.5},
+	}
+
+	for _, tt := range algos {
+		b.Run(tt.name, func(b *testing.B) {
+			before := generateSequence(tt.size, 0)
+			after := generateModifiedSequence(before, tt.change)
+
+			b.ResetTimer()
+			for range b.N {
+				_, err := diffInternal(ctx, before, after, tt.algo)
+				if err != nil {
+					b.Fatalf("diffInternal() error = %v", err)
+				}
+			}
+		})
+	}
+}
+
 // BenchmarkAlgorithmComparison compares all algorithms with the same input
-// 算法对比基准测试
 func BenchmarkAlgorithmComparison(b *testing.B) {
 	ctx := context.Background()
 	sizes := []int{100, 1000, 5000}
@@ -246,12 +272,18 @@ func BenchmarkAlgorithmComparison(b *testing.B) {
 					_, _ = diffInternal(ctx, before, after, Patience)
 				}
 			})
+
+			b.Run(name+"_suffixarray", func(b *testing.B) {
+				b.ResetTimer()
+				for range b.N {
+					_, _ = diffInternal(ctx, before, after, SuffixArray)
+				}
+			})
 		}
 	}
 }
 
 // BenchmarkSpecialCases benchmarks special edge cases
-// 特殊情况基准测试
 func BenchmarkSpecialCases(b *testing.B) {
 	ctx := context.Background()
 
@@ -301,7 +333,6 @@ func BenchmarkSpecialCases(b *testing.B) {
 }
 
 // BenchmarkDiffRunes benchmarks rune-level diff
-// 字符级 diff 基准测试
 func BenchmarkDiffRunes(b *testing.B) {
 	ctx := context.Background()
 	tests := []struct {
@@ -332,7 +363,6 @@ func BenchmarkDiffRunes(b *testing.B) {
 }
 
 // BenchmarkDiffWords benchmarks word-level diff
-// 单词级 diff 基准测试
 func BenchmarkDiffWords(b *testing.B) {
 	ctx := context.Background()
 	tests := []struct {
@@ -363,7 +393,6 @@ func BenchmarkDiffWords(b *testing.B) {
 }
 
 // BenchmarkHelperFunctions benchmarks helper functions
-// 辅助函数基准测试
 func BenchmarkHelperFunctions(b *testing.B) {
 	// Benchmark commonPrefixLength
 	b.Run("commonPrefixLength", func(b *testing.B) {
@@ -389,7 +418,6 @@ func BenchmarkHelperFunctions(b *testing.B) {
 }
 
 // BenchmarkWithRealWorldData simulates real-world diff scenarios
-// 真实场景模拟基准测试
 func BenchmarkWithRealWorldData(b *testing.B) {
 	ctx := context.Background()
 
@@ -486,11 +514,10 @@ func cleanup() {
 }
 
 // BenchmarkMemoryAllocation benchmarks memory allocation patterns
-// 内存分配模式基准测试
 func BenchmarkMemoryAllocation(b *testing.B) {
 	ctx := context.Background()
 
-	algos := []Algorithm{Myers, Histogram, ONP, Patience}
+	algos := []Algorithm{Myers, Histogram, ONP, Patience, SuffixArray}
 
 	for _, algo := range algos {
 		b.Run(algo.String(), func(b *testing.B) {
@@ -511,7 +538,6 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 }
 
 // BenchmarkParallel benchmarks parallel execution
-// 并行执行基准测试
 func BenchmarkParallel(b *testing.B) {
 	ctx := context.Background()
 	before := generateSequence(1000, 0)
@@ -528,7 +554,6 @@ func BenchmarkParallel(b *testing.B) {
 }
 
 // Helper function to split text into lines
-// 将文本分割成行的辅助函数
 func splitLines(text string) []string {
 	lines := make([]string, 0)
 	start := 0

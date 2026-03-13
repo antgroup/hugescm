@@ -79,8 +79,7 @@ occurrencesIter:
 			}
 			s1--
 			s2--
-			newOccurrences := h.numTokenOccurrences(t1)
-			occurrences = min(newOccurrences, occurrences)
+			occurrences = min(h.numTokenOccurrences(t1), occurrences)
 		}
 		e1, e2 := tokenIndex1+1, afterPos+1
 		for e1 < len(before) && e2 < len(after) {
@@ -88,8 +87,7 @@ occurrencesIter:
 			if t1 != t2 {
 				break
 			}
-			newOccurrences := h.numTokenOccurrences(t1)
-			occurrences = min(occurrences, newOccurrences)
+			occurrences = min(h.numTokenOccurrences(t1), occurrences)
 			e1++
 			e2++
 		}
@@ -97,7 +95,9 @@ occurrencesIter:
 			nextTokenIndex2 = e2
 		}
 		length := e2 - s2
-		if s.lcs.length < length || s.minOccurrences > occurrences {
+		// Heuristic: prefer longest match first, then lowest occurrences for stability
+		if length > s.lcs.length ||
+			(length == s.lcs.length && occurrences < s.minOccurrences) {
 			s.minOccurrences = occurrences
 			s.lcs = Lcs{
 				beforeStart: s1,

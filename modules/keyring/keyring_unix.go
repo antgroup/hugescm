@@ -1,4 +1,4 @@
-//go:build (dragonfly && cgo) || (freebsd && cgo) || linux || netbsd || openbsd
+//go:build dragonfly || freebsd || linux || netbsd || openbsd
 
 // Package keyring provides cross-platform credential storage for Zeta.
 // This file implements Unix/Linux storage with configurable storage storages.
@@ -36,6 +36,15 @@ const (
 	// We set a reasonable limit of 100KiB.
 	maxUnixPasswordLength = 100 * 1024 // 100 KiB
 )
+
+// applyOptions applies the given options to an Options struct.
+func applyOptions(opts ...Option) *Options {
+	o := &Options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+	return o
+}
 
 // Storage mode constants
 const (

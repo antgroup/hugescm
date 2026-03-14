@@ -391,7 +391,7 @@ func findItem(svc *ss.SecretService, service, user string) (dbus.ObjectPath, err
 }
 
 // buildUnixTargetName constructs a unique target name for libsecret.
-// The format is: "zeta:<protocol>:<server>:<port>:<path>"
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
 // This follows the pattern used by git-credential-libsecret for compatibility.
 func buildUnixTargetName(cred *Cred) string {
 	protocol := cred.Protocol
@@ -399,7 +399,7 @@ func buildUnixTargetName(cred *Cred) string {
 		protocol = "https"
 	}
 
-	target := fmt.Sprintf("zeta:%s:%s", protocol, cred.Server)
+	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
 
 	if cred.Port != 0 {
 		target += fmt.Sprintf(":%d", cred.Port)

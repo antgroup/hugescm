@@ -70,7 +70,7 @@ type CREDENTIALW struct {
 // Get retrieves credentials from Windows Credential Manager.
 // Follows git-credential-manager pattern:
 // - Uses CRED_TYPE_GENERIC
-// - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
+// - Target name format: "zeta+<protocol>://<server>[:<port>][<path>]"
 // - Returns nil, ErrNotFound if credential doesn't exist
 // Note: opts are ignored on Windows as the native credential manager is always used.
 func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
@@ -142,7 +142,7 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 // Store saves credentials in Windows Credential Manager.
 // Follows git-credential-manager pattern:
 // - Uses CRED_TYPE_GENERIC
-// - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
+// - Target name format: "zeta+<protocol>://<server>[:<port>][<path>]"
 // - Stores username and password
 // - If credential exists, it will be overwritten
 // Note: opts are ignored on Windows as the native credential manager is always used.
@@ -228,7 +228,7 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 // Erase removes credentials from Windows Credential Manager.
 // Follows git-credential-manager pattern:
 // - Uses CRED_TYPE_GENERIC
-// - Target name format: "zeta:<protocol>:<server>[:<port>][<path>]"
+// - Target name format: "zeta+<protocol>://<server>[:<port>][<path>]"
 // - Returns nil if credential doesn't exist (no error)
 // Note: opts are ignored on Windows as the native credential manager is always used.
 func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
@@ -269,13 +269,13 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 }
 
 // buildWindowsTargetName constructs a unique target name for Windows Credential Manager.
-// Format: "zeta:<protocol>:<server>[:<port>][<path>]"
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
 // This follows the pattern used by git-credential-manager for Windows.
 //
 // Examples:
-//   - "zeta:https:github.com"
-//   - "zeta:https:github.com:443"
-//   - "zeta:https:github.com:443/api/v3"
+//   - "zeta+https://github.com"
+//   - "zeta:https://github.com:443"
+//   - "zeta:https://github.com:443/api/v3"
 func buildWindowsTargetName(cred *Cred) string {
 	protocol := cred.Protocol
 	if protocol == "" {
@@ -283,7 +283,7 @@ func buildWindowsTargetName(cred *Cred) string {
 	}
 
 	// Zeta VCS uses "zeta:" prefix
-	target := fmt.Sprintf("zeta:%s:%s", protocol, cred.Server)
+	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
 
 	if cred.Port != 0 {
 		target += fmt.Sprintf(":%d", cred.Port)

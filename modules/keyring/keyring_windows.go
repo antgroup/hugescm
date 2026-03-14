@@ -24,7 +24,7 @@ const (
 	// CRED_MAX_GENERIC_TARGET_NAME_LENGTH is the maximum target name length.
 	CRED_MAX_GENERIC_TARGET_NAME_LENGTH = 32767
 
-	// CRED_MAX_CREDENTIAL_BLOB_SIZE is the maximum length for string fields.
+	// CRED_MAX_CREDENTIAL_BLOB_SIZE Maximum size of CredentialBlob in bytes.
 	CRED_MAX_CREDENTIAL_BLOB_SIZE = 512
 
 	// CRED_TYPE_GENERIC is the credential type for generic credentials.
@@ -104,7 +104,7 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 		uintptr(unsafe.Pointer(&result)),
 	)
 	if ret == 0 {
-		if errno, ok := err.(syscall.Errno); ok && errno == ERROR_NOT_FOUND {
+		if errors.Is(err, ERROR_NOT_FOUND) {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to read credential: %w", err)
@@ -119,8 +119,9 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 
 	// Extract password
 	if result.CredentialBlob == nil || result.CredentialBlobSize == 0 {
-		return nil, errors.New("invalid credential: empty password")
+		return nil, errors.New("password cannot be empty")
 	}
+
 	passwordRaw := unsafe.Slice(result.CredentialBlob, result.CredentialBlobSize)
 	password := string(passwordRaw)
 
@@ -212,7 +213,6 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		UserName:           userNameUTF16,
 		CredentialBlobSize: uint32(len(password)),
 		Comment:            commentUTF16,
-		Flags:              0,
 	}
 
 	if len(password) > 0 {
@@ -266,7 +266,7 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ret == 0 {
 		// Check if it's a "not found" error
 		if errors.Is(err, ERROR_NOT_FOUND) {
-			return ErrNotFound
+			return nil
 		}
 		return fmt.Errorf("failed to delete credential: %w", err)
 	}

@@ -19,8 +19,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"slices"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/BurntSushi/toml"
@@ -385,73 +383,4 @@ func (s *credentialStorage) Erase(ctx context.Context, cred *Cred) error {
 // Name returns the storage name
 func (s *credentialStorage) Name() string {
 	return "file"
-}
-
-// buildTargetName constructs a unique target name for storing credentials.
-// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
-func buildTargetName(cred *Cred) string {
-	protocol := cred.Protocol
-	if protocol == "" {
-		protocol = "https"
-	}
-
-	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
-
-	if cred.Port != 0 {
-		target += fmt.Sprintf(":%d", cred.Port)
-	}
-
-	if cred.Path != "" {
-		target += cred.Path
-	}
-
-	return target
-}
-
-// parseTargetName parses a target name back into a Cred struct
-// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
-func parseTargetName(target string) *Cred {
-	// Expected format: zeta+<protocol>://<server>[:<port>][<path>]
-	if !strings.HasPrefix(target, "zeta+") {
-		return &Cred{Server: target}
-	}
-
-	// Remove "zeta+" prefix
-	remaining := strings.TrimPrefix(target, "zeta+")
-
-	// Find "://" separator
-	protoEnd := strings.Index(remaining, "://")
-	if protoEnd == -1 {
-		return &Cred{Server: target}
-	}
-
-	protocol := remaining[:protoEnd]
-	remaining = remaining[protoEnd+3:] // Skip "://"
-
-	// Parse server, port, and path
-	cred := &Cred{
-		Protocol: protocol,
-	}
-
-	// Check for port (starts with ":" followed by digits)
-	if serverPart, afterColon, found := strings.Cut(remaining, ":"); found {
-		// Find where port ends (either at next "/" or end of string)
-		portStr, path, hasPath := strings.Cut(afterColon, "/")
-
-		// Try to parse as port number
-		if port, err := strconv.Atoi(portStr); err == nil && port > 0 && port <= 65535 {
-			cred.Server = serverPart
-			cred.Port = port
-			if hasPath {
-				cred.Path = "/" + path
-			}
-		} else {
-			// Not a port, the whole thing is server with path
-			cred.Server = remaining
-		}
-	} else {
-		cred.Server = remaining
-	}
-
-	return cred
 }

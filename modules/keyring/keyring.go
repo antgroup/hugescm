@@ -2,6 +2,7 @@ package keyring
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -104,4 +105,63 @@ func NewCredFromURL(targetURL string) *Cred {
 		}
 	}
 	return cred
+}
+
+// buildTargetName constructs a unique target name for storing credentials.
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
+func buildTargetName(cred *Cred) string {
+	protocol := cred.Protocol
+	if protocol == "" {
+		protocol = "https"
+	}
+
+	u := &url.URL{
+		Scheme: "zeta+" + protocol,
+		Host:   cred.Server,
+		Path:   cred.Path,
+	}
+	if cred.Port != 0 {
+		u.Host = fmt.Sprintf("%s:%d", cred.Server, cred.Port)
+	}
+	return u.String()
+}
+
+// parseTargetName parses a target name back into a Cred struct
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
+func parseTargetName(target string) *Cred {
+	u, err := url.Parse(target)
+	if err != nil {
+		return &Cred{Server: target}
+	}
+
+	// Extract protocol from "zeta+<protocol>" scheme
+	scheme := u.Scheme
+	protocol, found := parseSchemePrefix(scheme, "zeta+")
+	if !found {
+		return &Cred{Server: target}
+	}
+
+	cred := &Cred{
+		Protocol: protocol,
+		Server:   u.Hostname(),
+		Path:     u.Path,
+	}
+
+	if u.Port() != "" {
+		if port, err := strconv.Atoi(u.Port()); err == nil {
+			cred.Port = port
+		}
+	}
+	return cred
+}
+
+// parseSchemePrefix parses a scheme like "zeta+https" and returns the protocol part
+func parseSchemePrefix(scheme, prefix string) (protocol string, found bool) {
+	if len(scheme) <= len(prefix) {
+		return "", false
+	}
+	if scheme[:len(prefix)] != prefix {
+		return "", false
+	}
+	return scheme[len(prefix):], true
 }

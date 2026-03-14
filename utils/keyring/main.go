@@ -13,12 +13,13 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
+	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
 	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -581,63 +582,57 @@ func buildTargetName(cred *Cred) string {
 		protocol = "https"
 	}
 
-	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
-
+	var host string
 	if cred.Port != 0 {
-		target += fmt.Sprintf(":%d", cred.Port)
+		host = net.JoinHostPort(cred.Server, strconv.Itoa(cred.Port))
+	} else {
+		host = cred.Server
 	}
 
-	if cred.Path != "" {
-		target += cred.Path
+	u := &url.URL{
+		Scheme: "zeta+" + protocol,
+		Host:   host,
+		Path:   cred.Path,
 	}
-
-	return target
+	return u.String()
 }
 
 // parseTargetName parses a target name back into a Cred struct
 // Format: "zeta+<protocol>://<server>[:<port>][<path>]"
 func parseTargetName(target string) *Cred {
-	// Expected format: zeta+<protocol>://<server>[:<port>][<path>]
-	if !strings.HasPrefix(target, "zeta+") {
+	u, err := url.Parse(target)
+	if err != nil {
 		return &Cred{Server: target}
 	}
 
-	// Remove "zeta+" prefix
-	remaining := strings.TrimPrefix(target, "zeta+")
-
-	// Find "://" separator
-	protoEnd := strings.Index(remaining, "://")
-	if protoEnd == -1 {
+	// Extract protocol from "zeta+<protocol>" scheme
+	scheme := u.Scheme
+	protocol, found := parseSchemePrefix(scheme, "zeta+")
+	if !found {
 		return &Cred{Server: target}
 	}
 
-	protocol := remaining[:protoEnd]
-	remaining = remaining[protoEnd+3:] // Skip "://"
-
-	// Parse server, port, and path
 	cred := &Cred{
 		Protocol: protocol,
+		Server:   u.Hostname(),
+		Path:     u.Path,
 	}
 
-	// Check for port (starts with ":" followed by digits)
-	if serverPart, afterColon, found := strings.Cut(remaining, ":"); found {
-		// Find where port ends (either at next "/" or end of string)
-		portStr, path, hasPath := strings.Cut(afterColon, "/")
-
-		// Try to parse as port number
-		if port, err := strconv.Atoi(portStr); err == nil && port > 0 && port <= 65535 {
-			cred.Server = serverPart
+	if u.Port() != "" {
+		if port, err := strconv.Atoi(u.Port()); err == nil {
 			cred.Port = port
-			if hasPath {
-				cred.Path = "/" + path
-			}
-		} else {
-			// Not a port, the whole thing is server with path
-			cred.Server = remaining
 		}
-	} else {
-		cred.Server = remaining
 	}
-
 	return cred
+}
+
+// parseSchemePrefix parses a scheme like "zeta+https" and returns the protocol part
+func parseSchemePrefix(scheme, prefix string) (protocol string, found bool) {
+	if len(scheme) <= len(prefix) {
+		return "", false
+	}
+	if scheme[:len(prefix)] != prefix {
+		return "", false
+	}
+	return scheme[len(prefix):], true
 }

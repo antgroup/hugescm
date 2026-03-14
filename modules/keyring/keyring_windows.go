@@ -24,8 +24,8 @@ const (
 	// CRED_MAX_GENERIC_TARGET_NAME_LENGTH is the maximum target name length.
 	CRED_MAX_GENERIC_TARGET_NAME_LENGTH = 32767
 
-	// CRED_MAX_STRING_LENGTH is the maximum length for string fields.
-	CRED_MAX_STRING_LENGTH = 256
+	// CRED_MAX_CREDENTIAL_BLOB_SIZE is the maximum length for string fields.
+	CRED_MAX_CREDENTIAL_BLOB_SIZE = 512
 
 	// CRED_TYPE_GENERIC is the credential type for generic credentials.
 	CRED_TYPE_GENERIC = 1
@@ -121,13 +121,8 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if result.CredentialBlob == nil || result.CredentialBlobSize == 0 {
 		return nil, errors.New("invalid credential: empty password")
 	}
-
-	password := windows.UTF16PtrToString((*uint16)(unsafe.Pointer(result.CredentialBlob)))
-
-	// Validate password
-	if password == "" {
-		return nil, errors.New("invalid credential: empty password not allowed")
-	}
+	passwordRaw := unsafe.Slice(result.CredentialBlob, result.CredentialBlobSize)
+	password := string(passwordRaw)
 
 	return &Cred{
 		UserName: username,
@@ -181,6 +176,11 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		return errors.New("invalid credential: target name cannot be empty")
 	}
 
+	// Validate target name length
+	if len(targetName) > CRED_MAX_GENERIC_TARGET_NAME_LENGTH {
+		return fmt.Errorf("target name too long (max %d bytes)", CRED_MAX_GENERIC_TARGET_NAME_LENGTH)
+	}
+
 	// Convert target name and username to UTF-16
 	targetNameUTF16, err := windows.UTF16PtrFromString(targetName)
 	if err != nil {
@@ -198,8 +198,11 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		return fmt.Errorf("failed to convert comment to UTF-16: %w", err)
 	}
 
-	// Convert password to UTF-16
-	passwordUTF16 := windows.StringToUTF16(cred.Password)
+	password := []byte(cred.Password)
+
+	if len(password) > CRED_MAX_CREDENTIAL_BLOB_SIZE {
+		return fmt.Errorf("password too long (max %d bytes)", CRED_MAX_CREDENTIAL_BLOB_SIZE)
+	}
 
 	// Prepare credential structure
 	c := CREDENTIALW{
@@ -207,10 +210,13 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		Persist:            CRED_PERSIST_LOCAL_MACHINE,
 		TargetName:         targetNameUTF16,
 		UserName:           userNameUTF16,
-		CredentialBlobSize: uint32(len(passwordUTF16) * 2), // UTF-16: 2 bytes per character
-		CredentialBlob:     (*byte)(unsafe.Pointer(&passwordUTF16[0])),
+		CredentialBlobSize: uint32(len(password)),
 		Comment:            commentUTF16,
 		Flags:              0,
+	}
+
+	if len(password) > 0 {
+		c.CredentialBlob = &password[0]
 	}
 
 	// Write credential
@@ -223,28 +229,6 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	}
 
 	return nil
-}
-
-// buildTargetName constructs a unique target name for Windows Credential Manager.
-// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
-// This follows the pattern used by git-credential-manager for Windows.
-func buildTargetName(cred *Cred) string {
-	protocol := cred.Protocol
-	if protocol == "" {
-		protocol = "https"
-	}
-
-	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
-
-	if cred.Port != 0 {
-		target += fmt.Sprintf(":%d", cred.Port)
-	}
-
-	if cred.Path != "" {
-		target += cred.Path
-	}
-
-	return target
 }
 
 // Erase removes credentials from Windows Credential Manager.
@@ -281,7 +265,7 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	)
 	if ret == 0 {
 		// Check if it's a "not found" error
-		if errno, ok := err.(syscall.Errno); ok && errno == ERROR_NOT_FOUND {
+		if errors.Is(err, ERROR_NOT_FOUND) {
 			return ErrNotFound
 		}
 		return fmt.Errorf("failed to delete credential: %w", err)

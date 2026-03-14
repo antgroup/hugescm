@@ -2,7 +2,7 @@ package keyring
 
 import (
 	"errors"
-	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 )
@@ -84,6 +84,8 @@ func WithStoragePath(path string) Option {
 }
 
 // NewCredFromURL creates a Cred from a URL, extracting protocol, server, and port.
+// If the URL specifies a default port for the protocol (e.g., 443 for https),
+// the port is not stored to ensure consistent credential lookup.
 func NewCredFromURL(targetURL string) *Cred {
 	u, err := url.Parse(targetURL)
 	if err != nil {
@@ -98,13 +100,23 @@ func NewCredFromURL(targetURL string) *Cred {
 		Path:     u.Path,
 	}
 
-	// Extract port
+	// Extract port, but skip default ports to ensure consistent credential lookup
 	if u.Port() != "" {
 		if port, err := strconv.Atoi(u.Port()); err == nil {
-			cred.Port = port
+			if defaultPorts[u.Scheme] != port {
+				cred.Port = port
+			}
 		}
 	}
 	return cred
+}
+
+// defaultPorts maps protocols to their default ports.
+var defaultPorts = map[string]int{
+	"http":  80,
+	"https": 443,
+	"ftp":   21,
+	"ssh":   22,
 }
 
 // buildTargetName constructs a unique target name for storing credentials.
@@ -115,13 +127,17 @@ func buildTargetName(cred *Cred) string {
 		protocol = "https"
 	}
 
+	var host string
+	if cred.Port != 0 {
+		host = net.JoinHostPort(cred.Server, strconv.Itoa(cred.Port))
+	} else {
+		host = cred.Server
+	}
+
 	u := &url.URL{
 		Scheme: "zeta+" + protocol,
-		Host:   cred.Server,
+		Host:   host,
 		Path:   cred.Path,
-	}
-	if cred.Port != 0 {
-		u.Host = fmt.Sprintf("%s:%d", cred.Server, cred.Port)
 	}
 	return u.String()
 }

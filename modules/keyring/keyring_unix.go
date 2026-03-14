@@ -225,7 +225,7 @@ func getFromSecretService(cred *Cred) (*Cred, error) {
 		return nil, fmt.Errorf("failed to connect to secret service: %w", err)
 	}
 
-	targetName := buildUnixTargetName(cred)
+	targetName := buildTargetName(cred)
 	item, err := findItem(svc, targetName, zetaUserName)
 	if err != nil {
 		return nil, err
@@ -286,7 +286,7 @@ func storeToSecretService(cred *Cred) error {
 	}
 	defer svc.Close(session)
 
-	targetName := buildUnixTargetName(cred)
+	targetName := buildTargetName(cred)
 
 	// Build attributes for searching the credential
 	attributes := map[string]string{
@@ -352,7 +352,7 @@ func eraseFromSecretService(cred *Cred) error {
 		return fmt.Errorf("failed to connect to secret service: %w", err)
 	}
 
-	targetName := buildUnixTargetName(cred)
+	targetName := buildTargetName(cred)
 	item, err := findItem(svc, targetName, zetaUserName)
 	if err != nil {
 		return err
@@ -388,26 +388,4 @@ func findItem(svc *ss.SecretService, service, user string) (dbus.ObjectPath, err
 	}
 
 	return results[0], nil
-}
-
-// buildUnixTargetName constructs a unique target name for libsecret.
-// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
-// This follows the pattern used by git-credential-libsecret for compatibility.
-func buildUnixTargetName(cred *Cred) string {
-	protocol := cred.Protocol
-	if protocol == "" {
-		protocol = "https"
-	}
-
-	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
-
-	if cred.Port != 0 {
-		target += fmt.Sprintf(":%d", cred.Port)
-	}
-
-	if cred.Path != "" {
-		target += cred.Path
-	}
-
-	return target
 }

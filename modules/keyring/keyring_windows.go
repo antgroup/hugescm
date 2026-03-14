@@ -82,7 +82,7 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 		return nil, errors.New("credential cannot be nil")
 	}
 
-	targetName := buildWindowsTargetName(cred)
+	targetName := buildTargetName(cred)
 	if targetName == "" {
 		return nil, errors.New("invalid credential: target name cannot be empty")
 	}
@@ -176,7 +176,7 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		return fmt.Errorf("username too long (max %d bytes)", CRED_MAX_USERNAME_LENGTH)
 	}
 
-	targetName := buildWindowsTargetName(cred)
+	targetName := buildTargetName(cred)
 	if targetName == "" {
 		return errors.New("invalid credential: target name cannot be empty")
 	}
@@ -225,6 +225,28 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	return nil
 }
 
+// buildTargetName constructs a unique target name for Windows Credential Manager.
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
+// This follows the pattern used by git-credential-manager for Windows.
+func buildTargetName(cred *Cred) string {
+	protocol := cred.Protocol
+	if protocol == "" {
+		protocol = "https"
+	}
+
+	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
+
+	if cred.Port != 0 {
+		target += fmt.Sprintf(":%d", cred.Port)
+	}
+
+	if cred.Path != "" {
+		target += cred.Path
+	}
+
+	return target
+}
+
 // Erase removes credentials from Windows Credential Manager.
 // Follows git-credential-manager pattern:
 // - Uses CRED_TYPE_GENERIC
@@ -240,7 +262,7 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 		return errors.New("credential cannot be nil")
 	}
 
-	targetName := buildWindowsTargetName(cred)
+	targetName := buildTargetName(cred)
 	if targetName == "" {
 		return errors.New("invalid credential: target name cannot be empty")
 	}
@@ -266,32 +288,4 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	}
 
 	return nil
-}
-
-// buildWindowsTargetName constructs a unique target name for Windows Credential Manager.
-// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
-// This follows the pattern used by git-credential-manager for Windows.
-//
-// Examples:
-//   - "zeta+https://github.com"
-//   - "zeta:https://github.com:443"
-//   - "zeta:https://github.com:443/api/v3"
-func buildWindowsTargetName(cred *Cred) string {
-	protocol := cred.Protocol
-	if protocol == "" {
-		protocol = "https"
-	}
-
-	// Zeta VCS uses "zeta:" prefix
-	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
-
-	if cred.Port != 0 {
-		target += fmt.Sprintf(":%d", cred.Port)
-	}
-
-	if cred.Path != "" {
-		target += cred.Path
-	}
-
-	return target
 }

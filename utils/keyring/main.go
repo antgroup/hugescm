@@ -574,50 +574,69 @@ func (s *credentialStorage) Erase(ctx context.Context, cred *Cred) error {
 }
 
 // buildTargetName creates a unique target name for storing credentials
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
 func buildTargetName(cred *Cred) string {
 	protocol := cred.Protocol
 	if protocol == "" {
 		protocol = "https"
 	}
 
-	parts := []string{"zeta", protocol, cred.Server}
+	target := fmt.Sprintf("zeta+%s://%s", protocol, cred.Server)
 
 	if cred.Port != 0 {
-		parts = append(parts, strconv.Itoa(cred.Port))
+		target += fmt.Sprintf(":%d", cred.Port)
 	}
 
 	if cred.Path != "" {
-		parts = append(parts, cred.Path)
+		target += cred.Path
 	}
 
-	return strings.Join(parts, ":")
+	return target
 }
 
 // parseTargetName parses a target name back into a Cred struct
+// Format: "zeta+<protocol>://<server>[:<port>][<path>]"
 func parseTargetName(target string) *Cred {
-	parts := strings.SplitN(target, ":", 4)
-	if len(parts) < 3 {
+	// Expected format: zeta+<protocol>://<server>[:<port>][<path>]
+	if !strings.HasPrefix(target, "zeta+") {
 		return &Cred{Server: target}
 	}
 
-	cred := &Cred{
-		Protocol: parts[1],
-		Server:   parts[2],
+	// Remove "zeta+" prefix
+	remaining := strings.TrimPrefix(target, "zeta+")
+
+	// Find "://" separator
+	protoEnd := strings.Index(remaining, "://")
+	if protoEnd == -1 {
+		return &Cred{Server: target}
 	}
 
-	if len(parts) > 3 {
-		remaining := parts[3]
-		portParts := strings.SplitN(remaining, ":", 2)
-		if len(portParts) == 2 {
-			if port, err := strconv.Atoi(portParts[0]); err == nil {
-				cred.Port = port
-				cred.Path = portParts[1]
-			} else {
-				cred.Path = remaining
+	protocol := remaining[:protoEnd]
+	remaining = remaining[protoEnd+3:] // Skip "://"
+
+	// Parse server, port, and path
+	cred := &Cred{
+		Protocol: protocol,
+	}
+
+	// Check for port (starts with ":" followed by digits)
+	if serverPart, afterColon, found := strings.Cut(remaining, ":"); found {
+		// Find where port ends (either at next "/" or end of string)
+		portStr, path, hasPath := strings.Cut(afterColon, "/")
+
+		// Try to parse as port number
+		if port, err := strconv.Atoi(portStr); err == nil && port > 0 && port <= 65535 {
+			cred.Server = serverPart
+			cred.Port = port
+			if hasPath {
+				cred.Path = "/" + path
 			}
 		} else {
-			cred.Path = remaining
+			// Not a port, the whole thing is server with path
+			cred.Server = remaining
 		}
+	} else {
+		cred.Server = remaining
 	}
 
 	return cred

@@ -53,7 +53,7 @@ func HasConflictParallel(ctx context.Context, textO, textA, textB string) (bool,
 
 	// Step 3: Finalize regions (check for false conflicts)
 	for i := range regions {
-		regions[i] = finalizeRegion(regions[i], changesA, changesB, sink, aIdx, bIdx)
+		regions[i] = finalizeRegion(regions[i], changesA, changesB, aIdx, bIdx)
 	}
 
 	// Step 4: Check if any region has a conflict
@@ -118,7 +118,7 @@ func newMergeInternal(
 
 	// Step 3: Finalize regions (check for false conflicts)
 	for i := range regions {
-		regions[i] = finalizeRegion(regions[i], changesA, changesB, sink, aIdx, bIdx)
+		regions[i] = finalizeRegion(regions[i], changesA, changesB, aIdx, bIdx)
 	}
 
 	// Step 4: Process each region
@@ -266,12 +266,12 @@ func findMergeRegions(changesA, changesB []Change) []mergeRegion {
 }
 
 // finalizeRegion determines if a region is a conflict
-func finalizeRegion(region mergeRegion, changesA, changesB []Change, sink *Sink, aIdx, bIdx []int) mergeRegion {
+func finalizeRegion(region mergeRegion, changesA, changesB []Change, aIdx, bIdx []int) mergeRegion {
 	// Region is a conflict if both A and B have changes
 	region.isConflict = len(region.changesAIndices) > 0 && len(region.changesBIndices) > 0
 
 	// Check for false conflict (same content on both sides)
-	if region.isConflict && isFalseConflict(region, changesA, changesB, sink, aIdx, bIdx) {
+	if region.isConflict && isFalseConflict(region, changesA, changesB, aIdx, bIdx) {
 		region.isConflict = false
 	}
 
@@ -279,7 +279,7 @@ func finalizeRegion(region mergeRegion, changesA, changesB []Change, sink *Sink,
 }
 
 // isFalseConflict checks if A and B made the same change
-func isFalseConflict(region mergeRegion, changesA, changesB []Change, sink *Sink, aIdx, bIdx []int) bool {
+func isFalseConflict(region mergeRegion, changesA, changesB []Change, aIdx, bIdx []int) bool {
 	// Only single changes from each side can be false conflicts
 	if len(region.changesAIndices) != 1 || len(region.changesBIndices) != 1 {
 		return false

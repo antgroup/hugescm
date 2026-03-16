@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	// ErrUnsupportedAlgorithm is returned when an unsupported diff algorithm is specified
-	ErrUnsupportedAlgorithm = errors.New("unsupported algorithm")
+	// ErrUnknownAlgorithm is returned when an unknown algorithm name or value is specified
+	ErrUnknownAlgorithm = errors.New("unknown algorithm")
 )
 
 var (
@@ -83,7 +83,7 @@ func AlgorithmFromName(s string) (Algorithm, error) {
 		options = append(options, name)
 	}
 
-	return Unspecified, fmt.Errorf("%w: '%s' (available options: %s)", ErrUnsupportedAlgorithm, s, strings.Join(options, ", "))
+	return Unspecified, fmt.Errorf("%w: '%s' (available options: %s)", ErrUnknownAlgorithm, s, strings.Join(options, ", "))
 }
 
 // commonPrefixLength returns the length of the common prefix of two T slices.
@@ -163,7 +163,7 @@ func DiffSlices[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm) (
 	case SuffixArray:
 		return suffixArray(ctx, L1, L2)
 	default:
-		return nil, fmt.Errorf("%w: %s", ErrUnsupportedAlgorithm, algo.String())
+		return nil, fmt.Errorf("%w: %s", ErrUnknownAlgorithm, algo.String())
 	}
 }
 

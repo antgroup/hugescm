@@ -211,7 +211,7 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 	return nil
 }
 
-func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Unified) error {
+func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
 	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err

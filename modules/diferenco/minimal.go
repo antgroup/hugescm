@@ -6,8 +6,8 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco/lcs"
 )
 
-// MinimalDiff: Myers: An O(ND) Difference Algorithm and Its Variations
-func MinimalDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
+// minimal: Myers: An O(ND) Difference Algorithm and Its Variations
+func minimal[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()

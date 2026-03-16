@@ -8,11 +8,11 @@ import "context"
 
 const MaxChainLen = 63
 
-type histogram[E comparable] struct {
+type histogramIndex[E comparable] struct {
 	tokenOccurrences map[E][]int
 }
 
-func (h *histogram[E]) populate(a []E) {
+func (h *histogramIndex[E]) populate(a []E) {
 	for i, e := range a {
 		if p, ok := h.tokenOccurrences[e]; ok {
 			h.tokenOccurrences[e] = append(p, i)
@@ -22,32 +22,32 @@ func (h *histogram[E]) populate(a []E) {
 	}
 }
 
-func (h *histogram[E]) numTokenOccurrences(e E) int {
+func (h *histogramIndex[E]) numTokenOccurrences(e E) int {
 	if p, ok := h.tokenOccurrences[e]; ok {
 		return len(p)
 	}
 	return 0
 }
 
-func (h *histogram[E]) clear() {
+func (h *histogramIndex[E]) clear() {
 	// runtime: clear() is slow for maps with big capacity and small number of items
 	// https://github.com/golang/go/issues/70617
 	h.tokenOccurrences = make(map[E][]int)
 }
 
-type Lcs struct {
+type lcsMatch struct {
 	beforeStart int
 	afterStart  int
 	length      int
 }
 
-type LcsSearch[E comparable] struct {
-	lcs            Lcs
+type lcsFinder[E comparable] struct {
+	lcs            lcsMatch
 	minOccurrences int
 	foundCS        bool
 }
 
-func (s *LcsSearch[E]) run(before, after []E, h *histogram[E]) {
+func (s *lcsFinder[E]) run(before, after []E, h *histogramIndex[E]) {
 	pos := 0
 	for pos < len(after) {
 		e := after[pos]
@@ -63,7 +63,7 @@ func (s *LcsSearch[E]) run(before, after []E, h *histogram[E]) {
 	h.clear()
 }
 
-func (s *LcsSearch[E]) updateLcs(before, after []E, afterPos int, token E, h *histogram[E]) int {
+func (s *lcsFinder[E]) updateLcs(before, after []E, afterPos int, token E, h *histogramIndex[E]) int {
 	nextTokenIndex2 := afterPos + 1
 	tokenOccurrences := h.tokenOccurrences[token]
 	tokenIndex1 := tokenOccurrences[0]
@@ -99,7 +99,7 @@ occurrencesIter:
 		if length > s.lcs.length ||
 			(length == s.lcs.length && occurrences < s.minOccurrences) {
 			s.minOccurrences = occurrences
-			s.lcs = Lcs{
+			s.lcs = lcsMatch{
 				beforeStart: s1,
 				afterStart:  s2,
 				length:      length,
@@ -120,12 +120,12 @@ occurrencesIter:
 	return nextTokenIndex2
 }
 
-func (s *LcsSearch[E]) ok() bool {
+func (s *lcsFinder[E]) ok() bool {
 	return !s.foundCS || s.minOccurrences <= MaxChainLen
 }
 
-func findLcs[E comparable](before, after []E, index *histogram[E]) *Lcs {
-	s := LcsSearch[E]{
+func findLcs[E comparable](before, after []E, index *histogramIndex[E]) *lcsMatch {
+	s := lcsFinder[E]{
 		minOccurrences: MaxChainLen + 1,
 	}
 	s.run(before, after, index)
@@ -139,7 +139,7 @@ type changesOut struct {
 	changes []Change
 }
 
-func (h *histogram[E]) run(ctx context.Context, before []E, beforePos int, after []E, afterPos int, o *changesOut) error {
+func (h *histogramIndex[E]) run(ctx context.Context, before []E, beforePos int, after []E, afterPos int, o *changesOut) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -182,15 +182,15 @@ func (h *histogram[E]) run(ctx context.Context, before []E, beforePos int, after
 	}
 }
 
-// HistogramDiff: calculates the difference using the histogram algorithm
-func HistogramDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
+// histogram: calculates the difference using the histogram algorithm
+func histogram[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]
 	suffix := commonSuffixLength(L1, L2)
 	L1 = L1[:len(L1)-suffix]
 	L2 = L2[:len(L2)-suffix]
-	h := &histogram[E]{
+	h := &histogramIndex[E]{
 		tokenOccurrences: make(map[E][]int, len(L1)),
 	}
 	o := &changesOut{changes: make([]Change, 0, 100)}

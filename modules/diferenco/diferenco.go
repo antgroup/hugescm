@@ -131,7 +131,10 @@ type Options struct {
 	A        Algorithm // algorithm
 }
 
-func diffInternal[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm) ([]Change, error) {
+// DiffSlices computes the differences between two slices using the specified algorithm.
+// For Unspecified algorithm, it automatically selects Histogram for small inputs (< 5000 elements)
+// or ONP for larger inputs.
+func DiffSlices[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm) ([]Change, error) {
 	// Check context before starting
 	select {
 	case <-ctx.Done():
@@ -144,21 +147,21 @@ func diffInternal[E comparable](ctx context.Context, L1, L2 []E, algo Algorithm)
 	case Unspecified:
 		// Automatically select best algorithm based on input size
 		if len(L1) < 5000 && len(L2) < 5000 {
-			return HistogramDiff(ctx, L1, L2)
+			return histogram(ctx, L1, L2)
 		}
-		return OnpDiff(ctx, L1, L2)
+		return onp(ctx, L1, L2)
 	case Histogram:
-		return HistogramDiff(ctx, L1, L2)
+		return histogram(ctx, L1, L2)
 	case ONP:
-		return OnpDiff(ctx, L1, L2)
+		return onp(ctx, L1, L2)
 	case Myers:
-		return MyersDiff(ctx, L1, L2)
+		return myers(ctx, L1, L2)
 	case Minimal:
-		return MinimalDiff(ctx, L1, L2)
+		return minimal(ctx, L1, L2)
 	case Patience:
-		return PatienceDiff(ctx, L1, L2)
+		return patience(ctx, L1, L2)
 	case SuffixArray:
-		return SuffixArrayDiff(ctx, L1, L2)
+		return suffixArray(ctx, L1, L2)
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedAlgorithm, algo.String())
 	}
@@ -176,7 +179,7 @@ func Stat(ctx context.Context, opts *Options) (*FileStat, error) {
 	if err != nil {
 		return nil, err
 	}
-	changes, err := diffInternal(ctx, a, b, opts.A)
+	changes, err := DiffSlices(ctx, a, b, opts.A)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +196,7 @@ func Stat(ctx context.Context, opts *Options) (*FileStat, error) {
 func DiffRunes(ctx context.Context, a, b string, algo Algorithm) ([]StringDiff, error) {
 	runesA := []rune(a)
 	runesB := []rune(b)
-	changes, err := diffInternal(ctx, runesA, runesB, algo)
+	changes, err := DiffSlices(ctx, runesA, runesB, algo)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +226,7 @@ func DiffWords(ctx context.Context, a, b string, algo Algorithm, splitFunc func(
 	}
 	wordsA := splitFunc(a)
 	wordsB := splitFunc(b)
-	changes, err := diffInternal(ctx, wordsA, wordsB, algo)
+	changes, err := DiffSlices(ctx, wordsA, wordsB, algo)
 	if err != nil {
 		return nil, err
 	}

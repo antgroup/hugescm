@@ -87,7 +87,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool)
 	return nil, "", false, false, errors.New("unsupported noder type")
 }
 
-func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (*diferenco.Unified, error) {
+func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (*diferenco.Patch, error) {
 	if c.From == nil && c.To == nil {
 		return nil, errors.New("malformed change: nil from and to")
 	}
@@ -100,17 +100,17 @@ func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Chang
 		return nil, err
 	}
 	if isFragmentsA || isFragmentsB {
-		return &diferenco.Unified{From: from, To: to, IsFragments: true}, nil
+		return &diferenco.Patch{From: from, To: to, IsFragments: true}, nil
 	}
 	if isBinA || isBinB {
-		return &diferenco.Unified{From: from, To: to, IsBinary: true}, nil
+		return &diferenco.Patch{From: from, To: to, IsBinary: true}, nil
 	}
-	return diferenco.DoUnified(ctx, &diferenco.Options{From: from, To: to, S1: fromContent, S2: toContent})
+	return diferenco.Unified(ctx, &diferenco.Options{From: from, To: to, S1: fromContent, S2: toContent})
 }
 
 // getPatchContext: In the object package, there is no patch implementation for worktree diff, so we need
-func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool) ([]*diferenco.Unified, error) {
-	var filePatches []*diferenco.Unified
+func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool) ([]*diferenco.Patch, error) {
+	var filePatches []*diferenco.Patch
 	for _, c := range changes {
 		select {
 		case <-ctx.Done():

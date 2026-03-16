@@ -72,9 +72,9 @@ func (e *UnifiedEncoder) SetNoRename() *UnifiedEncoder {
 	return e
 }
 
-func (e *UnifiedEncoder) Encode(patches []*Unified) error {
-	for _, u := range patches {
-		if err := e.writeUnified(u); err != nil {
+func (e *UnifiedEncoder) Encode(patches []*Patch) error {
+	for _, p := range patches {
+		if err := e.writePatch(p); err != nil {
 			return err
 		}
 	}
@@ -98,8 +98,8 @@ func (e *UnifiedEncoder) appendPathLines(lines []string, fromPath, toPath string
 	)
 }
 
-func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
-	from, to := u.From, u.To
+func (e *UnifiedEncoder) writeFilePatchHeader(p *Patch, b *strings.Builder) {
+	from, to := p.From, p.To
 	if from == nil && to == nil {
 		return
 	}
@@ -135,7 +135,7 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 			)
 		}
 		if !hashEquals {
-			lines = e.appendPathLines(lines, e.srcPrefix+from.Name, e.dstPrefix+to.Name, u.IsBinary, u.IsFragments)
+			lines = e.appendPathLines(lines, e.srcPrefix+from.Name, e.dstPrefix+to.Name, p.IsBinary, p.IsFragments)
 		}
 	case from == nil:
 		lines = append(lines,
@@ -143,14 +143,14 @@ func (e *UnifiedEncoder) writeFilePatchHeader(u *Unified, b *strings.Builder) {
 			fmt.Sprintf("new file mode %o", to.Mode),
 			fmt.Sprintf("index %s..%s", ZERO_OID, to.Hash),
 		)
-		lines = e.appendPathLines(lines, "/dev/null", e.dstPrefix+to.Name, u.IsBinary, u.IsFragments)
+		lines = e.appendPathLines(lines, "/dev/null", e.dstPrefix+to.Name, p.IsBinary, p.IsFragments)
 	case to == nil:
 		lines = append(lines,
 			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+from.Name, e.dstPrefix+from.Name),
 			fmt.Sprintf("deleted file mode %o", from.Mode),
 			fmt.Sprintf("index %s..%s", from.Hash, ZERO_OID),
 		)
-		lines = e.appendPathLines(lines, e.srcPrefix+from.Name, "/dev/null", u.IsBinary, u.IsFragments)
+		lines = e.appendPathLines(lines, e.srcPrefix+from.Name, "/dev/null", p.IsBinary, p.IsFragments)
 	}
 	b.WriteString(e.color[color.Meta])
 	b.WriteString(lines[0])
@@ -224,22 +224,22 @@ func (e *UnifiedEncoder) writeLine(b *strings.Builder, o *Line) {
 	_, _ = b.WriteString("\n\\ No newline at end of file\n")
 }
 
-func (e *UnifiedEncoder) writeUnified(u *Unified) error {
+func (e *UnifiedEncoder) writePatch(p *Patch) error {
 	b := &strings.Builder{}
-	if len(u.Message) != 0 {
-		_, _ = b.WriteString(u.Message)
-		if !strings.HasSuffix(u.Message, "\n") {
+	if len(p.Message) != 0 {
+		_, _ = b.WriteString(p.Message)
+		if !strings.HasSuffix(p.Message, "\n") {
 			_ = b.WriteByte('\n')
 		}
 	}
-	e.writeFilePatchHeader(u, b)
-	if len(u.Hunks) == 0 {
+	e.writeFilePatchHeader(p, b)
+	if len(p.Hunks) == 0 {
 		if _, err := io.WriteString(e.Writer, b.String()); err != nil {
 			return err
 		}
 		return nil
 	}
-	for _, hunk := range u.Hunks {
+	for _, hunk := range p.Hunks {
 		e.writePatchHunk(b, hunk)
 	}
 	if _, err := io.WriteString(e.Writer, b.String()); err != nil {

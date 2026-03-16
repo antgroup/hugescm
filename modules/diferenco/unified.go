@@ -10,7 +10,7 @@ import (
 )
 
 // DefaultContextLines is the number of unchanged lines of surrounding
-// context displayed by Unified. Use ToUnified to specify a different value.
+// context displayed by Unified. Use toPatch to specify a different value.
 const DefaultContextLines = 3
 
 type File struct {
@@ -19,8 +19,8 @@ type File struct {
 	Mode uint32 `json:"mode"`
 }
 
-// unified represents a set of edits as a unified diff.
-type Unified struct {
+// Patch represents a set of edits as a unified diff.
+type Patch struct {
 	// From is the name of the original file.
 	From *File `json:"from,omitempty"`
 	// To is the name of the modified file.
@@ -35,9 +35,9 @@ type Unified struct {
 	Hunks []*Hunk `json:"hunks,omitempty"`
 }
 
-func (u Unified) Stat() FileStat {
-	s := FileStat{Hunks: len(u.Hunks)}
-	for _, h := range u.Hunks {
+func (p Patch) Stat() FileStat {
+	s := FileStat{Hunks: len(p.Hunks)}
+	for _, h := range p.Hunks {
 		ins, del := h.Stat()
 		s.Addition += ins
 		s.Deletion += del
@@ -47,23 +47,23 @@ func (u Unified) Stat() FileStat {
 
 // String converts a unified diff to the standard textual form for that diff.
 // The output of this function can be passed to tools like patch.
-func (u Unified) String() string {
-	if len(u.Hunks) == 0 {
+func (p Patch) String() string {
+	if len(p.Hunks) == 0 {
 		return ""
 	}
 	b := new(strings.Builder)
-	if u.From != nil {
-		fmt.Fprintf(b, "--- %s\n", u.From.Name)
+	if p.From != nil {
+		fmt.Fprintf(b, "--- %s\n", p.From.Name)
 	} else {
 		fmt.Fprintf(b, "--- /dev/null\n")
 	}
-	if u.To != nil {
-		fmt.Fprintf(b, "+++ %s\n", u.To.Name)
+	if p.To != nil {
+		fmt.Fprintf(b, "+++ %s\n", p.To.Name)
 	} else {
 		fmt.Fprintf(b, "+++ /dev/null\n")
 	}
 
-	for _, hunk := range u.Hunks {
+	for _, hunk := range p.Hunks {
 		fromCount, toCount := 0, 0
 		for _, l := range hunk.Lines {
 			switch l.Kind {
@@ -139,7 +139,7 @@ type Line struct {
 	Content string    `json:"content"`
 }
 
-func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
+func Unified(ctx context.Context, opts *Options) (*Patch, error) {
 	sink := &Sink{
 		Index: make(map[string]int),
 	}
@@ -151,9 +151,9 @@ func DoUnified(ctx context.Context, opts *Options) (*Unified, error) {
 	if err != nil {
 		return nil, err
 	}
-	changes, err := diffInternal(ctx, a, b, opts.A)
+	changes, err := DiffSlices(ctx, a, b, opts.A)
 	if err != nil {
 		return nil, err
 	}
-	return sink.ToUnified(opts.From, opts.To, changes, a, b, DefaultContextLines), nil
+	return sink.ToPatch(opts.From, opts.To, changes, a, b, DefaultContextLines), nil
 }

@@ -58,9 +58,9 @@ func BenchmarkMyersAlgorithm(b *testing.B) {
 
 			b.ResetTimer()
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, tt.algo)
+				_, err := DiffSlices(ctx, before, after, tt.algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -91,9 +91,9 @@ func BenchmarkHistogramAlgorithm(b *testing.B) {
 
 			b.ResetTimer()
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, tt.algo)
+				_, err := DiffSlices(ctx, before, after, tt.algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -124,9 +124,9 @@ func BenchmarkONPAlgorithm(b *testing.B) {
 
 			b.ResetTimer()
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, tt.algo)
+				_, err := DiffSlices(ctx, before, after, tt.algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -157,9 +157,9 @@ func BenchmarkPatienceAlgorithm(b *testing.B) {
 
 			b.ResetTimer()
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, tt.algo)
+				_, err := DiffSlices(ctx, before, after, tt.algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -190,9 +190,9 @@ func BenchmarkMinimalAlgorithm(b *testing.B) {
 
 			b.ResetTimer()
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, tt.algo)
+				_, err := DiffSlices(ctx, before, after, tt.algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -223,9 +223,9 @@ func BenchmarkSuffixArrayAlgorithm(b *testing.B) {
 
 			b.ResetTimer()
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, tt.algo)
+				_, err := DiffSlices(ctx, before, after, tt.algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -248,35 +248,35 @@ func BenchmarkAlgorithmComparison(b *testing.B) {
 			b.Run(name+"_myers", func(b *testing.B) {
 				b.ResetTimer()
 				for range b.N {
-					_, _ = diffInternal(ctx, before, after, Myers)
+					_, _ = DiffSlices(ctx, before, after, Myers)
 				}
 			})
 
 			b.Run(name+"_histogram", func(b *testing.B) {
 				b.ResetTimer()
 				for range b.N {
-					_, _ = diffInternal(ctx, before, after, Histogram)
+					_, _ = DiffSlices(ctx, before, after, Histogram)
 				}
 			})
 
 			b.Run(name+"_onp", func(b *testing.B) {
 				b.ResetTimer()
 				for range b.N {
-					_, _ = diffInternal(ctx, before, after, ONP)
+					_, _ = DiffSlices(ctx, before, after, ONP)
 				}
 			})
 
 			b.Run(name+"_patience", func(b *testing.B) {
 				b.ResetTimer()
 				for range b.N {
-					_, _ = diffInternal(ctx, before, after, Patience)
+					_, _ = DiffSlices(ctx, before, after, Patience)
 				}
 			})
 
 			b.Run(name+"_suffixarray", func(b *testing.B) {
 				b.ResetTimer()
 				for range b.N {
-					_, _ = diffInternal(ctx, before, after, SuffixArray)
+					_, _ = DiffSlices(ctx, before, after, SuffixArray)
 				}
 			})
 		}
@@ -292,7 +292,7 @@ func BenchmarkSpecialCases(b *testing.B) {
 		input := generateSequence(1000, 0)
 		b.ResetTimer()
 		for range b.N {
-			_, _ = diffInternal(ctx, input, input, Myers)
+			_, _ = DiffSlices(ctx, input, input, Myers)
 		}
 	})
 
@@ -302,7 +302,7 @@ func BenchmarkSpecialCases(b *testing.B) {
 		after := generateSequence(1000, 1)
 		b.ResetTimer()
 		for range b.N {
-			_, _ = diffInternal(ctx, before, after, Myers)
+			_, _ = DiffSlices(ctx, before, after, Myers)
 		}
 	})
 
@@ -315,7 +315,7 @@ func BenchmarkSpecialCases(b *testing.B) {
 		copy(after[501:], before[500:])
 		b.ResetTimer()
 		for range b.N {
-			_, _ = diffInternal(ctx, before, after, Myers)
+			_, _ = DiffSlices(ctx, before, after, Myers)
 		}
 	})
 
@@ -327,7 +327,7 @@ func BenchmarkSpecialCases(b *testing.B) {
 		copy(after[500:], before[501:])
 		b.ResetTimer()
 		for range b.N {
-			_, _ = diffInternal(ctx, before, after, Myers)
+			_, _ = DiffSlices(ctx, before, after, Myers)
 		}
 	})
 }
@@ -479,7 +479,7 @@ func cleanup() {
 
 		b.ResetTimer()
 		for range b.N {
-			_, _ = diffInternal(ctx, beforeLines, afterLines, Myers)
+			_, _ = DiffSlices(ctx, beforeLines, afterLines, Myers)
 		}
 	})
 
@@ -489,7 +489,7 @@ func cleanup() {
 
 		b.ResetTimer()
 		for range b.N {
-			_, _ = diffInternal(ctx, beforeLines, afterLines, Histogram)
+			_, _ = DiffSlices(ctx, beforeLines, afterLines, Histogram)
 		}
 	})
 
@@ -528,9 +528,9 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 			b.ResetTimer()
 
 			for range b.N {
-				_, err := diffInternal(ctx, before, after, algo)
+				_, err := DiffSlices(ctx, before, after, algo)
 				if err != nil {
-					b.Fatalf("diffInternal() error = %v", err)
+					b.Fatalf("DiffSlices() error = %v", err)
 				}
 			}
 		})
@@ -545,7 +545,7 @@ func BenchmarkParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, err := diffInternal(ctx, before, after, Myers)
+			_, err := DiffSlices(ctx, before, after, Myers)
 			if err != nil {
 				b.Fatal(err)
 			}

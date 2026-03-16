@@ -247,8 +247,8 @@ func patienceComputeLegacy[E comparable](ctx context.Context, L1 []E, P1 int, L2
 	return changes, nil
 }
 
-// PatienceDiffLegacy uses the O(n²) LCS implementation for benchmark comparison
-func PatienceDiffLegacy[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
+// DiffSlicesLegacy uses the O(n²) LCS implementation for benchmark comparison
+func DiffSlicesLegacy[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]
@@ -259,7 +259,7 @@ func PatienceDiffLegacy[E comparable](ctx context.Context, L1, L2 []E) ([]Change
 }
 
 // Benchmark full diff algorithm
-func BenchmarkPatienceDiffLegacy(b *testing.B) {
+func BenchmarkDiffSlicesLegacy(b *testing.B) {
 	ctx := context.Background()
 	a := generateUniqueLinesPatience(200)
 	c := make([]string, len(a))
@@ -271,7 +271,7 @@ func BenchmarkPatienceDiffLegacy(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		_, _ = PatienceDiffLegacy(ctx, a, c)
+		_, _ = DiffSlicesLegacy(ctx, a, c)
 	}
 }
 
@@ -287,7 +287,7 @@ func BenchmarkPatienceDiff(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		_, _ = PatienceDiff(ctx, a, c)
+		_, _ = DiffSlices(ctx, a, c, Patience)
 	}
 }
 
@@ -337,12 +337,12 @@ func TestPatienceDiffEquivalence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			changes1, err := PatienceDiffLegacy(ctx, tt.a, tt.b)
+			changes1, err := DiffSlicesLegacy(ctx, tt.a, tt.b)
 			if err != nil {
-				t.Fatalf("PatienceDiffLegacy error: %v", err)
+				t.Fatalf("DiffSlicesLegacy error: %v", err)
 			}
 
-			changes2, err := PatienceDiff(ctx, tt.a, tt.b)
+			changes2, err := DiffSlices(ctx, tt.a, tt.b, Patience)
 			if err != nil {
 				t.Fatalf("PatienceDiff error: %v", err)
 			}

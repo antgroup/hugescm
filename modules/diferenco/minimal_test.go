@@ -30,9 +30,9 @@ func TestMinimalDiff(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := MinimalDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Minimal)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }

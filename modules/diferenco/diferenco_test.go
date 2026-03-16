@@ -29,7 +29,7 @@ func TestDiff(t *testing.T) {
 	aa := []Algorithm{Histogram, Myers, ONP, Patience}
 	for _, a := range aa {
 		now := time.Now()
-		u, err := DoUnified(t.Context(), &Options{
+		u, err := Unified(t.Context(), &Options{
 			From: &File{
 				Name: "a.txt",
 			},
@@ -61,7 +61,7 @@ func TestPatchFD(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -80,7 +80,7 @@ func TestPatchFD(t *testing.T) {
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestPatch(t *testing.T) {
@@ -98,7 +98,7 @@ func TestPatch(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -117,7 +117,7 @@ func TestPatch(t *testing.T) {
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestPatchNew(t *testing.T) {
@@ -129,7 +129,7 @@ func TestPatchNew(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: nil,
 		To: &File{
 			Name: "a.txt",
@@ -144,7 +144,7 @@ func TestPatchNew(t *testing.T) {
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestPatchDelete(t *testing.T) {
@@ -156,7 +156,7 @@ func TestPatchDelete(t *testing.T) {
 		return
 	}
 	textA := string(bytesA)
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "6547898",
@@ -171,7 +171,7 @@ func TestPatchDelete(t *testing.T) {
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestDiff2(t *testing.T) {
@@ -186,7 +186,7 @@ world
 
 foo bar
 31df1778815171897c907daf454c4419cfaa46f9`
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "6547898",
@@ -201,7 +201,7 @@ foo bar
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestPatchScss(t *testing.T) {
@@ -219,7 +219,7 @@ func TestPatchScss(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -238,7 +238,7 @@ func TestPatchScss(t *testing.T) {
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestPatchCss(t *testing.T) {
@@ -256,7 +256,7 @@ func TestPatchCss(t *testing.T) {
 		return
 	}
 	textB := string(bytesB)
-	u, err := DoUnified(t.Context(), &Options{
+	u, err := Unified(t.Context(), &Options{
 		From: &File{
 			Name: "a.txt",
 			Hash: "4789568",
@@ -275,11 +275,11 @@ func TestPatchCss(t *testing.T) {
 	}
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestShowPatch(t *testing.T) {
-	patch := []*Unified{
+	patch := []*Patch{
 		{
 			From: &File{
 				Name: "docs/a.png",

@@ -11,8 +11,8 @@ import (
 	"slices"
 )
 
-// MyersDiff: An O(ND) diff algorithm that has a quadratic space worst-case complexity.
-func MyersDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
+// myers: An O(ND) diff algorithm that has a quadratic space worst-case complexity.
+func myers[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]
@@ -48,16 +48,16 @@ func myersCompute[E comparable](ctx context.Context, seq1 []E, P1 int, seq2 []E,
 	// d-line: path from (0,0) to (x,y) that uses exactly d non-diagonals.
 	// diagonal k: Set of points (x,y) with x-y = k.
 	// k=1 -> (1,0),(2,1)
-	V := NewFastIntArray()
+	V := newFastIntArray()
 	V.set(0, getXAfterSnake(0, 0))
-	paths := &FastArrayNegativeIndices{
-		positiveArr: make(map[int]*SnakePath),
-		negativeArr: make(map[int]*SnakePath),
+	paths := &fastArrayWithNegIndex{
+		positiveArr: make(map[int]*snakePath),
+		negativeArr: make(map[int]*snakePath),
 	}
 	if V.get(0) == 0 {
 		paths.set(0, nil)
 	} else {
-		paths.set(0, NewSnakePath(nil, 0, 0, V.get(0)))
+		paths.set(0, newSnakePath(nil, 0, 0, V.get(0)))
 	}
 	k := 0
 outer:
@@ -92,14 +92,14 @@ outer:
 			}
 			newMaxX := getXAfterSnake(x, y)
 			V.set(k, newMaxX)
-			var lastPath *SnakePath
+			var lastPath *snakePath
 			if x == maxXofDLineTop {
 				lastPath = paths.get(k + 1)
 			} else {
 				lastPath = paths.get(k - 1)
 			}
 			if newMaxX != x {
-				paths.set(k, NewSnakePath(lastPath, x, y, newMaxX-x))
+				paths.set(k, newSnakePath(lastPath, x, y, newMaxX-x))
 			} else {
 				paths.set(k, lastPath)
 			}
@@ -132,13 +132,13 @@ outer:
 	return changes, nil
 }
 
-type SnakePath struct {
-	pre          *SnakePath
+type snakePath struct {
+	pre          *snakePath
 	x, y, length int
 }
 
-func NewSnakePath(pre *SnakePath, x, y, length int) *SnakePath {
-	return &SnakePath{
+func newSnakePath(pre *snakePath, x, y, length int) *snakePath {
+	return &snakePath{
 		pre:    pre,
 		x:      x,
 		y:      y,
@@ -146,19 +146,19 @@ func NewSnakePath(pre *SnakePath, x, y, length int) *SnakePath {
 	}
 }
 
-type FastIntArray struct {
+type fastIntArray struct {
 	positiveArr []int
 	negativeArr []int
 }
 
-func NewFastIntArray() *FastIntArray {
-	return &FastIntArray{
+func newFastIntArray() *fastIntArray {
+	return &fastIntArray{
 		positiveArr: make([]int, 10),
 		negativeArr: make([]int, 10),
 	}
 }
 
-func (t *FastIntArray) get(i int) int {
+func (t *fastIntArray) get(i int) int {
 	if i < 0 {
 		i = -i - 1
 		return t.negativeArr[i]
@@ -166,7 +166,7 @@ func (t *FastIntArray) get(i int) int {
 	return t.positiveArr[i]
 }
 
-func (t *FastIntArray) set(i int, v int) {
+func (t *fastIntArray) set(i int, v int) {
 	if i < 0 {
 		i = -i - 1
 		if i >= len(t.negativeArr) {
@@ -186,12 +186,12 @@ func (t *FastIntArray) set(i int, v int) {
 }
 
 // An array that supports fast negative indices.
-type FastArrayNegativeIndices struct {
-	positiveArr map[int]*SnakePath
-	negativeArr map[int]*SnakePath
+type fastArrayWithNegIndex struct {
+	positiveArr map[int]*snakePath
+	negativeArr map[int]*snakePath
 }
 
-func (t *FastArrayNegativeIndices) get(i int) *SnakePath {
+func (t *fastArrayWithNegIndex) get(i int) *snakePath {
 	if i < 0 {
 		i = -i - 1
 		return t.negativeArr[i]
@@ -199,7 +199,7 @@ func (t *FastArrayNegativeIndices) get(i int) *SnakePath {
 	return t.positiveArr[i]
 }
 
-func (t *FastArrayNegativeIndices) set(i int, v *SnakePath) {
+func (t *fastArrayWithNegIndex) set(i int, v *snakePath) {
 	if i < 0 {
 		i = -i - 1
 		t.negativeArr[i] = v

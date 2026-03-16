@@ -191,8 +191,8 @@ func patienceCompute[E comparable](ctx context.Context, L1 []E, P1 int, L2 []E, 
 	return changes, nil
 }
 
-// PatienceDiff: Calculates the difference using the patience algorithm
-func PatienceDiff[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
+// patience: Calculates the difference using the patience algorithm
+func patience[E comparable](ctx context.Context, L1 []E, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]

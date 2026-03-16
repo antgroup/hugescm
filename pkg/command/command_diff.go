@@ -137,7 +137,7 @@ func (c *Diff) NewOutput(ctx context.Context) (zeta.Printer, error) {
 	return zeta.NewPrinter(ctx), nil
 }
 
-func (c *Diff) render(u *diferenco.Unified) error {
+func (c *Diff) render(u *diferenco.Patch) error {
 	opts := &zeta.DiffOptions{
 		NameOnly:   c.NameOnly,
 		NameStatus: c.NameStatus,
@@ -163,7 +163,7 @@ func (c *Diff) render(u *diferenco.Unified) error {
 			},
 		})
 	default:
-		return opts.ShowPatch(context.Background(), []*diferenco.Unified{u})
+		return opts.ShowPatch(context.Background(), []*diferenco.Patch{u})
 	}
 }
 
@@ -209,20 +209,20 @@ func (c *Diff) diffNoIndex() error {
 		return err
 	}
 	if from.IsBinary || to.IsBinary {
-		return c.render(&diferenco.Unified{
+		return c.render(&diferenco.Patch{
 			From:     &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
 			To:       &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
 			IsBinary: true,
 		})
 	}
 	if from.Hash == to.Hash {
-		return c.render(&diferenco.Unified{
+		return c.render(&diferenco.Patch{
 			From:     &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
 			To:       &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
 			IsBinary: false,
 		})
 	}
-	u, err := diferenco.DoUnified(context.Background(), &diferenco.Options{
+	u, err := diferenco.Unified(context.Background(), &diferenco.Options{
 		From: &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
 		To:   &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
 		S1:   from.Text,

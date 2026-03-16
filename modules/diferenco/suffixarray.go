@@ -212,7 +212,7 @@ func suffixArrayComputeOrdered[E cmp.Ordered](ctx context.Context, L1 []E, P1 in
 //
 // Time complexity: O((n+m) log n) where n and m are the lengths of the input sequences.
 // Space complexity: O(n) for the suffix array.
-func SuffixArrayDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
+func suffixArray[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	// Handle empty inputs
 	if len(L1) == 0 && len(L2) == 0 {
 		return []Change{}, nil
@@ -239,7 +239,7 @@ func SuffixArrayDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, e
 	}
 
 	// Fallback to ONP algorithm for unsupported types
-	return OnpDiff(ctx, L1, L2)
+	return onp(ctx, L1, L2)
 }
 
 // trySuffixArrayDiff attempts to run suffix array diff for ordered types.

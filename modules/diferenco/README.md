@@ -64,8 +64,8 @@ func main() {
         "This is new line 4",
     }
 
-    // Compute diff using Myers algorithm / 使用 Myers 算法计算 diff
-    changes, err := diferenco.MyersDiff(ctx, before, after)
+    // Compute diff using Histogram algorithm / 使用 Histogram 算法计算 diff
+    changes, err := diferenco.DiffSlices(ctx, before, after, diferenco.Histogram)
     if err != nil {
         panic(err)
     }
@@ -392,7 +392,7 @@ opts := &diferenco.Options{
     A:  diferenco.Histogram,
 }
 
-unified, err := diferenco.DoUnified(ctx, opts)
+unified, err := diferenco.Unified(ctx, opts)
 if err != nil {
     panic(err)
 }
@@ -437,6 +437,7 @@ opts := &diferenco.MergeOptions{
     A:      diferenco.Histogram,
 }
 
+// Using classic merge / 使用经典合并
 result, hasConflicts, err := diferenco.Merge(ctx, opts)
 if err != nil {
     panic(err)
@@ -451,13 +452,36 @@ if hasConflicts {
 fmt.Println(result)
 ```
 
+### Modern Three-way Merge (Recommended) / 现代三路合并（推荐）
+
+```go
+// MergeParallel uses Go 1.26+ modern code style with better readability
+// MergeParallel 使用 Go 1.26+ 现代代码风格，可读性更好
+result, hasConflicts, err := diferenco.MergeParallel(ctx, opts)
+```
+
+### Fast Conflict Detection / 快速冲突检测
+
+```go
+// Only check for conflicts without generating merged result
+// 仅检查冲突，不生成合并结果（更高效）
+hasConflicts, err := diferenco.HasConflictParallel(ctx, textO, textA, textB)
+if err != nil {
+    panic(err)
+}
+
+if hasConflicts {
+    fmt.Println("Conflicts detected! / 检测到冲突!")
+}
+```
+
 ### Context Cancellation / 上下文取消
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
 
-changes, err := diferenco.MyersDiff(ctx, largeBefore, largeAfter)
+changes, err := diferenco.DiffSlices(ctx, largeBefore, largeAfter, diferenco.Myers)
 if err == context.DeadlineExceeded {
     fmt.Println("Diff operation timed out / Diff 操作超时")
 }
@@ -493,6 +517,58 @@ go test -race ./...
 go test -bench=. -benchmem
 ```
 
+## API Reference / API 参考
+
+### Diff Functions / Diff 函数
+
+```go
+// Generic slice diff (recommended) / 泛型切片 diff（推荐）
+func DiffSlices[E comparable](ctx context.Context, a, b []E, algo Algorithm) ([]Change, error)
+
+// Rune-level diff / 字符级 diff
+func DiffRunes(ctx context.Context, a, b string, algo Algorithm) ([]StringDiff, error)
+
+// Word-level diff / 词级 diff
+func DiffWords(ctx context.Context, a, b string, algo Algorithm, splitFunc func(string) []string) ([]StringDiff, error)
+
+// Unified diff output / 统一 diff 输出
+func Unified(ctx context.Context, opts *Options) (*Patch, error)
+
+// Get file statistics / 获取文件统计
+func Stat(ctx context.Context, opts *Options) (*FileStat, error)
+```
+
+### Merge Functions / 合并函数
+
+```go
+// Classic three-way merge / 经典三路合并
+func Merge(ctx context.Context, opts *MergeOptions) (string, bool, error)
+
+// GLM three-way merge (Go 1.26+) / GLM 三路合并
+func MergeParallel(ctx context.Context, opts *MergeOptions) (string, bool, error)
+
+// Fast conflict detection / 快速冲突检测
+func HasConflictParallel(ctx context.Context, textO, textA, textB string) (bool, error)
+```
+
+### Algorithm Selection / 算法选择
+
+```go
+// Parse algorithm name / 解析算法名称
+func AlgorithmFromName(s string) (Algorithm, error)
+
+// Available algorithms / 可用算法
+const (
+    Unspecified Algorithm = iota  // Auto-select / 自动选择
+    Histogram                      // Default for small files / 小文件默认
+    ONP                            // Large files, few changes / 大文件少改动
+    Myers                          // Classic algorithm / 经典算法
+    Minimal                        // Simple implementation / 简单实现
+    Patience                       // Code with reordering / 代码重排序
+    SuffixArray                    // Text and binary / 文本和二进制
+)
+```
+
 ## Project Structure / 项目结构
 
 ```
@@ -504,11 +580,20 @@ modules/diferenco/
 ├── patience.go           # Patience algorithm / Patience 算法
 ├── minimal.go            # Minimal algorithm / Minimal 算法
 ├── suffixarray.go        # SuffixArray algorithm / SuffixArray 算法
-├── merge.go              # Three-way merge / 三路合并
-├── text.go               # Text processing / 文本处理
+├── merge.go              # Classic three-way merge / 经典三路合并
+├── merge_parallel.go     # Modern three-way merge with parallel diff / 现代三路合并（并行计算）
+├── sink.go               # Line parsing and indexing / 行解析和索引
+├── text.go               # Text processing and charset detection / 文本处理和字符集检测
 ├── unified.go            # Unified diff output / 统一 diff 输出
+├── unified_encoder.go    # Unified diff encoder / 统一 diff 编码器
+├── unicode.go            # Unicode utilities (CJK/Emoji) / Unicode 工具
 ├── color/                # Color output utilities / 颜色输出工具
+│   └── color.go
 └── lcs/                  # LCS implementation / LCS 实现
+    ├── common.go
+    ├── labels.go
+    ├── old.go
+    └── sequence.go
 ```
 
 ## License / 许可证

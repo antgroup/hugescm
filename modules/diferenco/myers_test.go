@@ -28,7 +28,7 @@ func TestMyersDiff(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := MyersDiff(t.Context(), a, b)
+	changes, _ := DiffSlices(t.Context(), a, b, Myers)
 	i := 0
 	for _, c := range changes {
 		for ; i < c.P1; i++ {
@@ -68,8 +68,8 @@ func TestMyersDiff2(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := MyersDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Myers)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
 }
 
@@ -89,7 +89,7 @@ func TestMyersDiff3(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := MyersDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Myers)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	fmt.Fprintf(os.Stderr, "diff:\n%s\n", u.String())
 }

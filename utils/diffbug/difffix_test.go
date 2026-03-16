@@ -26,7 +26,7 @@ func TestDiffText(t *testing.T) {
 		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
 		return
 	}
-	u, err := diferenco.DoUnified(t.Context(), &diferenco.Options{
+	p, err := diferenco.Unified(t.Context(), &diferenco.Options{
 		From: &diferenco.File{
 			Name: "a.go",
 		},
@@ -41,7 +41,7 @@ func TestDiffText(t *testing.T) {
 	}
 	e := diferenco.NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*diferenco.Unified{u})
+	_ = e.Encode([]*diferenco.Patch{p})
 }
 
 func TestRuneToString(t *testing.T) {

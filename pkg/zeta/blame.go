@@ -306,7 +306,7 @@ func (b *blame) addBlames(ctx context.Context, curItems []*queueItem) (bool, err
 		if err != nil {
 			return false, err
 		}
-		u, err := diferenco.DoUnified(ctx, &diferenco.Options{
+		u, err := diferenco.Unified(ctx, &diferenco.Options{
 			S1: prevContents,
 			S2: curItem.Contents,
 		})

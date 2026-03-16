@@ -28,7 +28,7 @@ func TestONP(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := OnpDiff(t.Context(), a, b)
+	changes, _ := DiffSlices(t.Context(), a, b, ONP)
 	i := 0
 	for _, c := range changes {
 		for ; i < c.P1; i++ {

@@ -142,14 +142,14 @@ func (s *Sink) addEqualLines(h *Hunk, index []int, start, end int) int {
 	return delta
 }
 
-func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int, contextLines int) *Unified {
+func (s *Sink) ToPatch(from, to *File, changes []Change, linesA, linesB []int, contextLines int) *Patch {
 	gap := contextLines * 2
-	u := &Unified{
+	p := &Patch{
 		From: from,
 		To:   to,
 	}
 	if len(changes) == 0 {
-		return u
+		return p
 	}
 	var h *Hunk
 	last := 0
@@ -167,7 +167,7 @@ func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int,
 			if h != nil {
 				// add the edge to the previous hunk
 				s.addEqualLines(h, linesA, last, last+contextLines)
-				u.Hunks = append(u.Hunks, h)
+				p.Hunks = append(p.Hunks, h)
 			}
 			toLine += start - last
 			h = &Hunk{
@@ -193,9 +193,9 @@ func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int,
 	if h != nil {
 		// add the edge to the final hunk
 		s.addEqualLines(h, linesA, last, last+contextLines)
-		u.Hunks = append(u.Hunks, h)
+		p.Hunks = append(p.Hunks, h)
 	}
-	return u
+	return p
 }
 
 // SplitWords splits string by character classes (keeping delimiters).
@@ -296,23 +296,10 @@ func classify(r rune) int {
 	case isCJK(r) || isEmoji(r):
 		return modeSingle
 
-	case isWord(r):
+	case unicode.IsLetter(r) || unicode.IsDigit(r):
 		return modeWord
 
 	default:
 		return modePunct
 	}
-}
-
-func isWord(r rune) bool {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return true
-	}
-
-	switch r {
-	case '-', '_', '.', '/':
-		return true
-	}
-
-	return false
 }

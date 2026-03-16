@@ -145,9 +145,9 @@ type onpLcs struct {
 	next *onpLcs
 }
 
-// OnpDiff returns the differences between []E.
+// onp returns the differences between []E.
 // It makes O(NP) (the worst case) calls to equal.
-func OnpDiff[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
+func onp[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error) {
 	prefix := commonPrefixLength(L1, L2)
 	L1 = L1[prefix:]
 	L2 = L2[prefix:]

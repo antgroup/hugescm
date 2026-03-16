@@ -144,6 +144,6 @@ func (c Changes) Stats(ctx context.Context, opts *PatchOptions) (FileStats, erro
 
 // Patch returns a Patch with all the changes in chunks. This
 // representation can be used to create several diff outputs.
-func (c Changes) Patch(ctx context.Context, opts *PatchOptions) ([]*diferenco.Unified, error) {
+func (c Changes) Patch(ctx context.Context, opts *PatchOptions) ([]*diferenco.Patch, error) {
 	return getPatchContext(ctx, opts, c...)
 }

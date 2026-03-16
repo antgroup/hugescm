@@ -30,11 +30,11 @@ func TestHistogram(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := HistogramDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestHistogram2(t *testing.T) {
@@ -61,11 +61,11 @@ A`
 	}
 	a := sink.SplitLines(lines1)
 	b := sink.SplitLines(lines2)
-	changes, _ := HistogramDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestHistogram3(t *testing.T) {
@@ -86,11 +86,11 @@ c`
 	}
 	a := sink.SplitLines(lines1)
 	b := sink.SplitLines(lines2)
-	changes, _ := HistogramDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 func TestHistogram4(t *testing.T) {
@@ -119,11 +119,11 @@ c`
 	}
 	a := sink.SplitLines(lines1)
 	b := sink.SplitLines(lines2)
-	changes, _ := HistogramDiff(t.Context(), a, b)
-	u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 	e := NewUnifiedEncoder(os.Stderr)
 	e.SetColor(color.NewColorConfig())
-	_ = e.Encode([]*Unified{u})
+	_ = e.Encode([]*Patch{u})
 }
 
 // TestHistogramHeuristic demonstrates the improved heuristic effect
@@ -147,12 +147,12 @@ end`
 		sink := &Sink{Index: make(map[string]int)}
 		a := sink.SplitLines(text1)
 		b := sink.SplitLines(text2)
-		changes, _ := HistogramDiff(t.Context(), a, b)
+		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
-		u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 		e := NewUnifiedEncoder(os.Stderr)
 		e.SetColor(color.NewColorConfig())
-		_ = e.Encode([]*Unified{u})
+		_ = e.Encode([]*Patch{u})
 
 		// Verify: should have 1 delete
 		totalDel := 0
@@ -184,12 +184,12 @@ new_trailer`
 		sink := &Sink{Index: make(map[string]int)}
 		a := sink.SplitLines(text1)
 		b := sink.SplitLines(text2)
-		changes, _ := HistogramDiff(t.Context(), a, b)
+		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
-		u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 		e := NewUnifiedEncoder(os.Stderr)
 		e.SetColor(color.NewColorConfig())
-		_ = e.Encode([]*Unified{u})
+		_ = e.Encode([]*Patch{u})
 
 		totalDel, totalIns := 0, 0
 		for _, c := range changes {
@@ -220,12 +220,12 @@ func bar() {
 		sink := &Sink{Index: make(map[string]int)}
 		a := sink.SplitLines(text1)
 		b := sink.SplitLines(text2)
-		changes, _ := HistogramDiff(t.Context(), a, b)
+		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
-		u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 		e := NewUnifiedEncoder(os.Stderr)
 		e.SetColor(color.NewColorConfig())
-		_ = e.Encode([]*Unified{u})
+		_ = e.Encode([]*Patch{u})
 
 		totalDel, totalIns := 0, 0
 		for _, c := range changes {
@@ -258,12 +258,12 @@ block {
 		sink := &Sink{Index: make(map[string]int)}
 		a := sink.SplitLines(text1)
 		b := sink.SplitLines(text2)
-		changes, _ := HistogramDiff(t.Context(), a, b)
+		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
-		u := sink.ToUnified(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
 		e := NewUnifiedEncoder(os.Stderr)
 		e.SetColor(color.NewColorConfig())
-		_ = e.Encode([]*Unified{u})
+		_ = e.Encode([]*Patch{u})
 
 		t.Logf("Result: %d changes (expected: 2 changes - one per block)", len(changes))
 	}

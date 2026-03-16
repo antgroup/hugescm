@@ -117,7 +117,7 @@ func getStatsContext(ctx context.Context, opts *PatchOptions, changes ...*Change
 	return stats, nil
 }
 
-func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*diferenco.Unified, error) {
+func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*diferenco.Patch, error) {
 	from, to, err := c.Files()
 	if err != nil {
 		return nil, err
@@ -126,36 +126,36 @@ func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*
 		return nil, ErrMalformedChange
 	}
 	if from.IsFragments() || to.IsFragments() {
-		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsFragments: true}, nil
+		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsFragments: true}, nil
 	}
 	// --- check size limit
 	if sizeOverflow(from) || sizeOverflow(to) {
-		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
+		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
 	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
-		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
+		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
 	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
-		return &diferenco.Unified{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
+		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return diferenco.DoUnified(ctx, &diferenco.Options{From: from.asFile(), To: to.asFile(), S1: fromContent, S2: toContent, A: opts.Algorithm})
+	return diferenco.Unified(ctx, &diferenco.Options{From: from.asFile(), To: to.asFile(), S1: fromContent, S2: toContent, A: opts.Algorithm})
 }
 
-func getPatchContext(ctx context.Context, opts *PatchOptions, changes ...*Change) ([]*diferenco.Unified, error) {
+func getPatchContext(ctx context.Context, opts *PatchOptions, changes ...*Change) ([]*diferenco.Patch, error) {
 	if opts.Match == nil {
 		opts.Match = func(s string) bool {
 			return true
 		}
 	}
-	patch := make([]*diferenco.Unified, 0, len(changes))
+	patch := make([]*diferenco.Patch, 0, len(changes))
 	for _, c := range changes {
 		if !opts.Match(c.name()) {
 			continue

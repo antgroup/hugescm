@@ -88,11 +88,11 @@ type hunk [5]int
 //
 // (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf)
 func diff3MergeIndices[E comparable](ctx context.Context, o, a, b []E, algo Algorithm) ([][]int, error) {
-	m1, err := diffInternal(ctx, o, a, algo)
+	m1, err := DiffSlices(ctx, o, a, algo)
 	if err != nil {
 		return nil, err
 	}
-	m2, err := diffInternal(ctx, o, b, algo)
+	m2, err := DiffSlices(ctx, o, b, algo)
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +176,8 @@ func diff3MergeIndices[E comparable](ctx context.Context, o, a, b []E, algo Algo
 	return result, nil
 }
 
-// Conflict describes a merge conflict
-type Conflict[E comparable] struct {
+// conflict describes a merge conflict
+type conflict[E comparable] struct {
 	a      []E
 	aIndex int
 	o      []E
@@ -189,7 +189,7 @@ type Conflict[E comparable] struct {
 // Diff3MergeResult describes a merge result
 type Diff3MergeResult[E comparable] struct {
 	ok       []E
-	conflict *Conflict[E]
+	conflict *conflict[E]
 }
 
 // Diff3Merge applies the output of diff3MergeIndices to actually
@@ -238,7 +238,7 @@ func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, 
 			} else {
 				flushOk()
 				result = append(result, &Diff3MergeResult[E]{
-					conflict: &Conflict[E]{
+					conflict: &conflict[E]{
 						a:      a[x[1] : x[1]+x[2]],
 						aIndex: x[1],
 						o:      o[x[3] : x[3]+x[4]],
@@ -346,7 +346,7 @@ func (opts *MergeOptions) ValidateOptions() error {
 	return nil
 }
 
-func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *Conflict[int]) {
+func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *conflict[int]) {
 	if opts.Style == STYLE_DIFF3 {
 		_, _ = fmt.Fprintf(out, "%s%s\n", Sep1, opts.LabelA)
 		s.WriteLine(out, conflict.a...)

@@ -29,7 +29,7 @@ func TestSuffixArrayDiff(t *testing.T) {
 	}
 	a := sink.SplitLines(textA)
 	b := sink.SplitLines(textB)
-	changes, _ := SuffixArrayDiff(t.Context(), a, b)
+	changes, _ := DiffSlices(t.Context(), a, b, SuffixArray)
 	i := 0
 	for _, c := range changes {
 		for ; i < c.P1; i++ {
@@ -121,7 +121,7 @@ func TestSuffixArrayDiffBasic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			changes, err := SuffixArrayDiff(ctx, tt.a, tt.b)
+			changes, err := DiffSlices(ctx, tt.a, tt.b, SuffixArray)
 			if err != nil {
 				t.Fatalf("SuffixArrayDiff() error = %v", err)
 			}
@@ -168,7 +168,7 @@ func TestSuffixArrayDiffRune(t *testing.T) {
 			ctx := context.Background()
 			runesA := []rune(tt.a)
 			runesB := []rune(tt.b)
-			changes, err := SuffixArrayDiff(ctx, runesA, runesB)
+			changes, err := DiffSlices(ctx, runesA, runesB, SuffixArray)
 			if err != nil {
 				t.Fatalf("SuffixArrayDiff() error = %v", err)
 			}
@@ -230,7 +230,7 @@ func TestSuffixArrayDiffConsistency(t *testing.T) {
 			results := make(map[Algorithm][]Change)
 
 			for _, algo := range algorithms {
-				changes, err := diffInternal(ctx, tt.a, tt.b, algo)
+				changes, err := DiffSlices(ctx, tt.a, tt.b, algo)
 				if err != nil {
 					t.Fatalf("Algorithm %s failed: %v", algo, err)
 				}
@@ -338,7 +338,7 @@ func TestSuffixArrayDiffContext(t *testing.T) {
 	a := []string{"a", "b", "c"}
 	b := []string{"a", "x", "c"}
 
-	_, err := SuffixArrayDiff(ctx, a, b)
+	_, err := DiffSlices(ctx, a, b, SuffixArray)
 	if err == nil {
 		t.Error("SuffixArrayDiff() should return error on cancelled context")
 	}
@@ -371,7 +371,7 @@ func TestSuffixArrayDiffBinary(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			changes, err := SuffixArrayDiff(ctx, tt.a, tt.b)
+			changes, err := DiffSlices(ctx, tt.a, tt.b, SuffixArray)
 			if err != nil {
 				t.Fatalf("SuffixArrayDiff() error = %v", err)
 			}

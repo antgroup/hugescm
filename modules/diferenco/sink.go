@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -197,38 +198,121 @@ func (s *Sink) ToUnified(from, to *File, changes []Change, linesA, linesB []int,
 	return u
 }
 
-// SplitWords splits string by non-word characters (keeping delimiters).
-// Word characters include letters, digits, and underscore.
-func SplitWords(text string) []string {
-	words := make([]string, 0, 10)
-	var inWord bool
-	var offset int
-	for i, c := range text {
-		if isWordChar(c) {
-			if !inWord {
-				if i > offset {
-					words = append(words, text[offset:i])
-				}
-				offset = i
-				inWord = true
+// SplitWords splits string by character classes (keeping delimiters).
+// CJK characters and emojis are split individually.
+// Word characters include letters, digits, and common symbols (-, _, ., /).
+func SplitWords(s string) []string {
+	if s == "" {
+		return nil
+	}
+
+	// Pre-allocate: average token length is ~3-4 chars
+	out := make([]string, 0, len(s)/3+1)
+	start := -1
+	mode := 0
+
+	for i, r := range s {
+		m := classify(r)
+
+		// CJK / emoji: split as single characters
+		if m == modeSingle {
+			if start >= 0 {
+				out = append(out, s[start:i])
+				start = -1
 			}
+			out = append(out, s[i:i+utf8.RuneLen(r)])
 			continue
 		}
-		if inWord {
-			if i > offset {
-				words = append(words, text[offset:i])
-			}
-			offset = i
-			inWord = false
+
+		if start < 0 {
+			start = i
+			mode = m
+			continue
+		}
+
+		if m != mode {
+			out = append(out, s[start:i])
+			start = i
+			mode = m
 		}
 	}
-	if offset < len(text) {
-		words = append(words, text[offset:])
+
+	if start >= 0 {
+		out = append(out, s[start:])
 	}
-	return words
+
+	return out
 }
 
-// isWordChar returns true if c is a word character (letter, digit, or underscore).
-func isWordChar(c rune) bool {
-	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
+const (
+	modePunct = iota // Default: 0
+	modeWord
+	modeSpace
+	modeSingle // CJK, emoji, and other wide characters
+)
+
+// asciiClass is a lookup table for ASCII character classification.
+// Values: 0=Punct (default), 1=Word, 2=Space.
+var asciiClass = [128]byte{
+	'\t': modeSpace,
+	'\n': modeSpace,
+	'\r': modeSpace,
+	' ':  modeSpace,
+
+	'-': modeWord,
+	'.': modeWord,
+	'/': modeWord,
+	'_': modeWord,
+
+	'0': modeWord, '1': modeWord, '2': modeWord, '3': modeWord, '4': modeWord,
+	'5': modeWord, '6': modeWord, '7': modeWord, '8': modeWord, '9': modeWord,
+
+	'A': modeWord, 'B': modeWord, 'C': modeWord, 'D': modeWord, 'E': modeWord,
+	'F': modeWord, 'G': modeWord, 'H': modeWord, 'I': modeWord, 'J': modeWord,
+	'K': modeWord, 'L': modeWord, 'M': modeWord, 'N': modeWord, 'O': modeWord,
+	'P': modeWord, 'Q': modeWord, 'R': modeWord, 'S': modeWord, 'T': modeWord,
+	'U': modeWord, 'V': modeWord, 'W': modeWord, 'X': modeWord, 'Y': modeWord,
+	'Z': modeWord,
+
+	'a': modeWord, 'b': modeWord, 'c': modeWord, 'd': modeWord, 'e': modeWord,
+	'f': modeWord, 'g': modeWord, 'h': modeWord, 'i': modeWord, 'j': modeWord,
+	'k': modeWord, 'l': modeWord, 'm': modeWord, 'n': modeWord, 'o': modeWord,
+	'p': modeWord, 'q': modeWord, 'r': modeWord, 's': modeWord, 't': modeWord,
+	'u': modeWord, 'v': modeWord, 'w': modeWord, 'x': modeWord, 'y': modeWord,
+	'z': modeWord,
+}
+
+func classify(r rune) int {
+	// ASCII fast path
+	if r < 128 {
+		return int(asciiClass[r])
+	}
+
+	// Non-ASCII
+	switch {
+	case unicode.IsSpace(r):
+		return modeSpace
+
+	case isCJK(r) || isEmoji(r):
+		return modeSingle
+
+	case isWord(r):
+		return modeWord
+
+	default:
+		return modePunct
+	}
+}
+
+func isWord(r rune) bool {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return true
+	}
+
+	switch r {
+	case '-', '_', '.', '/':
+		return true
+	}
+
+	return false
 }

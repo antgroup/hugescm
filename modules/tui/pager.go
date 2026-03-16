@@ -42,6 +42,11 @@ func (p *Pager) Close() error {
 	p.writer.closed = true
 	p.content = p.writer.String()
 
+	// If content is empty, skip starting the pager
+	if p.content == "" {
+		return nil
+	}
+
 	// If no color support, just output directly
 	if p.colorMode == term.LevelNone {
 		_, err := os.Stdout.Write([]byte(p.content))

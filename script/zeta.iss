@@ -1,7 +1,7 @@
 ;; abc windows install package
-;; Please Inno Setup >= 6.2.0
-#if Ver < EncodeVer(6,1,0,0)
-  #error This script requires Inno Setup 6 or later
+;; Please Inno Setup >= 6.7.0
+#if Ver < EncodeVer(6,7,0,0)
+  #error This script requires Inno Setup 6.7.0 or later
 #endif
 
 #ifndef AppVersion
@@ -28,9 +28,8 @@
   #define AppUserId "Zeta"
 #endif
 
-#if "" == ArchitecturesInstallIn64BitMode
-  #define BaseNameSuffix "ia32"
-#elif "x64compatible" == ArchitecturesInstallIn64BitMode
+; Only support x64 and arm64, ia32 is not supported
+#if "x64compatible" == ArchitecturesInstallIn64BitMode
   #define BaseNameSuffix "x64"
 #else
   #define BaseNameSuffix ArchitecturesInstallIn64BitMode
@@ -55,6 +54,7 @@ ChangesEnvironment=true
 ; "ArchitecturesInstallIn64BitMode=x64" requests that the install be
 ; done in "64-bit mode" on x64, meaning it should use the native
 ; 64-bit Program Files directory and the 64-bit view of the registry.
+; Also supports arm64 by setting ArchitecturesInstallIn64BitMode=arm64
 ArchitecturesAllowed={#ArchitecturesAllowed}
 ArchitecturesInstallIn64BitMode={#ArchitecturesInstallIn64BitMode}
 ; version info
@@ -90,23 +90,13 @@ Source: "..\build\share\zeta\LEGAL.md"; DestDir: "{app}\share"; DestName: "LEGAL
 Name: "addtopath"; Description: "Add to PATH (requires shell restart)"; GroupDescription: "Other:"
 
 [Registry]
-#if "user" == InstallTarget
-#define SoftwareClassesRootKey "HKCU"
-#else
-#define SoftwareClassesRootKey "HKLM"
-#endif
-
 ; Environment
 #if "user" == InstallTarget
 #define EnvironmentRootKey "HKCU"
 #define EnvironmentKey "Environment"
-#define Uninstall64RootKey "HKCU64"
-#define Uninstall32RootKey "HKCU32"
 #else
 #define EnvironmentRootKey "HKLM"
 #define EnvironmentKey "System\CurrentControlSet\Control\Session Manager\Environment"
-#define Uninstall64RootKey "HKLM64"
-#define Uninstall32RootKey "HKLM32"
 #endif
 
 Root: {#EnvironmentRootKey}; Subkey: "{#EnvironmentKey}"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Tasks: addtopath; Check: NeedsAddPath(ExpandConstant('{app}\bin'))

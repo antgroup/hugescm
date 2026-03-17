@@ -36,6 +36,7 @@ type Diff struct {
 	Minimal         bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
 	DiffAlgorithm   string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
 	Output          string   `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
+	WordDiff        bool     `name:"word-diff" help:"Show word-level diff highlighting"`
 	From            string   `arg:"" optional:"" name:"from" help:""`
 	To              string   `arg:"" optional:"" name:"to" help:""`
 	passthroughArgs []string `kong:"-"`
@@ -106,12 +107,13 @@ func (c *Diff) NewOptions() (*zeta.DiffOptions, error) {
 		MergeBase:  c.MergeBase,
 		Textconv:   c.Textconv,
 		Algorithm:  a,
+		WordDiff:   c.WordDiff,
 	}
 	if len(c.To) == 0 {
 		if from, to, ok := strings.Cut(c.From, "..."); ok {
 			opts.From = from
 			opts.To = to
-			opts.Way3 = true
+			opts.ThreeWay = true
 			return opts, nil
 		}
 		if from, to, ok := strings.Cut(c.From, ".."); ok {
@@ -147,6 +149,7 @@ func (c *Diff) render(u *diferenco.Patch) error {
 		NewLine:    c.NewLine(),
 		NewOutput:  c.NewOutput,
 		NoRename:   true,
+		WordDiff:   c.WordDiff,
 	}
 	switch {
 	case c.Numstat, c.Stat, c.Shortstat:

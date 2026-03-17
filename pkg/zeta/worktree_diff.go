@@ -306,7 +306,7 @@ func (w *Worktree) resolveTwoTree(ctx context.Context, opts *DiffOptions) (oldTr
 	return
 }
 
-func (w *Worktree) betweenThreeWay(ctx context.Context, opts *DiffOptions) error {
+func (w *Worktree) betweenTripleDot(ctx context.Context, opts *DiffOptions) error {
 	trace.DbgPrint("from %s to %s", opts.From, opts.To)
 	oldTree, newTree, err := w.resolveTwoTree(ctx, opts)
 	if err != nil {
@@ -403,8 +403,8 @@ func (w *Worktree) DiffContext(ctx context.Context, opts *DiffOptions) error {
 		}
 	}
 	if len(opts.From) != 0 && len(opts.To) != 0 {
-		if opts.Way3 {
-			return w.betweenThreeWay(ctx, opts)
+		if opts.ThreeWay {
+			return w.betweenTripleDot(ctx, opts)
 		}
 		return w.between(ctx, opts)
 	}

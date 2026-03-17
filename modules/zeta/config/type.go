@@ -72,10 +72,15 @@ func (b *Boolean) IsUnset() bool {
 	return b.val == BOOLEAN_UNSET
 }
 
+// Merge merges the other boolean value into b.
+// If other has a definite value (TRUE or FALSE), it overrides b's value.
+// This follows the config priority: local > global > system.
 func (b *Boolean) Merge(other *Boolean) {
-	if b.val == BOOLEAN_UNSET {
+	// If other has a definite value, it should override b (higher priority)
+	if other.val != BOOLEAN_UNSET {
 		b.val = other.val
 	}
+	// If other is UNSET, keep b's current value (don't override with UNSET)
 }
 
 func (b *Boolean) True() bool {
@@ -97,6 +102,20 @@ func (b *Boolean) Set(v bool) bool {
 
 func (b *Boolean) Unset() {
 	b.val = BOOLEAN_UNSET
+}
+
+// MarshalText implements encoding.TextMarshaler for Boolean.
+// This is used by TOML encoder to convert Boolean to text representation.
+func (b Boolean) MarshalText() ([]byte, error) {
+	switch b.val {
+	case BOOLEAN_TRUE:
+		return []byte("true"), nil
+	case BOOLEAN_FALSE:
+		return []byte("false"), nil
+	default:
+		// UNSET - return empty string (will be handled by omitempty)
+		return []byte(""), nil
+	}
 }
 
 type StringArray []string

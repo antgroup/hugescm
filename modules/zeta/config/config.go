@@ -99,8 +99,9 @@ func (c *Core) IsExtreme() bool {
 }
 
 type Fragment struct {
-	ThresholdRaw Size `toml:"threshold,omitempty"`
-	SizeRaw      Size `toml:"size,omitempty"`
+	ThresholdRaw Size    `toml:"threshold,omitempty"`
+	SizeRaw      Size    `toml:"size,omitempty"`
+	EnableCDC    Boolean `toml:"enable_cdc,omitempty"` // Enable CDC (Content-Defined Chunking) for AI model files
 }
 
 func (f *Fragment) Overwrite(o *Fragment) {
@@ -110,6 +111,7 @@ func (f *Fragment) Overwrite(o *Fragment) {
 	if o.SizeRaw > 0 {
 		f.SizeRaw = o.SizeRaw
 	}
+	f.EnableCDC.Merge(&o.EnableCDC)
 }
 
 func (f Fragment) Threshold() int64 {

@@ -1,0 +1,46 @@
+# Zeta Configuration Example for AI Model Storage
+
+[core]
+remote = "https://zeta.io/your-group/your-repo"
+compression-algo = "zstd"  # Compression algorithm: zstd, lz4, etc.
+
+[fragment]
+# Fragment threshold: files smaller than this won't be fragmented
+threshold = "1GB"
+
+# Target fragment size for chunking
+size = "1GB"
+
+# Enable CDC (Content-Defined Chunking) for AI model files
+# - SafeTensors files: tensor-level chunking (best deduplication)
+# - Other formats: CDC fallback for better deduplication
+# - Values: true/false (Boolean type, supports config merge)
+# - Default: false (use fixed-size chunking)
+enable_cdc = true
+
+# Recommended configurations for different scenarios:
+
+# Small models (<10GB)
+# threshold = "512MB"
+# size = "512MB"
+# enable_cdc = true
+
+# Large models (10-100GB)
+# threshold = "1GB"
+# size = "1GB"
+# enable_cdc = true
+
+# Huge models (>100GB)
+# threshold = "2GB"
+# size = "2GB"
+# enable_cdc = true
+
+# Frequent iterations
+# threshold = "512MB"
+# size = "512MB"
+# enable_cdc = true
+
+# Mixed file types
+# threshold = "1GB"
+# size = "1GB"
+# enable_cdc = true  # Auto-detects format and chooses best strategy

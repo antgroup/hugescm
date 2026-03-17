@@ -67,14 +67,10 @@ func NewCDCChunker(targetSize int64) *CDCChunker {
 	// Calculate mask bits
 	// FastCDC uses: maskBits = log2(target) - normalization_offset
 	// Typical offset is 0-2, we use 1 for better average size
-	maskBits := max(
-		// Ensure reasonable bounds
-		bits.Len64(uint64(targetSize))-1,
-		// Minimum 1KB chunks
-		10)
-	if maskBits > 24 {
-		maskBits = 24 // Maximum 16MB chunks
-	}
+	// Ensure reasonable bounds
+	// Minimum 1KB chunks
+	// Maximum 16MB chunks
+	maskBits := min(max(bits.Len64(uint64(targetSize))-1, 10), 24)
 
 	// Three masks with different cutting probabilities
 	// maskS: 1/(2^(bits-2)) - skip phase, highest cutting probability

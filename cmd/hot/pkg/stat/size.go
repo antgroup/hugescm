@@ -85,10 +85,9 @@ func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) e
 		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
 		return err
 	}
-	if len(su.files) != 0 {
-		_, _ = fmt.Fprintf(os.Stdout, "%s - %s:\n", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))
+	if err := su.drawInteractive(fmt.Sprintf("%s - %s", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))); err != nil {
+		return err
 	}
-	su.draw(os.Stdout)
 	if extract {
 		e.currentCheck(ctx, repoPath, e.objects)
 	}
@@ -112,8 +111,7 @@ func (e *SizeExecutor) currentCheck(ctx context.Context, repoPath string, object
 		fmt.Fprintf(os.Stderr, "hot size: resolve file name error: %v", err)
 		return
 	}
-	if len(su.files) != 0 {
-		_, _ = fmt.Fprintf(os.Stdout, "\n%s - %s:\n", tr.W("Descending order by total size"), tr.W("Default Branch"))
+	if err := su.drawInteractive(fmt.Sprintf("%s - %s", tr.W("Descending order by total size"), tr.W("Default Branch"))); err != nil {
+		return
 	}
-	su.draw(os.Stdout)
 }

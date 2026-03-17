@@ -18,10 +18,9 @@ func showHugeObjects(ctx context.Context, repoPath string, objects map[string]in
 		fmt.Fprintf(os.Stderr, "hot az: resolve file name error: %v\n", err)
 		return err
 	}
-	if len(objects) != 0 {
-		_, _ = fmt.Fprintf(os.Stdout, "%s - %s:\n", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))
+	if err := su.drawInteractive(fmt.Sprintf("%s - %s", tr.W("Descending order by total size"), tr.W("All Branches and Tags"))); err != nil {
+		return err
 	}
-	su.draw(os.Stdout)
 	return nil
 }
 

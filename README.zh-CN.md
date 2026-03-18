@@ -25,13 +25,31 @@ HugeSCM 主要通过以下方式解决存储库规模问题：
 
 **它吸取了 Git 的经验，摆脱了 Git 的历史包袱，总之我们感谢这些前辈。**
 
+## 适用场景
+
+### AI 大模型研发
+
+- 存储 checkpoint 文件（数十 GB 到数百 GB）
+- 模型版本管理和增量更新
+- 多团队协作
+
+### 游戏研发
+
+- 大型二进制资源管理
+- 美术资产版本控制
+
+### 数据集存储
+
+- 大规模数据集版本管理
+- 数据标注协作
+
 ## 文档
 
 ### 设计与架构
 
 | 文档 | 描述 |
 |------|------|
-| [desgin.md](./docs/desgin.md) | HugeSCM 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
+| [desgin.md](./docs/desgin.md) | 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
 | [object-format.md](./docs/object-format.md) | 对象格式详解 - Blob、Tree、Commit、Fragments 等对象的二进制格式 |
 | [pack-format.md](./docs/pack-format.md) | Pack 文件格式 - 对象打包机制和索引格式 |
 | [protocol.md](./docs/protocol.md) | 传输协议规范 - HTTP/SSH 协议、授权、元数据和文件传输 |
@@ -60,7 +78,7 @@ HugeSCM 主要通过以下方式解决存储库规模问题：
 
 ## 构建
 
-开发者安装好最新版本的 Golang 程序后，就可以构建 HugeSCM 客户端，可以选择安装 make 或者 [bali](https://github.com/balibuild/bali)（构建打包工具）。
+开发者安装好最新版本的 Golang 后，可以使用 [bali](https://github.com/balibuild/bali)（构建打包工具）构建 HugeSCM 客户端。
 
 ```sh
 bali -T windows
@@ -72,15 +90,15 @@ bali 构建工具可以制作 `zip`, `deb`, `tar`, `rpm`, `sh (STGZ)` 压缩/安
 
 ### Windows 安装包
 
-我们编写了 Inno Setup 脚本，可以使用 Docker + wine 在没有 Windows 的环境下生成安装包，可以运行 `amake/innosetup` 制作 Inno Setup 安装包：
+我们提供了 Inno Setup 脚本，可以使用 Docker + wine 在非 Windows 环境下生成安装包：
 
 ```shell
 docker run --rm -i -v "$TOPLEVEL:/work" amake/innosetup xxxxx.iss
 ```
 
-然后即可生成安装包，在此之前我们需要运行 `bali --target=windows --arch=amd64` 先构建 Windows 平台二进制出来。
+运行前请先构建 Windows 二进制：`bali --target=windows --arch=amd64`。
 
-注意：在搭载 Apple Silicon 芯片的 macOS 机器上，可以使用 Orbstack 开启 Rosetta 运行该镜像制作 Windows 安装包。
+> 注意：在搭载 Apple Silicon 芯片的 macOS 上，可以使用 OrbStack 开启 Rosetta 运行该镜像。
 
 ## 使用
 
@@ -353,78 +371,17 @@ hot cat HEAD --json
 hot cat HEAD:docs/images/blob.png
 ```
 
-更多的帮助信息如下：
-
-```txt
-Usage: hot <command> [flags]
-
-hot - Git 存储库维护工具
-
-标志：
-  -h, --help       显示上下文相关的帮助
-  -V, --verbose    展示操作的更多细节
-  -v, --version    展示版本信息并退出
-      --debug      开启调试模式分析时间消耗
-
-命令：
-  cat            提供存储库对象的内容或类型和大小信息
-  stat           查看存储库状态
-  size           展示存储库体积和大文件
-  remove         删除存储库中的文件并重写历史
-  smart          交互模式清理存储库大文件
-  graft          交互模式清理存储库大文件（嫁接模式）
-  mc             迁移存储库对象格式到指定对象格式
-  unbranch       线性化存储库历史
-  prune-refs     清理指定前缀的引用
-  scan-refs      扫描本地存储库中的引用
-  expire-refs    清理过期引用
-  snapshot       为工作树创建快照提交
-  az             分析存储大文件
-  co             EXPERIMENTAL: 将存储库克隆到新创建的目录中
-
-运行 "hot <command> --help" 以获取有关命令的更多信息。
-```
-
-比如你查看仓库中的一张图片，可以这样做（二进制文件按照 16 进制展示）：
-
-```shell
-hot cat HEAD:docs/images/blob.png
-```
+比如你查看仓库中的一张图片（二进制文件按照 16 进制展示）：
 
 <img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/fe1d7e8d-c511-4deb-b5f1-9cc4c082a36d" />
 
-比如你查看仓库的信息，可以这样做：
-
-```shell
-hot stat
-```
+比如你查看仓库的信息：
 
 <img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
 
 将 Git 存储库对象格式从 SHA1 迁移到 SHA256：
 
-```shell
-hot mc https://github.com/antgroup/hugescm.git
-```
 <img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3c84566a-9626-40e1-bffc-07ce2917c91a" />
-
-## 适用场景
-
-### AI 大模型研发
-
-- 存储 checkpoint 文件（数十 GB 到数百 GB）
-- 模型版本管理和增量更新
-- 多团队协作
-
-### 游戏研发
-
-- 大型二进制资源管理
-- 美术资产版本控制
-
-### 数据集存储
-
-- 大规模数据集版本管理
-- 数据标注协作
 
 ## 许可证
 

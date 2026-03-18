@@ -21,13 +21,31 @@ Through the above strategies and technologies, HugeSCM can effectively solve the
 
 **It draws on Git's experience and gets rid of Git's historical baggage. In short, we are grateful to these predecessors.**
 
+## Use Cases
+
+### AI Model Development
+
+- Store checkpoint files (tens to hundreds of GB)
+- Model version management and incremental updates
+- Multi-team collaboration
+
+### Game Development
+
+- Large binary resource management
+- Art asset version control
+
+### Dataset Storage
+
+- Large-scale dataset version management
+- Data annotation collaboration
+
 ## Documentation
 
 ### Design & Architecture
 
 | Document | Description |
 |----------|-------------|
-| [design.md](./docs/desgin.md) | HugeSCM Design Philosophy - Core design concepts, architecture overview, differences from Git |
+| [design.md](./docs/desgin.md) | Design Philosophy - Core design concepts, architecture overview, differences from Git |
 | [object-format.md](./docs/object-format.md) | Object Format - Binary formats for Blob, Tree, Commit, Fragments objects |
 | [pack-format.md](./docs/pack-format.md) | Pack File Format - Object packaging mechanism and index format |
 | [protocol.md](./docs/protocol.md) | Transport Protocol - HTTP/SSH protocols, authorization, metadata and file transfer |
@@ -56,7 +74,7 @@ Through the above strategies and technologies, HugeSCM can effectively solve the
 
 ## Build
 
-After installing the latest version of Golang, developers can build HugeSCM client. They can choose to install make or [bali](https://github.com/balibuild/bali) (build packaging tool).
+After installing the latest version of Golang, developers can build HugeSCM client using [bali](https://github.com/balibuild/bali) (build packaging tool).
 
 ```sh
 bali -T windows
@@ -66,17 +84,17 @@ bali -T linux -A amd64 --pack='rpm,deb,tar,sh'
 
 The bali build tool can create `zip`, `deb`, `tar`, `rpm`, `sh (STGZ)` compression/installation packages.
 
-## Windows Installation Package
+### Windows Installation Package
 
-We have written an Inno Setup package script. You can use Docker + wine to generate an installation package without Windows. You can run `amake/innosetup` to make an Inno Setup installation package:
+We provide an Inno Setup script. You can use Docker + wine to generate an installation package without Windows:
 
 ```shell
 docker run --rm -i -v "$TOPLEVEL:/work" amake/innosetup xxxxx.iss
 ```
 
-Then you can generate the installation package. Before that, we need to run `bali --target=windows --arch=amd64` to build the Windows platform binary.
+Before running this, build the Windows binary first: `bali --target=windows --arch=amd64`.
 
-Note: On a macOS machine with an Apple Silicon chip, you can use OrbStack to open Rosetta and run the image to make a Windows installation package.
+> Note: On macOS with Apple Silicon, you can use OrbStack with Rosetta to run this image.
 
 ## Usage
 
@@ -347,79 +365,17 @@ hot cat HEAD --json
 hot cat HEAD:docs/images/blob.png
 ```
 
-Here's some more help information:
-
-```txt
-Usage: hot <command> [flags]
-
-hot - Git repositories maintenance tool
-
-Flags:
-  -h, --help       Show context-sensitive help
-  -V, --verbose    Make the operation more talkative
-  -v, --version    Show version number and quit
-      --debug      Enable debug mode; analyze timing
-
-Commands:
-  cat            Provide contents or details of repository objects
-  stat           View repository status
-  size           Show repositories size and large files
-  remove         Remove files in repository and rewrite history
-  smart          Interactive mode to clean repository large files
-  graft          Interactive mode to clean repository large files (Grafting mode)
-  mc             Migrate a repository to the specified object format
-  unbranch       Linearize repository history
-  prune-refs     Prune refs by prefix
-  scan-refs      Scan references in a local repository
-  expire-refs    Clean up expired references
-  snapshot       Create a snapshot commit for the worktree
-  az             Analyze repository large files
-  co             EXPERIMENTAL: Clones a repository into a newly created directory
-
-Run "hot <command> --help" for more information on a command.
-```
-
-For example, if you want to view an image in the repository, you can do this:
-
-```shell
-hot cat HEAD:docs/images/blob.png
-```
+For example, viewing an image in the repository (binary files displayed in hex):
 
 <img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/fe1d7e8d-c511-4deb-b5f1-9cc4c082a36d" />
 
-For example, if you want to view the repository information, you can do this:
-
-```shell
-hot stat
-```
+For example, viewing repository information:
 
 <img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
 
+Migrating Git repository object format from SHA1 to SHA256:
 
-Migrate Git repository object format from SHA1 to SHA256:
-
-```shell
-hot mc https://github.com/antgroup/hugescm.git
-```
 <img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3c84566a-9626-40e1-bffc-07ce2917c91a" />
-
-## Use Cases
-
-### AI Model Development
-
-- Store checkpoint files (tens to hundreds of GB)
-- Model version management and incremental updates
-- Multi-team collaboration
-
-### Game Development
-
-- Large binary resource management
-- Art asset version control
-
-### Dataset Storage
-
-- Large-scale dataset version management
-- Data annotation collaboration
 
 ## License
 

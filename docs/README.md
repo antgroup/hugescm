@@ -1,192 +1,198 @@
 # Zeta 文档中心
 
-欢迎来到 Zeta 文档中心! Zeta 是面向 AI 场景的巨型存储库版本控制系统。
+欢迎来到 Zeta 文档中心！Zeta 是面向 AI 场景的巨型存储库版本控制系统。
 
 ---
 
-## 📚 文档索引
+## 文档索引
 
-### 核心概念
-
-| 文档 | 描述 |
-|------|------|
-| [protocol.md](protocol.md) | Zeta 协议规范 |
-| [object-format.md](object-format.md) | 对象格式详解 |
-| [pack-format.md](pack-format.md) | Pack 文件格式 |
-| [config.md](config.md) | 配置文件说明 |
-
-### CDC 分片功能 (新功能)
+### 设计与架构
 
 | 文档 | 描述 |
 |------|------|
-| [cdc.md](cdc.md) | CDC (Content-Defined Chunking) 实现原理、架构设计和配置 |
-| [zeta.toml.example](zeta.toml.example) | CDC 配置示例 |
+| [desgin.md](desgin.md) | HugeSCM 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
+| [object-format.md](object-format.md) | 对象格式详解 - Blob、Tree、Commit、Fragments 等对象的二进制格式 |
+| [pack-format.md](pack-format.md) | Pack 文件格式 - 对象打包机制和索引格式 |
+| [protocol.md](protocol.md) | 传输协议规范 - HTTP/SSH 协议、授权、元数据和文件传输 |
+| [version-negotiation.md](version-negotiation.md) | 版本协商机制 - 基线管理、检出、拉取、推送流程 |
 
-### 高级功能
+### 配置参考
 
 | 文档 | 描述 |
 |------|------|
-| [sparse-checkout.md](sparse-checkout.md) | 稀疏检出策略 |
-| [pull-strategy.md](pull-strategy.md) | 拉取策略 |
-| [stash.md](stash.md) | 暂存功能 |
-| [version-negotiation.md](version-negotiation.md) | 版本协商机制 |
+| [config.md](config.md) | 配置文件说明 - 支持的配置项和环境变量 |
+
+### 功能使用
+
+| 文档 | 描述 |
+|------|------|
+| [switch.md](switch.md) | 分支切换 - switch 命令详解，切换分支和提交 |
+| [stash.md](stash.md) | 暂存功能 - stash 命令详解，临时保存工作进度 |
+| [sparse-checkout.md](sparse-checkout.md) | 稀疏检出 - 按需检出指定目录 |
+| [pull-strategy.md](pull-strategy.md) | 拉取策略 - merge、rebase、fast-forward 策略详解 |
+
+### 高级特性
+
+| 文档 | 描述 |
+|------|------|
+| [cdc.md](cdc.md) | CDC 分片 - Content-Defined Chunking 实现原理和配置 |
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
-### 1. 启用 CDC 分片 (推荐用于 AI 模型文件)
+### 1. 安装
 
-在 `.zeta/zeta.toml` 文件中添加配置（或运行 `zeta config --add -T bool fragment.enable_cdc  true`）:
+安装最新版本的 Golang 后，使用以下命令构建：
+
+```sh
+# 使用 bali 构建
+bali -T linux -A amd64
+
+# 或使用 make
+make build
+```
+
+### 2. 配置
+
+```shell
+# 设置用户信息
+zeta config --global user.email 'your@email.com'
+zeta config --global user.name 'Your Name'
+
+# 开启 OSS 直连下载（推荐）
+zeta config --global core.accelerator direct
+```
+
+### 3. 检出存储库
+
+```shell
+# 检出存储库
+zeta checkout http://zeta.example.io/group/repo my-repo
+
+# 稀疏检出指定目录
+zeta checkout http://zeta.example.io/group/repo my-repo -s dir1
+
+# 逐一检出模式（节省磁盘空间）
+zeta checkout http://zeta.example.io/group/repo my-repo --one
+```
+
+### 4. 基本工作流
+
+```shell
+# 查看状态
+zeta status
+
+# 添加修改
+zeta add <files>
+
+# 提交
+zeta commit -m "提交信息"
+
+# 推送
+zeta push
+
+# 拉取更新
+zeta pull
+```
+
+---
+
+## 核心概念
+
+### 数据分离架构
+
+HugeSCM 采用**数据分离原则**：
+
+```
++------------------+     +------------------+
+|   元数据数据库    |     |   对象存储/OSS   |
+|  (分布式数据库)   |     |  (分布式文件系统) |
++------------------+     +------------------+
+        ↑                         ↑
+        │                         │
+   commit/tree              blob 数据
+   fragments/tag            (压缩存储)
+```
+
+### Fragments 对象
+
+针对巨型文件，HugeSCM 引入 **Fragments** 对象：
+
+- 将大文件分割为多个 Blob 存储
+- 支持 CDC（Content-Defined Chunking）智能分片
+- 增量传输，减少带宽消耗
+
+### CDC 分片优势
+
+| 场景 | 传统固定分片 | CDC 分片 |
+|------|------------|---------|
+| 局部修改 | 所有后续分片改变 | 仅 1-2 个分片改变 |
+| 增量同步 | 传输完整文件 | 仅传输变化分片 |
+| 去重效果 | 低 | 高 |
+
+启用 CDC：
 
 ```toml
 [fragment]
-threshold = "1GB"      # 文件大小阈值,超过此大小才分片
-size = "4GB"           # 目标分片大小 (推荐 4GB 用于 AI 模型)
+threshold = "1GB"      # 文件大小阈值
+size = "4GB"           # 目标分片大小
 enable_cdc = true      # 启用 CDC 分片
 ```
 
-**配置文件位置**:
-- **Local config**: `.zeta/zeta.toml` (仓库级,最高优先级)
-- **Global config**: `~/.zeta.toml` (用户级)
-- **System config**: `/etc/zeta.toml` (系统级)
+---
 
-### 2. CDC 分片的优势
+## 适用场景
 
-CDC (Content-Defined Chunking) 相比固定大小分片,在以下场景有明显优势:
+### AI 大模型研发
 
-- **模型微调**: 只传输变化的权重,未修改的权重无需重复传输
-- **插入数据**: 局部修改不会影响整个文件的分片边界
-- **版本迭代**: 相同内容自动识别,避免重复存储
+- 存储 checkpoint 文件（数十 GB 到数百 GB）
+- 模型版本管理和增量更新
+- 多团队协作
 
-### 3. 配置说明
+### 游戏研发
 
-#### `[fragment]` 配置项
+- 大型二进制资源管理
+- 美术资产版本控制
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `threshold` | Size | `1GB` | 文件大小阈值,小于此值不分片 |
-| `size` | Size | `4GB` | 目标分片大小 (固定分片大小) |
-| `enable_cdc` | Boolean | `false` | 启用 CDC 分片功能 (支持配置 merge) |
+### 数据集存储
 
-#### Size 格式支持
-
-支持以下单位:
-- `KB`, `MB`, `GB` (1000 进制)
-- `KiB`, `MiB`, `GiB` (1024 进制)
-
-示例:
-```toml
-threshold = "512MiB"
-size = "4GB"
-```
+- 大规模数据集版本管理
+- 数据标注协作
 
 ---
 
-## 📖 核心概念
+## 与 Git 的主要差异
 
-### CDC 实现原理
+| 特性 | Git | HugeSCM |
+|-----|-----|---------|
+| 架构模式 | 分布式 | 集中式 |
+| 克隆方式 | 全量克隆 | 按需检出 |
+| 哈希算法 | SHA-1/SHA-256 | BLAKE3 |
+| 大文件支持 | Git LFS | 内置 Fragments |
+| 数据存储 | 本地文件系统 | DB + OSS |
 
-CDC (Content-Defined Chunking,内容定义分片) 是一种根据数据内容自动确定分片边界的算法。
+### 命令对照
 
-**核心特性**:
-- ✅ **边界稳定**: 插入/删除数据不会影响其他分片边界
-- ✅ **高去重率**: 相同内容自动识别,避免重复存储
-- ✅ **FastCDC 算法**: 三阶段归一化切割,工业级实现
-- ✅ **流式处理**: Rolling buffer,内存占用可控 (O(maxChunkSize))
-
-详细实现请参考: [cdc.md](cdc.md)
-
-### 分片参数选择
-
-Zeta 的默认参数针对 **AI 模型文件**进行了优化:
-
-```
-targetSize = 4MB
-minSize    = 1MB   (target / 4)
-maxSize    = 32MB  (target * 8)
-```
-
-**为什么选择 4MB?**
-
-| 场景 | 1MB 分片 | 4MB 分片 | 优势 |
-|------|---------|---------|------|
-| 10GB 模型 | ~10000 fragments | ~2500 fragments | 减少 75% 元数据 |
-| 去重效果 | 高 | 高 (相近) | 模型文件增量更新效果类似 |
-| 传输协商 | 较慢 | 更快 | fragment 数量少,metadata 传输快 |
-| CPU 开销 | 较高 | 较低 | hash 计算次数减少 |
-
-**适用场景**:
-- ✅ AI 模型文件 (checkpoint, weights, etc.)
-- ✅ 大型二进制文件
-- ✅ 游戏资源
-- ⚠️ 小型文本文件 (建议保持默认配置)
-
-### 配置层级和优先级
-
-Zeta 的配置系统支持三层配置 (优先级从低到高):
-
-1. **System config** (`/etc/zeta/config`) - 最低优先级
-2. **Global config** (`~/.zeta/config`) - 中等优先级
-3. **Local config** (`.zeta/config`) - **最高优先级**
-
-配置会按优先级自动 merge,高优先级配置覆盖低优先级。
-
-**Boolean.Merge() 实现**:
-
-```go
-// 高优先级配置生效
-func (b *Boolean) Merge(other *Boolean) {
-    if other.val != BOOLEAN_UNSET {
-        b.val = other.val
-    }
-}
-```
+| Git 命令 | HugeSCM 命令 | 说明 |
+|---------|-------------|------|
+| `git clone` | `zeta checkout` | 检出存储库，非全量克隆 |
+| `git fetch` | `zeta pull --fetch` | 仅获取数据 |
+| `git pull` | `zeta pull` | 拉取并合并 |
+| `git switch` | `zeta switch` | 切换分支 |
 
 ---
 
-## 🔧 故障排查
+## 获取帮助
 
-### 常见问题
-
-#### 1. CDC 没有生效?
-
-检查配置文件是否正确:
-```bash
-# 查看当前配置
-cat .zeta/config
-
-# 确认 enable_cdc 设置
-grep enable_cdc .zeta/config
-```
-
-#### 2. 分片大小不符合预期?
-
-CDC 是**平均分片大小**,实际分片大小会在 `minSize` 到 `maxSize` 之间波动:
-- `minSize` = target / 4 (例如 target=4MB 时,minSize=1MB)
-- `maxSize` = target * 8 (例如 target=4MB 时,maxSize=32MB)
-
-#### 3. 如何验证 CDC 效果?
-
-```bash
-# 存储文件后查看分片信息
-zeta ls-tree -r HEAD
-
-# 查看分片详情
-zeta cat-file -p <hash>
-```
+- **命令帮助**：`zeta <command> -h`
+- **问题反馈**：提交 Issue 到内部代码仓库
+- **技术支持**：联系 Zeta 团队
 
 ---
 
-## 📞 获取帮助
+## 文档更新
 
-- **问题反馈**: 提交 Issue 到内部代码仓库
-- **技术支持**: 联系 Zeta 团队
-- **文档改进**: 提交 PR 完善文档
-
----
-
-## 📝 文档更新
-
+- 2026-03-18: 补全设计哲学、拉取策略、分支切换、暂存功能文档
 - 2026-03-17: 添加 CDC 分片功能文档
 - 2025-08-20: 初始文档创建

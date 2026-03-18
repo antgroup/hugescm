@@ -13,17 +13,46 @@
 HugeSCM (codename zeta) is a cloud-based, next-gen version control system addressing R&D repository size issues. It effectively manages both large repositories and individual large files, overcoming limitations of traditional centralized (like Subversion) and distributed systems (like Git) concerning storage and transmission. Designed for modern R&D needs, HugeSCM separates data storage: it keeps directory structures and commit records in a distributed database, while file content resides in a distributed file system or object storage. Unlike attempts to adapt Git to OSS, HugeSCM aims for optimal performance by avoiding common pitfalls. It's particularly suited for single large library R&D, AI model development, and game or driver development.
 
 HugeSCM mainly solves the repository scale problem in the following ways:
-+ Data separation principle: HugeSCM adopts the principle of data separation to divide the data of the version control system into metadata and file data, and stores them according to different strategies, solving the upper limit of single-machine file storage.
-+ Efficient transmission protocol: HugeSCM adopts an efficient transmission protocol to reduce the time and bandwidth consumption of data transmission by optimizing the data transmission process. This enables HugeSCM to quickly and reliably handle version control operations of large-scale repositories.
-+ Advanced algorithms and data structures: HugeSCM uses advanced algorithms and data structures to organize and manage repository data. These algorithms and data structures can effectively handle the storage and retrieval requirements of large-scale repositories and improve the efficiency and performance of operations. HugeSCM introduces fragments objects to solve the scale problem of a single file. This means that in addition to storing source code, HugeSCM can also conveniently store binary data, AI models, binary dependencies, and so on.
++ **Data separation principle**: HugeSCM adopts the principle of data separation to divide the data of the version control system into metadata and file data, and stores them according to different strategies, solving the upper limit of single-machine file storage.
++ **Efficient transmission protocol**: HugeSCM adopts an efficient transmission protocol to reduce the time and bandwidth consumption of data transmission by optimizing the data transmission process. This enables HugeSCM to quickly and reliably handle version control operations of large-scale repositories.
++ **Advanced algorithms and data structures**: HugeSCM uses advanced algorithms and data structures to organize and manage repository data. These algorithms and data structures can effectively handle the storage and retrieval requirements of large-scale repositories and improve the efficiency and performance of operations. HugeSCM introduces fragments objects to solve the scale problem of a single file. This means that in addition to storing source code, HugeSCM can also conveniently store binary data, AI models, binary dependencies, and so on.
+
 Through the above strategies and technologies, HugeSCM can effectively solve the repository scale problem and provide high-performance, reliable and flexible version control services.
 
 **It draws on Git's experience and gets rid of Git's historical baggage. In short, we are grateful to these predecessors.**
 
-## Technical Details
+## Documentation
 
-Object format: [object-format.md](./docs/object-format.md)  
-Transport Protocol: [protocol.md](./docs/protocol.md)
+### Design & Architecture
+
+| Document | Description |
+|----------|-------------|
+| [design.md](./docs/desgin.md) | HugeSCM Design Philosophy - Core design concepts, architecture overview, differences from Git |
+| [object-format.md](./docs/object-format.md) | Object Format - Binary formats for Blob, Tree, Commit, Fragments objects |
+| [pack-format.md](./docs/pack-format.md) | Pack File Format - Object packaging mechanism and index format |
+| [protocol.md](./docs/protocol.md) | Transport Protocol - HTTP/SSH protocols, authorization, metadata and file transfer |
+| [version-negotiation.md](./docs/version-negotiation.md) | Version Negotiation - Baseline management, checkout, pull, push workflows |
+
+### Configuration Reference
+
+| Document | Description |
+|----------|-------------|
+| [config.md](./docs/config.md) | Configuration File - Supported configuration options and environment variables |
+
+### Feature Guides
+
+| Document | Description |
+|----------|-------------|
+| [switch.md](./docs/switch.md) | Branch Switching - switch command details for switching branches and commits |
+| [stash.md](./docs/stash.md) | Stash Feature - stash command for temporarily saving work progress |
+| [sparse-checkout.md](./docs/sparse-checkout.md) | Sparse Checkout - On-demand checkout of specified directories |
+| [pull-strategy.md](./docs/pull-strategy.md) | Pull Strategy - merge, rebase, fast-forward strategy details |
+
+### Advanced Features
+
+| Document | Description |
+|----------|-------------|
+| [cdc.md](./docs/cdc.md) | CDC Chunking - Content-Defined Chunking implementation and configuration |
 
 ## Build
 
@@ -49,7 +78,7 @@ Then you can generate the installation package. Before that, we need to run `bal
 
 Note: On a macOS machine with an Apple Silicon chip, you can use OrbStack to open Rosetta and run the image to make a Windows installation package.
 
-## Use
+## Usage
 
 Users can run `zeta -h` to view all zeta commands, and run `zeta ${command} -h` to view detailed command help. We try to make it easy for git users to get started with zeta, and we will also enhance some commands. For example, many zeta commands support `--json` to format the output as json, which is convenient for integration with various tools.
 
@@ -62,7 +91,7 @@ zeta config --global user.name 'Example User'
 
 ### Checkout
 
-The process to obtain a remote repository in git is called `clone` (or `fetch`). In zeta, we use `checkout`, abbreviated as `co`. Below is how to `checkout` a repository.:
+The process to obtain a remote repository in git is called `clone` (or `fetch`). In zeta, we use `checkout`, abbreviated as `co`. Below is how to `checkout` a repository:
 
 ```shell
 zeta co http://zeta.example.io/group/repo xh1
@@ -78,6 +107,7 @@ echo "hello world" > helloworld.txt
 zeta add helloworld.txt
 zeta commit -m "Hello world"
 ```
+
 ### Push and Pull
 
 ```shell
@@ -87,13 +117,13 @@ zeta pull
 
 ## Features
 
-### Download acceleration
+### Download Acceleration
 
 The zeta client supports three acceleration types—`direct`, `dragonfly`, and `aria2`—configurable via `core.accelerator` or the `ZETA_CORE_ACCELERATOR` environment variable.
 
-| accelerator | mechanism | remark |
+| Accelerator | Mechanism | Remark |
 | :---: | --- | --- |
-| `direct` | The zeta client directly retrieves the signature address from OSS, bypassing the Zeta Server. | This mechanism is applicable in AI scenarios. After OSS downloads with signatures, speed is adequate. Without an accelerator, download speed may be suboptimal. Users should enable direct connection unless the OSS signature URL is inaccessible. |
+| `direct` | The zeta client directly retrieves the signed address from OSS, bypassing the Zeta Server. | This mechanism is applicable in AI scenarios. After OSS downloads with signatures, speed is adequate. Without an accelerator, download speed may be suboptimal. Users should enable direct connection unless the OSS signature URL is inaccessible. |
 | `dragonfly` | Use the dragonfly client dfget to download, leveraging dragonfly cluster capabilities. | You can use `ZETA_EXTENSION_DRAGONFLY_GET` to specify the dfget path instead of using the dfget in PATH.|
 | `aria2` | Use the aria2c command line to download; aria2 is a well-known download tool in the industry. | You can use `ZETA_EXTENSION_ARIA2C` to specify the aria2c path instead of using the aria2c in PATH. |
 
@@ -104,7 +134,7 @@ zeta config --global core.accelerator direct
 
 By default, parallel download support is disabled, regardless of whether the accelerator is on or off. Users can configure `core.concurrenttransfers` (environment variable `ZETA_CORE_CONCURRENT_TRANSFERS`) to set the number of concurrent downloads, with valid values between *1-50*. When enabled, the benefits of concurrent downloads may not be very noticeable, typically due to bandwidth limitations.
 
-### One by One Checkout
+### One-by-One Checkout
 
 Previously, downloading a model file from a 100GB repository using Git LFS could require over 300GB of storage space, including 100GB for the model files, 100GB for split files, and 100GB for Git LFS objects. This often resulted in download failures due to insufficient disk space. With the introduction of the `zeta co url --one` mechanism in Zeta, we can check out a file and immediately delete the corresponding blob object, allowing a 100GB model file to ultimately occupy just a bit over 100GB, saving over **60%** of space.
 
@@ -120,7 +150,16 @@ We added a `Size` field to the `TreeEntry` in our object model design, allowing 
 
 Initially, zeta only supported downloading objects related to specific commits and allowed the deletion of related blobs after checkout. However, user scenarios turned out to be complex. We introduced automatic downloading of missing objects for `zeta cat`. If you want to disable this feature, set the environment variable `ZETA_CORE_PROMISOR=0`. Additionally, we've implemented automatic downloading of missing objects for merge scenarios as well.
 
-### Checkout single file
+### Sparse Checkout
+
+Sparse checkout allows users to check out only specific directories instead of the entire repository. This is especially useful for large repositories:
+
+```shell
+# Check out specific directories
+zeta co http://zeta.example.io/group/repo myrepo -s src/core -s src/utils
+```
+
+### Checkout Single File
 
 In zeta, you can checkout a single file by adding `--limit=0` during the checkout process, which excludes all files except empty ones. Then, use `zeta checkout -- path` to check out the specific file.
 
@@ -129,7 +168,7 @@ zeta co http://zeta.example.io/zeta-poc-test/zeta-poc-test --limit=0 z2
 zeta checkout -- dev6.bin
 ```
 
-### Update some files
+### Update Partial Files
 
 Some users may only want to modify specific files, which can be done by using `checkout single file` to checkout the desired file and then making the modifications.
 
@@ -139,24 +178,174 @@ zeta commit -m "XXX"
 zeta push
 ```
 
-### Migrate repository from Git to HugeSCM
+### Pull Strategies
+
+HugeSCM supports three pull strategies:
+
+- **merge** - Create a merge commit (default)
+- **rebase** - Rebase local commits on top of remote
+- **fast-forward only** - Only allow fast-forward merges
+
+```shell
+zeta pull                    # merge strategy (default)
+zeta pull --rebase           # rebase strategy
+zeta pull --ff-only          # fast-forward only
+```
+
+### Stash
+
+Stash allows temporarily saving work progress:
+
+```shell
+zeta stash                   # stash all changes
+zeta stash save "WIP: feature"  # stash with message
+zeta stash list              # list all stashes
+zeta stash pop               # apply and remove latest stash
+```
+
+### Switch Branches
+
+Switch between branches or commits:
+
+```shell
+zeta switch feature          # switch to branch
+zeta switch -c new-feature   # create and switch to new branch
+zeta switch abc123           # switch to specific commit
+```
+
+### Migrate Repository from Git to HugeSCM
 
 ```shell
 zeta-mc https://github.com/antgroup/hugescm.git hugescm-dev
 ```
 
-## Additional tools - hot command
+## CDC (Content-Defined Chunking)
 
-`hot` command is a Git repository governance tool that we integrated into HugeSCM, supporting many scenarios:
+HugeSCM introduces CDC for efficient handling of large files. Unlike traditional fixed-size chunking, CDC determines chunk boundaries based on content, achieving better deduplication:
 
-+  Find large files with `hot size (raw size)` / `hot az (compressed size)`.
-+  Use `hot remove` to quickly delete committed secrets and rewrite history.
-+  Interactively remove large files with `hot smart`, which combines the `size` and `remove` commands (e.g., `hot smart -L20m`).
-+  Migrate the repository's object format between `SHA1` and `SHA256` with `hot mc`.
-+  Clean up stale refs with `hot prune-refs (by prefix)` or `hot expire-refs (by age & merged status)`. Use `hot scan-refs` to review their status.
-+  Linearize repository history (i.e., remove all merge commits) with `hot unbranch`.
-+  Create an orphan branch from a specific commit using `hot unbranch -K1 master -Tnew-branch`. It keeps recent history, ideal for open-sourcing or history resets.
-+  Use `hot cat` to inspect Git objects (`commit`/`tree`/`tag`/`blob`). It outputs `commit`/`tree`/`tag` as **JSON** (`--json`) and **intelligently hexdumps** binary blobs.
+| Scenario | Fixed Chunking | CDC Chunking |
+|----------|---------------|--------------|
+| Local modification | All subsequent chunks change | Only 1-2 chunks change |
+| Incremental sync | Transfer complete file | Transfer only changed chunks |
+| Deduplication | Low | High |
+
+Enable CDC in configuration:
+
+```toml
+[fragment]
+threshold = "1GB"      # File size threshold
+size = "1GB"           # Target chunk size (fixed chunking)
+enable_cdc = true      # Enable CDC chunking
+```
+
+## Comparison with Git
+
+| Feature | Git | HugeSCM |
+|---------|-----|---------|
+| Architecture | Distributed | Centralized |
+| Clone method | Full clone | On-demand checkout |
+| Hash algorithm | SHA-1/SHA-256 | BLAKE3 |
+| Large file support | Git LFS | Built-in Fragments |
+| Data storage | Local filesystem | DB + OSS |
+
+### Command Comparison
+
+| Git Command | HugeSCM Command | Description |
+|-------------|-----------------|-------------|
+| `git clone` | `zeta checkout` (co) | Checkout repository, not full clone |
+| `git fetch` | `zeta pull --fetch` | Fetch data only |
+| `git pull` | `zeta pull` | Pull and merge |
+| `git switch` | `zeta switch` | Switch branches |
+
+## Additional Tools - hot command
+
+`hot` is a **Git repository maintenance tool** integrated into HugeSCM, designed for repository governance and optimization. It helps developers clean up, maintain, and migrate Git repositories efficiently.
+
+### Why hot?
+
+Git repositories accumulate technical debt over time—accidentally committed secrets, bloated large files, stale branches, and outdated object formats. `hot` addresses these challenges:
+
+| Challenge | hot Solution |
+|-----------|--------------|
+| Sensitive data in history | `hot remove` rewrites history to remove secrets |
+| Repository bloat | `hot size`/`hot smart` identifies and cleans large files |
+| SHA1 deprecation | `hot mc` migrates to SHA256 object format |
+| Stale branches/tags | `hot prune-refs`/`hot expire-refs` clean up automatically |
+| Open-source preparation | `hot unbranch` creates clean history for public release |
+
+### Key Features
+
+| Command | Description |
+|---------|-------------|
+| `hot size` | Show repository size and large files (raw size) |
+| `hot az` | Analyze large files with approximate compressed size |
+| `hot remove` | Remove files from repository and rewrite history |
+| `hot smart` | Interactive mode to clean large files (combines `size` and `remove`) |
+| `hot graft` | Interactive large file cleanup (grafting mode) |
+| `hot mc` | Migrate repository object format between SHA1 and SHA256 |
+| `hot unbranch` | Linearize repository history (remove merge commits) |
+| `hot prune-refs` | Prune references by prefix |
+| `hot scan-refs` | Scan references in local repository |
+| `hot expire-refs` | Clean up expired references |
+| `hot snapshot` | Create a snapshot commit for the worktree |
+| `hot cat` | Inspect repository objects (commit/tree/tag/blob) |
+| `hot stat` | View repository status |
+| `hot co` | Clone a repository (experimental) |
+
+### Common Use Cases
+
+**1. Find Large Files**
+```shell
+hot size                    # Show raw size of large files
+hot az                      # Show approximate compressed size
+hot smart -L20m             # Interactive mode, files >= 20MB
+```
+
+**2. Remove Sensitive Data**
+```shell
+# Remove accidentally committed secrets and rewrite history
+hot remove path/to/secret.txt
+hot remove "*.env" --confirm --prune
+```
+
+**3. Migrate Object Format**
+```shell
+# Migrate from SHA1 to SHA256
+hot mc https://github.com/user/repo.git
+
+# Or migrate local repository
+hot mc /path/to/repo --format sha256
+```
+
+**4. Clean Up Stale References**
+```shell
+# Scan references first
+hot scan-refs
+
+# Remove refs by prefix
+hot prune-refs "feature/deprecated-"
+
+# Remove expired references
+hot expire-refs --days 90
+```
+
+**5. Linearize History**
+```shell
+# Remove all merge commits, make history linear
+hot unbranch --confirm
+
+# Create orphan branch with recent history (for open-source)
+hot unbranch -K1 master -T new-branch
+```
+
+**6. Inspect Objects**
+```shell
+# View commit/tree/tag as JSON
+hot cat HEAD --json
+
+# View file content (binary files shown as hexdump)
+hot cat HEAD:docs/images/blob.png
+```
 
 Here's some more help information:
 
@@ -213,6 +402,24 @@ Migrate Git repository object format from SHA1 to SHA256:
 hot mc https://github.com/antgroup/hugescm.git
 ```
 <img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3c84566a-9626-40e1-bffc-07ce2917c91a" />
+
+## Use Cases
+
+### AI Model Development
+
+- Store checkpoint files (tens to hundreds of GB)
+- Model version management and incremental updates
+- Multi-team collaboration
+
+### Game Development
+
+- Large binary resource management
+- Art asset version control
+
+### Dataset Storage
+
+- Large-scale dataset version management
+- Data annotation collaboration
 
 ## License
 

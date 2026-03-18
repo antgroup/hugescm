@@ -192,7 +192,7 @@ func Stat(ctx context.Context, o *StatOptions) error {
 
 	} else {
 		_, _ = tr.Fprintf(os.Stdout, "loose references total: %s\n", colorInt(si.References.LooseReferencesCount))
-		_, _ = tr.Fprintf(os.Stdout, "packed referenes size:  %s\n", colorSizeU(si.References.PackedReferencesSize))
+		_, _ = tr.Fprintf(os.Stdout, "packed references size: %s\n", colorSizeU(si.References.PackedReferencesSize))
 	}
 	// The loose objects size includes objects which are older than the grace period and thus
 	// stale, so we need to subtract the size of stale objects from the overall size.

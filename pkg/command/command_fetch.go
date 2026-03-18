@@ -17,7 +17,7 @@ type Fetch struct {
 	Name      string `arg:"" optional:"" name:"name" help:"Reference or commit to be downloaded"`
 	Unshallow bool   `name:"unshallow" help:"Get complete history"`
 	Tag       bool   `name:"tag" short:"t" help:"Download tags instead of branches only when refname is incomplete"` //
-	Limit     int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit     int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Force     bool   `name:"force" short:"f" help:"Override reference update check"`
 }
 

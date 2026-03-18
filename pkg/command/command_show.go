@@ -25,7 +25,7 @@ type Show struct {
 	Minimal       bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
 	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
 	WordDiff      bool     `name:"word-diff" help:"Show word-level diff highlighting"`
-	Limit         int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit         int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Objects       []string `arg:"" optional:"" name:"object" help:""`
 }
 

@@ -25,7 +25,7 @@ const (
 )
 
 type Snapshot struct {
-	Message        []string `name:"message" short:"m" help:"Use the given as the commit message. Concatenate multiple -m options as separate paragraphs"`
+	Message        []string `name:"message" short:"m" help:"Use the given message as the commit message. Concatenate multiple -m options as separate paragraphs"`
 	File           string   `name:"file" short:"F" help:"Take the commit message from the given file. Use - to read the message from the standard input"`
 	Parents        []string `name:"parents" short:"p" help:"ID of a parent commit object"`
 	CWD            string   `short:"C" name:"cwd" help:"Specify repository location" default:"." type:"path"`

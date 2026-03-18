@@ -5,8 +5,6 @@ package command
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/antgroup/hugescm/pkg/zeta"
@@ -29,7 +27,7 @@ type Config struct {
 func (c *Config) Run(g *Globals) error {
 	if c.List {
 		if len(c.Args) != 0 {
-			fmt.Fprintf(os.Stderr, "error: wrong number of arguments, should be 0\n")
+			die("wrong number of arguments, should be 0")
 			return errors.New("wrong number of arguments, should be 0")
 		}
 		return zeta.ListConfig(&zeta.ListConfigOptions{

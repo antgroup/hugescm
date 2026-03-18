@@ -13,7 +13,7 @@ import (
 )
 
 type Commit struct {
-	Message           []string `name:"message" short:"m" help:"Use the given as the commit message. Concatenate multiple -m options as separate paragraphs" placeholder:"<message>"`
+	Message           []string `name:"message" short:"m" help:"Use the given message as the commit message. Concatenate multiple -m options as separate paragraphs" placeholder:"<message>"`
 	File              string   `name:"file" short:"F" help:"Take the commit message from the given file. Use - to read the message from the standard input" placeholder:"<file>"`
 	All               bool     `name:"all" short:"a" help:"Automatically stage modified and deleted files, but newly untracked files remain unaffected"`
 	AllowEmpty        bool     `name:"allow-empty" help:"Allow creating a commit with the exact same tree structure as its parent commit"`

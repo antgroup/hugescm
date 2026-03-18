@@ -20,7 +20,7 @@ type Checkout struct {
 	Refname         string   `name:"refname" help:"Direct the new HEAD to the <name> ref's commit after checkout" placeholder:"<tag>"`
 	Commit          string   `name:"commit" help:"Direct the new HEAD to the <commit> branch after checkout" placeholder:"<commit>"`
 	Sparse          []string `name:"sparse" short:"s" help:"A subset of repository files, all files are checked out by default" placeholder:"<dir>"`
-	Limit           int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit           int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Batch           bool     `name:"batch" help:"Get and checkout files for each provided on stdin"`
 	Snapshot        bool     `name:"snapshot" help:"Checkout a non-editable snapshot"`
 	Depth           int      `name:"depth" help:"Create a shallow clone with a history truncated to the specified number of commits" default:"1"`

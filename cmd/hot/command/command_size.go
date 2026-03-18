@@ -14,7 +14,7 @@ import (
 
 type Size struct {
 	Paths    []string `arg:"" name:"path" help:"Path to repositories" default:"." type:"path"`
-	Limit    int64    `short:"L" name:"limit" optional:"" help:"Large file limit size, supported units: KB,MB,GB,K,M,G" default:"20m" type:"size"`
+	Limit    int64    `short:"L" name:"limit" optional:"" help:"Large file limit size, supported units: KB, MB, GB, K, M, G" default:"20m" type:"size"`
 	Extract  bool     `short:"E" name:"extract" optional:"" help:"Whether large files exist in the default branch"`
 	FullPath bool     `short:"F" name:"full-path" help:"Show full path"`
 }

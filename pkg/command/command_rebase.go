@@ -6,7 +6,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/antgroup/hugescm/pkg/zeta"
 )
@@ -24,7 +23,7 @@ func (c *Rebase) Run(g *Globals) error {
 		return ErrFlagsIncompatible
 	}
 	if !c.Abort && !c.Continue && len(c.Args) == 0 {
-		fmt.Fprintf(os.Stderr, "Please specify which branch you want to rebase against.\n")
+		die("Please specify which branch you want to rebase against.")
 		return ErrArgRequired
 	}
 

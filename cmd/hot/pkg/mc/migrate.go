@@ -395,7 +395,7 @@ func (m *Migrator) reconstruct(ctx context.Context) error {
 		return err
 	}
 	if len(refs) == 0 {
-		fmt.Fprintf(os.Stderr, "No references to be deleted\n")
+		fmt.Fprintf(os.Stderr, "%s", tr.W("No references to be deleted\n"))
 		return nil
 	}
 	b := hud.NewBar(tr.W("rewrite references"), len(refs), m.stepCurrent, m.stepEnd, m.verbose)

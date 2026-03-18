@@ -23,7 +23,7 @@ type Reset struct {
 	Keep     bool     `name:"keep" help:"Reset HEAD but keep local changes"`
 	Fetch    bool     `name:"fetch" help:"Fetch missing objects"`
 	One      bool     `name:"one" help:"Checkout large files one after another, --hard mode only"`
-	Limit    int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit    int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Quiet    bool     `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`
 	paths    []string `kong:"-"`
 }

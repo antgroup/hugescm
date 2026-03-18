@@ -164,7 +164,7 @@ func W(a string) string {
 func die(format string, a ...any) {
 	var b bytes.Buffer
 	_, _ = b.WriteString(W("fatal: "))
-	fmt.Fprintf(&b, format, a...)
+	fmt.Fprintf(&b, W(format), a...)
 	_ = b.WriteByte('\n')
 	_, _ = os.Stderr.Write(b.Bytes())
 }

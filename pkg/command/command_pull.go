@@ -16,7 +16,7 @@ type Pull struct {
 	Squash    bool  `name:"squash" help:"Create a single commit instead of doing a merge"`
 	Unshallow bool  `name:"unshallow" help:"Get complete history"`
 	One       bool  `name:"one" help:"Checkout large files one after another"`
-	Limit     int64 `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit     int64 `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 }
 
 func (c *Pull) Run(g *Globals) error {

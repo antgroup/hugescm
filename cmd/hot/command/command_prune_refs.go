@@ -200,7 +200,7 @@ func (c *PruneRefs) pruneRefs(ctx context.Context, repoPath string, references [
 func (c *PruneRefs) Run(g *Globals) error {
 	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
 	prefixes := c.preparePrefixes()
-	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m* The following ref prefixes will be deleted:\x1b[0m\n")
+	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m%s\x1b[0m\n", W("* The following ref prefixes will be deleted:\n"))
 	for _, p := range prefixes {
 		fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m*  %s\x1b[0m\n", p)
 	}
@@ -213,7 +213,7 @@ func (c *PruneRefs) Run(g *Globals) error {
 		return err
 	}
 	if len(references) == 0 {
-		fmt.Fprintf(os.Stderr, "No references to be deleted\n")
+		fmt.Fprintf(os.Stderr, "%s", W("No references to be deleted\n"))
 		return nil
 	}
 	if err := c.record(repoPath, references); err != nil {

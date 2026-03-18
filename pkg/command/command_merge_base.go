@@ -43,13 +43,13 @@ func (c *MergeBase) Run(g *Globals) error {
 	defer r.Close() // nolint
 	if c.IsAncestor {
 		if len(c.Args) != 2 {
-			diev("Need tow revision,  eg: zeta merge-base --is-ancestor A B")
+			diev("Need two revisions, eg: zeta merge-base --is-ancestor A B")
 			return ErrArgRequired
 		}
 		return r.IsAncestor(context.Background(), c.Args[0], c.Args[1])
 	}
 	if len(c.Args) < 2 {
-		diev("At least two versions are required,  eg: zeta merge-base A B")
+		diev("At least two versions are required, eg: zeta merge-base A B")
 		return ErrArgRequired
 	}
 	return r.MergeBase(context.Background(), c.Args, c.All)

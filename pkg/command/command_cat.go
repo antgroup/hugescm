@@ -17,7 +17,7 @@ type Cat struct {
 	Textconv bool   `name:"textconv" help:"Converting text to Unicode"`
 	JSON     bool   `name:"json" short:"j" help:"Returns data as JSON; limited to commits, trees, fragments, and tags"`
 	Direct   bool   `name:"direct" help:"View files directly"`
-	Limit    int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit    int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Output   string `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
 }
 

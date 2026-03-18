@@ -21,7 +21,7 @@ type Switch struct {
 	Force          bool     `name:"force" short:"f" help:"An alias for --discard-changes"`
 	Merge          bool     `name:"merge" short:"m" negatable:"" default:"true" help:"Perform a 3-way merge with the new branch"`
 	Remote         bool     `name:"remote" help:"Attempt to checkout from remote when branch is absent"`
-	Limit          int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. supported units: KB,MB,GB,K,M,G" default:"-1" type:"size"`
+	Limit          int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Quiet          bool     `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`
 }
 

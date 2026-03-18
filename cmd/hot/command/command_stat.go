@@ -10,7 +10,7 @@ import (
 
 type Stat struct {
 	CWD   string `short:"C" name:"cwd" help:"Specify repository location" default:"." type:"path"`
-	Limit int64  `short:"L" name:"limit" optional:"" help:"Large file limit size, supported units: KB,MB,GB,K,M,G" default:"20m" type:"size"`
+	Limit int64  `short:"L" name:"limit" optional:"" help:"Large file limit size, supported units: KB, MB, GB, K, M, G" default:"20m" type:"size"`
 }
 
 func (c *Stat) Run(g *Globals) error {

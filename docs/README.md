@@ -10,7 +10,7 @@
 
 | 文档 | 描述 |
 |------|------|
-| [desgin.md](desgin.md) | HugeSCM 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
+| [design.md](design.md) | HugeSCM 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
 | [object-format.md](object-format.md) | 对象格式详解 - Blob、Tree、Commit、Fragments 等对象的二进制格式 |
 | [pack-format.md](pack-format.md) | Pack 文件格式 - 对象打包机制和索引格式 |
 | [protocol.md](protocol.md) | 传输协议规范 - HTTP/SSH 协议、授权、元数据和文件传输 |
@@ -36,6 +36,7 @@
 | 文档 | 描述 |
 |------|------|
 | [cdc.md](cdc.md) | CDC 分片 - Content-Defined Chunking 实现原理和配置 |
+| [hot.md](hot.md) | hot 命令 - Git 存储库维护工具，清理大文件、删除敏感数据、迁移对象格式 |
 
 ---
 

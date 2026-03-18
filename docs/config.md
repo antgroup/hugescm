@@ -326,6 +326,6 @@ compression-algo = "zstd"
 
 | 文档 | 说明 |
 |------|------|
-| [desgin.md](desgin.md) | 设计哲学 |
+| [design.md](design.md) | 设计哲学 |
 | [sparse-checkout.md](sparse-checkout.md) | 稀疏检出 |
 | [cdc.md](cdc.md) | CDC 分片配置 |

@@ -10,20 +10,14 @@
 
 ## 概述
 
-HugeSCM（内部代号 zeta）是一种基于云的下一代版本控制系统，旨在解决研发过程中存储库规模问题。它既能处理单一存储库体积巨大的挑战，也能应对存储单一文件巨大的问题。相比于传统的集中式版本控制系统（如 Subversion）和传统的分布式版本控制系统（如 Git），HugeSCM 不受存储架构和传输协议的限制。随着研发活动的推进，传统的版本控制系统已经无法满足巨型存储库的需求，这就是 HugeSCM 诞生的原因。
+HugeSCM（代号 zeta）是云原生版本控制系统，专为大规模存储库设计。通过元数据与文件数据分离，突破了 Git/SVN 等传统版本控制系统在存储和传输上的限制。适用于 AI 大模型研发、游戏研发、单一大库等场景。
 
-HugeSCM 是一种数据分离的版本控制系统，目录结构、提交记录、分支信息存储在分布式数据库中，而文件内容则存储在分布式文件系统或者对象存储中。国内外的开发者曾将 Git 对象存储到 OSS/分布式文件系统中，对 git 架构进行改造，但效果非常差。HugeSCM 需要吸取这些教训，对其架构进行精心设计，避免因存储数据到 DB/OSS 带来的性能下降问题。
+核心特性：
++ **数据分离**：元数据存储于分布式数据库，文件内容存储于对象存储
++ **高效传输**：优化传输协议，降低带宽和时间成本
++ **分片对象**：高效处理大文件（AI 模型、二进制依赖等）
 
-HugeSCM 适合单一大库研发，特别是 AI 大模型研发，以及游戏研发、驱动开发等场景。
-
-HugeSCM 主要通过以下方式解决存储库规模问题：
-+ **数据分离原则**：HugeSCM 采用数据分离的原则，将版本控制系统的数据分为元数据和文件数据，按照不同的策略存储，解决了单机文件存储的上限。
-+ **高效传输协议**：HugeSCM 采用高效的传输协议，通过优化数据传输过程，减少数据传输的时间和带宽消耗。这使得 HugeSCM 能够快速而可靠地处理大规模存储库的版本控制操作。
-+ **先进的算法和数据结构**：HugeSCM 使用先进的算法和数据结构来组织和管理存储库的数据。这些算法和数据结构能够有效地处理大规模存储库的存储和检索需求，提高操作的效率和性能。HugeSCM 引入了 fragments 对象，解决了单一文件的规模问题。这意味着 HugeSCM 除了可以存储源代码，还可以方便的存储二进制数据、AI 模型、二进制依赖等等。
-
-通过以上策略和技术，HugeSCM 能够有效地解决存储库规模问题，提供高性能、可靠和灵活的版本控制服务。
-
-**它吸取了 Git 的经验，摆脱了 Git 的历史包袱，总之我们感谢这些前辈。**
+吸取 Git 经验，摆脱历史包袱。
 
 ## 适用场景
 
@@ -49,7 +43,7 @@ HugeSCM 主要通过以下方式解决存储库规模问题：
 
 | 文档 | 描述 |
 |------|------|
-| [desgin.md](./docs/desgin.md) | 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
+| [design.md](./docs/design.md) | 设计哲学 - 核心设计理念、架构概述、与 Git 的差异 |
 | [object-format.md](./docs/object-format.md) | 对象格式详解 - Blob、Tree、Commit、Fragments 等对象的二进制格式 |
 | [pack-format.md](./docs/pack-format.md) | Pack 文件格式 - 对象打包机制和索引格式 |
 | [protocol.md](./docs/protocol.md) | 传输协议规范 - HTTP/SSH 协议、授权、元数据和文件传输 |
@@ -75,6 +69,7 @@ HugeSCM 主要通过以下方式解决存储库规模问题：
 | 文档 | 描述 |
 |------|------|
 | [cdc.md](./docs/cdc.md) | CDC 分片 - Content-Defined Chunking 实现原理和配置 |
+| [hot.md](./docs/hot.md) | hot 命令 - Git 存储库维护工具，清理大文件、删除敏感数据、迁移对象格式 |
 
 ## 构建
 
@@ -141,24 +136,22 @@ zeta pull
 
 ### 下载加速
 
-目前 zeta 客户端支持三种类型的加速，可以通过修改配置 `core.accelerator` 或者覆盖环境变量 `ZETA_CORE_ACCELERATOR`，支持的值有 `direct`、`dragonfly`、`aria2`。
+支持 `direct`、`dragonfly`、`aria2` 三种加速器，通过 `core.accelerator` 或环境变量 `ZETA_CORE_ACCELERATOR` 配置。
 
-| 加速器 | 加速逻辑 | 备注 |
-| :---: | --- | --- |
-| `direct` | 由 zeta 客户端获取签名地址直接从 OSS 下载，流量不经 Zeta Server | AI 场景可以使用该机制，实际上 oss 走签名下载后，速度是足够的。相反，如果未设置加速器，下载网速可能达不到理想状态，因此，用户应当尽量开启直连（当无法访问 oss 签名 url 时，则不应设置）。|
-| `dragonfly` | 调用 dragonfly 客户端 dfget 下载，dfget 能使用 dragonfly 集群能力。 | 可以使用 `ZETA_EXTENSION_DRAGONFLY_GET` 指定 dfget 路径，而不是使用 PATH 中的 dfget。  |
-| `aria2` | 调用 aria2c 命令行下载，aria2 是业内著名的下载工具。 | 可以使用 `ZETA_EXTENSION_ARIA2C` 指定 aria2c 路径，而不是使用 PATH 中的 aria2c。  |
+| 加速器 | 说明 |
+| :---: | --- |
+| `direct` | 直接从 OSS 签名 URL 下载（AI 场景推荐） |
+| `dragonfly` | 使用 dragonfly 集群 P2P 加速 |
+| `aria2` | 使用 aria2c 多线程下载 |
 
 ```shell
-# 开启 oss 直连下载
 zeta config --global core.accelerator direct
+zeta config --global core.concurrenttransfers 8  # 并发下载数 (1-50)
 ```
-
-默认情况下，无论是开启了加速器还是未开启加速器，我们都未开启并行下载支持，用户可以配置 `core.concurrenttransfers`（环境变量 `ZETA_CORE_CONCURRENT_TRANSFERS`）设置并发下载数，有效值是 `1-50`，当你开启了并发下载，你会发现收益可能并不是那么明显，这通常会受带宽影响。
 
 ### 逐一检出
 
-以前 Git LFS 在下载模型时，模型文件总容量为 100GB 的仓库可能需要超过 300GB 的存储空间，其中模型文件 100GB，分割后的文件 100GB，Git LFS 对象（`.git/lfs/objects/xx/...`）100GB，很多时候如果磁盘空间不够，将无法下载模型，在 zeta 中我们引入了 `zeta co url --one` 机制，检出一个文件立即删除相应的 blob 对象，这样 100GB 的模型文件，最终占用的空间可能也就 100GB 多一点，空间节省 60% 以上。
+逐个检出文件并立即释放 blob 对象，大仓库可节省 **60%+** 磁盘空间。
 
 ```shell
 zeta co http://zeta.example.io/zeta-poc-test/zeta-poc-test --one
@@ -166,13 +159,9 @@ zeta co http://zeta.example.io/zeta-poc-test/zeta-poc-test --one
 
 ![](./docs/images/one-by-one.png)
 
-我们在设计对象模型时还为 TreeEntry 增加了 `Size` 字段，这使得我们可以很容易实现一个 API 预估模型存储库检出所需空间大小，结合逐一检出机制，能够很好的节省磁盘空间。
-
 ### 按需获取
 
-zeta 在设计之初是仅支持下载特定 commit 相关的对象，也支持 checkout 后删除相关的 blob，但事实证明用户的场景是复杂的，我们为 `zeta cat` 引入了自动下载缺失的对象，截图如下（不确定对象大小，可以使用 zeta cat --limit 或者 zeta cat -s 避免大文件输出到终端）。
-
-如要禁用自动下载缺失的对象，可设置环境变量 `ZETA_CORE_PROMISOR=0` 禁用该功能。此外，我们还为 merge 等场景引入了自动下载缺失的对象功能。
+按需自动下载缺失对象（如 `zeta cat`、merge 场景）。禁用请设置 `ZETA_CORE_PROMISOR=0`。
 
 ### 稀疏检出
 
@@ -283,105 +272,20 @@ enable_cdc = true      # 启用 CDC 分片
 
 ## 额外的工具 - hot 命令
 
-`hot` 是整合到 HugeSCM 中的 **Git 存储库维护工具**，专用于存储库治理和优化。它帮助开发者高效地清理、维护和迁移 Git 存储库。
-
-### 为什么需要 hot？
-
-Git 存储库在长期使用中会积累技术债务——误提交的敏感数据、膨胀的大文件、过期的分支、落后的对象格式等。`hot` 正是为解决这些问题而生：
-
-| 挑战 | hot 解决方案 |
-|------|-------------|
-| 历史中的敏感数据 | `hot remove` 重写历史，彻底删除敏感信息 |
-| 存储库膨胀 | `hot size`/`hot smart` 识别并清理大文件 |
-| SHA1 安全问题 | `hot mc` 迁移到 SHA256 对象格式 |
-| 过期分支/标签 | `hot prune-refs`/`hot expire-refs` 自动清理 |
-| 开源发布准备 | `hot unbranch` 创建干净的公开历史 |
-
-### 主要功能
-
-| 命令 | 描述 |
-|------|------|
-| `hot size` | 查看存储库大小和大文件（原始大小） |
-| `hot az` | 分析大文件的近似压缩大小 |
-| `hot remove` | 删除存储库中的文件并重写历史 |
-| `hot smart` | 交互式清理大文件（结合 `size` 和 `remove` 命令） |
-| `hot graft` | 交互式清理大文件（嫁接模式） |
-| `hot mc` | 迁移存储库对象格式（SHA1 ↔ SHA256） |
-| `hot unbranch` | 线性化存储库历史（移除合并提交） |
-| `hot prune-refs` | 按前缀清理引用 |
-| `hot scan-refs` | 扫描本地存储库中的引用 |
-| `hot expire-refs` | 清理过期引用 |
-| `hot snapshot` | 为工作树创建快照提交 |
-| `hot cat` | 查看存储库对象（commit/tree/tag/blob） |
-| `hot stat` | 查看存储库状态 |
-| `hot co` | 克隆存储库（实验性） |
+`hot` 是 Git 存储库维护工具，用于清理、迁移和优化 Git 存储库。
 
 ### 常见使用场景
 
-**1. 查找大文件**
-```shell
-hot size                    # 查看大文件的原始大小
-hot az                      # 查看近似压缩大小
-hot smart -L20m             # 交互模式，筛选 >= 20MB 的文件
-```
+| 任务 | 命令 |
+|------|------|
+| 查找大文件 | `hot size` / `hot smart -L20m` |
+| 删除敏感数据 | `hot remove path/to/secret.txt --prune` |
+| 迁移 SHA1 → SHA256 | `hot mc https://github.com/user/repo.git` |
+| 清理过期引用 | `hot prune-refs "feature/deprecated-"` |
+| 线性化历史 | `hot unbranch --confirm` |
+| 查看对象 | `hot cat HEAD --json` |
 
-**2. 删除敏感数据**
-```shell
-# 删除误提交的密码凭证并重写历史
-hot remove path/to/secret.txt
-hot remove "*.env" --confirm --prune
-```
-
-**3. 迁移对象格式**
-```shell
-# 从 SHA1 迁移到 SHA256
-hot mc https://github.com/user/repo.git
-
-# 或迁移本地存储库
-hot mc /path/to/repo --format sha256
-```
-
-**4. 清理过期引用**
-```shell
-# 先扫描引用
-hot scan-refs
-
-# 按前缀删除引用
-hot prune-refs "feature/deprecated-"
-
-# 删除过期引用
-hot expire-refs --days 90
-```
-
-**5. 线性化历史**
-```shell
-# 移除所有合并提交，使历史线性化
-hot unbranch --confirm
-
-# 创建保留最近历史的孤儿分支（适用于开源场景）
-hot unbranch -K1 master -T new-branch
-```
-
-**6. 查看对象**
-```shell
-# 以 JSON 格式查看 commit/tree/tag
-hot cat HEAD --json
-
-# 查看文件内容（二进制文件以 16 进制显示）
-hot cat HEAD:docs/images/blob.png
-```
-
-比如你查看仓库中的一张图片（二进制文件按照 16 进制展示）：
-
-<img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/fe1d7e8d-c511-4deb-b5f1-9cc4c082a36d" />
-
-比如你查看仓库的信息：
-
-<img width="1253" height="814" alt="image" src="https://github.com/user-attachments/assets/b585dab7-38fd-490f-b178-98ab56205f8f" />
-
-将 Git 存储库对象格式从 SHA1 迁移到 SHA256：
-
-<img width="1253" height="905" alt="image" src="https://github.com/user-attachments/assets/3c84566a-9626-40e1-bffc-07ce2917c91a" />
+完整文档见 [docs/hot.md](./docs/hot.md)。
 
 ## 许可证
 

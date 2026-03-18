@@ -58,6 +58,9 @@ type HelpOptions struct {
 	// If this is set to a non-positive number, the terminal width is used; otherwise,
 	// the min of this value or the terminal width is used.
 	WrapUpperBound int
+
+	// ValueFormatter is used to format the help text of flags and positional arguments.
+	ValueFormatter HelpValueFormatter
 }
 
 // Apply options to Kong as a configuration option.
@@ -378,10 +381,9 @@ func printCommandSummary(w *helpWriter, cmd *Command) {
 }
 
 type helpWriter struct {
-	indent        string
-	width         int
-	lines         *[]string
-	helpFormatter HelpValueFormatter
+	indent string
+	width  int
+	lines  *[]string
 	HelpOptions
 }
 
@@ -391,12 +393,15 @@ func newHelpWriter(ctx *Context, options HelpOptions) *helpWriter {
 	if options.WrapUpperBound > 0 && wrapWidth > options.WrapUpperBound {
 		wrapWidth = options.WrapUpperBound
 	}
+	// Use ValueFormatter from options, or fallback to Kong's helpFormatter
+	if options.ValueFormatter == nil {
+		options.ValueFormatter = ctx.helpFormatter
+	}
 	w := &helpWriter{
-		indent:        "",
-		width:         wrapWidth,
-		lines:         &lines,
-		helpFormatter: ctx.helpFormatter,
-		HelpOptions:   options,
+		indent:      "",
+		width:       wrapWidth,
+		lines:       &lines,
+		HelpOptions: options,
 	}
 	return w
 }
@@ -411,7 +416,7 @@ func (h *helpWriter) Print(text string) {
 
 // Indent returns a new helpWriter indented by two characters.
 func (h *helpWriter) Indent() *helpWriter {
-	return &helpWriter{indent: h.indent + "  ", lines: h.lines, width: h.width - 2, HelpOptions: h.HelpOptions, helpFormatter: h.helpFormatter}
+	return &helpWriter{indent: h.indent + "  ", lines: h.lines, width: h.width - 2, HelpOptions: h.HelpOptions}
 }
 
 func (h *helpWriter) String() string {
@@ -448,7 +453,7 @@ func (h *helpWriter) Wrap(text string) {
 func writePositionals(w *helpWriter, args []*Positional) {
 	rows := [][2]string{}
 	for _, arg := range args {
-		rows = append(rows, [2]string{arg.Summary(), w.helpFormatter(arg)})
+		rows = append(rows, [2]string{arg.Summary(), w.HelpOptions.ValueFormatter(arg)})
 	}
 	writeTwoColumns(w, rows)
 }
@@ -470,7 +475,7 @@ func writeFlags(w *helpWriter, groups [][]*Flag) {
 		}
 		for _, flag := range group {
 			if !flag.Hidden {
-				rows = append(rows, [2]string{formatFlag(haveShort, flag), w.helpFormatter(flag.Value)})
+				rows = append(rows, [2]string{formatFlag(haveShort, flag), w.HelpOptions.ValueFormatter(flag.Value)})
 			}
 		}
 	}

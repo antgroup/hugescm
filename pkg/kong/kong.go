@@ -56,16 +56,17 @@ type Kong struct {
 	registry     *Registry
 	ignoreFields []*regexp.Regexp
 
-	noDefaultHelp bool
-	usageOnError  usageOnError
-	help          HelpPrinter
-	shortHelp     HelpPrinter
-	helpFormatter HelpValueFormatter
-	helpOptions   HelpOptions
-	helpFlag      *Flag
-	groups        []Group
-	vars          Vars
-	flagNamer     func(string) string
+	noDefaultHelp   bool
+	allowHyphenated bool
+	usageOnError    usageOnError
+	help            HelpPrinter
+	shortHelp       HelpPrinter
+	helpFormatter   HelpValueFormatter
+	helpOptions     HelpOptions
+	helpFlag        *Flag
+	groups          []Group
+	vars            Vars
+	flagNamer       func(string) string
 
 	// Set temporarily by Options. These are applied after build().
 	postBuildOptions []Option
@@ -248,6 +249,14 @@ func (k *Kong) interpolateValue(value *Value, vars Vars) (err error) {
 	}
 	if varsContributor, ok := value.Mapper.(VarsContributor); ok {
 		vars = vars.CloneWith(varsContributor.Vars(value))
+	}
+
+	// Support variable interpolation in vars themselves
+	initialVars := vars.CloneWith(nil)
+	for n, v := range initialVars {
+		if vars[n], err = interpolate(v, initialVars, nil); err != nil {
+			return fmt.Errorf("variable %s for %s: %s", n, value.Summary(), err)
+		}
 	}
 
 	if value.Enum, err = interpolate(value.Enum, vars, nil); err != nil {

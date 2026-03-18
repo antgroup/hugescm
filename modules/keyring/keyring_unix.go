@@ -37,21 +37,9 @@ const (
 	maxUnixPasswordLength = 100 * 1024 // 100 KiB
 )
 
-// applyOptions applies the given options to an Options struct.
-func applyOptions(opts ...Option) *Options {
-	o := &Options{}
-	for _, opt := range opts {
-		opt(o)
-	}
-	return o
-}
-
-// Storage mode constants
+// Storage mode constants for Unix/Linux
 const (
-	storageAuto          = "auto"
 	storageSecretService = "secret-service"
-	storageFile          = "file"
-	storageNone          = "none"
 )
 
 // storageConfig holds configuration for credential storage

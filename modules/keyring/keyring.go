@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -38,15 +39,18 @@ type Cred struct {
 }
 
 // Option is a functional option for configuring keyring behavior.
-// This is primarily used on Linux to configure credential storage backend.
-// On macOS and Windows, the native keychain is always used and options are ignored.
+// This is used to configure credential storage backend on platforms that support multiple backends.
+// On macOS and Windows, the default backend is always used unless explicitly overridden.
 type Option func(*Options)
 
 // Options holds configuration for keyring operations.
 type Options struct {
-	// Storage specifies the credential storage backend (Linux only).
-	// Options: "auto", "secret-service", "file", "none"
-	// Default: "none" (credentials are not stored by default on Linux)
+	// Storage specifies the credential storage backend.
+	//
+	// Platform-specific behavior:
+	//   - macOS: Default uses Security.framework; "security" uses /usr/bin/security CLI; "file" uses encrypted file
+	//   - Windows: Default uses Credential Manager; "file" uses encrypted file
+	//   - Linux: Default is "none"; "secret-service" uses Secret Service API; "file" uses encrypted file
 	Storage string
 
 	// EncryptionKey specifies the key for encrypting credentials in file storage.
@@ -55,12 +59,15 @@ type Options struct {
 
 	// StoragePath specifies the path for encrypted credential file.
 	// Only used when Storage="file".
-	// Default: ~/.config/zeta/credentials.enc
+	// Default: ~/.config/zeta/credentials
 	StoragePath string
 }
 
 // WithStorage sets the credential storage backend.
-// This option is only effective on Linux systems.
+// Valid values depend on the platform:
+//   - macOS: "security" (/usr/bin/security CLI), "file"
+//   - Windows: "file"
+//   - Linux: "secret-service", "file"
 func WithStorage(storage string) Option {
 	return func(o *Options) {
 		o.Storage = storage
@@ -68,7 +75,7 @@ func WithStorage(storage string) Option {
 }
 
 // WithEncryptionKey sets the encryption key for file-based credential storage.
-// This option is only effective on Linux systems with Storage="file".
+// Required when Storage="file".
 func WithEncryptionKey(key string) Option {
 	return func(o *Options) {
 		o.EncryptionKey = key
@@ -76,12 +83,39 @@ func WithEncryptionKey(key string) Option {
 }
 
 // WithStoragePath sets the path for encrypted credential file.
-// This option is only effective on Linux systems with Storage="file".
+// Only used when Storage="file".
 func WithStoragePath(path string) Option {
 	return func(o *Options) {
 		o.StoragePath = path
 	}
 }
+
+// applyOptions applies the given options to an Options struct.
+func applyOptions(opts ...Option) *Options {
+	o := &Options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+	return o
+}
+
+// resolveStorageMode determines the storage mode from options.
+// Default is "auto" which uses platform-specific default storage.
+func resolveStorageMode(opts ...Option) string {
+	options := applyOptions(opts...)
+	mode := strings.ToLower(strings.TrimSpace(options.Storage))
+	if mode == "" {
+		return storageAuto
+	}
+	return mode
+}
+
+// Storage mode constants used across platforms
+const (
+	storageAuto = "auto"
+	storageFile = "file"
+	storageNone = "none"
+)
 
 // NewCredFromURL creates a Cred from a URL, extracting protocol, server, and port.
 // If the URL specifies a default port for the protocol (e.g., 443 for https),

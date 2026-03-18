@@ -2,6 +2,9 @@
 
 // Package keyring provides cross-platform credential storage for Zeta.
 // This file implements the macOS (Darwin) backend using purego without CGO.
+// Default: Uses Security.framework via purego (recommended)
+// Alternative: Set storage="security" to use /usr/bin/security CLI tool
+// Alternative: Set storage="file" to use encrypted file storage
 package keyring
 
 import (
@@ -34,15 +37,11 @@ type _CFRange struct {
 	length   int64
 }
 
-type _CFNumberType int32
+type _CFNumberType int64 // CFNumberType is alias for CFIndex, which is int64 on 64-bit systems
 
 const (
-	// CFNumber type constants (only kCFNumberShortType is used)
-	// kCFNumberSInt8Type  _CFNumberType = 1 // unused
-	// kCFNumberSInt16Type _CFNumberType = 2 // unused
-	// kCFNumberSInt32Type _CFNumberType = 3 // unused
-	// kCFNumberSInt64Type _CFNumberType = 4 // unused
-	kCFNumberShortType _CFNumberType = 2 // SInt16Type (used for port numbers)
+	// CFNumber type constants for number conversion
+	kCFNumberIntType _CFNumberType = 3 // SInt32Type
 )
 
 var (
@@ -71,6 +70,7 @@ var (
 	kSecValueData                     uintptr
 	kSecReturnData                    uintptr
 	kSecReturnAttributes              uintptr
+	kSecMatchLimit                    uintptr
 	kSecMatchLimitAll                 uintptr
 )
 
@@ -81,7 +81,7 @@ var (
 	CFDataGetLength           func(theData uintptr) int64
 	CFDataGetBytes            func(theData uintptr, range_ _CFRange, buffer []byte)
 	CFRelease                 func(cf uintptr)
-	CFNumberCreate            func(allocator uintptr, theType _CFNumberType, valuePtr *int16) uintptr
+	CFNumberCreate            func(allocator uintptr, theType _CFNumberType, valuePtr uintptr) uintptr
 )
 
 var (
@@ -172,6 +172,7 @@ func initializeKeyring() error {
 		{"kSecValueData", &kSecValueData},
 		{"kSecReturnData", &kSecReturnData},
 		{"kSecReturnAttributes", &kSecReturnAttributes},
+		{"kSecMatchLimit", &kSecMatchLimit},
 		{"kSecMatchLimitAll", &kSecMatchLimitAll},
 	}
 
@@ -194,22 +195,53 @@ func initializeKeyring() error {
 	return nil
 }
 
-// Get implements Keyring interface for darwinKeychain.
-// Note: opts are ignored on macOS as the native keychain is always used.
+// Get retrieves credentials from the configured storage backend.
+// Default uses Security.framework via purego.
+// Set opts storage="security" to use /usr/bin/security CLI.
+// Set opts storage="file" to use encrypted file storage.
 func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
-	if ctx.Err() != nil {
+	select {
+	case <-ctx.Done():
 		return nil, ctx.Err()
-	}
-
-	if err := ensureInitialized(); err != nil {
-		return nil, fmt.Errorf("failed to initialize keyring: %w", err)
+	default:
 	}
 
 	if cred == nil {
 		return nil, errors.New("credential cannot be nil")
 	}
 
-	// Use server from cred (server should not include port)
+	mode := resolveStorageMode(opts...)
+
+	switch mode {
+	case storageAuto:
+		return getFromKeychain(ctx, cred)
+	case storageSecurity:
+		return getFromSecurityCLI(ctx, cred)
+	case storageFile:
+		options := applyOptions(opts...)
+		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Get(ctx, cred)
+	case storageNone:
+		return nil, ErrNotFound
+	default:
+		return nil, fmt.Errorf("unknown storage mode: %s", mode)
+	}
+}
+
+// getFromKeychain retrieves credentials using Security.framework via purego.
+func getFromKeychain(ctx context.Context, cred *Cred) (*Cred, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	if err := ensureInitialized(); err != nil {
+		return nil, fmt.Errorf("failed to initialize keyring: %w", err)
+	}
+
 	if cred.Server == "" {
 		return nil, errors.New("server is required")
 	}
@@ -264,10 +296,14 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	accountValue := CFDictionaryGetValue(result, kSecAttrAccount)
 	username := ""
 	if accountValue != 0 {
+		// CFStringGetLength returns UTF-16 code units, but CFStringGetCString needs UTF-8 buffer.
+		// UTF-8 can use up to 4 bytes per character, so allocate 4x the UTF-16 length.
 		if length := CFStringGetLength(accountValue); length > 0 {
-			buffer := make([]byte, length+1)
-			CFStringGetCString(accountValue, &buffer[0], int64(len(buffer)), kCFStringEncodingUTF8)
-			username = string(buffer[:length])
+			buffer := make([]byte, length*4+1)
+			if CFStringGetCString(accountValue, &buffer[0], int64(len(buffer)), kCFStringEncodingUTF8) == 0 {
+				return nil, errors.New("failed to convert username to UTF-8")
+			}
+			username = strings.TrimRight(string(buffer), "\x00")
 		}
 	}
 
@@ -293,21 +329,13 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	}, nil
 }
 
-// Store stores credentials in macOS Keychain.
-// Follows git-credential-osxkeychain pattern:
-// - Uses kSecClassInternetPassword
-// - Sets kSecAttrServer, kSecAttrAccount, kSecAttrProtocol
-// - Optionally sets kSecAttrPath, kSecAttrPort
-// - Uses kSecAttrAuthenticationTypeDefault for compatibility
-// If credential already exists, updates it.
-// Note: opts are ignored on macOS as the native keychain is always used.
+// Store saves credentials to the configured storage backend.
+// Default uses Security.framework via purego.
+// Set opts storage="security" to use /usr/bin/security CLI.
+// Set opts storage="file" to use encrypted file storage.
 func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
-	}
-
-	if err := ensureInitialized(); err != nil {
-		return fmt.Errorf("failed to initialize keyring: %w", err)
 	}
 
 	if cred == nil {
@@ -328,6 +356,38 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	// Validate username cannot contain null byte
 	if strings.Contains(cred.UserName, "\x00") {
 		return errors.New("invalid username: contains null byte")
+	}
+
+	mode := resolveStorageMode(opts...)
+
+	switch mode {
+	case storageAuto:
+		return storeToKeychain(ctx, cred)
+	case storageSecurity:
+		return storeToSecurityCLI(ctx, cred)
+	case storageFile:
+		options := applyOptions(opts...)
+		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Store(ctx, cred)
+	case storageNone:
+		return ErrStorageDisabled
+	default:
+		return fmt.Errorf("unknown storage mode: %s", mode)
+	}
+}
+
+// storeToKeychain stores credentials using Security.framework via purego.
+func storeToKeychain(ctx context.Context, cred *Cred) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	if err := ensureInitialized(); err != nil {
+		return fmt.Errorf("failed to initialize keyring: %w", err)
 	}
 
 	cfServer := CFStringCreateWithCString(kCFAllocatorDefault, cred.Server, kCFStringEncodingUTF8)
@@ -413,23 +473,50 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	return nil
 }
 
-// Erase removes credentials from macOS Keychain.
-// Follows git-credential-osxkeychain pattern:
-// - Uses kSecClassInternetPassword, kSecAttrServer as base
-// - Adds optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
-// If multiple credentials match, removes all of them.
-// Note: opts are ignored on macOS as the native keychain is always used.
+// Erase removes credentials from the configured storage backend.
+// Default uses Security.framework via purego.
+// Set opts storage="security" to use /usr/bin/security CLI.
+// Set opts storage="file" to use encrypted file storage.
 func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
-	if ctx.Err() != nil {
+	select {
+	case <-ctx.Done():
 		return ctx.Err()
+	default:
 	}
-
-	if err := ensureInitialized(); err != nil {
-		return fmt.Errorf("failed to initialize keyring: %w", err)
-	}
-
 	if cred == nil {
 		return errors.New("credential cannot be nil")
+	}
+
+	mode := resolveStorageMode(opts...)
+
+	switch mode {
+	case storageAuto:
+		return eraseFromKeychain(ctx, cred)
+	case storageSecurity:
+		return eraseFromSecurityCLI(ctx, cred)
+	case storageFile:
+		options := applyOptions(opts...)
+		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Erase(ctx, cred)
+	case storageNone:
+		return ErrStorageDisabled
+	default:
+		return fmt.Errorf("unknown storage mode: %s", mode)
+	}
+}
+
+// eraseFromKeychain removes credentials using Security.framework via purego.
+func eraseFromKeychain(ctx context.Context, cred *Cred) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	if err := ensureInitialized(); err != nil {
+		return fmt.Errorf("failed to initialize keyring: %w", err)
 	}
 
 	// Use server from cred
@@ -444,16 +531,16 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	// Build query following git-credential-osxkeychain pattern:
 	// Use kSecClass, kSecAttrServer as base
 	// Add optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
-	// Use kSecMatchLimitAll to delete all matching credentials
+	// Use kSecMatchLimit=kSecMatchLimitAll to delete all matching credentials
 	keys := []uintptr{
 		kSecClass,
 		kSecAttrServer,
-		kSecMatchLimitAll, // Delete all matching credentials
+		kSecMatchLimit, // Key for match limit
 	}
 	values := []uintptr{
 		kSecClassInternetPassword,
 		cfServer,
-		kCFBooleanTrue, // kSecMatchLimitAll value
+		kSecMatchLimitAll, // Value: delete all matching credentials
 	}
 
 	// Add optional fields and track CF objects for cleanup
@@ -561,9 +648,11 @@ func newOptionalFields(cred *Cred, keys, values *[]uintptr) *darwinOptionalField
 	}
 
 	// Add port if specified
+	// Use int32 (kCFNumberIntType) to support full port range 0-65535
+	// int16 can only hold 0-32767 which is insufficient
 	if cred.Port != 0 {
-		portInt16 := int16(cred.Port)
-		fields.cfPort = CFNumberCreate(kCFAllocatorDefault, kCFNumberShortType, &portInt16)
+		portInt32 := int32(cred.Port)
+		fields.cfPort = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, uintptr(unsafe.Pointer(&portInt32)))
 		*keys = append(*keys, kSecAttrPort)
 		*values = append(*values, fields.cfPort)
 	}
@@ -571,6 +660,10 @@ func newOptionalFields(cred *Cred, keys, values *[]uintptr) *darwinOptionalField
 	return fields
 }
 
+// deref dereferences a uintptr that points to another uintptr.
+// This is used to load values from symbol addresses returned by Dlsym.
+// For example, Dlsym returns the address of kCFBooleanTrue, which itself
+// contains the actual CFBooleanRef value.
 func deref(ptr uintptr) uintptr {
 	return **(**uintptr)(unsafe.Pointer(&ptr))
 }

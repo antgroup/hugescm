@@ -2,6 +2,8 @@
 
 // Package keyring provides cross-platform credential storage for Zeta.
 // This file implements the Windows backend using Windows Credential Manager.
+// Default: Uses Windows Credential Manager API
+// Alternative: Set storage="file" to use encrypted file storage
 package keyring
 
 import (
@@ -67,12 +69,9 @@ type CREDENTIALW struct {
 	UserName           *uint16
 }
 
-// Get retrieves credentials from Windows Credential Manager.
-// Follows git-credential-manager pattern:
-// - Uses CRED_TYPE_GENERIC
-// - Target name format: "zeta+<protocol>://<server>[:<port>][<path>]"
-// - Returns nil, ErrNotFound if credential doesn't exist
-// Note: opts are ignored on Windows as the native credential manager is always used.
+// Get retrieves credentials from the configured storage backend.
+// Default uses Windows Credential Manager.
+// Set opts storage="file" to use encrypted file storage.
 func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -81,6 +80,28 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if cred == nil {
 		return nil, errors.New("credential cannot be nil")
 	}
+
+	mode := resolveStorageMode(opts...)
+
+	switch mode {
+	case storageAuto:
+		return getFromCredMan(ctx, cred)
+	case storageFile:
+		options := applyOptions(opts...)
+		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Get(ctx, cred)
+	case storageNone:
+		return nil, ErrNotFound
+	default:
+		return nil, fmt.Errorf("unknown storage mode: %s", mode)
+	}
+}
+
+// getFromCredMan retrieves credentials using Windows Credential Manager.
+func getFromCredMan(ctx context.Context, cred *Cred) (*Cred, error) {
 
 	targetName := buildTargetName(cred)
 	if targetName == "" {
@@ -104,7 +125,8 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 		uintptr(unsafe.Pointer(&result)),
 	)
 	if ret == 0 {
-		if errors.Is(err, ERROR_NOT_FOUND) {
+		// Windows syscall returns errno as err, check it explicitly
+		if errno, ok := err.(syscall.Errno); ok && errno == ERROR_NOT_FOUND {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to read credential: %w", err)
@@ -135,13 +157,9 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	}, nil
 }
 
-// Store saves credentials in Windows Credential Manager.
-// Follows git-credential-manager pattern:
-// - Uses CRED_TYPE_GENERIC
-// - Target name format: "zeta+<protocol>://<server>[:<port>][<path>]"
-// - Stores username and password
-// - If credential exists, it will be overwritten
-// Note: opts are ignored on Windows as the native credential manager is always used.
+// Store saves credentials to the configured storage backend.
+// Default uses Windows Credential Manager.
+// Set opts storage="file" to use encrypted file storage.
 func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -167,6 +185,27 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		return errors.New("invalid username: contains null byte")
 	}
 
+	mode := resolveStorageMode(opts...)
+
+	switch mode {
+	case storageAuto:
+		return storeToCredMan(ctx, cred)
+	case storageFile:
+		options := applyOptions(opts...)
+		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Store(ctx, cred)
+	case storageNone:
+		return ErrStorageDisabled
+	default:
+		return fmt.Errorf("unknown storage mode: %s", mode)
+	}
+}
+
+// storeToCredMan stores credentials using Windows Credential Manager.
+func storeToCredMan(ctx context.Context, cred *Cred) error {
 	// Validate size limits
 	if len(cred.UserName) > CRED_MAX_USERNAME_LENGTH {
 		return fmt.Errorf("username too long (max %d bytes)", CRED_MAX_USERNAME_LENGTH)
@@ -231,12 +270,9 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	return nil
 }
 
-// Erase removes credentials from Windows Credential Manager.
-// Follows git-credential-manager pattern:
-// - Uses CRED_TYPE_GENERIC
-// - Target name format: "zeta+<protocol>://<server>[:<port>][<path>]"
-// - Returns nil if credential doesn't exist (no error)
-// Note: opts are ignored on Windows as the native credential manager is always used.
+// Erase removes credentials from the configured storage backend.
+// Default uses Windows Credential Manager.
+// Set opts storage="file" to use encrypted file storage.
 func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -246,6 +282,27 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 		return errors.New("credential cannot be nil")
 	}
 
+	mode := resolveStorageMode(opts...)
+
+	switch mode {
+	case storageAuto:
+		return eraseFromCredMan(ctx, cred)
+	case storageFile:
+		options := applyOptions(opts...)
+		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize file storage: %w", err)
+		}
+		return storage.Erase(ctx, cred)
+	case storageNone:
+		return ErrStorageDisabled
+	default:
+		return fmt.Errorf("unknown storage mode: %s", mode)
+	}
+}
+
+// eraseFromCredMan removes credentials using Windows Credential Manager.
+func eraseFromCredMan(_ context.Context, cred *Cred) error {
 	targetName := buildTargetName(cred)
 	if targetName == "" {
 		return errors.New("invalid credential: target name cannot be empty")
@@ -264,8 +321,8 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 		0, // Flags
 	)
 	if ret == 0 {
-		// Check if it's a "not found" error
-		if errors.Is(err, ERROR_NOT_FOUND) {
+		// Windows syscall returns errno as err, check it explicitly
+		if errno, ok := err.(syscall.Errno); ok && errno == ERROR_NOT_FOUND {
 			return nil
 		}
 		return fmt.Errorf("failed to delete credential: %w", err)

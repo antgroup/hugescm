@@ -1,7 +1,7 @@
 // Copyright ©️ Ant Group. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build dragonfly || freebsd || linux || netbsd || openbsd
+//go:build darwin || dragonfly || freebsd || linux || netbsd || openbsd || windows
 
 package keyring
 
@@ -208,7 +208,7 @@ func (s *credentialStorage) readCredentials() (map[string]*Cred, error) {
 		}
 		return nil, fmt.Errorf("failed to open credentials file: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() // nolint
 
 	var credFile credentialsFile
 	if _, err := toml.NewDecoder(file).Decode(&credFile); err != nil {
@@ -279,7 +279,7 @@ func (s *credentialStorage) writeCredentials(credentials map[string]*Cred) error
 	if err != nil {
 		return fmt.Errorf("failed to create credentials file: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() // nolint
 
 	if err := toml.NewEncoder(file).Encode(credFile); err != nil {
 		return fmt.Errorf("failed to encode credentials to TOML: %w", err)

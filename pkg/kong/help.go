@@ -453,7 +453,7 @@ func (h *helpWriter) Wrap(text string) {
 func writePositionals(w *helpWriter, args []*Positional) {
 	rows := [][2]string{}
 	for _, arg := range args {
-		rows = append(rows, [2]string{arg.Summary(), w.HelpOptions.ValueFormatter(arg)})
+		rows = append(rows, [2]string{arg.Summary(), w.ValueFormatter(arg)})
 	}
 	writeTwoColumns(w, rows)
 }
@@ -475,7 +475,7 @@ func writeFlags(w *helpWriter, groups [][]*Flag) {
 		}
 		for _, flag := range group {
 			if !flag.Hidden {
-				rows = append(rows, [2]string{formatFlag(haveShort, flag), w.HelpOptions.ValueFormatter(flag.Value)})
+				rows = append(rows, [2]string{formatFlag(haveShort, flag), w.ValueFormatter(flag.Value)})
 			}
 		}
 	}

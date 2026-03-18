@@ -194,25 +194,40 @@ func (m *Merge) Overwrite(o *Merge) {
 	m.ConflictStyle = overwrite(m.ConflictStyle, o.ConflictStyle)
 }
 
-// Credential configures credential storage behavior, especially on Linux systems.
-// On macOS and Windows, the native keychain is always used.
-// On Linux, multiple storage backends are available to handle environments without DBUS/Secret Service.
+// Credential configures credential storage behavior.
+// Different platforms support different storage backends:
+//
+// macOS:
+//   - Default: Uses Security.framework via purego (no CGO required)
+//   - "security": Uses /usr/bin/security CLI tool (fallback when security software blocks framework access)
+//   - "file": Uses encrypted file storage
+//
+// Windows:
+//   - Default: Uses Windows Credential Manager API
+//   - "file": Uses encrypted file storage
+//
+// Linux:
+//   - Default: "none" (credentials not stored unless explicitly configured)
+//   - "secret-service": Uses libsecret/Secret Service API (requires DBUS)
+//   - "file": Uses encrypted file storage
 type Credential struct {
 	// Storage specifies the credential storage backend.
-	// Options:
-	//   - "auto" (default): Automatically select the best available backend
-	//     Priority: secret-service > file (if key set) > memory
-	//   - "secret-service": Use libsecret/Secret Service API (requires DBUS)
+	//
+	// Common options:
+	//   - "auto" (default): Use the platform's default backend
 	//   - "file": Use encrypted file storage (requires encryptionKey)
-	//   - "memory": In-memory cache only (credentials lost on exit)
 	//   - "none": Disable credential storage completely
+	//
+	// Platform-specific options:
+	//   - macOS: "security" (uses /usr/bin/security CLI)
+	//   - Linux: "secret-service" (requires DBUS/Secret Service)
 	//
 	// Can be set via: zeta config credential.storage <value>
 	// Or environment: ZETA_CREDENTIAL_STORAGE=<value>
 	Storage string `toml:"storage,omitempty"`
 
 	// EncryptionKey specifies the key used for encrypting credentials in file storage.
-	// Required when storage="file". If not set, falls back to "memory" mode.
+	// Required when storage="file". If not set, falls back to "auto" mode.
 	//
 	// Security note: Store this key securely! Consider using environment variable:
 	//   ZETA_CREDENTIAL_ENCRYPTION_KEY=<key>
@@ -222,7 +237,7 @@ type Credential struct {
 
 	// StoragePath specifies the path for encrypted credential file storage.
 	// Only used when storage="file".
-	// Default: ~/.config/zeta/credentials.enc
+	// Default: ~/.config/zeta/credentials
 	//
 	// Can be set via: zeta config credential.storagePath <path>
 	// Or environment: ZETA_CREDENTIAL_STORAGE_PATH=<path>
@@ -231,10 +246,11 @@ type Credential struct {
 
 // CredentialStorageConstants defines valid storage backend values
 const (
-	CredentialStorageAuto          = "auto"
-	CredentialStorageSecretService = "secret-service"
-	CredentialStorageFile          = "file"
-	CredentialStorageNone          = "none"
+	CredentialStorageAuto          = "auto"           // Default backend for each platform
+	CredentialStorageSecretService = "secret-service" // Linux: Secret Service API (libsecret)
+	CredentialStorageFile          = "file"           // All platforms: encrypted file storage
+	CredentialStorageNone          = "none"           // Disable credential storage
+	CredentialStorageSecurity      = "security"       // macOS: /usr/bin/security CLI
 )
 
 func (c *Credential) Overwrite(o *Credential) {

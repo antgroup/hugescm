@@ -1,7 +1,7 @@
 # Diferenco - Advanced Diff Algorithms
 
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../../LICENSE)
 
 **Diferenco** is a comprehensive diff and merge library for Go that provides multiple algorithms for computing differences between sequences. It supports text, rune-level, and word-level diffing, along with three-way merge capabilities.
 
@@ -598,8 +598,8 @@ modules/diferenco/
 
 ## License / 许可证
 
-MIT License - see [LICENSE](LICENSE) for details.
-MIT 许可证 - 详见 [LICENSE](LICENSE)。
+Apache License 2.0 - see [LICENSE](../../LICENSE) for details.
+Apache License 2.0 - 详见 [LICENSE](../../LICENSE)。
 
 ## Acknowledgments / 致谢
 

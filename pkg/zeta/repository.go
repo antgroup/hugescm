@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/term"
@@ -45,6 +47,11 @@ var (
 		"smb":  true,
 		"smd2": true,
 	}
+
+	// fsNameHighlight is the style for highlighting filesystem names in warnings.
+	fsNameHighlight = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#D70000"), Dark: lipgloss.Color("#FF6B6B"),
+	}).Bold(true)
 )
 
 type StringArray []string
@@ -373,17 +380,10 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		r.missingNotFailure = true
 	}
 	fmt.Fprintf(os.Stderr, W("Checkout into '%s'...\n"), filepath.Base(destination))
-	ds, err := strengthen.GetDiskFreeSpaceEx(zetaDir)
-	if err != nil {
-		die("check disk free space error: %v", err)
-		return nil, err
-	}
-	if warningFs[strings.ToLower(ds.FS)] {
-		fsName := ds.FS
-		if term.StderrLevel != term.LevelNone {
-			fsName = "\x1b[01;33m" + ds.FS + "\x1b[0m"
+	if ds, err := strengthen.GetDiskFreeSpaceEx(zetaDir); err == nil {
+		if warningFs[strings.ToLower(ds.FS)] {
+			warn("Checking out to a network filesystem '%s' may cause data corruption or performance issues.", fsNameHighlight.Render(ds.FS))
 		}
-		warn("The repository filesystem is '%s', which may affect zeta's operation.", fsName)
 	}
 	fmt.Fprintf(os.Stderr, "Checkout from '%s' to %s... sparse-checkout: %v, snapshot: %v\n", r.cleanedRemote(), target.String()[0:8], len(r.Core.SparseDirs) != 0, opts.Snapshot)
 	if len(r.Core.SparseDirs) != 0 {
@@ -499,6 +499,12 @@ func Open(ctx context.Context, opts *OpenOptions) (*Repository, error) {
 		values:  values,
 		quiet:   opts.Quiet,
 		verbose: opts.Verbose,
+	}
+	// Warn if the repository is on a network filesystem
+	if ds, err := strengthen.GetDiskFreeSpaceEx(zetaDir); err == nil {
+		if warningFs[strings.ToLower(ds.FS)] {
+			warn("The repository on network filesystem '%s' may have data corruption or performance issues.", fsNameHighlight.Render(ds.FS))
+		}
 	}
 	return r, nil
 }

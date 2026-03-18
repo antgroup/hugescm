@@ -5,7 +5,6 @@ package command
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/antgroup/hugescm/pkg/zeta"
 )

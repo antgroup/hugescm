@@ -209,16 +209,13 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	if cred == nil {
 		return nil, errors.New("credential cannot be nil")
 	}
-
-	mode := resolveStorageMode(opts...)
-
-	switch mode {
+	options := resolveStorageOptions(opts...)
+	switch options.Storage {
 	case storageAuto:
 		return getFromKeychain(ctx, cred)
 	case storageSecurity:
 		return getFromSecurityCLI(ctx, cred)
 	case storageFile:
-		options := applyOptions(opts...)
 		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize file storage: %w", err)
@@ -227,7 +224,7 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	case storageNone:
 		return nil, ErrNotFound
 	default:
-		return nil, fmt.Errorf("unknown storage mode: %s", mode)
+		return nil, fmt.Errorf("unknown storage mode: %s", options.Storage)
 	}
 }
 
@@ -358,15 +355,13 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 		return errors.New("invalid username: contains null byte")
 	}
 
-	mode := resolveStorageMode(opts...)
-
-	switch mode {
+	options := resolveStorageOptions(opts...)
+	switch options.Storage {
 	case storageAuto:
 		return storeToKeychain(ctx, cred)
 	case storageSecurity:
 		return storeToSecurityCLI(ctx, cred)
 	case storageFile:
-		options := applyOptions(opts...)
 		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
 		if err != nil {
 			return fmt.Errorf("failed to initialize file storage: %w", err)
@@ -375,7 +370,7 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	case storageNone:
 		return ErrStorageDisabled
 	default:
-		return fmt.Errorf("unknown storage mode: %s", mode)
+		return fmt.Errorf("unknown storage mode: %s", options.Storage)
 	}
 }
 
@@ -487,15 +482,13 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 		return errors.New("credential cannot be nil")
 	}
 
-	mode := resolveStorageMode(opts...)
-
-	switch mode {
+	options := resolveStorageOptions(opts...)
+	switch options.Storage {
 	case storageAuto:
 		return eraseFromKeychain(ctx, cred)
 	case storageSecurity:
 		return eraseFromSecurityCLI(ctx, cred)
 	case storageFile:
-		options := applyOptions(opts...)
 		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
 		if err != nil {
 			return fmt.Errorf("failed to initialize file storage: %w", err)
@@ -504,7 +497,7 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	case storageNone:
 		return ErrStorageDisabled
 	default:
-		return fmt.Errorf("unknown storage mode: %s", mode)
+		return fmt.Errorf("unknown storage mode: %s", options.Storage)
 	}
 }
 

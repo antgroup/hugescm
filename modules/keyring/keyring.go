@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
 var (
@@ -90,24 +89,14 @@ func WithStoragePath(path string) Option {
 	}
 }
 
-// applyOptions applies the given options to an Options struct.
-func applyOptions(opts ...Option) *Options {
-	o := &Options{}
-	for _, opt := range opts {
-		opt(o)
+func resolveStorageOptions(opts ...Option) *Options {
+	options := &Options{
+		Storage: storageAuto,
 	}
-	return o
-}
-
-// resolveStorageMode determines the storage mode from options.
-// Default is "auto" which uses platform-specific default storage.
-func resolveStorageMode(opts ...Option) string {
-	options := applyOptions(opts...)
-	mode := strings.ToLower(strings.TrimSpace(options.Storage))
-	if mode == "" {
-		return storageAuto
+	for _, o := range opts {
+		o(options)
 	}
-	return mode
+	return options
 }
 
 // Storage mode constants used across platforms

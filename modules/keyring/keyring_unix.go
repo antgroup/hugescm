@@ -53,7 +53,7 @@ type storageConfig struct {
 // Priority: opts parameters > default (none)
 // Note: Environment variables are already handled by upper layer (repository.go)
 func resolveStorageConfig(opts ...Option) *storageConfig {
-	options := applyOptions(opts...)
+	options := resolveStorageOptions(opts...)
 
 	cfg := &storageConfig{
 		mode:          strings.ToLower(strings.TrimSpace(options.Storage)),

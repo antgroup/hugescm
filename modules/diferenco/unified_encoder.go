@@ -184,7 +184,7 @@ func (e *UnifiedEncoder) writePatchHunk(b *strings.Builder, hunk *Hunk) {
 		_, _ = b.WriteString(strconv.Itoa(fromCount))
 	} else if hunk.FromLine == 1 && fromCount == 0 {
 		// Match odd GNU diff -u behavior adding to empty file.
-		_, _ = b.WriteString(" +0,0")
+		_, _ = b.WriteString(" -0,0")
 	} else {
 		_, _ = b.WriteString(" -")
 		_, _ = b.WriteString(strconv.Itoa(hunk.FromLine))

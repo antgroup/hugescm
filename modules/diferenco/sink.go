@@ -15,6 +15,13 @@ const (
 	NEWLINE_CRLF
 )
 
+// Sink is a line deduplication and indexing structure for diff operations.
+// It maps unique text lines to integer indices, allowing diff algorithms to
+// operate on integers rather than strings for better performance.
+//
+// Sink is NOT safe for concurrent use. Callers must ensure that all parse/scan
+// operations are completed before passing the resulting indices to concurrent
+// diff computations.
 type Sink struct {
 	Lines   []string
 	Index   map[string]int

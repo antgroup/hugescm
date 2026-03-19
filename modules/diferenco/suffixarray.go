@@ -234,8 +234,8 @@ func suffixArray[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error
 	}
 
 	// Try ordered types using type assertion helper
-	if changes, ok := trySuffixArrayDiff(ctx, L1, L2, prefix); ok {
-		return changes, nil
+	if changes, err, ok := trySuffixArrayDiff(ctx, L1, L2, prefix); ok {
+		return changes, err
 	}
 
 	// Fallback to ONP algorithm for unsupported types
@@ -243,24 +243,25 @@ func suffixArray[E comparable](ctx context.Context, L1, L2 []E) ([]Change, error
 }
 
 // trySuffixArrayDiff attempts to run suffix array diff for ordered types.
-func trySuffixArrayDiff[E comparable](ctx context.Context, L1, L2 []E, prefix int) ([]Change, bool) {
+// Returns (changes, err, true) if the type is supported, or (nil, nil, false) if not.
+func trySuffixArrayDiff[E comparable](ctx context.Context, L1, L2 []E, prefix int) ([]Change, error, bool) {
 	switch any(L1).(type) {
 	case []string:
 		changes, err := suffixArrayComputeOrdered(ctx, any(L1).([]string), prefix, any(L2).([]string), prefix)
-		return changes, err == nil
+		return changes, err, true
 	case []int:
 		changes, err := suffixArrayComputeOrdered(ctx, any(L1).([]int), prefix, any(L2).([]int), prefix)
-		return changes, err == nil
+		return changes, err, true
 	case []int64:
 		changes, err := suffixArrayComputeOrdered(ctx, any(L1).([]int64), prefix, any(L2).([]int64), prefix)
-		return changes, err == nil
+		return changes, err, true
 	case []rune:
 		changes, err := suffixArrayComputeOrdered(ctx, any(L1).([]rune), prefix, any(L2).([]rune), prefix)
-		return changes, err == nil
+		return changes, err, true
 	case []byte:
 		changes, err := suffixArrayComputeOrdered(ctx, any(L1).([]byte), prefix, any(L2).([]byte), prefix)
-		return changes, err == nil
+		return changes, err, true
 	default:
-		return nil, false
+		return nil, nil, false
 	}
 }

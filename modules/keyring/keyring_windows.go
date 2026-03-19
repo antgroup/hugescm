@@ -26,8 +26,11 @@ const (
 	// CRED_MAX_GENERIC_TARGET_NAME_LENGTH is the maximum target name length.
 	CRED_MAX_GENERIC_TARGET_NAME_LENGTH = 32767
 
-	// CRED_MAX_CREDENTIAL_BLOB_SIZE Maximum size of CredentialBlob in bytes.
-	CRED_MAX_CREDENTIAL_BLOB_SIZE = 512
+	// CRED_MAX_CREDENTIAL_BLOB_SIZE is the maximum size of CredentialBlob in bytes.
+	// Note: The official CRED_MAX_CREDENTIAL_BLOB_SIZE (512) applies to domain credentials.
+	// For CRED_TYPE_GENERIC, the practical limit is higher (typically 2560 bytes).
+	// We use the higher limit for generic credentials to match git-credential-manager behavior.
+	CRED_MAX_CREDENTIAL_BLOB_SIZE = 2560
 
 	// CRED_TYPE_GENERIC is the credential type for generic credentials.
 	CRED_TYPE_GENERIC = 1
@@ -84,7 +87,7 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	options := resolveStorageOptions(opts...)
 	switch options.Storage {
 	case storageAuto:
-		return getFromCredMan(ctx, cred)
+		return getFromCred(ctx, cred)
 	case storageFile:
 		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
 		if err != nil {
@@ -98,8 +101,14 @@ func Get(ctx context.Context, cred *Cred, opts ...Option) (*Cred, error) {
 	}
 }
 
-// getFromCredMan retrieves credentials using Windows Credential Manager.
-func getFromCredMan(ctx context.Context, cred *Cred) (*Cred, error) {
+// getFromCred retrieves credentials using Windows Credential Manager.
+func getFromCred(ctx context.Context, cred *Cred) (*Cred, error) {
+	// Check context before starting
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 
 	targetName := buildTargetName(cred)
 	if targetName == "" {
@@ -186,7 +195,7 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	options := resolveStorageOptions(opts...)
 	switch options.Storage {
 	case storageAuto:
-		return storeToCredMan(ctx, cred)
+		return storeToCred(ctx, cred)
 	case storageFile:
 		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
 		if err != nil {
@@ -200,8 +209,15 @@ func Store(ctx context.Context, cred *Cred, opts ...Option) error {
 	}
 }
 
-// storeToCredMan stores credentials using Windows Credential Manager.
-func storeToCredMan(ctx context.Context, cred *Cred) error {
+// storeToCred stores credentials using Windows Credential Manager.
+func storeToCred(ctx context.Context, cred *Cred) error {
+	// Check context before starting
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	// Validate size limits
 	if len(cred.UserName) > CRED_MAX_USERNAME_LENGTH {
 		return fmt.Errorf("username too long (max %d bytes)", CRED_MAX_USERNAME_LENGTH)
@@ -281,7 +297,7 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	options := resolveStorageOptions(opts...)
 	switch options.Storage {
 	case storageAuto:
-		return eraseFromCredMan(ctx, cred)
+		return eraseFromCred(ctx, cred)
 	case storageFile:
 		storage, err := newCredentialStorage(options.EncryptionKey, options.StoragePath)
 		if err != nil {
@@ -295,8 +311,15 @@ func Erase(ctx context.Context, cred *Cred, opts ...Option) error {
 	}
 }
 
-// eraseFromCredMan removes credentials using Windows Credential Manager.
-func eraseFromCredMan(_ context.Context, cred *Cred) error {
+// eraseFromCred removes credentials using Windows Credential Manager.
+func eraseFromCred(ctx context.Context, cred *Cred) error {
+	// Check context before starting
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	targetName := buildTargetName(cred)
 	if targetName == "" {
 		return errors.New("invalid credential: target name cannot be empty")

@@ -3,16 +3,16 @@
 package keyring
 
 import (
-	"fmt"
-	"os"
 	"testing"
 )
 
 func TestGet(t *testing.T) {
-	cred, err := Get(t.Context(), &Cred{Server: "http://zeta.io"})
+	cred, err := Get(t.Context(), &Cred{Server: "zeta.io"})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "find cred error: %v\n", err)
-		return
+		if err == ErrNotFound {
+			t.Skip("no credential found for zeta.io")
+		}
+		t.Fatalf("Get failed: %v", err)
 	}
-	fmt.Fprintf(os.Stderr, "%v\n", cred)
+	t.Logf("found credential: username=%q, server=%q", cred.UserName, cred.Server)
 }

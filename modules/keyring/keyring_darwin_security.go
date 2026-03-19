@@ -35,6 +35,32 @@ var (
 	shellEscapePattern = regexp.MustCompile(`[^\w@%+=:,./-]`)
 )
 
+// protocolFourCC converts a protocol string to the 4-character code used by
+// macOS security CLI's -r flag. These codes correspond to the kSecAttrProtocol
+// constants in Security.framework (e.g., kSecAttrProtocolHTTPS = 'htps').
+// Returns empty string for unknown protocols, in which case the caller should
+// omit the -r flag to avoid incorrect matching.
+func protocolFourCC(protocol string) string {
+	switch strings.ToLower(protocol) {
+	case "http":
+		return "http"
+	case "https":
+		return "htps"
+	case "ftp":
+		return "ftp "
+	case "ftps":
+		return "ftps"
+	case "imap":
+		return "imap"
+	case "imaps":
+		return "imps"
+	case "smtp":
+		return "smtp"
+	default:
+		return ""
+	}
+}
+
 // isSecurityNotFoundError checks if the error indicates that the item was not found.
 // It prioritizes exit code 44, with string matching as a fallback for compatibility.
 func isSecurityNotFoundError(err error, output []byte) bool {
@@ -83,17 +109,17 @@ func getFromSecurityCLI(ctx context.Context, cred *Cred) (*Cred, error) {
 	// Use security find-internet-password to retrieve credentials
 	// This matches the purego implementation and git-credential-osxkeychain pattern
 	// -s: server name (host only, not full URL)
-	// -r: protocol (htps for https, must be 4 characters)
+	// -r: protocol (4-char code, e.g., htps for https)
 	// -P: port (optional)
 	// -p: path (optional)
 	// -a: account name (optional, but improves precision when multiple accounts exist)
 	// -g: display password
-	protocol := "htps"
-	if cred.Protocol == "http" {
-		protocol = "http"
-	}
+	args := []string{"find-internet-password", "-s", cred.Server}
 
-	args := []string{"find-internet-password", "-s", cred.Server, "-r", protocol}
+	// Add protocol if known (matches purego kSecAttrProtocol)
+	if fourCC := protocolFourCC(cred.Protocol); fourCC != "" {
+		args = append(args, "-r", fourCC)
+	}
 
 	// Add port if specified (matches purego kSecAttrPort)
 	if cred.Port != 0 {
@@ -174,8 +200,9 @@ func parseKeychainOutput(r io.Reader) (*Cred, error) {
 		return nil, fmt.Errorf("failed to parse keychain output: %w", err)
 	}
 
-	// Validate that both fields were parsed successfully
-	if cred.UserName == "" && cred.Password == "" {
+	// Validate that password was parsed successfully
+	// Password is the core field - without it, the credential is incomplete
+	if cred.Password == "" {
 		return nil, ErrNotFound
 	}
 
@@ -230,21 +257,20 @@ func storeToSecurityCLI(ctx context.Context, cred *Cred) error {
 	// Build the add-internet-password command
 	// -U flag updates existing item if present
 	// -s: server name (host only, not full URL) - matches purego kSecAttrServer
-	// -r: protocol (htps for https, must be 4 characters) - matches purego kSecAttrProtocol
+	// -r: protocol (4-char code) - matches purego kSecAttrProtocol
 	// -P: port (optional) - matches purego kSecAttrPort
 	// -p: path (optional) - matches purego kSecAttrPath
 	// -a: account name - matches purego kSecAttrAccount
 	// -w: password
-	protocol := "htps"
-	if cred.Protocol == "http" {
-		protocol = "http"
-	}
-
 	var commandBuilder strings.Builder
 	commandBuilder.WriteString("add-internet-password -U -s ")
 	commandBuilder.WriteString(shellQuote(cred.Server))
-	commandBuilder.WriteString(" -r ")
-	commandBuilder.WriteString(protocol)
+
+	// Add protocol if known (matches purego kSecAttrProtocol)
+	if fourCC := protocolFourCC(cred.Protocol); fourCC != "" {
+		commandBuilder.WriteString(" -r ")
+		commandBuilder.WriteString(fourCC)
+	}
 
 	if cred.Port != 0 {
 		commandBuilder.WriteString(" -P ")
@@ -274,17 +300,20 @@ func storeToSecurityCLI(ctx context.Context, cred *Cred) error {
 		return ErrSetDataTooBig
 	}
 
+	// Write the command
 	if _, err := io.WriteString(stdin, command); err != nil {
 		_ = stdin.Close()
 		_ = cmd.Wait()
 		return fmt.Errorf("failed to write command: %w", err)
 	}
 
+	// Close stdin to signal end of input
 	if err = stdin.Close(); err != nil {
 		_ = cmd.Wait()
 		return fmt.Errorf("failed to close stdin: %w", err)
 	}
 
+	// Wait for the command to complete
 	if err = cmd.Wait(); err != nil {
 		return fmt.Errorf("security add-internet-password failed: %w", err)
 	}
@@ -306,16 +335,16 @@ func eraseFromSecurityCLI(ctx context.Context, cred *Cred) error {
 
 	// Use delete-internet-password to match find-internet-password
 	// -s: server name (host only, not full URL) - matches purego kSecAttrServer
-	// -r: protocol (htps for https, must be 4 characters) - matches purego kSecAttrProtocol
+	// -r: protocol (4-char code) - matches purego kSecAttrProtocol
 	// -P: port (optional) - matches purego kSecAttrPort
 	// -p: path (optional) - matches purego kSecAttrPath
 	// -a: account name (optional, but ensures precise deletion when multiple accounts exist)
-	protocol := "htps"
-	if cred.Protocol == "http" {
-		protocol = "http"
-	}
+	args := []string{"delete-internet-password", "-s", cred.Server}
 
-	args := []string{"delete-internet-password", "-s", cred.Server, "-r", protocol}
+	// Add protocol if known (matches purego kSecAttrProtocol)
+	if fourCC := protocolFourCC(cred.Protocol); fourCC != "" {
+		args = append(args, "-r", fourCC)
+	}
 
 	// Add port if specified (matches purego kSecAttrPort)
 	if cred.Port != 0 {

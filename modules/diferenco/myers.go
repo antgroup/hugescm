@@ -50,10 +50,7 @@ func myersCompute[E comparable](ctx context.Context, seq1 []E, P1 int, seq2 []E,
 	// k=1 -> (1,0),(2,1)
 	V := newFastIntArray()
 	V.set(0, getXAfterSnake(0, 0))
-	paths := &fastArrayWithNegIndex{
-		positiveArr: make(map[int]*snakePath),
-		negativeArr: make(map[int]*snakePath),
-	}
+	paths := newFastPathArray()
 	if V.get(0) == 0 {
 		paths.set(0, nil)
 	} else {
@@ -72,7 +69,6 @@ outer:
 		lowerBound := -min(d, len(seqY)+(d%2))
 		upperBound := min(d, len(seqX)+(d%2))
 		for k = lowerBound; k <= upperBound; k += 2 {
-			step := 0
 			// We can use the X values of (d-1)-lines to compute X value of the longest d-lines.
 			maxXofDLineTop, maxXofDLineLeft := -1, -1
 			if k != upperBound {
@@ -81,10 +77,8 @@ outer:
 			if k != lowerBound {
 				maxXofDLineLeft = V.get(k-1) + 1 // We take a horizontal non-diagonal (+1 x) (delete a symbol in seqX)
 			}
-			step++
 			x := min(max(maxXofDLineTop, maxXofDLineLeft), len(seqX))
 			y := x - k
-			step++
 			if x > len(seqX) || y > len(seqY) {
 				// This diagonal is irrelevant for the result.
 				// TODO: Don't pay the cost for this in the next iteration.
@@ -185,16 +179,29 @@ func (t *fastIntArray) set(i int, v int) {
 	t.positiveArr[i] = v
 }
 
-// An array that supports fast negative indices.
+// An array that supports fast negative indices, using slices for performance.
 type fastArrayWithNegIndex struct {
-	positiveArr map[int]*snakePath
-	negativeArr map[int]*snakePath
+	positiveArr []*snakePath
+	negativeArr []*snakePath
+}
+
+func newFastPathArray() *fastArrayWithNegIndex {
+	return &fastArrayWithNegIndex{
+		positiveArr: make([]*snakePath, 10),
+		negativeArr: make([]*snakePath, 10),
+	}
 }
 
 func (t *fastArrayWithNegIndex) get(i int) *snakePath {
 	if i < 0 {
 		i = -i - 1
+		if i >= len(t.negativeArr) {
+			return nil
+		}
 		return t.negativeArr[i]
+	}
+	if i >= len(t.positiveArr) {
+		return nil
 	}
 	return t.positiveArr[i]
 }
@@ -202,8 +209,18 @@ func (t *fastArrayWithNegIndex) get(i int) *snakePath {
 func (t *fastArrayWithNegIndex) set(i int, v *snakePath) {
 	if i < 0 {
 		i = -i - 1
+		if i >= len(t.negativeArr) {
+			newArr := make([]*snakePath, max(len(t.negativeArr)*2, i+1))
+			copy(newArr, t.negativeArr)
+			t.negativeArr = newArr
+		}
 		t.negativeArr[i] = v
 		return
+	}
+	if i >= len(t.positiveArr) {
+		newArr := make([]*snakePath, max(len(t.positiveArr)*2, i+1))
+		copy(newArr, t.positiveArr)
+		t.positiveArr = newArr
 	}
 	t.positiveArr[i] = v
 }

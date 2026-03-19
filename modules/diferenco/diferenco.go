@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 )
 
@@ -82,6 +83,7 @@ func AlgorithmFromName(s string) (Algorithm, error) {
 	for name := range algorithmValueMap {
 		options = append(options, name)
 	}
+	slices.Sort(options)
 
 	return Unspecified, fmt.Errorf("%w: '%s' (available options: %s)", ErrUnknownAlgorithm, s, strings.Join(options, ", "))
 }

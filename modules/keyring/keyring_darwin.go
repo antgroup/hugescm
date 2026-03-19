@@ -450,9 +450,12 @@ func storeToKeychain(ctx context.Context, cred *Cred) error {
 	)
 	defer CFRelease(updateQuery)
 
-	// Build attributes to update (only password)
-	attrsToUpdateKeys := []uintptr{kSecValueData}
-	attrsToUpdateValues := []uintptr{cfPasswordData}
+	// Build attributes to update (password and account)
+	cfAccount := CFStringCreateWithCString(kCFAllocatorDefault, cred.UserName, kCFStringEncodingUTF8)
+	defer CFRelease(cfAccount)
+
+	attrsToUpdateKeys := []uintptr{kSecValueData, kSecAttrAccount}
+	attrsToUpdateValues := []uintptr{cfPasswordData, cfAccount}
 	attrsToUpdate := CFDictionaryCreate(
 		kCFAllocatorDefault,
 		&attrsToUpdateKeys[0], &attrsToUpdateValues[0], int64(len(attrsToUpdateKeys)),
@@ -524,16 +527,14 @@ func eraseFromKeychain(ctx context.Context, cred *Cred) error {
 	// Build query following git-credential-osxkeychain pattern:
 	// Use kSecClass, kSecAttrServer as base
 	// Add optional fields: kSecAttrProtocol, kSecAttrAccount, kSecAttrPath, kSecAttrPort
-	// Use kSecMatchLimit=kSecMatchLimitAll to delete all matching credentials
+	// Note: SecItemDelete does NOT support kSecMatchLimit - it deletes all matching items by default.
 	keys := []uintptr{
 		kSecClass,
 		kSecAttrServer,
-		kSecMatchLimit, // Key for match limit
 	}
 	values := []uintptr{
 		kSecClassInternetPassword,
 		cfServer,
-		kSecMatchLimitAll, // Value: delete all matching credentials
 	}
 
 	// Add optional fields and track CF objects for cleanup
@@ -554,7 +555,8 @@ func eraseFromKeychain(ctx context.Context, cred *Cred) error {
 
 	st := SecItemDelete(query)
 	if st == errSecItemNotFound {
-		return ErrNotFound
+		// Item not found is not an error - deletion is idempotent
+		return nil
 	}
 	if st != errSecSuccess {
 		return fmt.Errorf("error SecItemDelete: %d", st)
@@ -657,6 +659,11 @@ func newOptionalFields(cred *Cred, keys, values *[]uintptr) *darwinOptionalField
 // This is used to load values from symbol addresses returned by Dlsym.
 // For example, Dlsym returns the address of kCFBooleanTrue, which itself
 // contains the actual CFBooleanRef value.
+//
+// The double-pointer cast pattern (**(**uintptr)(unsafe.Pointer(&ptr))) is used
+// instead of the simpler *(*uintptr)(unsafe.Pointer(ptr)) to satisfy go vet's
+// unsafe.Pointer conversion rules: we take the address of the local variable
+// (rule 1) rather than converting a uintptr directly to unsafe.Pointer (rule 4).
 func deref(ptr uintptr) uintptr {
 	return **(**uintptr)(unsafe.Pointer(&ptr))
 }

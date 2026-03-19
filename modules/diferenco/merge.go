@@ -375,8 +375,11 @@ func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *confli
 	_, _ = fmt.Fprintf(out, "%s\n", Sep2)
 	s.WriteLine(out, b[:len(b)-suffix]...)
 	_, _ = fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
+	// Note: Through normal Merge/MergeParallel paths, suffix is always 0 because
+	// the diff3 algorithms already separate common suffix into its own "ok" block.
+	// This branch is kept as defensive code but should never execute in production.
 	if suffix != 0 {
-		s.WriteLine(out, b[suffix:]...)
+		s.WriteLine(out, b[len(b)-suffix:]...)
 	}
 }
 

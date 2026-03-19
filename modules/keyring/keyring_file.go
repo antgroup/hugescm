@@ -23,6 +23,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/base58"
+	"golang.org/x/crypto/hkdf"
 )
 
 // credentialStorage implements encrypted file-based credential storage.
@@ -88,11 +89,16 @@ func deriveOrValidateKey(encryptionKey string) ([]byte, error) {
 		if !slices.Contains([]int{16, 24, 32}, len(keyBytes)) {
 			return nil, fmt.Errorf("encryption key must be 16, 24, or 32 bytes (got %d)", len(keyBytes))
 		}
-		// Pad to 32 bytes if needed
+		// Use HKDF to derive a 32-byte key for AES-256
+		// This preserves the full entropy of shorter keys (16 or 24 bytes)
+		// rather than zero-padding which reduces effective security.
 		if len(keyBytes) < 32 {
-			padded := make([]byte, 32)
-			copy(padded, keyBytes)
-			return padded, nil
+			derived := make([]byte, 32)
+			kdf := hkdf.New(sha256.New, keyBytes, nil, []byte("zeta-keyring-v1"))
+			if _, err := io.ReadFull(kdf, derived); err != nil {
+				return nil, fmt.Errorf("failed to derive key: %w", err)
+			}
+			return derived, nil
 		}
 		return keyBytes, nil
 	}
@@ -123,8 +129,17 @@ func getConfigDir() (string, error) {
 	return configDir, nil
 }
 
-// deriveEncryptionKey derives an AES-256 key from system-specific information
+// deriveEncryptionKey derives an AES-256 key from system-specific information.
 // Key = SHA-256(home_dir || hostname || username)
+//
+// SECURITY WARNING: This provides obfuscation-level protection, NOT cryptographic security.
+// The key is derived from publicly accessible system information (home directory, hostname,
+// username), which can be easily obtained by an attacker with local access. This prevents
+// casual snooping but NOT a determined attacker.
+//
+// For production use requiring real security, provide an explicit encryption key via
+// WithEncryptionKey() option, stored securely (e.g., hardware security module, secure
+// enclave, or user-provided passphrase through a KDF like Argon2 or scrypt).
 func deriveEncryptionKey() ([]byte, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

@@ -124,6 +124,7 @@ type StringDiff struct {
 
 type FileStat struct {
 	Addition, Deletion, Hunks int
+	Name                      string
 }
 
 type Options struct {
@@ -131,6 +132,17 @@ type Options struct {
 	S1, S2   string
 	R1, R2   io.Reader
 	A        Algorithm // algorithm
+}
+
+// Name returns the filename from To or From.
+func (o *Options) Name() string {
+	if o.To != nil && o.To.Name != "" {
+		return o.To.Name
+	}
+	if o.From != nil && o.From.Name != "" {
+		return o.From.Name
+	}
+	return ""
 }
 
 // DiffSlices computes the differences between two slices using the specified algorithm.
@@ -187,6 +199,7 @@ func Stat(ctx context.Context, opts *Options) (*FileStat, error) {
 	}
 	stats := &FileStat{
 		Hunks: len(changes),
+		Name:  opts.Name(),
 	}
 	for _, ch := range changes {
 		stats.Addition += ch.Ins

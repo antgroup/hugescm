@@ -4,6 +4,7 @@
 package diferenco
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -35,14 +36,95 @@ type Patch struct {
 	Hunks []*Hunk `json:"hunks,omitempty"`
 }
 
+func (p Patch) Name() string {
+	switch {
+	case p.From != nil && p.To != nil:
+		return p.To.Name
+	case p.From == nil:
+		return p.To.Name
+	case p.To == nil:
+		return p.To.Name
+	}
+	return ""
+}
+
 func (p Patch) Stat() FileStat {
-	s := FileStat{Hunks: len(p.Hunks)}
+	s := FileStat{Hunks: len(p.Hunks), Name: p.Name()}
 	for _, h := range p.Hunks {
 		ins, del := h.Stat()
 		s.Addition += ins
 		s.Deletion += del
 	}
 	return s
+}
+
+func (p Patch) Format() ([]byte, int) {
+	if len(p.Hunks) == 0 {
+		return nil, 0
+	}
+	b := new(bytes.Buffer)
+	var lines int
+	if p.From != nil {
+		fmt.Fprintf(b, "--- %s\n", p.From.Name)
+	} else {
+		fmt.Fprintf(b, "--- /dev/null\n")
+	}
+	if p.To != nil {
+		fmt.Fprintf(b, "+++ %s\n", p.To.Name)
+	} else {
+		fmt.Fprintf(b, "+++ /dev/null\n")
+	}
+	lines += 2
+
+	for _, hunk := range p.Hunks {
+		fromCount, toCount := 0, 0
+		for _, l := range hunk.Lines {
+			switch l.Kind {
+			case Delete:
+				fromCount++
+			case Insert:
+				toCount++
+			default:
+				fromCount++
+				toCount++
+			}
+		}
+		fmt.Fprint(b, "@@")
+		if fromCount > 1 {
+			fmt.Fprintf(b, " -%d,%d", hunk.FromLine, fromCount)
+		} else if hunk.FromLine == 1 && fromCount == 0 {
+			// Match odd GNU diff -u behavior adding to empty file.
+			fmt.Fprintf(b, " -0,0")
+		} else {
+			fmt.Fprintf(b, " -%d", hunk.FromLine)
+		}
+		if toCount > 1 {
+			fmt.Fprintf(b, " +%d,%d", hunk.ToLine, toCount)
+		} else if hunk.ToLine == 1 && toCount == 0 {
+			// Match odd GNU diff -u behavior adding to empty file.
+			fmt.Fprintf(b, " +0,0")
+		} else {
+			fmt.Fprintf(b, " +%d", hunk.ToLine)
+		}
+		fmt.Fprint(b, " @@\n")
+		lines += len(hunk.Lines) + 1
+		for _, l := range hunk.Lines {
+			switch l.Kind {
+			case Delete:
+				fmt.Fprintf(b, "-%s", l.Content)
+			case Insert:
+				fmt.Fprintf(b, "+%s", l.Content)
+			default:
+				fmt.Fprintf(b, " %s", l.Content)
+			}
+			if !strings.HasSuffix(l.Content, "\n") {
+				fmt.Fprintf(b, "\n\\ No newline at end of file\n")
+				lines++
+			}
+		}
+	}
+	lines++ // We respect the editor's line-ending convention: "\n" actually has two lines.
+	return b.Bytes(), lines
 }
 
 // String converts a unified diff to the standard textual form for that diff.

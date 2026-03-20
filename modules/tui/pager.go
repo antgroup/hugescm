@@ -12,90 +12,133 @@ import (
 	"github.com/antgroup/hugescm/modules/term"
 )
 
-// Pager represents a simple terminal pager built with bubbletea
+// Compile-time interface assertion
+var _ io.WriteCloser = &Pager{}
+
+// Pager represents a simple terminal pager built with bubbletea.
+// It implements io.Writer and must be closed to display content.
 type Pager struct {
-	program   *tea.Program
-	content   string
-	writer    *pagerWriter
-	colorMode term.Level
+	buf          bytes.Buffer
+	closed       bool
+	colorMode    term.Level
+	useAltScreen bool
 }
 
-// NewPager creates a new pager with given color mode
-func NewPager(colorMode term.Level) *Pager {
-	p := &Pager{
-		colorMode: colorMode,
-		writer:    &pagerWriter{},
+// NewPager creates a new pager with given color mode and alt screen setting.
+// The pager implements io.Writer, content is accumulated via Write calls.
+// Close must be called to display the content in the pager.
+// useAltScreen controls whether to use alternate screen buffer (default true).
+func NewPager(colorMode term.Level, useAltScreen bool) *Pager {
+	return &Pager{
+		colorMode:    colorMode,
+		useAltScreen: useAltScreen,
 	}
-	return p
 }
 
-// Write implements io.Writer interface for the pager
+// Write implements io.Writer interface for the pager.
+// It appends data to the internal buffer and returns an error if the pager is closed.
 func (p *Pager) Write(data []byte) (int, error) {
-	return p.writer.Write(data)
+	if p.closed {
+		return 0, io.ErrClosedPipe
+	}
+	return p.buf.Write(data)
 }
 
-// Close starts the pager and waits for it to finish
+// Close finalizes the pager and displays the content.
+// For short content that fits in the terminal, it outputs directly without starting the pager.
+// For longer content, it starts an interactive pager with bubbletea.
+// Close is idempotent - calling it multiple times is safe.
 func (p *Pager) Close() error {
-	if p.writer.closed {
+	if p.closed {
 		return nil
 	}
-	p.writer.closed = true
-	p.content = p.writer.String()
+	p.closed = true
 
-	// If content is empty, skip starting the pager
-	if p.content == "" {
+	content := p.buf.String()
+	if content == "" {
 		return nil
 	}
 
-	// If no color support, just output directly
+	// If color is disabled (e.g. NO_COLOR or non-interactive terminal),
+	// we also disable the pager and print directly.
 	if p.colorMode == term.LevelNone {
-		_, err := os.Stdout.Write([]byte(p.content))
+		_, err := io.WriteString(os.Stdout, content)
 		return err
 	}
 
-	// Start the pager program with accumulated content
-	model := &pagerModel{
-		content:        p.content,
-		scrollPos:      0,
-		colorMode:      p.colorMode,
-		ready:          false,
-		height:         20,   // default height, will be updated
-		width:          80,   // default width, will be updated
-		contentChanged: true, // Mark content as changed to trigger caching
+	// If content fits in one screen, output directly without starting pager
+	if p.shouldSkipPager(content) {
+		_, err := io.WriteString(os.Stdout, content)
+		return err
 	}
 
-	p.program = tea.NewProgram(model, tea.WithOutput(os.Stderr))
-	_, err := p.program.Run()
+	return p.run(content)
+}
+
+// shouldSkipPager checks if the content is short enough to display without a pager.
+func (p *Pager) shouldSkipPager(content string) bool {
+	// Get terminal height
+	_, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || termHeight <= 0 {
+		return false
+	}
+
+	// Count lines in content
+	// Reserve 2 lines for status bar and 1 for prompt
+	lineCount := strings.Count(content, "\n")
+	if !strings.HasSuffix(content, "\n") && content != "" {
+		lineCount++ // Count the last line if it doesn't end with newline
+	}
+
+	// If content fits in terminal (minus status bar and some margin), skip pager
+	return lineCount <= termHeight-4
+}
+
+// run starts the interactive pager with the given content.
+func (p *Pager) run(content string) error {
+	model := newPagerModel(content, p.colorMode, p.useAltScreen)
+	program := tea.NewProgram(model, tea.WithOutput(os.Stderr))
+	_, err := program.Run()
 	return err
 }
 
-// ColorMode returns the color mode of the pager
+// ColorMode returns the color mode of the pager.
 func (p *Pager) ColorMode() term.Level {
 	return p.colorMode
 }
 
-// EnableColor returns whether color is enabled
-func (p *Pager) EnableColor() bool {
-	return p.colorMode != term.LevelNone
-}
-
 // pagerModel is the bubbletea model for the pager
 type pagerModel struct {
-	content   string
-	scrollPos int
-	colorMode term.Level
-	ready     bool
-	height    int
-	width     int
+	scrollPos    int
+	colorMode    term.Level
+	useAltScreen bool
+	ready        bool
+	height       int
+	width        int
 
 	// Cached data for performance
-	cachedLines    []string
-	contentChanged bool
+	lines []string
 }
 
-// Init initializes the pager model
+// newPagerModel creates a new pager model with the given content.
+func newPagerModel(content string, colorMode term.Level, useAltScreen bool) *pagerModel {
+	return &pagerModel{
+		colorMode:    colorMode,
+		useAltScreen: useAltScreen,
+		height:       20, // default height, will be updated
+		width:        80, // default width, will be updated
+		lines:        strings.Split(strings.TrimSuffix(content, "\n"), "\n"),
+	}
+}
+
+// Init initializes the pager model.
 func (m *pagerModel) Init() tea.Cmd {
 	return nil
+}
+
+// maxScroll returns the maximum scroll position.
+func (m *pagerModel) maxScroll() int {
+	return max(0, len(m.lines)-m.height)
 }
 
 // Update handles messages and updates the model
@@ -108,39 +151,34 @@ func (m *pagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "g":
 			m.scrollPos = 0
 		case "G":
-			m.scrollPos = max(0, len(m.cachedLines)-m.height)
+			m.scrollPos = m.maxScroll()
 		case "j", "down", "↓", "enter":
-			m.scrollPos = min(m.scrollPos+1, max(0, len(m.cachedLines)-m.height))
+			m.scrollPos = min(m.scrollPos+1, m.maxScroll())
 		case "k", "up", "↑":
 			m.scrollPos = max(0, m.scrollPos-1)
 		case "d", "ctrl+d":
 			// Half page down
-			m.scrollPos = min(m.scrollPos+m.height/2, max(0, len(m.cachedLines)-m.height))
+			m.scrollPos = min(m.scrollPos+m.height/2, m.maxScroll())
 		case "u", "ctrl+u":
 			// Half page up
 			m.scrollPos = max(0, m.scrollPos-m.height/2)
 		case "f", "ctrl+f", "pagedown", " ":
 			// Full page down
-			m.scrollPos = min(m.scrollPos+m.height, max(0, len(m.cachedLines)-m.height))
+			m.scrollPos = min(m.scrollPos+m.height, m.maxScroll())
 		case "b", "ctrl+b", "pageup":
 			// Full page up
 			m.scrollPos = max(0, m.scrollPos-m.height)
 		case "home":
 			m.scrollPos = 0
 		case "end":
-			m.scrollPos = max(0, len(m.cachedLines)-m.height)
+			m.scrollPos = m.maxScroll()
 		}
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height - 2 // leave space for status bar
 		m.ready = true
-		// Split lines only if content has changed or cache is empty
-		if m.contentChanged || len(m.cachedLines) == 0 {
-			m.cachedLines = m.splitLinesWithANSI()
-			m.contentChanged = false
-		}
-		m.scrollPos = min(m.scrollPos, max(0, len(m.cachedLines)-m.height))
+		m.scrollPos = min(m.scrollPos, m.maxScroll())
 	}
 
 	return m, nil
@@ -152,38 +190,37 @@ func (m *pagerModel) View() tea.View {
 		return tea.NewView("Loading...")
 	}
 
-	// Show visible lines with proper ANSI handling
+	// Show visible lines
 	visibleContent := m.getVisibleContent()
 
 	// Render status bar with line numbers and progress
 	statusBar := m.renderStatusBar()
 
 	// Use lipgloss.JoinVertical to preserve all whitespace including spaces, tabs, and empty lines
-	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, visibleContent, statusBar))
+	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, visibleContent, statusBar))
+	v.AltScreen = m.useAltScreen // Use alternate screen buffer for clean exit
+	return v
 }
 
 // renderStatusBar creates a status bar with line numbers and progress percentage
 func (m *pagerModel) renderStatusBar() string {
-	if len(m.cachedLines) == 0 {
+	if len(m.lines) == 0 {
 		return ""
 	}
 
 	// Calculate visible line range
-	totalLines := len(m.cachedLines)
+	totalLines := len(m.lines)
 	topLine := m.scrollPos + 1
 	bottomLine := min(totalLines, m.scrollPos+m.height)
 
 	// Calculate percentage based on bottom line position (more intuitive)
 	// This shows how much of the content has been viewed
-	var percentage float64
+	var percentage int
 	if totalLines > 0 {
-		percentage = float64(bottomLine) / float64(totalLines) * 100
-		// Clamp to 100% to avoid showing >100%
+		percentage = bottomLine * 100 / totalLines
 		if percentage > 100 {
 			percentage = 100
 		}
-	} else {
-		percentage = 0
 	}
 
 	// Style status bar with gray background and light gray foreground
@@ -194,7 +231,7 @@ func (m *pagerModel) renderStatusBar() string {
 		Width(m.width)
 
 	// Build status text - show the visible line range
-	statusText := fmt.Sprintf("Lines: %d-%d/%d (%.1f%%) | ↑/k up | ↓/j/enter down | g/home top | G/end bottom | f/b page | q quit",
+	statusText := fmt.Sprintf("Lines: %d-%d/%d (%d%%) | ↑/k up | ↓/j/enter down | g/home top | G/end bottom | f/b page | q quit",
 		topLine, bottomLine, totalLines, percentage)
 
 	return statusStyle.Render(statusText)
@@ -202,73 +239,13 @@ func (m *pagerModel) renderStatusBar() string {
 
 // getVisibleContent returns the content that should be visible, preserving ANSI codes
 func (m *pagerModel) getVisibleContent() string {
-	if len(m.cachedLines) == 0 {
+	if len(m.lines) == 0 {
 		return ""
 	}
 
 	start := max(0, m.scrollPos)
-	end := min(len(m.cachedLines), start+m.height)
-	visibleLines := m.cachedLines[start:end]
+	end := min(len(m.lines), start+m.height)
+	visibleLines := m.lines[start:end]
 
 	return strings.Join(visibleLines, "\n")
-}
-
-// splitLinesWithANSI splits content into lines while preserving ANSI escape sequences
-// Optimized version with better ANSI sequence handling
-func (m *pagerModel) splitLinesWithANSI() []string {
-	var lines []string
-	var currentLine strings.Builder
-	inANSI := false
-	ansiBuffer := strings.Builder{}
-
-	for _, r := range m.content {
-		if r == '\x1b' {
-			// Start of ANSI escape sequence
-			ansiBuffer.WriteRune(r)
-			inANSI = true
-			continue
-		}
-
-		if inANSI {
-			ansiBuffer.WriteRune(r)
-			// ANSI CSI sequences (Control Sequence Introducer): ESC[... + terminator
-			// Terminators: letters (a-z, A-Z) or some special characters
-			// ANSI OSC sequences: ESC]... followed by BEL (\a) or ST (ESC\)
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '\a' {
-				// End of ANSI sequence
-				currentLine.WriteString(ansiBuffer.String())
-				ansiBuffer.Reset()
-				inANSI = false
-			}
-			continue
-		}
-
-		currentLine.WriteRune(r)
-
-		if r == '\n' {
-			lines = append(lines, strings.TrimSuffix(currentLine.String(), "\n"))
-			currentLine.Reset()
-		}
-	}
-
-	// Add the last line if it exists
-	if currentLine.Len() > 0 {
-		lines = append(lines, currentLine.String())
-	}
-
-	return lines
-}
-
-// pagerWriter is a writer that accumulates content before starting the pager
-type pagerWriter struct {
-	bytes.Buffer
-	closed bool
-}
-
-// Write appends data to the writer
-func (w *pagerWriter) Write(data []byte) (int, error) {
-	if w.closed {
-		return 0, io.ErrClosedPipe
-	}
-	return w.Buffer.Write(data)
 }

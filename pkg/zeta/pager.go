@@ -210,7 +210,7 @@ func NewPrinter(ctx context.Context) *printer {
 
 // newBuiltinPrinter creates a Printer using the built-in tui.Pager
 func newBuiltinPrinter(context.Context) *printer {
-	builtinPager := tui.NewPager(term.StdoutLevel)
+	builtinPager := tui.NewPager(term.StdoutLevel, true)
 	return &printer{
 		w:         builtinPager,
 		colorMode: builtinPager.ColorMode(),

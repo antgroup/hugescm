@@ -29,7 +29,6 @@ const (
 
 var (
 	// ErrBinaryData is returned when the content is detected as binary
-	// 当内容被检测为二进制时返回此错误
 	ErrBinaryData = errors.New("binary data")
 )
 
@@ -51,22 +50,22 @@ func detectCharset(payload []byte) string {
 }
 
 func readUnifiedText(r io.Reader) (string, string, error) {
-	// Read initial bytes for charset detection / 读取初始字节用于字符集检测
+	// Read initial bytes for charset detection
 	sniffBytes, err := streamio.ReadMax(r, sniffLen)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to read initial bytes for charset detection: %w", err)
 	}
 
-	// Detect charset / 检测字符集
+	// Detect charset
 	charset := detectCharset(sniffBytes)
 	if charset == BINARY {
 		return "", "", fmt.Errorf("%w: content appears to be binary", ErrBinaryData)
 	}
 
-	// Create combined reader / 创建组合读取器
+	// Create combined reader
 	reader := io.MultiReader(bytes.NewReader(sniffBytes), r)
 
-	// Handle UTF-8 content / 处理 UTF-8 内容
+	// Handle UTF-8 content
 	if strings.EqualFold(charset, UTF8) {
 		var b strings.Builder
 		if _, err := io.Copy(&b, reader); err != nil {
@@ -75,13 +74,13 @@ func readUnifiedText(r io.Reader) (string, string, error) {
 		return b.String(), UTF8, nil
 	}
 
-	// Handle other charsets / 处理其他字符集
+	// Handle other charsets
 	var b bytes.Buffer
 	if _, err := b.ReadFrom(reader); err != nil {
 		return "", "", fmt.Errorf("failed to read content: %w", err)
 	}
 
-	// Convert from detected charset / 从检测到的字符集转换
+	// Convert from detected charset
 	buf, err := chardet.DecodeFromCharset(b.Bytes(), charset)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to convert from charset '%s': %w", charset, err)
@@ -97,20 +96,20 @@ func readUnifiedText(r io.Reader) (string, string, error) {
 func readRawText(r io.Reader, size int) (string, error) {
 	var b bytes.Buffer
 
-	// Read initial bytes for binary detection / 读取初始字节进行二进制检测
+	// Read initial bytes for binary detection
 	if _, err := b.ReadFrom(io.LimitReader(r, sniffLen)); err != nil {
 		return "", fmt.Errorf("failed to read initial bytes: %w", err)
 	}
 
-	// Check for null bytes (binary content) / 检查空字节（二进制内容）
+	// Check for null bytes (binary content)
 	if bytes.IndexByte(b.Bytes(), 0) != -1 {
 		return "", fmt.Errorf("%w: detected null byte in content", ErrBinaryData)
 	}
 
-	// Pre-allocate buffer for remaining content / 为剩余内容预分配缓冲区
+	// Pre-allocate buffer for remaining content
 	b.Grow(size)
 
-	// Read remaining content / 读取剩余内容
+	// Read remaining content
 	if _, err := b.ReadFrom(r); err != nil {
 		return "", fmt.Errorf("failed to read remaining content: %w", err)
 	}
@@ -120,7 +119,7 @@ func readRawText(r io.Reader, size int) (string, error) {
 }
 
 func ReadUnifiedText(r io.Reader, size int64, textconv bool) (content string, charset string, err error) {
-	// Validate size / 验证大小
+	// Validate size
 	if size > MAX_DIFF_SIZE {
 		return "", "", fmt.Errorf("file size %d bytes exceeds limit %d bytes", size, MAX_DIFF_SIZE)
 	}

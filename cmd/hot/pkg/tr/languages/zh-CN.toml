@@ -119,6 +119,7 @@ Date = "日期"
 "Returns data as JSON; limited to commits, trees, and tags" = "仅提交、树、标签数据以 JSON 格式返回"
 "Converting text to Unicode" = "将文本转为 Unicode"
 "Output to a specific file instead of stdout" = "输出到特定文件而不是 stdout"
+"Disable alternate screen buffer for pager" = "禁用 pager 的备用屏幕缓冲区"
 # stat
 "View repository status" = "查看存储库状态"
 "Git Version: %s\n" = "Git 版本：%s\n"

@@ -30,14 +30,15 @@ const (
 )
 
 type Cat struct {
-	Object   string `arg:"" name:"object" help:"The name of the object to show"`
-	CWD      string `short:"C" name:"cwd" help:"Specify repository location" default:"." type:"path"`
-	Type     bool   `name:"type" short:"t" help:"Show object type"`
-	Size     bool   `name:"size" short:"s" help:"Show object size"`
-	Textconv bool   `name:"textconv" help:"Converting text to Unicode"`
-	JSON     bool   `name:"json" short:"j" help:"Returns data as JSON; limited to commits, trees, and tags"`
-	Limit    int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
-	Output   string `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
+	Object      string `arg:"" name:"object" help:"The name of the object to show"`
+	CWD         string `short:"C" name:"cwd" help:"Specify repository location" default:"." type:"path"`
+	Type        bool   `name:"type" short:"t" help:"Show object type"`
+	Size        bool   `name:"size" short:"s" help:"Show object size"`
+	Textconv    bool   `name:"textconv" help:"Converting text to Unicode"`
+	JSON        bool   `name:"json" short:"j" help:"Returns data as JSON; limited to commits, trees, and tags"`
+	Limit       int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
+	Output      string `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
+	NoAltScreen bool   `name:"no-alt-screen" help:"Disable alternate screen buffer for pager"`
 }
 
 func (c *Cat) Run(g *Globals) error {
@@ -264,6 +265,7 @@ func (c *Cat) formatObject(o *git.Object) error {
 
 	// Check if we should use pager (small files, no output file, color support)
 	usePager := len(c.Output) == 0 && term.StdoutLevel != term.LevelNone && o.Size <= MAX_SHOW_BINARY_BLOB
+	useAltScreen := !c.NoAltScreen
 
 	// Binary content: always use hexview, with or without pager
 	if charset == diferenco.BINARY {
@@ -273,7 +275,7 @@ func (c *Cat) formatObject(o *git.Object) error {
 		}
 
 		if usePager {
-			p := tui.NewPager(term.StdoutLevel)
+			p := tui.NewPager(term.StdoutLevel, useAltScreen)
 			defer p.Close() // nolint
 			return hexview.Format(reader, p, c.Limit, p.ColorMode())
 		}
@@ -290,14 +292,14 @@ func (c *Cat) formatObject(o *git.Object) error {
 	if usePager {
 		// Markdown handling
 		if c.isMarkdown() {
-			p := tui.NewPager(term.StdoutLevel)
+			p := tui.NewPager(term.StdoutLevel, useAltScreen)
 			defer p.Close() // nolint
 			return c.markdownOut(p, io.LimitReader(reader, c.Limit))
 		}
 
 		// Source code handling (only if not markdown)
 		if lexer := c.getLexer(); lexer != nil {
-			p := tui.NewPager(term.StdoutLevel)
+			p := tui.NewPager(term.StdoutLevel, useAltScreen)
 			defer p.Close() // nolint
 			return c.syntaxHighlightOut(p, io.LimitReader(reader, c.Limit), p.ColorMode(), lexer)
 		}

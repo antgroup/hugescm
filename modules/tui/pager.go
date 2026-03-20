@@ -162,8 +162,8 @@ func (m *pagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "u", "ctrl+u":
 			// Half page up
 			m.scrollPos = max(0, m.scrollPos-m.height/2)
-		case "f", "ctrl+f", "pagedown", " ":
-			// Full page down
+		case "f", "ctrl+f", "pagedown", "space":
+			// Full page down (space is standard in less and other pagers)
 			m.scrollPos = min(m.scrollPos+m.height, m.maxScroll())
 		case "b", "ctrl+b", "pageup":
 			// Full page up
@@ -217,10 +217,7 @@ func (m *pagerModel) renderStatusBar() string {
 	// This shows how much of the content has been viewed
 	var percentage int
 	if totalLines > 0 {
-		percentage = bottomLine * 100 / totalLines
-		if percentage > 100 {
-			percentage = 100
-		}
+		percentage = min(bottomLine*100/totalLines, 100)
 	}
 
 	// Style status bar with gray background and light gray foreground
@@ -231,7 +228,7 @@ func (m *pagerModel) renderStatusBar() string {
 		Width(m.width)
 
 	// Build status text - show the visible line range
-	statusText := fmt.Sprintf("Lines: %d-%d/%d (%d%%) | ↑/k up | ↓/j/enter down | g/home top | G/end bottom | f/b page | q quit",
+	statusText := fmt.Sprintf("Lines: %d-%d/%d (%d%%) | ↑/k up | ↓/j/enter down | g/home top | G/end bottom | space/f page down | b page up | q quit",
 		topLine, bottomLine, totalLines, percentage)
 
 	return statusStyle.Render(statusText)

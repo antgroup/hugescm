@@ -4,14 +4,31 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/compat"
 	"golang.org/x/term"
+)
+
+// ErrInterrupted is returned when user presses Ctrl+C or Ctrl+D.
+var ErrInterrupted = errors.New("interrupted")
+
+const maxAttempts = 3
+
+// Color definitions (package-level to avoid recreation)
+var (
+	blue = compat.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
+	red  = compat.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
+)
+
+var (
+	errorStyle = lipgloss.NewStyle().Foreground(red)
+	titleStyle = lipgloss.NewStyle().Foreground(blue).Bold(true)
 )
 
 // askTitle formats a title with a prefix.
@@ -19,134 +36,118 @@ func askTitle(format string, a ...any) string {
 	return "? " + fmt.Sprintf(format, a...)
 }
 
-// baseTheme returns a custom theme for huh input fields.
-func baseTheme() huh.Theme {
-	return huh.ThemeFunc(func(isDark bool) *huh.Styles {
-		t := huh.ThemeBase(isDark)
+// readLine reads a line with proper CJK/emoji backspace handling.
+// mask=0 shows input directly; otherwise each rune is replaced by mask.
+func readLine(mask rune, format string, a ...any) (string, error) {
+	title := titleStyle.Render(askTitle(format, a...))
+	_, _ = lipgloss.Fprint(os.Stderr, title)
+	fd := int(os.Stdin.Fd())
 
-		var (
-			blue     = compat.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
-			red      = compat.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
-			normalFg = compat.AdaptiveColor{Light: lipgloss.Color("235"), Dark: lipgloss.Color("252")}
-			fuchsia  = lipgloss.Color("#F780E2")
-			green    = compat.AdaptiveColor{Light: lipgloss.Color("#02BA84"), Dark: lipgloss.Color("#02BF87")}
-		)
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
+		return "", fmt.Errorf("failed to set raw mode: %w", err)
+	}
+	defer term.Restore(fd, oldState)
 
-		// Title styling
-		t.Focused.Title = t.Focused.Title.Foreground(blue).Bold(true)
-		t.Focused.Description = t.Focused.Description.Foreground(compat.AdaptiveColor{Light: lipgloss.Color(""), Dark: lipgloss.Color("243")})
-		t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(red)
-		t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(red)
+	var inputRunes []rune
+	reader := bufio.NewReader(os.Stdin)
 
-		// Text input styling
-		t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(green)
-		t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(compat.AdaptiveColor{Light: lipgloss.Color("248"), Dark: lipgloss.Color("238")})
-		t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(fuchsia)
-		t.Focused.TextInput.Text = t.Focused.TextInput.Text.Foreground(normalFg)
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				fmt.Fprint(os.Stderr, "\r\n")
+				return "", ErrInterrupted
+			}
+			return "", fmt.Errorf("read error: %w", err)
+		}
 
-		// Copy to blurred state
-		t.Blurred = t.Focused
-		t.Blurred.TextInput.Cursor = lipgloss.NewStyle()
-
-		return t
-	})
+		switch r {
+		case '\r', '\n':
+			fmt.Fprint(os.Stderr, "\r\n")
+			return string(inputRunes), nil
+		case 127, 8: // Backspace
+			if len(inputRunes) > 0 {
+				inputRunes = inputRunes[:len(inputRunes)-1]
+				redrawLine(title, inputRunes, mask)
+			}
+		case 3: // Ctrl+C
+			fmt.Fprint(os.Stderr, "\r\n")
+			return "", ErrInterrupted
+		case 4: // Ctrl+D
+			fmt.Fprint(os.Stderr, "\r\n")
+			return "", ErrInterrupted
+		case 27: // ESC sequence (arrow keys, etc.)
+			for {
+				b, err := reader.ReadByte()
+				if err != nil {
+					break
+				}
+				if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || b == '~' {
+					break
+				}
+			}
+			continue
+		default:
+			if r == utf8.RuneError {
+				continue
+			}
+			if !unicode.IsControl(r) {
+				inputRunes = append(inputRunes, r)
+				if mask != 0 {
+					fmt.Fprint(os.Stderr, string(mask))
+				} else {
+					fmt.Fprint(os.Stderr, string(r))
+				}
+			}
+		}
+	}
 }
 
-// AskInput prompts for a text input using huh library.
-// It provides a user-friendly input interface with validation.
+// redrawLine redraws the input line, correctly handling CJK/emoji characters.
+func redrawLine(title string, runes []rune, mask rune) {
+	fmt.Fprint(os.Stderr, "\r")
+	fmt.Fprint(os.Stderr, title)
+	if mask != 0 {
+		fmt.Fprint(os.Stderr, strings.Repeat(string(mask), len(runes)))
+	} else {
+		fmt.Fprint(os.Stderr, string(runes))
+	}
+	fmt.Fprint(os.Stderr, "\x1b[K")
+}
+
+// AskInput prompts for a text input with proper CJK/emoji backspace handling.
 //
 // Note: Output goes to stderr to avoid interfering with stdout piping.
-// This also allows colors to work correctly when stdout is piped but stderr is a TTY.
 func AskInput(value *string, format string, a ...any) error {
-	i := huh.NewInput().Title(askTitle(format, a...)).Inline(true).Value(value).
-		Validate(func(s string) error {
-			if s == "" {
-				return fmt.Errorf("input cannot be empty")
-			}
-			return nil
-		}).WithTheme(baseTheme())
-	return i.RunAccessible(os.Stderr, os.Stdin)
+	input, err := readLine(0, format, a...)
+	if err != nil {
+		return err
+	}
+
+	*value = input
+	return nil
 }
 
 // AskPassword prompts for a password input with asterisk masking.
-// It uses lipgloss for styling and displays asterisks (*) for each character entered.
-// This implementation shows visual feedback while preserving the terminal output.
-// It properly handles non-ANSI characters (UTF-8, Chinese, Emoji) by using rune-level processing.
+// It properly handles UTF-8, CJK characters, emoji, and terminal control sequences.
 // Cross-platform support: Windows, Linux, macOS (via golang.org/x/term).
 //
 // Note: Output goes to stderr to avoid interfering with stdout piping.
-// This also allows colors to work correctly when stdout is piped but stderr is a TTY.
 func AskPassword(password *string, format string, a ...any) error {
-	// Color definitions
-	blue := compat.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
-	red := compat.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
-
-	// Use lipgloss styles - no renderer needed in v2
-	titleStyle := lipgloss.NewStyle().Foreground(blue).Bold(true).PaddingRight(1)
-	errorStyle := lipgloss.NewStyle().Foreground(red)
-
-	validator := func(input string) error {
-		if input == "" {
-			return fmt.Errorf("password cannot be empty")
+	for range maxAttempts {
+		input, err := readLine('*', format, a...)
+		if err != nil {
+			return err
 		}
+
+		if input = strings.TrimSpace(input); input == "" {
+			_, _ = lipgloss.Fprintln(os.Stderr, errorStyle.Render("password cannot be empty"))
+			continue
+		}
+
+		*password = input
 		return nil
 	}
-
-	for {
-		title := titleStyle.Render(askTitle(format, a...))
-		fmt.Fprint(os.Stderr, title)
-
-		fd := int(os.Stdin.Fd())
-		oldState, err := term.MakeRaw(fd)
-		if err != nil {
-			return fmt.Errorf("failed to set raw mode: %w", err)
-		}
-
-		var passwordRunes []rune
-		reader := bufio.NewReader(os.Stdin)
-
-		for {
-			r, _, err := reader.ReadRune()
-			if err != nil {
-				_ = term.Restore(fd, oldState)
-				return fmt.Errorf("read error: %w", err)
-			}
-
-			switch r {
-			case '\r', '\n':
-				_ = term.Restore(fd, oldState)
-				fmt.Fprintln(os.Stderr)
-
-				input := string(passwordRunes)
-				if err := validator(input); err != nil {
-					fmt.Fprintln(os.Stderr, errorStyle.Render(err.Error()))
-					break
-				}
-
-				*password = input
-				return nil
-
-			case 127, 8: // Backspace/Delete (DEL=127 Unix, Backspace=8 Windows)
-				if len(passwordRunes) > 0 {
-					passwordRunes = passwordRunes[:len(passwordRunes)-1]
-					fmt.Fprint(os.Stderr, "\b \b")
-				}
-
-			case 3: // Ctrl+C
-				_ = term.Restore(fd, oldState)
-				fmt.Fprintln(os.Stderr)
-				return errors.New("input cancelled")
-
-			default:
-				if r == utf8.RuneError {
-					// Invalid UTF-8 sequence, skip it
-					continue
-				}
-				if !unicode.IsControl(r) {
-					passwordRunes = append(passwordRunes, r)
-					fmt.Fprint(os.Stderr, "*")
-				}
-			}
-		}
-	}
+	return fmt.Errorf("failed to get password after %d attempts", maxAttempts)
 }

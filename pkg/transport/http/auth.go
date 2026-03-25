@@ -170,12 +170,12 @@ func (c *client) credentialAskOne() (*Credentials, error) {
 		username = c.baseURL.User.Username()
 		c.baseURL.User = nil
 	} else {
-		if err := tui.AskInput(&username, "Username for '%s://%s':", c.baseURL.Scheme, c.baseURL.Host); err != nil {
+		if err := tui.AskInput(&username, "Username for '%s://%s': ", c.baseURL.Scheme, c.baseURL.Host); err != nil {
 			return nil, err
 		}
 	}
 	var password string
-	if err := tui.AskPassword(&password, "Password for '%s://%s@%s':", c.baseURL.Scheme, url.PathEscape(username), c.baseURL.Host); err != nil {
+	if err := tui.AskPassword(&password, "Password for '%s://%s@%s': ", c.baseURL.Scheme, url.PathEscape(username), c.baseURL.Host); err != nil {
 		return nil, err
 	}
 	return &Credentials{UserName: username, Password: password}, nil

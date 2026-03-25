@@ -143,7 +143,7 @@ func (c *client) prepareAuthMethod() ([]ssh.AuthMethod, error) {
 		return auth, nil
 	}
 	auth = append(auth, ssh.PasswordCallback(func() (secret string, err error) {
-		err = tui.AskPassword(&secret, "Password for '%s@%s':", c.User, c.Endpoint)
+		err = tui.AskPassword(&secret, "Password for '%s@%s': ", c.User, c.Endpoint)
 		return
 	}))
 	return auth, nil

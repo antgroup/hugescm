@@ -16,12 +16,12 @@ func main() {
 	}
 	var username, password string
 
-	if err := tui.AskInput(&username, "Username for '%s':", base.String()); err != nil {
+	if err := tui.AskInput(&username, "Username for '%s': ", base.String()); err != nil {
 		fmt.Fprintf(os.Stderr, "ask username error: %v\n", err)
 		return
 	}
 
-	if err := tui.AskPassword(&password, "Password for '%s://%s@%s':", base.Scheme, url.PathEscape(username), base.Host); err != nil {
+	if err := tui.AskPassword(&password, "Password for '%s://%s@%s': ", base.Scheme, url.PathEscape(username), base.Host); err != nil {
 		fmt.Fprintf(os.Stderr, "ask password error: %v\n", err)
 		return
 	}

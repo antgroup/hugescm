@@ -47,7 +47,7 @@ func readLine(mask rune, format string, a ...any) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to set raw mode: %w", err)
 	}
-	defer term.Restore(fd, oldState)
+	defer term.Restore(fd, oldState) // nolint
 
 	var inputRunes []rune
 	reader := bufio.NewReader(os.Stdin)

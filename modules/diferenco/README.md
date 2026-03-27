@@ -606,5 +606,5 @@ Apache License 2.0 - 详见 [LICENSE](../../LICENSE)。
 - Myers algorithm inspired by [Microsoft VSCode](https://github.com/microsoft/vscode)
 - Histogram algorithm based on [imara-diff](https://github.com/pascalkuthe/imara-diff)
 - ONP algorithm from [hattya/go.diff](https://github.com/hattya/go.diff)
-- Patience algorithm based on [Peter Evans' implementation](https://github.com/peter-evans/patience-diff)
+- Patience algorithm based on [Peter Evans' implementation](https://github.com/peter-evans/patience)
 - SuffixArray algorithm inspired by [diff-match-patch](https://github.com/google/diff-match-patch)

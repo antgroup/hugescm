@@ -38,12 +38,10 @@ type Patch struct {
 
 func (p Patch) Name() string {
 	switch {
-	case p.From != nil && p.To != nil:
+	case p.To != nil:
 		return p.To.Name
-	case p.From == nil:
-		return p.To.Name
-	case p.To == nil:
-		return p.To.Name
+	case p.From != nil:
+		return p.From.Name
 	}
 	return ""
 }

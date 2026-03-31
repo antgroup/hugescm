@@ -163,6 +163,13 @@ func TestMergeParallelVsMerge(t *testing.T) {
 			style:  STYLE_DIFF3,
 		},
 		{
+			name:   "no_trailing_newline_conflict",
+			origin: "line1\nline2",
+			ours:   "line1\nline2a",
+			theirs: "line1\nline2b",
+			style:  STYLE_DEFAULT,
+		},
+		{
 			name:   "no_change_ours",
 			origin: "line1\nline2\n",
 			ours:   "line1\nline2\n",

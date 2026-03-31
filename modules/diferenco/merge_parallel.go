@@ -26,7 +26,7 @@ import (
 // It uses the same logic as MergeParallel but only checks for conflicts without
 // generating the merged result, making it more efficient for conflict detection.
 func HasConflictParallel(ctx context.Context, textO, textA, textB string) (bool, error) {
-	sink := NewSink(NEWLINE_LF)
+	sink := NewSink(NEWLINE_RAW)
 
 	// Parse the texts into indices
 	oIdx, err := sink.parseLines(nil, textO)
@@ -69,7 +69,7 @@ func MergeParallel(ctx context.Context, opts *MergeOptions) (string, bool, error
 		return "", false, err
 	}
 
-	sink := NewSink(NEWLINE_LF)
+	sink := NewSink(NEWLINE_RAW)
 	oIdx, err := sink.parseLines(opts.RO, opts.TextO)
 	if err != nil {
 		return "", false, err

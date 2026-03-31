@@ -334,13 +334,13 @@ func (opts *MergeOptions) ValidateOptions() error {
 	if opts.A == Unspecified {
 		opts.A = Histogram
 	}
-	if len(opts.LabelO) != 0 {
+	if len(opts.LabelO) != 0 && !strings.HasPrefix(opts.LabelO, " ") {
 		opts.LabelO = " " + opts.LabelO
 	}
-	if len(opts.LabelA) != 0 {
+	if len(opts.LabelA) != 0 && !strings.HasPrefix(opts.LabelA, " ") {
 		opts.LabelA = " " + opts.LabelA
 	}
-	if len(opts.LabelB) != 0 {
+	if len(opts.LabelB) != 0 && !strings.HasPrefix(opts.LabelB, " ") {
 		opts.LabelB = " " + opts.LabelB
 	}
 	return nil

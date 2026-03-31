@@ -216,31 +216,24 @@ type CommitOptions struct {
 	File              string
 }
 
-func genMessage(message []string) string {
-	if len(message) == 0 {
+func genMessage(messages []string) string {
+	if len(messages) == 0 {
 		return ""
 	}
-	lines := make([]string, 0, 10)
-	lines = append(lines, strings.Split(message[0], "\n")...)
-	if len(message) > 1 {
-		lines = append(lines, message[1:]...)
-	}
-	var pos int
-	for i, n := range lines {
-		if len(n) != 0 {
-			pos = i
-			break
+
+	parts := make([]string, 0, len(messages))
+	for _, m := range messages {
+		if m == "" {
+			continue
 		}
+		parts = append(parts, strings.TrimRight(m, "\n"))
 	}
-	lines = lines[pos:]
-	if len(lines) == 0 {
+
+	if len(parts) == 0 {
 		return ""
 	}
-	lines[0] = strings.TrimSpace(lines[0])
-	if lines[len(lines)-1] != "" {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines, "\n")
+
+	return strings.Join(parts, "\n\n") + "\n"
 }
 
 var (

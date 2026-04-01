@@ -20,9 +20,11 @@ import (
 	"path/filepath"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/base58"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -50,6 +52,8 @@ type credentialsFile struct {
 const (
 	defaultCredentialsFileName = "credentials"
 	nonceSize                  = 12
+	lockRetryInterval          = 20 * time.Millisecond
+	lockStaleAfter             = 2 * time.Minute
 )
 
 // newCredentialStorage creates a new file-based credential storage.
@@ -84,23 +88,23 @@ func deriveOrValidateKey(encryptionKey string) ([]byte, error) {
 		return deriveEncryptionKey()
 	}
 
-	// Try base58 first (project standard)
+	// Try base58 first (project standard). If it decodes to a valid AES key
+	// length, use it directly. Otherwise, treat input as raw string and hash it.
 	if keyBytes := base58.Decode(encryptionKey); len(keyBytes) > 0 {
-		if !slices.Contains([]int{16, 24, 32}, len(keyBytes)) {
-			return nil, fmt.Errorf("encryption key must be 16, 24, or 32 bytes (got %d)", len(keyBytes))
-		}
-		// Use HKDF to derive a 32-byte key for AES-256
-		// This preserves the full entropy of shorter keys (16 or 24 bytes)
-		// rather than zero-padding which reduces effective security.
-		if len(keyBytes) < 32 {
-			derived := make([]byte, 32)
-			kdf := hkdf.New(sha256.New, keyBytes, nil, []byte("zeta-keyring-v1"))
-			if _, err := io.ReadFull(kdf, derived); err != nil {
-				return nil, fmt.Errorf("failed to derive key: %w", err)
+		if slices.Contains([]int{16, 24, 32}, len(keyBytes)) {
+			// Use HKDF to derive a 32-byte key for AES-256
+			// This preserves the full entropy of shorter keys (16 or 24 bytes)
+			// rather than zero-padding which reduces effective security.
+			if len(keyBytes) < 32 {
+				derived := make([]byte, 32)
+				kdf := hkdf.New(sha256.New, keyBytes, nil, []byte("zeta-keyring-v1"))
+				if _, err := io.ReadFull(kdf, derived); err != nil {
+					return nil, fmt.Errorf("failed to derive key: %w", err)
+				}
+				return derived, nil
 			}
-			return derived, nil
+			return keyBytes, nil
 		}
-		return keyBytes, nil
 	}
 
 	// Fallback: hash the raw string
@@ -290,17 +294,71 @@ func (s *credentialStorage) writeCredentials(credentials map[string]*Cred) error
 		credFile.Credentials = append(credFile.Credentials, entry)
 	}
 
-	file, err := os.OpenFile(s.storagePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		return fmt.Errorf("failed to create credentials file: %w", err)
+	storageDir := filepath.Dir(s.storagePath)
+	if err := os.MkdirAll(storageDir, 0700); err != nil {
+		return fmt.Errorf("failed to create storage directory: %w", err)
 	}
-	defer file.Close() // nolint
+
+	// Write to a temporary file and rename atomically to avoid partial/truncated writes.
+	file, err := os.CreateTemp(storageDir, filepath.Base(s.storagePath)+".tmp-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary credentials file: %w", err)
+	}
+	tmpPath := file.Name()
+	defer func() {
+		_ = file.Close()
+		_ = os.Remove(tmpPath)
+	}()
+
+	if err := file.Chmod(0600); err != nil {
+		return fmt.Errorf("failed to set temporary credentials file permission: %w", err)
+	}
 
 	if err := toml.NewEncoder(file).Encode(credFile); err != nil {
 		return fmt.Errorf("failed to encode credentials to TOML: %w", err)
 	}
 
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("failed to sync temporary credentials file: %w", err)
+	}
+
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close temporary credentials file: %w", err)
+	}
+
+	if err := strengthen.FinalizeObject(tmpPath, s.storagePath); err != nil {
+		return fmt.Errorf("failed to replace credentials file: %w", err)
+	}
+
 	return nil
+}
+
+// acquireFileLock acquires a cross-process lock by creating an exclusive lock file.
+func (s *credentialStorage) acquireFileLock(ctx context.Context) (func(), error) {
+	lockPath := s.storagePath + ".lock"
+
+	for {
+		lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		if err == nil {
+			_, _ = io.WriteString(lockFile, fmt.Sprintf("%d\n", os.Getpid()))
+			_ = lockFile.Close()
+			return func() { _ = os.Remove(lockPath) }, nil
+		}
+		if !os.IsExist(err) {
+			return nil, fmt.Errorf("failed to acquire file lock: %w", err)
+		}
+
+		if staleInfo, statErr := os.Stat(lockPath); statErr == nil && time.Since(staleInfo.ModTime()) > lockStaleAfter {
+			_ = os.Remove(lockPath)
+			continue
+		}
+
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		time.Sleep(lockRetryInterval)
+	}
 }
 
 // encryptCredentialEntry encrypts a credential entry
@@ -363,6 +421,12 @@ func (s *credentialStorage) Store(ctx context.Context, cred *Cred) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	releaseLock, err := s.acquireFileLock(ctx)
+	if err != nil {
+		return err
+	}
+	defer releaseLock()
+
 	credentials, err := s.readCredentials()
 	if err != nil {
 		return err
@@ -381,6 +445,12 @@ func (s *credentialStorage) Erase(ctx context.Context, cred *Cred) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	releaseLock, err := s.acquireFileLock(ctx)
+	if err != nil {
+		return err
+	}
+	defer releaseLock()
+
 	credentials, err := s.readCredentials()
 	if err != nil {
 		return err
@@ -388,7 +458,7 @@ func (s *credentialStorage) Erase(ctx context.Context, cred *Cred) error {
 
 	target := buildTargetName(cred)
 	if _, ok := credentials[target]; !ok {
-		return ErrNotFound
+		return nil
 	}
 
 	delete(credentials, target)

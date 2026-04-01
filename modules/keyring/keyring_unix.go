@@ -343,6 +343,9 @@ func eraseFromSecretService(cred *Cred) error {
 	targetName := buildTargetName(cred)
 	item, err := findItem(svc, targetName, zetaUserName)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return nil
+		}
 		return err
 	}
 

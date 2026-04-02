@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/clipperhouse/displaywidth"
 )
 
 // Compile-time interface assertion
@@ -78,20 +79,55 @@ func (p *Pager) Close() error {
 // shouldSkipPager checks if the content is short enough to display without a pager.
 func (p *Pager) shouldSkipPager(content string) bool {
 	// Get terminal height
-	_, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
+	termWidth, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil || termHeight <= 0 {
 		return false
 	}
-
-	// Count lines in content
-	// Reserve 2 lines for status bar and 1 for prompt
-	lineCount := strings.Count(content, "\n")
-	if !strings.HasSuffix(content, "\n") && content != "" {
-		lineCount++ // Count the last line if it doesn't end with newline
+	if termWidth <= 0 {
+		termWidth = 80
 	}
+
+	// Count rendered screen lines, accounting for ANSI codes and soft wraps.
+	// Reserve 2 lines for status bar and 1 for prompt.
+	lineCount := countRenderedLines(content, termWidth)
 
 	// If content fits in terminal (minus status bar and some margin), skip pager
 	return lineCount <= termHeight-4
+}
+
+func countRenderedLines(content string, width int) int {
+	if content == "" {
+		return 0
+	}
+	lineCount := 0
+	start := 0
+	for {
+		idx := strings.IndexByte(content[start:], '\n')
+		if idx < 0 {
+			break
+		}
+		lineCount += renderedLineHeight(content[start:start+idx], width)
+		start += idx + 1
+	}
+	// Match previous behavior: trailing newline doesn't add an extra terminal line.
+	if start < len(content) {
+		lineCount += renderedLineHeight(content[start:], width)
+	}
+	return lineCount
+}
+
+func renderedLineHeight(line string, width int) int {
+	if width <= 0 {
+		return 1
+	}
+	if strings.IndexByte(line, '\x1b') >= 0 {
+		line = term.StripANSI(line)
+	}
+	w := displaywidth.String(line)
+	if w <= 0 {
+		return 1
+	}
+	return (w + width - 1) / width
 }
 
 // run starts the interactive pager with the given content.
@@ -116,18 +152,26 @@ type pagerModel struct {
 	height       int
 	width        int
 
-	// Cached data for performance
-	lines []string
+	// Content is kept as a single string with line start offsets to avoid
+	// repeatedly joining line slices on every render.
+	content    string
+	lineStarts []int
+
+	// Cached status style to avoid rebuilding it every frame.
+	statusStyle lipgloss.Style
+	statusWidth int
 }
 
 // newPagerModel creates a new pager model with the given content.
 func newPagerModel(content string, colorMode term.Level, useAltScreen bool) *pagerModel {
+	trimmed := strings.TrimSuffix(content, "\n")
 	return &pagerModel{
 		colorMode:    colorMode,
 		useAltScreen: useAltScreen,
 		height:       20, // default height, will be updated
 		width:        80, // default width, will be updated
-		lines:        strings.Split(strings.TrimSuffix(content, "\n"), "\n"),
+		content:      trimmed,
+		lineStarts:   buildLineStarts(trimmed),
 	}
 }
 
@@ -138,7 +182,7 @@ func (m *pagerModel) Init() tea.Cmd {
 
 // maxScroll returns the maximum scroll position.
 func (m *pagerModel) maxScroll() int {
-	return max(0, len(m.lines)-m.height)
+	return max(0, m.lineCount()-m.height)
 }
 
 // Update handles messages and updates the model
@@ -204,12 +248,12 @@ func (m *pagerModel) View() tea.View {
 
 // renderStatusBar creates a status bar with line numbers and progress percentage
 func (m *pagerModel) renderStatusBar() string {
-	if len(m.lines) == 0 {
+	totalLines := m.lineCount()
+	if totalLines == 0 {
 		return ""
 	}
 
 	// Calculate visible line range
-	totalLines := len(m.lines)
 	topLine := m.scrollPos + 1
 	bottomLine := min(totalLines, m.scrollPos+m.height)
 
@@ -221,28 +265,63 @@ func (m *pagerModel) renderStatusBar() string {
 	}
 
 	// Style status bar with gray background and light gray foreground
-	statusStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
-		Background(lipgloss.Color("235")).
-		Padding(0, 1).
-		Width(m.width)
-
 	// Build status text - show the visible line range
 	statusText := fmt.Sprintf("Lines: %d-%d/%d (%d%%) | ↑/k up | ↓/j/enter down | g/home top | G/end bottom | space/f page down | b page up | q quit",
 		topLine, bottomLine, totalLines, percentage)
 
-	return statusStyle.Render(statusText)
+	return m.getStatusStyle().Render(statusText)
 }
 
 // getVisibleContent returns the content that should be visible, preserving ANSI codes
 func (m *pagerModel) getVisibleContent() string {
-	if len(m.lines) == 0 {
+	totalLines := m.lineCount()
+	if totalLines == 0 {
 		return ""
 	}
 
 	start := max(0, m.scrollPos)
-	end := min(len(m.lines), start+m.height)
-	visibleLines := m.lines[start:end]
+	end := min(totalLines, start+m.height)
+	if start >= end {
+		return ""
+	}
+	startByte := m.lineStarts[start]
+	endByte := len(m.content)
+	if end < totalLines {
+		endByte = m.lineStarts[end] - 1 // Exclude trailing newline after the last visible line.
+	}
+	if endByte < startByte {
+		return ""
+	}
+	return m.content[startByte:endByte]
+}
 
-	return strings.Join(visibleLines, "\n")
+func (m *pagerModel) lineCount() int {
+	return len(m.lineStarts)
+}
+
+func (m *pagerModel) getStatusStyle() lipgloss.Style {
+	if m.statusWidth != m.width {
+		m.statusStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241")).
+			Background(lipgloss.Color("235")).
+			Padding(0, 1).
+			Width(m.width)
+		m.statusWidth = m.width
+	}
+	return m.statusStyle
+}
+
+func buildLineStarts(content string) []int {
+	// Match strings.Split("", "\n") behavior used previously.
+	if content == "" {
+		return []int{0}
+	}
+	starts := make([]int, 1, strings.Count(content, "\n")+1)
+	starts[0] = 0
+	for i := 0; i < len(content); i++ {
+		if content[i] == '\n' && i+1 < len(content) {
+			starts = append(starts, i+1)
+		}
+	}
+	return starts
 }

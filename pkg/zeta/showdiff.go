@@ -3,6 +3,7 @@ package zeta
 import (
 	"context"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -223,7 +224,7 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch
 	if opts.WordDiff && w.ColorMode() != term.LevelNone {
 		formatter := newDiffFormatter(true)
 		for _, p := range patch {
-			_, _ = w.Write([]byte(formatter.formatPatch(p)))
+			_, _ = io.WriteString(w, formatter.formatPatch(p))
 		}
 		return nil
 	}

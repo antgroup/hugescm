@@ -183,7 +183,7 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 	if opts.WordDiff && w.EnableColor() {
 		formatter := newDiffFormatter(true)
 		for _, p := range patch {
-			_, _ = w.Write([]byte(formatter.formatPatch(p)))
+			_, _ = io.WriteString(w, formatter.formatPatch(p))
 		}
 		return nil
 	}

@@ -73,11 +73,17 @@ const (
 	srcPrefix = "a/"
 	dstPrefix = "b/"
 	zeroOID   = "0000000000000000000000000000000000000000000000000000000000000000"
+	// Guardrails for word-diff to avoid pathological latency on very long lines.
+	maxWordDiffLineBytes = 8 * 1024
+	maxWordDiffTotal     = 16 * 1024
 )
 
 // formatPatch formats a single patch.
 func (f *diffFormatter) formatPatch(patch *diferenco.Patch) string {
 	var sb strings.Builder
+	if n := estimatePatchSize(patch); n > 0 {
+		sb.Grow(n)
+	}
 
 	// Write file patch header
 	f.writeFilePatchHeader(&sb, patch)
@@ -90,6 +96,25 @@ func (f *diffFormatter) formatPatch(patch *diferenco.Patch) string {
 		f.formatHunk(&sb, hunk)
 	}
 	return sb.String()
+}
+
+func estimatePatchSize(patch *diferenco.Patch) int {
+	if patch == nil {
+		return 0
+	}
+	// Header + hunk metadata baseline.
+	size := 256 + len(patch.Hunks)*64
+	for _, hunk := range patch.Hunks {
+		for _, line := range hunk.Lines {
+			// Prefix byte + payload + newline. Colored output adds ANSI overhead,
+			// so reserve a little extra to reduce reallocations.
+			size += len(line.Content) + 12
+		}
+	}
+	if size < 0 {
+		return 0
+	}
+	return size
 }
 
 // writeFilePatchHeader writes the diff header for a patch.
@@ -216,7 +241,7 @@ func (f *diffFormatter) formatHunk(sb *strings.Builder, hunk *diferenco.Hunk) {
 func (f *diffFormatter) formatChangeBlock(sb *strings.Builder, delLines, insLines []diferenco.Line) {
 	// Only apply word-diff when there's exactly one deletion and one insertion
 	// This matches GitHub's behavior and avoids false positives
-	if f.wordDiff && len(delLines) == 1 && len(insLines) == 1 {
+	if f.wordDiff && len(delLines) == 1 && len(insLines) == 1 && shouldWordDiff(delLines[0], insLines[0]) {
 		f.formatWordDiffPair(sb, delLines[0], insLines[0])
 		return
 	}
@@ -235,7 +260,7 @@ func (f *diffFormatter) formatWordDiffPair(sb *strings.Builder, oldLine, newLine
 	oldContent := strings.TrimSuffix(oldLine.Content, "\n")
 	newContent := strings.TrimSuffix(newLine.Content, "\n")
 
-	diffs, err := diferenco.DiffWords(context.Background(), oldContent, newContent, diferenco.Histogram, nil)
+	diffs, err := diferenco.DiffWords(context.Background(), oldContent, newContent, pickWordDiffAlgorithm(oldContent, newContent), nil)
 	if err != nil {
 		// Fallback to normal formatting
 		f.formatLine(sb, oldLine)
@@ -266,6 +291,26 @@ func (f *diffFormatter) formatWordDiffPair(sb *strings.Builder, oldLine, newLine
 		}
 	}
 	sb.WriteByte('\n')
+}
+
+func shouldWordDiff(oldLine, newLine diferenco.Line) bool {
+	oldContent := strings.TrimSuffix(oldLine.Content, "\n")
+	newContent := strings.TrimSuffix(newLine.Content, "\n")
+	if len(oldContent) > maxWordDiffLineBytes || len(newContent) > maxWordDiffLineBytes {
+		return false
+	}
+	if len(oldContent)+len(newContent) > maxWordDiffTotal {
+		return false
+	}
+	return true
+}
+
+func pickWordDiffAlgorithm(oldContent, newContent string) diferenco.Algorithm {
+	combined := len(oldContent) + len(newContent)
+	if combined >= 4*1024 {
+		return diferenco.Histogram
+	}
+	return diferenco.Myers
 }
 
 // formatLine formats a single diff line.

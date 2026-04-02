@@ -299,30 +299,32 @@ func (s *credentialStorage) writeCredentials(credentials map[string]*Cred) error
 		return fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
-	// Write to a temporary file and rename atomically to avoid partial/truncated writes.
-	file, err := os.CreateTemp(storageDir, filepath.Base(s.storagePath)+".tmp-*")
+	// Write to a temporary fd and rename atomically to avoid partial/truncated writes.
+	fd, err := os.CreateTemp(storageDir, filepath.Base(s.storagePath)+".tmp-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary credentials file: %w", err)
 	}
-	tmpPath := file.Name()
+	tmpPath := fd.Name()
 	defer func() {
-		_ = file.Close()
 		_ = os.Remove(tmpPath)
 	}()
 
-	if err := file.Chmod(0600); err != nil {
+	if err := fd.Chmod(0600); err != nil {
+		_ = fd.Close()
 		return fmt.Errorf("failed to set temporary credentials file permission: %w", err)
 	}
 
-	if err := toml.NewEncoder(file).Encode(credFile); err != nil {
+	if err := toml.NewEncoder(fd).Encode(credFile); err != nil {
+		_ = fd.Close()
 		return fmt.Errorf("failed to encode credentials to TOML: %w", err)
 	}
 
-	if err := file.Sync(); err != nil {
+	if err := fd.Sync(); err != nil {
+		_ = fd.Close()
 		return fmt.Errorf("failed to sync temporary credentials file: %w", err)
 	}
 
-	if err := file.Close(); err != nil {
+	if err := fd.Close(); err != nil {
 		return fmt.Errorf("failed to close temporary credentials file: %w", err)
 	}
 

@@ -220,7 +220,7 @@ func (m *pagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-		m.height = msg.Height - 2 // leave space for status bar
+		m.height = msg.Height - 1 // leave space for status bar
 		m.ready = true
 		m.scrollPos = min(m.scrollPos, m.maxScroll())
 	}

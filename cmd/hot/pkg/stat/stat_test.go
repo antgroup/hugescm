@@ -65,6 +65,6 @@ func TestTruncateName(t *testing.T) {
 		"doc/org.aspectj/aspectjweaver/1.8.10/org/aspectj/weaver/patterns/HasThisTypePatternTriedToSneakInSomeGenericOrParameterizedTypePatternMatching/StuffAnywhereVisitor.html",
 	}
 	for _, s := range sss {
-		fmt.Fprintf(os.Stderr, "%s\n", truncateName(s, 80))
+		fmt.Fprintf(os.Stderr, "%s\n", truncatePath(s, 80))
 	}
 }

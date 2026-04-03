@@ -67,7 +67,7 @@ func (s *summer) printName(name, oid string, size int64) {
 	}
 	displayName := name
 	if !s.fullPath {
-		displayName = truncateName(name, 100)
+		displayName = truncatePath(name, 100)
 	}
 	fmt.Fprintf(os.Stderr, "%s [%s] %s: %s\n", yellow(oid), blue(displayName), tr.W("size"), red(strengthen.FormatSize(size)))
 }

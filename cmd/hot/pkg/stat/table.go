@@ -3,7 +3,6 @@ package stat
 import (
 	"fmt"
 	"os"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,7 +42,7 @@ func (s *summer) drawInteractive(title string) error {
 	for i, item := range items {
 		displayPath := item.Path
 		if !s.fullPath {
-			displayPath = truncateName(item.Path, pathWidth)
+			displayPath = truncatePath(item.Path, pathWidth)
 		}
 		rows = append(rows, []string{
 			strconv.Itoa(i + 1),
@@ -121,29 +120,29 @@ func getTerminalWidth() int {
 	return 80
 }
 
-// truncateName safely truncates a path string while preserving path structure
-func truncateName(s string, maxWidth int) string {
-	if maxWidth <= 0 || displaywidth.String(s) <= maxWidth {
-		return s
+func truncatePath(path string, maxWidth int) string {
+	if maxWidth <= 0 {
+		return ""
+	}
+	if displaywidth.String(path) <= maxWidth {
+		return path
+	}
+	if maxWidth == 1 {
+		return "…"
 	}
 
-	vv := strengthen.SplitPath(s)
-	var lastPart string
-	if len(vv) > 1 {
-		// Try to preserve path segments from the end
-		for i := 1; i <= len(vv); i++ {
-			if ss := ".../" + path.Join(vv[len(vv)-i:]...); displaywidth.String(ss) <= maxWidth {
-				return ss
-			}
+	target := maxWidth - 1
+	runes := []rune(path)
+
+	width := 0
+	cut := len(runes)
+	for i := len(runes) - 1; i >= 0; i-- {
+		w := displaywidth.Rune(runes[i])
+		if width+w > target {
+			break
 		}
-		lastPart = vv[len(vv)-1]
-	} else {
-		lastPart = s
+		width += w
+		cut = i
 	}
-
-	// Truncate last part with ellipsis
-	if maxWidth <= 3 {
-		return "..."[:maxWidth]
-	}
-	return displaywidth.TruncateString(lastPart, maxWidth, "...")
+	return "…" + string(runes[cut:])
 }

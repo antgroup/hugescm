@@ -16,6 +16,7 @@ import (
 )
 
 type DiffOptions struct {
+	Nav        bool
 	NameOnly   bool
 	NameStatus bool // name status
 	Numstat    bool
@@ -214,6 +215,14 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 }
 
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
+	if opts.Nav && term.StdoutLevel != term.LevelNone && len(patch) > 0 {
+		var err error
+		if err := runPatchView(patch, opts.WordDiff); err == nil {
+			return nil
+		}
+		warn("nav mode fallback to unified patch output: %v", err)
+	}
+
 	w, err := opts.NewOutput(ctx)
 	if err != nil {
 		return err

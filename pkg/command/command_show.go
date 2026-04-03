@@ -17,6 +17,7 @@ import (
 
 // Show various types of objects
 type Show struct {
+	Nav           bool     `name:"nav" negatable:"" help:"Use built-in interactive navigation view"`
 	Textconv      bool     `name:"textconv" help:"Converting text to Unicode"`
 	Histogram     bool     `name:"histogram" help:"Generate a diff using the \"Histogram diff\" algorithm"`
 	ONP           bool     `name:"onp" help:"Generate a diff using the \"O(NP) diff\" algorithm"`
@@ -76,6 +77,7 @@ func (c *Show) Run(g *Globals) error {
 		return err
 	}
 	return r.Show(context.Background(), &zeta.ShowOptions{
+		Nav:       c.Nav,
 		Objects:   c.Objects,
 		Textconv:  c.Textconv,
 		Limit:     c.Limit,

@@ -274,6 +274,7 @@
 "Compares two given paths on the filesystem" = "比较文件系统上给定的两个路径"
 "Show only names of changed files" = "仅显示已更改文件的名称"
 "Show names and status of changed files" = "显示已更改文件的名称和状态"
+"Use built-in interactive navigation view" = "使用内置交互式导航视图"
 "Show numeric diffstat instead of patch" = "显示数字 diffstat 而不是补丁"
 "Show diffstat instead of patch" = "显示 diffstat 而不是 patch"
 "Output only the last line of --stat format" = "只输出--stat格式的最后一行"
@@ -287,6 +288,7 @@
 "Generate a diff using the \"Patience diff\" algorithm" = "使用 \"Patience diff\" 算法生成差异"
 "Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" = "选择一个 diff 算法，支持：histogram|onp|myers|patience|minimal"
 "Spend extra time to make sure the smallest possible diff is produced" = "花费额外的时间来确保产生尽可能最小的差异"
+"Show word-level diff highlighting" = "显示词级 diff 高亮"
 # rm
 "Remove files from the working tree and from the index" = "从工作区和索引中删除文件"
 "Override the up-to-date check" = "忽略文件更新状态检查"

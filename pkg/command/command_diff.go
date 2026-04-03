@@ -19,6 +19,7 @@ import (
 
 type Diff struct {
 	NoIndex         bool     `name:"no-index" help:"Compares two given paths on the filesystem"`
+	Nav             bool     `name:"nav" negatable:"" help:"Use built-in interactive navigation view"`
 	NameOnly        bool     `name:"name-only" help:"Show only names of changed files"`
 	NameStatus      bool     `name:"name-status" help:"Show names and status of changed files"`
 	Numstat         bool     `name:"numstat" help:"Show numeric diffstat instead of patch"`
@@ -93,6 +94,7 @@ func (c *Diff) NewOptions() (*zeta.DiffOptions, error) {
 		return nil, err
 	}
 	opts := &zeta.DiffOptions{
+		Nav:        c.Nav && len(c.Output) == 0,
 		NameOnly:   c.NameOnly,
 		NameStatus: c.NameStatus,
 		Numstat:    c.Numstat,
@@ -135,6 +137,9 @@ func (c *Diff) NewOutput(ctx context.Context) (zeta.Printer, error) {
 			return nil, err
 		}
 		return &zeta.WrapPrinter{WriteCloser: fd}, nil
+	}
+	if c.Nav {
+		return zeta.NewBuiltinPrinter(ctx), nil
 	}
 	return zeta.NewPrinter(ctx), nil
 }

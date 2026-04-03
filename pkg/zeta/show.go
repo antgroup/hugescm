@@ -15,11 +15,13 @@ import (
 	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
 type ShowOptions struct {
+	Nav       bool
 	Objects   []string
 	Textconv  bool
 	Algorithm diferenco.Algorithm
@@ -70,6 +72,9 @@ func (r *Repository) Show(ctx context.Context, opts *ShowOptions) error {
 		objects = append(objects, &showObject{name: o, oid: oid})
 	}
 	p := NewPrinter(ctx)
+	if opts.Nav {
+		p = NewBuiltinPrinter(ctx)
+	}
 	defer p.Close() // nolint
 	for _, o := range objects {
 		if err := r.showOne(ctx, p, opts, o); err != nil {
@@ -177,6 +182,14 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 	})
 	if err != nil {
 		return err
+	}
+
+	if opts.Nav && term.StdoutLevel != term.LevelNone {
+		var err error
+		if err = runPatchView(patch, opts.WordDiff); err == nil {
+			return nil
+		}
+		warn("nav mode fallback to unified patch output: %v", err)
 	}
 
 	// Use word-diff formatter when enabled

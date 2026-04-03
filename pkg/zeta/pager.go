@@ -208,6 +208,11 @@ func NewPrinter(ctx context.Context) *printer {
 	}}
 }
 
+// NewBuiltinPrinter creates a printer backed by the built-in TUI pager.
+func NewBuiltinPrinter(ctx context.Context) *printer {
+	return newBuiltinPrinter(ctx)
+}
+
 // newBuiltinPrinter creates a Printer using the built-in tui.Pager
 func newBuiltinPrinter(context.Context) *printer {
 	builtinPager := tui.NewPager(term.StdoutLevel, true)

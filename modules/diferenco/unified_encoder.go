@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ZERO_OID = "0000000000000000000000000000000000000000000000000000000000000000" // zeta zero OID
+	ZERO_OID_MAX = "0000000000000000000000000000000000000000000000000000000000000000" // ZERO OID MAX
 )
 
 var (
@@ -35,40 +35,63 @@ type UnifiedEncoder struct {
 	// srcPrefix and dstPrefix are prepended to file paths when encoding a diff.
 	srcPrefix string
 	dstPrefix string
+	vcs       string
 	noRename  bool
 	// colorConfig is the color configuration. The default is no color.
 	color color.ColorConfig
 }
 
-// NewUnifiedEncoder returns a new UnifiedEncoder that writes to w.
-func NewUnifiedEncoder(w io.Writer) *UnifiedEncoder {
-	return &UnifiedEncoder{
-		Writer:    w,
-		srcPrefix: "a/",
-		dstPrefix: "b/",
+// EncoderOption sets an option on UnifiedEncoder.
+type EncoderOption func(*UnifiedEncoder)
+
+// WithVCS sets the VCS name for the encoder.
+func WithVCS(vcs string) EncoderOption {
+	return func(e *UnifiedEncoder) {
+		if vcs != "" {
+			e.vcs = vcs
+		}
 	}
 }
 
-// SetColor sets e's color configuration and returns e.
-func (e *UnifiedEncoder) SetColor(colorConfig color.ColorConfig) *UnifiedEncoder {
-	e.color = colorConfig
-	return e
+// WithColor sets the color configuration.
+func WithColor(cc color.ColorConfig) EncoderOption {
+	return func(e *UnifiedEncoder) {
+		e.color = cc
+	}
 }
 
-// SetSrcPrefix sets e's srcPrefix and returns e.
-func (e *UnifiedEncoder) SetSrcPrefix(prefix string) *UnifiedEncoder {
-	e.srcPrefix = prefix
-	return e
+// WithSrcPrefix sets the source prefix for file paths.
+func WithSrcPrefix(prefix string) EncoderOption {
+	return func(e *UnifiedEncoder) {
+		e.srcPrefix = prefix
+	}
 }
 
-// SetDstPrefix sets e's dstPrefix and returns e.
-func (e *UnifiedEncoder) SetDstPrefix(prefix string) *UnifiedEncoder {
-	e.dstPrefix = prefix
-	return e
+// WithDstPrefix sets the destination prefix for file paths.
+func WithDstPrefix(prefix string) EncoderOption {
+	return func(e *UnifiedEncoder) {
+		e.dstPrefix = prefix
+	}
 }
 
-func (e *UnifiedEncoder) SetNoRename() *UnifiedEncoder {
-	e.noRename = true
+// WithNoRename disables rename detection in the output.
+func WithNoRename() EncoderOption {
+	return func(e *UnifiedEncoder) {
+		e.noRename = true
+	}
+}
+
+// NewUnifiedEncoder returns a new UnifiedEncoder that writes to w.
+func NewUnifiedEncoder(w io.Writer, opts ...EncoderOption) *UnifiedEncoder {
+	e := &UnifiedEncoder{
+		Writer:    w,
+		srcPrefix: "a/",
+		dstPrefix: "b/",
+		vcs:       "zeta",
+	}
+	for _, opt := range opts {
+		opt(e)
+	}
 	return e
 }
 
@@ -108,8 +131,8 @@ func (e *UnifiedEncoder) writeFilePatchHeader(p *Patch, b *strings.Builder) {
 	case from != nil && to != nil:
 		hashEquals := from.Hash == to.Hash
 		lines = append(lines,
-			fmt.Sprintf("diff --zeta %s%s %s%s",
-				e.srcPrefix, from.Name, e.dstPrefix, to.Name),
+			fmt.Sprintf("diff --%s %s%s %s%s",
+				e.vcs, e.srcPrefix, from.Name, e.dstPrefix, to.Name),
 		)
 		if from.Mode != to.Mode {
 			lines = append(lines,
@@ -139,16 +162,16 @@ func (e *UnifiedEncoder) writeFilePatchHeader(p *Patch, b *strings.Builder) {
 		}
 	case from == nil:
 		lines = append(lines,
-			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+to.Name, e.dstPrefix+to.Name),
+			fmt.Sprintf("diff --%s %s %s", e.vcs, e.srcPrefix+to.Name, e.dstPrefix+to.Name),
 			fmt.Sprintf("new file mode %o", to.Mode),
-			fmt.Sprintf("index %s..%s", ZERO_OID, to.Hash),
+			fmt.Sprintf("index %s..%s", ZERO_OID_MAX[0:min(len(to.Hash), len(ZERO_OID_MAX))], to.Hash),
 		)
 		lines = e.appendPathLines(lines, "/dev/null", e.dstPrefix+to.Name, p.IsBinary, p.IsFragments)
 	case to == nil:
 		lines = append(lines,
-			fmt.Sprintf("diff --zeta %s %s", e.srcPrefix+from.Name, e.dstPrefix+from.Name),
+			fmt.Sprintf("diff --%s %s %s", e.vcs, e.srcPrefix+from.Name, e.dstPrefix+from.Name),
 			fmt.Sprintf("deleted file mode %o", from.Mode),
-			fmt.Sprintf("index %s..%s", from.Hash, ZERO_OID),
+			fmt.Sprintf("index %s..%s", from.Hash, ZERO_OID_MAX[0:min(len(from.Hash), len(ZERO_OID_MAX))]),
 		)
 		lines = e.appendPathLines(lines, e.srcPrefix+from.Name, "/dev/null", p.IsBinary, p.IsFragments)
 	}

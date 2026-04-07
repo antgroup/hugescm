@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
-	"github.com/antgroup/hugescm/modules/diferenco/color"
 	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/tui"
 	"github.com/antgroup/hugescm/modules/zeta/backend"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
@@ -201,10 +201,7 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 		return nil
 	}
 
-	e := diferenco.NewUnifiedEncoder(w)
-	if w.EnableColor() {
-		e.SetColor(color.NewColorConfig())
-	}
+	e := diferenco.NewUnifiedEncoder(w, tui.EncoderOptions(w.ColorMode())...)
 	_ = e.Encode(patch)
 	return nil
 }

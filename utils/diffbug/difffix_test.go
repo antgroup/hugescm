@@ -39,8 +39,7 @@ func TestDiffText(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := diferenco.NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := diferenco.NewUnifiedEncoder(os.Stderr, diferenco.WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*diferenco.Patch{p})
 }
 

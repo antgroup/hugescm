@@ -78,8 +78,7 @@ func TestPatchFD(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -115,8 +114,7 @@ func TestPatch(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -142,8 +140,7 @@ func TestPatchNew(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -169,8 +166,7 @@ func TestPatchDelete(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -199,8 +195,7 @@ foo bar
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -236,8 +231,7 @@ func TestPatchScss(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -273,8 +267,7 @@ func TestPatchCss(t *testing.T) {
 	if err != nil {
 		return
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -297,8 +290,7 @@ func TestShowPatch(t *testing.T) {
 			IsFragments: true,
 		},
 	}
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode(patch)
 }
 

@@ -32,8 +32,33 @@ func TestHistogram(t *testing.T) {
 	b := sink.SplitLines(textB)
 	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
+	_ = e.Encode([]*Patch{u})
+}
+
+func TestHistogramGit(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	bytesA, err := os.ReadFile(filepath.Join(dir, "testdata/a.txt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read a error: %v\n", err)
+		return
+	}
+	textA := string(bytesA)
+	bytesB, err := os.ReadFile(filepath.Join(dir, "testdata/b.txt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read b error: %v\n", err)
+		return
+	}
+	textB := string(bytesB)
+	sink := &Sink{
+		Index: make(map[string]int),
+	}
+	a := sink.SplitLines(textA)
+	b := sink.SplitLines(textB)
+	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
+	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()), WithVCS("git"))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -63,8 +88,7 @@ A`
 	b := sink.SplitLines(lines2)
 	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -88,8 +112,7 @@ c`
 	b := sink.SplitLines(lines2)
 	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -121,8 +144,7 @@ c`
 	b := sink.SplitLines(lines2)
 	changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }
 
@@ -150,8 +172,7 @@ end`
 		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
 		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-		e := NewUnifiedEncoder(os.Stderr)
-		e.SetColor(color.NewColorConfig())
+		e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 		_ = e.Encode([]*Patch{u})
 
 		// Verify: should have 1 delete
@@ -187,8 +208,7 @@ new_trailer`
 		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
 		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-		e := NewUnifiedEncoder(os.Stderr)
-		e.SetColor(color.NewColorConfig())
+		e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 		_ = e.Encode([]*Patch{u})
 
 		totalDel, totalIns := 0, 0
@@ -223,8 +243,7 @@ func bar() {
 		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
 		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-		e := NewUnifiedEncoder(os.Stderr)
-		e.SetColor(color.NewColorConfig())
+		e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 		_ = e.Encode([]*Patch{u})
 
 		totalDel, totalIns := 0, 0
@@ -261,8 +280,7 @@ block {
 		changes, _ := DiffSlices(t.Context(), a, b, Histogram)
 
 		u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-		e := NewUnifiedEncoder(os.Stderr)
-		e.SetColor(color.NewColorConfig())
+		e := NewUnifiedEncoder(os.Stderr, WithColor(color.NewColorConfig()))
 		_ = e.Encode([]*Patch{u})
 
 		t.Logf("Result: %d changes (expected: 2 changes - one per block)", len(changes))

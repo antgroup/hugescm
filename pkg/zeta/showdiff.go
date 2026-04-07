@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
-	"github.com/antgroup/hugescm/modules/diferenco/color"
 	"github.com/antgroup/hugescm/modules/merkletrie"
 	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/modules/tui"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
@@ -238,13 +238,11 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch
 		return nil
 	}
 
-	e := diferenco.NewUnifiedEncoder(w)
-	if w.ColorMode() != term.LevelNone {
-		e.SetColor(color.NewColorConfig())
-	}
+	encoderOpts := tui.EncoderOptions(w.ColorMode())
 	if opts.NoRename {
-		e.SetNoRename()
+		encoderOpts = append(encoderOpts, diferenco.WithNoRename())
 	}
+	e := diferenco.NewUnifiedEncoder(w, encoderOpts...)
 	_ = e.Encode(patch)
 	return nil
 }

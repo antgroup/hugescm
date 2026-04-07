@@ -32,7 +32,6 @@ func TestMinimalDiff(t *testing.T) {
 	b := sink.SplitLines(textB)
 	changes, _ := DiffSlices(t.Context(), a, b, Minimal)
 	u := sink.ToPatch(&File{Name: "a.txt"}, &File{Name: "b.txt"}, changes, a, b, DefaultContextLines)
-	e := NewUnifiedEncoder(os.Stderr)
-	e.SetColor(color.NewColorConfig())
+	e := NewUnifiedEncoder(os.Stderr, WithVCS("zeta"), WithColor(color.NewColorConfig()))
 	_ = e.Encode([]*Patch{u})
 }

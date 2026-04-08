@@ -13,6 +13,7 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/hexview"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
+	"github.com/antgroup/hugescm/modules/patchview"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/tui"
@@ -186,7 +187,7 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 
 	if opts.Nav && term.StdoutLevel != term.LevelNone {
 		var err error
-		if err = runPatchView(patch, opts.WordDiff); err == nil {
+		if err = patchview.Run(patch); err == nil {
 			return nil
 		}
 		warn("nav mode fallback to unified patch output: %v", err)

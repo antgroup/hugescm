@@ -10,6 +10,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/merkletrie"
+	"github.com/antgroup/hugescm/modules/patchview"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/tui"
 	"github.com/antgroup/hugescm/modules/zeta/object"
@@ -217,7 +218,7 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
 	if opts.Nav && term.StdoutLevel != term.LevelNone && len(patch) > 0 {
 		var err error
-		if err := runPatchView(patch, opts.WordDiff); err == nil {
+		if err := patchview.Run(patch); err == nil {
 			return nil
 		}
 		warn("nav mode fallback to unified patch output: %v", err)

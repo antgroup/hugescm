@@ -18,6 +18,8 @@ type diffColors struct {
 	addition lipgloss.Style
 	deletion lipgloss.Style
 	context  lipgloss.Style
+	meta     lipgloss.Style
+	frag     lipgloss.Style
 }
 
 // diffHighlight defines word-diff highlight styles.
@@ -27,6 +29,7 @@ type diffHighlight struct {
 }
 
 // defaultDiffColors returns default diff colors with adaptive light/dark theme.
+// Colors are designed to be consistent with GitHub's diff styling.
 func defaultDiffColors() diffColors {
 	return diffColors{
 		addition: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
@@ -37,6 +40,16 @@ func defaultDiffColors() diffColors {
 		}),
 		context: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
 			Light: lipgloss.Color("#24292E"), Dark: lipgloss.Color("#E1E4E8"),
+		}),
+		// Meta: diff header lines (diff --zeta, index, new file mode, etc.)
+		// Uses a dim/subtle gray to not distract from the actual diff content.
+		meta: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+			Light: lipgloss.Color("#6E7781"), Dark: lipgloss.Color("#8B949E"),
+		}),
+		// Frag: fragment header lines (---, +++, @@ ... @@)
+		// Uses GitHub's link blue color for consistency.
+		frag: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+			Light: lipgloss.Color("#0550AE"), Dark: lipgloss.Color("#58A6FF"),
 		}),
 	}
 }
@@ -127,53 +140,78 @@ func (f *diffFormatter) writeFilePatchHeader(sb *strings.Builder, p *diferenco.P
 	switch {
 	case from != nil && to != nil:
 		hashEquals := from.Hash == to.Hash
-		fmt.Fprintf(sb, "diff --zeta %s%s %s%s\n", srcPrefix, from.Name, dstPrefix, to.Name)
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("diff --zeta %s%s %s%s", srcPrefix, from.Name, dstPrefix, to.Name)))
+		sb.WriteByte('\n')
 		if from.Mode != to.Mode {
-			fmt.Fprintf(sb, "old mode %o\n", from.Mode)
-			fmt.Fprintf(sb, "new mode %o\n", to.Mode)
+			sb.WriteString(f.colors.meta.Render(fmt.Sprintf("old mode %o", from.Mode)))
+			sb.WriteByte('\n')
+			sb.WriteString(f.colors.meta.Render(fmt.Sprintf("new mode %o", to.Mode)))
+			sb.WriteByte('\n')
 		}
 		if from.Name != to.Name {
-			fmt.Fprintf(sb, "rename from %s\n", from.Name)
-			fmt.Fprintf(sb, "rename to %s\n", to.Name)
+			sb.WriteString(f.colors.meta.Render("rename from " + from.Name))
+			sb.WriteByte('\n')
+			sb.WriteString(f.colors.meta.Render("rename to " + to.Name))
+			sb.WriteByte('\n')
 		}
 		if from.Mode != to.Mode && !hashEquals {
-			fmt.Fprintf(sb, "index %s..%s\n", from.Hash, to.Hash)
+			sb.WriteString(f.colors.meta.Render(fmt.Sprintf("index %s..%s", from.Hash, to.Hash)))
+			sb.WriteByte('\n')
 		} else if !hashEquals {
-			fmt.Fprintf(sb, "index %s..%s %o\n", from.Hash, to.Hash, from.Mode)
+			sb.WriteString(f.colors.meta.Render(fmt.Sprintf("index %s..%s %o", from.Hash, to.Hash, from.Mode)))
+			sb.WriteByte('\n')
 		}
 		if !hashEquals {
 			if p.IsBinary {
-				fmt.Fprintf(sb, "Binary files %s%s and %s%s differ\n", srcPrefix, from.Name, dstPrefix, to.Name)
+				sb.WriteString(f.colors.meta.Render(fmt.Sprintf("Binary files %s%s and %s%s differ", srcPrefix, from.Name, dstPrefix, to.Name)))
+				sb.WriteByte('\n')
 			} else if p.IsFragments {
-				fmt.Fprintf(sb, "Fragments files %s%s and %s%s differ\n", srcPrefix, from.Name, dstPrefix, to.Name)
+				sb.WriteString(f.colors.meta.Render(fmt.Sprintf("Fragments files %s%s and %s%s differ", srcPrefix, from.Name, dstPrefix, to.Name)))
+				sb.WriteByte('\n')
 			} else {
-				fmt.Fprintf(sb, "--- %s%s\n", srcPrefix, from.Name)
-				fmt.Fprintf(sb, "+++ %s%s\n", dstPrefix, to.Name)
+				sb.WriteString(f.colors.frag.Render("--- " + srcPrefix + from.Name))
+				sb.WriteByte('\n')
+				sb.WriteString(f.colors.frag.Render("+++ " + dstPrefix + to.Name))
+				sb.WriteByte('\n')
 			}
 		}
 	case from == nil:
-		fmt.Fprintf(sb, "diff --zeta %s%s %s%s\n", srcPrefix, to.Name, dstPrefix, to.Name)
-		fmt.Fprintf(sb, "new file mode %o\n", to.Mode)
-		fmt.Fprintf(sb, "index %s..%s\n", zeroOID, to.Hash)
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+to.Name, dstPrefix+to.Name)))
+		sb.WriteByte('\n')
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("new file mode %o", to.Mode)))
+		sb.WriteByte('\n')
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("index %s..%s", zeroOID, to.Hash)))
+		sb.WriteByte('\n')
 		if p.IsBinary {
-			sb.WriteString("Binary files /dev/null and " + dstPrefix + to.Name + " differ\n")
+			sb.WriteString(f.colors.meta.Render("Binary files /dev/null and " + dstPrefix + to.Name + " differ"))
+			sb.WriteByte('\n')
 		} else if p.IsFragments {
-			sb.WriteString("Fragments files /dev/null and " + dstPrefix + to.Name + " differ\n")
+			sb.WriteString(f.colors.meta.Render("Fragments files /dev/null and " + dstPrefix + to.Name + " differ"))
+			sb.WriteByte('\n')
 		} else {
-			sb.WriteString("--- /dev/null\n")
-			fmt.Fprintf(sb, "+++ %s%s\n", dstPrefix, to.Name)
+			sb.WriteString(f.colors.frag.Render("--- /dev/null"))
+			sb.WriteByte('\n')
+			sb.WriteString(f.colors.frag.Render("+++ " + dstPrefix + to.Name))
+			sb.WriteByte('\n')
 		}
 	case to == nil:
-		fmt.Fprintf(sb, "diff --zeta %s%s %s%s\n", srcPrefix, from.Name, dstPrefix, from.Name)
-		fmt.Fprintf(sb, "deleted file mode %o\n", from.Mode)
-		fmt.Fprintf(sb, "index %s..%s\n", from.Hash, zeroOID)
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+from.Name, dstPrefix+from.Name)))
+		sb.WriteByte('\n')
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("deleted file mode %o", from.Mode)))
+		sb.WriteByte('\n')
+		sb.WriteString(f.colors.meta.Render(fmt.Sprintf("index %s..%s", from.Hash, zeroOID)))
+		sb.WriteByte('\n')
 		if p.IsBinary {
-			sb.WriteString("Binary files " + srcPrefix + from.Name + " and /dev/null differ\n")
+			sb.WriteString(f.colors.meta.Render("Binary files " + srcPrefix + from.Name + " and /dev/null differ"))
+			sb.WriteByte('\n')
 		} else if p.IsFragments {
-			sb.WriteString("Fragments files " + srcPrefix + from.Name + " and /dev/null differ\n")
+			sb.WriteString(f.colors.meta.Render("Fragments files " + srcPrefix + from.Name + " and /dev/null differ"))
+			sb.WriteByte('\n')
 		} else {
-			fmt.Fprintf(sb, "--- %s%s\n", srcPrefix, from.Name)
-			sb.WriteString("+++ /dev/null\n")
+			sb.WriteString(f.colors.frag.Render("--- " + srcPrefix + from.Name))
+			sb.WriteByte('\n')
+			sb.WriteString(f.colors.frag.Render("+++ /dev/null"))
+			sb.WriteByte('\n')
 		}
 	}
 }
@@ -194,22 +232,26 @@ func (f *diffFormatter) formatHunk(sb *strings.Builder, hunk *diferenco.Hunk) {
 		}
 	}
 
-	sb.WriteString("@@")
+	var header strings.Builder
+	header.WriteString("@@")
 	if fromCount > 1 {
-		fmt.Fprintf(sb, " -%d,%d", hunk.FromLine, fromCount)
+		fmt.Fprintf(&header, " -%d,%d", hunk.FromLine, fromCount)
 	} else if hunk.FromLine == 1 && fromCount == 0 {
-		sb.WriteString(" -0,0")
+		header.WriteString(" -0,0")
 	} else {
-		fmt.Fprintf(sb, " -%d", hunk.FromLine)
+		fmt.Fprintf(&header, " -%d", hunk.FromLine)
 	}
 	if toCount > 1 {
-		fmt.Fprintf(sb, " +%d,%d", hunk.ToLine, toCount)
+		fmt.Fprintf(&header, " +%d,%d", hunk.ToLine, toCount)
 	} else if hunk.ToLine == 1 && toCount == 0 {
-		sb.WriteString(" +0,0")
+		header.WriteString(" +0,0")
 	} else {
-		fmt.Fprintf(sb, " +%d", hunk.ToLine)
+		fmt.Fprintf(&header, " +%d", hunk.ToLine)
 	}
-	sb.WriteString(" @@\n")
+	header.WriteString(" @@")
+
+	sb.WriteString(f.colors.frag.Render(header.String()))
+	sb.WriteByte('\n')
 
 	lines := hunk.Lines
 	for i := 0; i < len(lines); i++ {

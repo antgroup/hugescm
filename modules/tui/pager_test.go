@@ -51,9 +51,9 @@ func TestCountRenderedLines(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := countRenderedLines(tt.content, tt.width)
+			got := countRenderedLinesLimit(tt.content, tt.width, 10000)
 			if got != tt.want {
-				t.Fatalf("countRenderedLines(%q, %d)=%d, want %d", tt.content, tt.width, got, tt.want)
+				t.Fatalf("countRenderedLinesLimit(%q, %d)=%d, want %d", tt.content, tt.width, got, tt.want)
 			}
 		})
 	}
@@ -105,6 +105,6 @@ func BenchmarkCountRenderedLines(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		benchmarkRenderedLines = countRenderedLines(content, 80)
+		benchmarkRenderedLines = countRenderedLinesLimit(content, 80, 10000)
 	}
 }

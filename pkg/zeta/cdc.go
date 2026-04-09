@@ -126,16 +126,17 @@ func (c *CDCChunker) Chunk(reader io.Reader, size int64) ([]chunk, error) {
 
 				shouldCut := false
 
-				if chunkSize < c.normalSize {
+				switch {
+				case chunkSize < c.normalSize:
 					// Phase 2: Skip phase - use maskS to skip quickly
 					shouldCut = (hash & c.maskS) == 0
-				} else if chunkSize < c.normalSize+c.windowSize {
+				case chunkSize < c.normalSize+c.windowSize:
 					// Phase 3: Normal phase - use maskN for standard cutting
 					shouldCut = (hash & c.maskN) == 0
-				} else if chunkSize < c.maxSize {
+				case chunkSize < c.maxSize:
 					// Phase 4: Tail phase - use maskL to allow larger chunks
 					shouldCut = (hash & c.maskL) == 0
-				} else {
+				default:
 					// Phase 5: Force cut at max size
 					shouldCut = true
 				}
@@ -218,16 +219,17 @@ func (c *CDCChunker) ChunkStreaming(reader io.Reader, size int64, onChunk func(o
 
 				shouldCut := false
 
-				if chunkSize < c.normalSize {
+				switch {
+				case chunkSize < c.normalSize:
 					// Phase 2: Skip phase
 					shouldCut = (hash & c.maskS) == 0
-				} else if chunkSize < c.normalSize+c.windowSize {
+				case chunkSize < c.normalSize+c.windowSize:
 					// Phase 3: Normal phase
 					shouldCut = (hash & c.maskN) == 0
-				} else if chunkSize < c.maxSize {
+				case chunkSize < c.maxSize:
 					// Phase 4: Tail phase
 					shouldCut = (hash & c.maskL) == 0
-				} else {
+				default:
 					// Phase 5: Force cut
 					shouldCut = true
 				}

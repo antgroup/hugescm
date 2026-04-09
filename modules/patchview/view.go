@@ -113,6 +113,9 @@ type model struct {
 	cachedPatch    *diferenco.Patch
 	cachedContent  string
 	cachedMaxWidth int
+
+	// Cache for stats width calculation
+	cachedStatsWidth int
 }
 
 const (
@@ -328,9 +331,12 @@ func (m *model) syncListYOffset() {
 	startIdx := m.listYOffset
 	endIdx := min(startIdx+contentHeight, totalFiles)
 
+	// Scroll up if cursor is above visible area
 	if m.cursor < startIdx {
 		m.listYOffset = m.cursor
-	} else if m.cursor >= endIdx {
+	}
+	// Scroll down if cursor is below visible area
+	if m.cursor >= endIdx {
 		m.listYOffset = max(0, m.cursor-contentHeight+1)
 	}
 
@@ -428,8 +434,8 @@ func (m *model) renderFileList() string {
 		return listStyle.Render(" No changes")
 	}
 
-	// Compute stats width once for the entire list
-	statsWidth := m.computeStatsWidth()
+	// Use cached stats width
+	statsWidth := m.getStatsWidth()
 
 	startIdx := m.listYOffset
 	endIdx := min(startIdx+contentHeight, len(m.patches))
@@ -468,85 +474,67 @@ func (m *model) renderFileLine(p *diferenco.Patch, selected bool, width, statsWi
 	// Build the complete line
 	var line strings.Builder
 
+	// Render prefix and path
 	if selected {
-		// Selected: apply background to entire line, but preserve stats colors
 		prefix := "▌ "
 		line.WriteString(m.theme.Selected.Render(prefix + pathDisplay + strings.Repeat(" ", padding)))
-
-		// Render stats with selected background but original foreground colors
-		if stat.Addition > 0 && stat.Deletion > 0 {
-			addedText := fmt.Sprintf("+%d", stat.Addition)
-			deletedText := fmt.Sprintf("-%d", stat.Deletion)
-			addedStyle := m.theme.Selected.Foreground(m.theme.Addition.GetForeground())
-			deletedStyle := m.theme.Selected.Foreground(m.theme.Deletion.GetForeground())
-			statsRendered := addedStyle.Render(addedText) + " " + deletedStyle.Render(deletedText)
-			statsRenderedWidth := displaywidth.String(addedText) + 1 + displaywidth.String(deletedText)
-			paddingNeeded := statsWidth - statsRenderedWidth
-			if paddingNeeded > 0 {
-				line.WriteString(statsRendered + m.theme.Selected.Render(strings.Repeat(" ", paddingNeeded)))
-			} else {
-				line.WriteString(statsRendered)
-			}
-		} else if stat.Addition > 0 {
-			addedText := fmt.Sprintf("+%d", stat.Addition)
-			addedStyle := m.theme.Selected.Foreground(m.theme.Addition.GetForeground())
-			statsRendered := addedStyle.Render(addedText)
-			paddingNeeded := statsWidth - displaywidth.String(addedText)
-			if paddingNeeded > 0 {
-				line.WriteString(statsRendered + m.theme.Selected.Render(strings.Repeat(" ", paddingNeeded)))
-			} else {
-				line.WriteString(statsRendered)
-			}
-		} else if stat.Deletion > 0 {
-			deletedText := fmt.Sprintf("-%d", stat.Deletion)
-			deletedStyle := m.theme.Selected.Foreground(m.theme.Deletion.GetForeground())
-			statsRendered := deletedStyle.Render(deletedText)
-			paddingNeeded := statsWidth - displaywidth.String(deletedText)
-			if paddingNeeded > 0 {
-				line.WriteString(statsRendered + m.theme.Selected.Render(strings.Repeat(" ", paddingNeeded)))
-			} else {
-				line.WriteString(statsRendered)
-			}
-		} else if statsWidth > 0 {
-			line.WriteString(m.theme.Selected.Render(strings.Repeat(" ", statsWidth)))
-		}
 	} else {
-		// Not selected: prefix + path + stats with colors
 		line.WriteString("  ")
 		line.WriteString(pathDisplay)
 		line.WriteString(strings.Repeat(" ", padding))
+	}
 
-		// Render stats with colors
-		if stat.Addition > 0 && stat.Deletion > 0 {
-			addedText := fmt.Sprintf("+%d", stat.Addition)
-			deletedText := fmt.Sprintf("-%d", stat.Deletion)
-			statsRendered := m.theme.Addition.Render(addedText) + " " + m.theme.Deletion.Render(deletedText)
-			statsRenderedWidth := displaywidth.String(addedText) + 1 + displaywidth.String(deletedText)
-			paddingNeeded := statsWidth - statsRenderedWidth
-			line.WriteString(statsRendered)
-			if paddingNeeded > 0 {
-				line.WriteString(strings.Repeat(" ", paddingNeeded))
-			}
-		} else if stat.Addition > 0 {
-			addedText := fmt.Sprintf("+%d", stat.Addition)
-			line.WriteString(m.theme.Addition.Render(addedText))
-			paddingNeeded := statsWidth - displaywidth.String(addedText)
-			if paddingNeeded > 0 {
-				line.WriteString(strings.Repeat(" ", paddingNeeded))
-			}
-		} else if stat.Deletion > 0 {
-			deletedText := fmt.Sprintf("-%d", stat.Deletion)
-			line.WriteString(m.theme.Deletion.Render(deletedText))
-			paddingNeeded := statsWidth - displaywidth.String(deletedText)
-			if paddingNeeded > 0 {
-				line.WriteString(strings.Repeat(" ", paddingNeeded))
-			}
-		} else if statsWidth > 0 {
-			line.WriteString(strings.Repeat(" ", statsWidth))
+	// Render stats - optimized: use len() for pure ASCII numbers
+	statsText, statsRendered := m.renderStats(stat, selected)
+	line.WriteString(statsRendered)
+
+	// Add padding if needed - optimized: len() for ASCII numbers
+	if paddingNeeded := statsWidth - len(statsText); paddingNeeded > 0 {
+		if selected {
+			line.WriteString(m.theme.Selected.Render(strings.Repeat(" ", paddingNeeded)))
+		} else {
+			line.WriteString(strings.Repeat(" ", paddingNeeded))
 		}
 	}
 
 	return line.String()
+}
+
+// renderStats renders the stats text with appropriate colors.
+// Returns the plain text and the styled text.
+// Optimized: stats are always ASCII numbers, so we use strconv.Itoa instead of fmt.Sprintf.
+func (m *model) renderStats(stat diferenco.FileStat, selected bool) (string, string) {
+	if stat.Addition > 0 && stat.Deletion > 0 {
+		addedText := "+" + strconv.Itoa(stat.Addition)
+		deletedText := "-" + strconv.Itoa(stat.Deletion)
+		statsText := addedText + " " + deletedText
+		if selected {
+			addedStyle := m.theme.Selected.Foreground(m.theme.Addition.GetForeground())
+			deletedStyle := m.theme.Selected.Foreground(m.theme.Deletion.GetForeground())
+			return statsText, addedStyle.Render(addedText) + " " + deletedStyle.Render(deletedText)
+		}
+		return statsText, m.theme.Addition.Render(addedText) + " " + m.theme.Deletion.Render(deletedText)
+	}
+
+	if stat.Addition > 0 {
+		addedText := "+" + strconv.Itoa(stat.Addition)
+		if selected {
+			addedStyle := m.theme.Selected.Foreground(m.theme.Addition.GetForeground())
+			return addedText, addedStyle.Render(addedText)
+		}
+		return addedText, m.theme.Addition.Render(addedText)
+	}
+
+	if stat.Deletion > 0 {
+		deletedText := "-" + strconv.Itoa(stat.Deletion)
+		if selected {
+			deletedStyle := m.theme.Selected.Foreground(m.theme.Deletion.GetForeground())
+			return deletedText, deletedStyle.Render(deletedText)
+		}
+		return deletedText, m.theme.Deletion.Render(deletedText)
+	}
+
+	return "", ""
 }
 
 // padRightDisplayWidth pads a string with spaces on the right to reach the target display width.
@@ -559,11 +547,20 @@ func padRightDisplayWidth(s string, width int) string {
 	return s + strings.Repeat(" ", width-w)
 }
 
-// computeStatsWidth calculates the display width needed for the stats column.
-// It computes the maximum stats width across all patches to ensure consistent
-// column width during scrolling. A minimum width is enforced for visual stability,
-// and a maximum width prevents excessive space usage for very large stats.
-func (m *model) computeStatsWidth() int {
+// getStatsWidth returns the cached stats width, computing it if necessary.
+// This avoids recalculating the width on every render.
+func (m *model) getStatsWidth() int {
+	if m.cachedStatsWidth > 0 {
+		return m.cachedStatsWidth
+	}
+	m.cachedStatsWidth = m.computeMaxStatsWidth()
+	return m.cachedStatsWidth
+}
+
+// computeMaxStatsWidth calculates the maximum stats width across all patches
+// to ensure consistent column width for right alignment.
+// Optimized: stats are always ASCII numbers, so we use strconv.Itoa instead of fmt.Sprintf.
+func (m *model) computeMaxStatsWidth() int {
 	const (
 		minStatsWidth = 4  // keeps a small stable column even for tiny stats
 		maxStatsWidth = 16 // prevents excessive space for very large stats
@@ -572,19 +569,27 @@ func (m *model) computeStatsWidth() int {
 	maxWidth := minStatsWidth
 	for _, p := range m.patches {
 		stat := p.Stat()
-		statsText := ""
-		if stat.Addition > 0 && stat.Deletion > 0 {
-			statsText = fmt.Sprintf("+%d -%d", stat.Addition, stat.Deletion)
-		} else if stat.Addition > 0 {
-			statsText = fmt.Sprintf("+%d", stat.Addition)
-		} else if stat.Deletion > 0 {
-			statsText = fmt.Sprintf("-%d", stat.Deletion)
-		}
-		if w := displaywidth.String(statsText); w > maxWidth {
+		statsText := formatStatsText(stat.Addition, stat.Deletion)
+		// Optimized: stats are always ASCII, so len() is accurate and faster
+		if w := len(statsText); w > maxWidth {
 			maxWidth = w
 		}
 	}
 	return min(maxWidth, maxStatsWidth)
+}
+
+// formatStatsText formats stats as text for display width calculation.
+func formatStatsText(addition, deletion int) string {
+	switch {
+	case addition > 0 && deletion > 0:
+		return "+" + strconv.Itoa(addition) + " -" + strconv.Itoa(deletion)
+	case addition > 0:
+		return "+" + strconv.Itoa(addition)
+	case deletion > 0:
+		return "-" + strconv.Itoa(deletion)
+	default:
+		return ""
+	}
 }
 
 func (m *model) renderDiffContent() string {
@@ -641,7 +646,7 @@ func (m *model) renderHeader() string {
 	case stat.Deletion != 0:
 		stats = m.theme.Deletion.Render("-" + strconv.Itoa(stat.Deletion))
 	}
-	fileCount := styleFileCount.Render(fmt.Sprintf("%d/%d", m.cursor+1, len(m.patches)))
+	fileCount := styleFileCount.Render(strconv.Itoa(m.cursor+1) + "/" + strconv.Itoa(len(m.patches)))
 	sep := styleSeparator.Render("│")
 	fileCountWidth := lipgloss.Width(fileCount)
 	statsWidth := lipgloss.Width(stats)
@@ -658,9 +663,9 @@ func (m *model) renderHeader() string {
 		pathDisplay = truncateLeftToWidth(pathDisplay, pathWidth)
 	}
 	pathDisplay = stylePathDisplay.Render(pathDisplay)
-	left := fmt.Sprintf(" %s %s %s", status, sep, pathDisplay)
+	left := " " + status + " " + sep + " " + pathDisplay
 	if showStats {
-		left = fmt.Sprintf(" %s %s %s %s", status, sep, pathDisplay, stats)
+		left = " " + status + " " + sep + " " + pathDisplay + " " + stats
 	}
 	spaceWidth := max(m.width-lipgloss.Width(left)-lipgloss.Width(fileCount), 0)
 	return styleHeaderBg.Width(m.width).Render(left + strings.Repeat(" ", spaceWidth) + fileCount)
@@ -755,82 +760,93 @@ func (m *model) writeFilePatchHeader(sb *strings.Builder, p *diferenco.Patch) {
 		return
 	}
 
+	// Three cases: modification, new file, or deleted file
 	switch {
 	case from != nil && to != nil:
-		hashEquals := from.Hash == to.Hash
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s%s %s%s", srcPrefix, from.Name, dstPrefix, to.Name)))
-		sb.WriteByte('\n')
-		if from.Mode != to.Mode {
-			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("old mode %o", from.Mode)))
-			sb.WriteByte('\n')
-			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("new mode %o", to.Mode)))
-			sb.WriteByte('\n')
-		}
-		if from.Name != to.Name {
-			sb.WriteString(m.theme.MetaLine.Render("rename from " + from.Name))
-			sb.WriteByte('\n')
-			sb.WriteString(m.theme.MetaLine.Render("rename to " + to.Name))
-			sb.WriteByte('\n')
-		}
-		if from.Mode != to.Mode && !hashEquals {
-			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", from.Hash, to.Hash)))
-			sb.WriteByte('\n')
-		} else if !hashEquals {
-			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s %o", from.Hash, to.Hash, from.Mode)))
-			sb.WriteByte('\n')
-		}
-		if !hashEquals {
-			if p.IsBinary {
-				sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("Binary files %s%s and %s%s differ", srcPrefix, from.Name, dstPrefix, to.Name)))
-				sb.WriteByte('\n')
-			} else if p.IsFragments {
-				sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("Fragments files %s%s and %s%s differ", srcPrefix, from.Name, dstPrefix, to.Name)))
-				sb.WriteByte('\n')
-			} else {
-				sb.WriteString(m.theme.FragLine.Render("--- " + srcPrefix + from.Name))
-				sb.WriteByte('\n')
-				sb.WriteString(m.theme.FragLine.Render("+++ " + dstPrefix + to.Name))
-				sb.WriteByte('\n')
-			}
-		}
+		m.writeModifyHeader(sb, p, from, to)
 	case from == nil:
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+to.Name, dstPrefix+to.Name)))
-		sb.WriteByte('\n')
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("new file mode %o", to.Mode)))
-		sb.WriteByte('\n')
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", zeroOID, to.Hash)))
-		sb.WriteByte('\n')
-		if p.IsBinary {
-			sb.WriteString(m.theme.MetaLine.Render("Binary files /dev/null and " + dstPrefix + to.Name + " differ"))
-			sb.WriteByte('\n')
-		} else if p.IsFragments {
-			sb.WriteString(m.theme.MetaLine.Render("Fragments files /dev/null and " + dstPrefix + to.Name + " differ"))
-			sb.WriteByte('\n')
-		} else {
-			sb.WriteString(m.theme.FragLine.Render("--- /dev/null"))
-			sb.WriteByte('\n')
-			sb.WriteString(m.theme.FragLine.Render("+++ " + dstPrefix + to.Name))
-			sb.WriteByte('\n')
-		}
+		m.writeNewFileHeader(sb, p, to)
 	case to == nil:
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+from.Name, dstPrefix+from.Name)))
+		m.writeDeleteHeader(sb, p, from)
+	}
+}
+
+// writeModifyHeader writes diff header for file modification.
+func (m *model) writeModifyHeader(sb *strings.Builder, p *diferenco.Patch, from, to *diferenco.File) {
+	hashEquals := from.Hash == to.Hash
+
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s%s %s%s", srcPrefix, from.Name, dstPrefix, to.Name)))
+	sb.WriteByte('\n')
+
+	if from.Mode != to.Mode {
+		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("old mode %o", from.Mode)))
 		sb.WriteByte('\n')
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("deleted file mode %o", from.Mode)))
+		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("new mode %o", to.Mode)))
 		sb.WriteByte('\n')
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", from.Hash, zeroOID)))
+	}
+
+	if from.Name != to.Name {
+		sb.WriteString(m.theme.MetaLine.Render("rename from " + from.Name))
 		sb.WriteByte('\n')
-		if p.IsBinary {
-			sb.WriteString(m.theme.MetaLine.Render("Binary files " + srcPrefix + from.Name + " and /dev/null differ"))
-			sb.WriteByte('\n')
-		} else if p.IsFragments {
-			sb.WriteString(m.theme.MetaLine.Render("Fragments files " + srcPrefix + from.Name + " and /dev/null differ"))
-			sb.WriteByte('\n')
-		} else {
-			sb.WriteString(m.theme.FragLine.Render("--- " + srcPrefix + from.Name))
-			sb.WriteByte('\n')
-			sb.WriteString(m.theme.FragLine.Render("+++ /dev/null"))
-			sb.WriteByte('\n')
+		sb.WriteString(m.theme.MetaLine.Render("rename to " + to.Name))
+		sb.WriteByte('\n')
+	}
+
+	if !hashEquals {
+		switch {
+		case from.Mode != to.Mode:
+			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", from.Hash, to.Hash)))
+		default:
+			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s %o", from.Hash, to.Hash, from.Mode)))
 		}
+		sb.WriteByte('\n')
+	}
+
+	if !hashEquals {
+		m.writeFileMarkers(sb, p, srcPrefix+from.Name, dstPrefix+to.Name)
+	}
+}
+
+// writeNewFileHeader writes diff header for new file.
+func (m *model) writeNewFileHeader(sb *strings.Builder, p *diferenco.Patch, to *diferenco.File) {
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+to.Name, dstPrefix+to.Name)))
+	sb.WriteByte('\n')
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("new file mode %o", to.Mode)))
+	sb.WriteByte('\n')
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", zeroOID, to.Hash)))
+	sb.WriteByte('\n')
+
+	m.writeFileMarkers(sb, p, "/dev/null", dstPrefix+to.Name)
+}
+
+// writeDeleteHeader writes diff header for deleted file.
+func (m *model) writeDeleteHeader(sb *strings.Builder, p *diferenco.Patch, from *diferenco.File) {
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+from.Name, dstPrefix+from.Name)))
+	sb.WriteByte('\n')
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("deleted file mode %o", from.Mode)))
+	sb.WriteByte('\n')
+	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", from.Hash, zeroOID)))
+	sb.WriteByte('\n')
+
+	m.writeFileMarkers(sb, p, srcPrefix+from.Name, "/dev/null")
+}
+
+// writeFileMarkers writes file markers based on patch type (binary/fragments/text).
+// For text files: writes "--- fromPath" and "+++ toPath"
+// For binary/fragments: writes "Binary/Fragments files ... differ"
+func (m *model) writeFileMarkers(sb *strings.Builder, p *diferenco.Patch, fromPath, toPath string) {
+	switch {
+	case p.IsBinary:
+		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("Binary files %s and %s differ", fromPath, toPath)))
+		sb.WriteByte('\n')
+	case p.IsFragments:
+		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("Fragments files %s and %s differ", fromPath, toPath)))
+		sb.WriteByte('\n')
+	default:
+		sb.WriteString(m.theme.FragLine.Render("--- " + fromPath))
+		sb.WriteByte('\n')
+		sb.WriteString(m.theme.FragLine.Render("+++ " + toPath))
+		sb.WriteByte('\n')
 	}
 }
 
@@ -850,20 +866,27 @@ func (m *model) formatHunk(sb *strings.Builder, hunk *diferenco.Hunk) {
 
 	var header strings.Builder
 	header.WriteString("@@")
-	if fromCount > 1 {
+
+	// Format from line range
+	switch {
+	case fromCount > 1:
 		fmt.Fprintf(&header, " -%d,%d", hunk.FromLine, fromCount)
-	} else if hunk.FromLine == 1 && fromCount == 0 {
+	case hunk.FromLine == 1 && fromCount == 0:
 		header.WriteString(" -0,0")
-	} else {
+	default:
 		fmt.Fprintf(&header, " -%d", hunk.FromLine)
 	}
-	if toCount > 1 {
+
+	// Format to line range
+	switch {
+	case toCount > 1:
 		fmt.Fprintf(&header, " +%d,%d", hunk.ToLine, toCount)
-	} else if hunk.ToLine == 1 && toCount == 0 {
+	case hunk.ToLine == 1 && toCount == 0:
 		header.WriteString(" +0,0")
-	} else {
+	default:
 		fmt.Fprintf(&header, " +%d", hunk.ToLine)
 	}
+
 	header.WriteString(" @@")
 
 	sb.WriteString(m.theme.FragLine.Render(header.String()))

@@ -1002,15 +1002,15 @@ func findMatchInFile(ctx context.Context, file *object.File, treeName string, op
 		// Match the patterns and content. Break out of the loop once a
 		// match is found.
 		for _, pattern := range opts.Patterns {
-			if pattern != nil && pattern.MatchString(cnt) {
-				// Add to result only if invert match is not enabled.
-				if !opts.InvertMatch {
-					addToResult = true
-					break
-				}
-			} else if opts.InvertMatch {
-				// If matching fails, and invert match is enabled, add to
-				// results.
+			if pattern == nil {
+				continue
+			}
+
+			matched := pattern.MatchString(cnt)
+
+			// Normal mode: add to result if matched
+			// Invert mode: add to result if NOT matched
+			if matched != opts.InvertMatch {
 				addToResult = true
 				break
 			}

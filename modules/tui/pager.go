@@ -10,7 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/antgroup/hugescm/modules/term"
-	"github.com/clipperhouse/displaywidth"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // Compile-time interface assertion
@@ -77,6 +77,7 @@ func (p *Pager) Close() error {
 }
 
 // shouldSkipPager checks if the content is short enough to display without a pager.
+// It uses early termination to avoid counting all lines when the content is long.
 func (p *Pager) shouldSkipPager(content string) bool {
 	// Get terminal height
 	termWidth, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
@@ -87,43 +88,58 @@ func (p *Pager) shouldSkipPager(content string) bool {
 		termWidth = 80
 	}
 
-	// Count rendered screen lines, accounting for ANSI codes and soft wraps.
-	// Reserve 2 lines for status bar and 1 for prompt.
-	lineCount := countRenderedLines(content, termWidth)
+	// Maximum lines that fit in terminal (minus status bar and margin)
+	maxLines := termHeight - 4
+	if maxLines <= 0 {
+		return false
+	}
 
-	// If content fits in terminal (minus status bar and some margin), skip pager
-	return lineCount <= termHeight-4
+	// Count rendered screen lines with early termination
+	// Stop counting once we exceed the maximum to avoid unnecessary work
+	lineCount := countRenderedLinesLimit(content, termWidth, maxLines+1)
+
+	// If content fits in terminal, skip pager
+	return lineCount <= maxLines
 }
 
-func countRenderedLines(content string, width int) int {
+// countRenderedLinesLimit counts rendered lines but stops early if maxLines is exceeded.
+// This is more efficient than counting all lines when we just need to know if content exceeds a threshold.
+func countRenderedLinesLimit(content string, width int, maxLines int) int {
 	if content == "" {
 		return 0
 	}
+
 	lineCount := 0
-	start := 0
-	for {
-		idx := strings.IndexByte(content[start:], '\n')
-		if idx < 0 {
-			break
+	lineStart := 0
+
+	for i := 0; i < len(content); i++ {
+		if content[i] == '\n' {
+			// Calculate height for this line without creating a substring
+			lineCount += renderedLineHeight(content[lineStart:i], width)
+			lineStart = i + 1
+
+			// Early termination: stop if we've exceeded the limit
+			if lineCount > maxLines {
+				return lineCount
+			}
 		}
-		lineCount += renderedLineHeight(content[start:start+idx], width)
-		start += idx + 1
 	}
-	// Match previous behavior: trailing newline doesn't add an extra terminal line.
-	if start < len(content) {
-		lineCount += renderedLineHeight(content[start:], width)
+
+	// Handle last line (if no trailing newline)
+	if lineStart < len(content) {
+		lineCount += renderedLineHeight(content[lineStart:], width)
 	}
+
 	return lineCount
 }
 
+// renderedLineHeight calculates the rendered height of a line
+// without requiring a string copy by accepting the line boundaries directly.
 func renderedLineHeight(line string, width int) int {
 	if width <= 0 {
 		return 1
 	}
-	if strings.IndexByte(line, '\x1b') >= 0 {
-		line = term.StripANSI(line)
-	}
-	w := displaywidth.String(line)
+	w := ansi.StringWidth(line)
 	if w <= 0 {
 		return 1
 	}
@@ -272,26 +288,36 @@ func (m *pagerModel) renderStatusBar() string {
 	return m.getStatusStyle().Render(statusText)
 }
 
-// getVisibleContent returns the content that should be visible, preserving ANSI codes
+// getVisibleContent returns the content that should be visible, preserving ANSI codes.
+// Uses pre-computed line starts for O(1) line lookup.
 func (m *pagerModel) getVisibleContent() string {
 	totalLines := m.lineCount()
 	if totalLines == 0 {
 		return ""
 	}
 
-	start := max(0, m.scrollPos)
+	// Clamp scroll position to valid range
+	start := max(0, min(m.scrollPos, totalLines-1))
 	end := min(totalLines, start+m.height)
+
 	if start >= end {
 		return ""
 	}
+
 	startByte := m.lineStarts[start]
 	endByte := len(m.content)
+
+	// Get the byte offset of the line after the last visible line
+	// Subtract 1 to exclude the trailing newline
 	if end < totalLines {
-		endByte = m.lineStarts[end] - 1 // Exclude trailing newline after the last visible line.
+		endByte = m.lineStarts[end] - 1
 	}
+
+	// Safety check for invalid byte range
 	if endByte < startByte {
 		return ""
 	}
+
 	return m.content[startByte:endByte]
 }
 
@@ -311,17 +337,25 @@ func (m *pagerModel) getStatusStyle() lipgloss.Style {
 	return m.statusStyle
 }
 
+// buildLineStarts creates a slice of byte offsets for the start of each line.
+// This enables O(1) line lookup instead of O(n) string splitting.
 func buildLineStarts(content string) []int {
-	// Match strings.Split("", "\n") behavior used previously.
 	if content == "" {
 		return []int{0}
 	}
-	starts := make([]int, 1, strings.Count(content, "\n")+1)
-	starts[0] = 0
+
+	// Pre-allocate based on newline count for efficiency
+	// Add 1 for the first line which always starts at offset 0
+	newlineCount := strings.Count(content, "\n")
+	starts := make([]int, 0, newlineCount+1)
+	starts = append(starts, 0) // First line always starts at 0
+
+	// Find all newline positions
 	for i := 0; i < len(content); i++ {
 		if content[i] == '\n' && i+1 < len(content) {
 			starts = append(starts, i+1)
 		}
 	}
+
 	return starts
 }

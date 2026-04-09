@@ -7,13 +7,12 @@ import (
 	"io"
 	"math"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/antgroup/hugescm/modules/progressbar/colorstring"
-	"github.com/clipperhouse/displaywidth"
+	"github.com/charmbracelet/x/ansi"
 	"golang.org/x/term"
 )
 
@@ -1013,10 +1012,8 @@ func (p *ProgressBar) State() State {
 	return s
 }
 
-// regex matching ansi escape codes
-var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
-
-func getStringWidth(c config, str string, _ bool) int {
+// getStringWidth returns the display width of a string, accounting for color codes.
+func getStringWidth(c config, str string) int {
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
 		str = colorstring.Color(str)
@@ -1026,17 +1023,9 @@ func getStringWidth(c config, str string, _ bool) int {
 	// does not include the carriage return character
 	cleanString := strings.ReplaceAll(str, "\r", "")
 
-	if c.colorCodes {
-		// the ANSI codes for the colors do not take up space in the console output,
-		// so they do not count towards the output string width
-		cleanString = ansiRegex.ReplaceAllString(cleanString, "")
-	}
-
-	// get the amount of runes in the string instead of the
-	// character count of the string, as some runes span multiple characters.
-	// see https://stackoverflow.com/a/12668840/2733724
-	stringWidth := displaywidth.String(cleanString)
-	return stringWidth
+	// ansi.StringWidth returns the width of a string in cells.
+	// It automatically ignores ANSI escape codes and accounts for wide characters.
+	return ansi.StringWidth(cleanString)
 }
 
 func renderProgressBar(c config, s *state) (int, error) {
@@ -1163,7 +1152,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			amend += 1 // another space
 		}
 
-		c.width = width - getStringWidth(c, c.description, true) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
+		c.width = width - getStringWidth(c, c.description) - 10 - amend - sb.Len() - ansi.StringWidth(leftBrac) - ansi.StringWidth(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if (s.currentSaucerSize > 0 || s.currentPercent > 0) && c.theme.BarStartFilled != "" {
@@ -1309,7 +1298,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 
 	s.rendered = str
 
-	return getStringWidth(c, str, false), writeString(c, str)
+	return getStringWidth(c, str), writeString(c, str)
 }
 
 func clearProgressBar(c config, s state) error {

@@ -26,12 +26,12 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/vbauerster/mpb/v8 v8.12.0
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.49.0
-	golang.org/x/net v0.52.0
+	golang.org/x/crypto v0.50.0
+	golang.org/x/net v0.53.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.43.0
-	golang.org/x/term v0.41.0
-	golang.org/x/text v0.35.0
+	golang.org/x/term v0.42.0
+	golang.org/x/text v0.36.0
 )
 
 require (

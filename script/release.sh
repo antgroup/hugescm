@@ -38,6 +38,11 @@ linux*)
 		echo "build HugeSCM failed"
 		exit 1
 	fi
+	echo -e "build for \x1b[32mlinux/loong64\x1b[0m"
+	if ! bali --pack='rpm,deb,tar,sh' --target=linux --arch=loong64; then
+		echo "build HugeSCM failed"
+		exit 1
+	fi
 	echo -e "build for \x1b[32mdarwin/amd64\x1b[0m"
 	if ! bali '--pack=tar,sh' --target=darwin --arch=amd64; then
 		echo "build HugeSCM failed"

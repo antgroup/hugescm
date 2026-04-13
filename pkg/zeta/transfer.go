@@ -18,8 +18,6 @@ import (
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/transport/http"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
-	"github.com/vbauerster/mpb/v8"
-	"github.com/vbauerster/mpb/v8/decor"
 	"golang.org/x/term"
 )
 
@@ -94,59 +92,47 @@ func (r *Repository) directMultiTransfer(ctx context.Context, t http.Downloader,
 	if err != nil {
 		width = 80
 	}
-	if width > 80 {
-		width = 80
-	}
-	p := mpb.New(
-		mpb.WithOutput(os.Stderr),
-		mpb.WithAutoRefresh(),
-		mpb.WithWidth(width),
-	)
-	errs := make(chan error, len(objects))
-	for _, e := range objects {
+
+	m := progress.NewMultiBar(width)
+	bars := make([]*progress.TransferBar, len(objects))
+	for i, e := range objects {
 		oid := plumbing.NewHash(e.OID)
-		task := fmt.Sprintf("%s %s", W("Downloading"), shortHash(oid))
-		bar := p.New(-1,
-			mpb.BarStyle().Filler("#").Padding(" "),
-			mpb.PrependDecorators(
-				decor.Name(task, decor.WC{W: len(task), C: decor.DindentRight}),
-				decor.Total(decor.SizeB1024(0), "% .2f", decor.WCSyncWidth),
-			),
-			mpb.BarWidth(width),
-			mpb.AppendDecorators(
-				decor.EwmaSpeed(decor.SizeB1024(0), "% .2f ", 90),
-				decor.OnComplete(
-					// ETA decorator with ewma age of 30
-					decor.EwmaETA(decor.ET_STYLE_GO, 30), "done",
-				),
-			),
-		)
-		go func(ctx context.Context, o *transport.Representation, bar *mpb.Bar) {
+		label := fmt.Sprintf("%s %s", W("Downloading"), shortHash(oid))
+		bars[i] = m.AddBar(label)
+	}
+
+	errs := make(chan error, len(objects))
+	for i, e := range objects {
+		bar := bars[i]
+		go func(ctx context.Context, o *transport.Representation, bar *progress.TransferBar) {
 			if o.IsExpired() {
 				fmt.Fprintf(os.Stderr, "object '%s' download link expired at: %v\n", o.OID, o.ExpiresAt)
-				bar.SetTotal(-1, true)
+				bar.Complete()
 				errs <- nil
 				return
 			}
+			oid := plumbing.NewHash(o.OID)
 			if err := r.odb.DoTransfer(ctx, oid,
 				func(offset int64) (transport.SizeReader, error) {
 					return t.Download(ctx, o, offset)
 				},
 				func(reader io.Reader, total, current int64, oid plumbing.Hash, round int) (io.Reader, io.Closer) {
-					bar.SetTotal(total, false)
+					bar.SetTotal(total)
 					bar.SetCurrent(current)
-					rc := bar.ProxyReader(reader)
-					return rc, rc
+					return bar.ProxyReader(reader)
 				}, odb.MULTI_BARS); err != nil {
-				bar.Abort(true)
+				bar.Fail()
 				errs <- fmt.Errorf("download %s error: %w", oid, err)
 				return
 			}
-			bar.SetTotal(-1, true)
+			bar.Complete()
 			errs <- nil
 		}(ctx, e.Copy(), bar)
 	}
-	p.Wait()
+
+	if err := m.Run(os.Stderr); err != nil {
+		return err
+	}
 	close(errs)
 	for err := range errs {
 		if err != nil {
@@ -227,52 +213,39 @@ func (r *Repository) multiTransfer(ctx context.Context, t transport.Transport, l
 	if err != nil {
 		width = 80
 	}
-	if width > 80 {
-		width = 80
+
+	m := progress.NewMultiBar(width)
+	bars := make([]*progress.TransferBar, len(larges))
+	for i, o := range larges {
+		label := fmt.Sprintf("%s %s", W("Downloading"), shortHash(o.Hash))
+		bars[i] = m.AddBar(label)
 	}
-	p := mpb.New(
-		mpb.WithOutput(os.Stderr),
-		mpb.WithAutoRefresh(),
-		mpb.WithWidth(width),
-	)
+
 	errs := make(chan error, len(larges))
-	for _, o := range larges {
-		task := fmt.Sprintf("%s %s", W("Downloading"), shortHash(o.Hash))
-		bar := p.New(-1,
-			mpb.BarStyle().Filler("#").Padding(" "),
-			mpb.PrependDecorators(
-				decor.Name(task, decor.WC{W: len(task), C: decor.DindentRight}),
-				decor.Total(decor.SizeB1024(0), "% .2f", decor.WCSyncWidth),
-			),
-			mpb.BarWidth(width),
-			mpb.AppendDecorators(
-				decor.EwmaSpeed(decor.SizeB1024(0), "% .2f ", 90),
-				decor.OnComplete(
-					// ETA decorator with ewma age of 30
-					decor.EwmaETA(decor.ET_STYLE_GO, 30), "done",
-				),
-			),
-		)
-		go func(ctx context.Context, oid plumbing.Hash, bar *mpb.Bar) {
+	for i, o := range larges {
+		bar := bars[i]
+		go func(ctx context.Context, oid plumbing.Hash, bar *progress.TransferBar) {
 			if err := r.odb.DoTransfer(ctx, oid,
 				func(fromBytes int64) (transport.SizeReader, error) {
 					return t.GetObject(ctx, oid, fromBytes)
 				},
 				func(reader io.Reader, total, current int64, oid plumbing.Hash, round int) (io.Reader, io.Closer) {
-					bar.SetTotal(total, false)
+					bar.SetTotal(total)
 					bar.SetCurrent(current)
-					rc := bar.ProxyReader(reader)
-					return rc, rc
+					return bar.ProxyReader(reader)
 				}, odb.MULTI_BARS); err != nil {
-				bar.Abort(true)
+				bar.Fail()
 				errs <- fmt.Errorf("download %s error: %w", oid, err)
 				return
 			}
-			bar.SetTotal(-1, true)
+			bar.Complete()
 			errs <- nil
 		}(ctx, o.Hash, bar)
 	}
-	p.Wait()
+
+	if err := m.Run(os.Stderr); err != nil {
+		return err
+	}
 	close(errs)
 	for err := range errs {
 		if err != nil {

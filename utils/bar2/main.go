@@ -1,62 +1,87 @@
+// Copyright ©️ Ant Group. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+// utils/bar2 is a standalone demo that exercises the MultiBar renderer.
+// It simulates three concurrent downloads with randomised speeds and shows
+// the bubbles-based parallel progress bars in action.
+//
+// Run with:
+//
+//	go run ./utils/bar2
 package main
 
 import (
 	"fmt"
 	"math/rand/v2"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/vbauerster/mpb/v8"
-	"github.com/vbauerster/mpb/v8/decor"
+	"github.com/antgroup/hugescm/modules/term"
+	"github.com/antgroup/hugescm/pkg/progress"
 )
 
-func main() {
-	var wg sync.WaitGroup
-	// passed wg will be accounted at p.Wait() call
-	p := mpb.New(
-		mpb.WithWaitGroup(&wg),
-		mpb.WithOutput(os.Stderr),
-		mpb.WithAutoRefresh(),
-		mpb.WithWidth(80),
-	)
-	total, numBars := 100, 3
-	wg.Add(numBars)
-	for i := range numBars {
-		name := fmt.Sprintf("Bar#%d:", i)
-		bar := p.New(int64(total),
-			mpb.BarStyle().Filler("#").Padding(" "),
-			// set BarWidth 40 for bar 1 and 2
-			mpb.BarOptional(mpb.BarWidth(80), i > 0),
-
-			mpb.PrependDecorators(
-				// simple name decorator
-				decor.Name(name),
-				// decor.DSyncWidth bit enables column width synchronization
-				decor.Percentage(decor.WCSyncSpace),
-			),
-			mpb.AppendDecorators(
-				// replace ETA decorator with "done" message, OnComplete event
-				decor.OnComplete(
-					// ETA decorator with ewma age of 30
-					decor.EwmaETA(decor.ET_STYLE_GO, 30), "done",
-				),
-			),
-		)
-		// simulating some work
-		go func() {
-			defer wg.Done()
-			max := 100 * time.Millisecond
-			for range total {
-				// start variable is solely for EWMA calculation
-				// EWMA's unit of measure is an iteration's duration
-				start := time.Now()
-				time.Sleep(time.Duration(rand.IntN(10)+1) * max / 10)
-				// we need to call EwmaIncrement to fulfill ewma decorator's contract
-				bar.EwmaIncrement(time.Since(start))
-			}
-		}()
+// termWidth returns the visible width of the current terminal.
+// It can be replaced in tests.
+var termWidth = func() (width int, err error) {
+	width, _, err = term.GetSize(int(os.Stderr.Fd()))
+	if err == nil {
+		return width, nil
 	}
-	// wait for passed wg and for all bars to complete and flush
-	p.Wait()
+	return 0, err
+}
+
+func main() {
+	const numTasks = 3
+	width, err := termWidth()
+	if err != nil {
+		width = 80
+	}
+
+	mb := progress.NewMultiBar(width)
+
+	type task struct {
+		label string
+		size  int64 // simulated total bytes
+	}
+	tasks := []task{
+		{label: "Downloading a1b2c3d4", size: 12 * 1024 * 1024},
+		{label: "Downloading e5f6a7b8", size: 5 * 1024 * 1024},
+		{label: "Downloading c9d0e1f2", size: 30 * 1024 * 1024},
+	}
+
+	bars := make([]*progress.TransferBar, numTasks)
+	for i, t := range tasks {
+		bars[i] = mb.AddBar(t.label)
+	}
+
+	// Launch one goroutine per task to simulate a download.
+	for i, t := range tasks {
+		bar := bars[i]
+		totalBytes := t.size
+		go func(bar *progress.TransferBar, total int64) {
+			bar.SetTotal(total)
+
+			var transferred int64
+			// chunk size: 256 KiB ± random jitter
+			const baseChunk = 256 * 1024
+			for transferred < total {
+				chunk := int64(baseChunk + rand.IntN(baseChunk))
+				if transferred+chunk > total {
+					chunk = total - transferred
+				}
+				// simulate network latency (10–80 ms per chunk)
+				delay := time.Duration(10+rand.IntN(70)) * time.Millisecond
+				time.Sleep(delay)
+				transferred += chunk
+				bar.SetCurrent(transferred)
+			}
+			bar.Complete()
+		}(bar, totalBytes)
+	}
+
+	if err := mb.Run(os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "progress error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Fprintln(os.Stderr, "all downloads complete.")
 }

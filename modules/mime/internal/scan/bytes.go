@@ -151,6 +151,24 @@ func (b *Bytes) Uint16() (uint16, bool) {
 	return v, true
 }
 
+func (b *Bytes) Uint32() (uint32, bool) {
+	if len(*b) < 4 {
+		return 0, false
+	}
+	v := binary.LittleEndian.Uint32(*b)
+	*b = (*b)[4:]
+	return v, true
+}
+
+func (b *Bytes) Uint32be() (uint32, bool) {
+	if len(*b) < 4 {
+		return 0, false
+	}
+	v := binary.BigEndian.Uint32(*b)
+	*b = (*b)[4:]
+	return v, true
+}
+
 type Flags int
 
 const (
@@ -205,10 +223,8 @@ func (b Bytes) Match(p []byte, flags Flags) int {
 	if l == 0 {
 		return -1
 	}
-	// If no flags, or scanning for full word at the end of pattern then
-	// do a fast HasPrefix check.
-	// For other flags it's not possible to use HasPrefix.
-	if flags == 0 || flags&FullWord > 0 {
+	// Some cases we can handle with a simple bytes.HasPrefix.
+	if flags == 0 || flags == FullWord {
 		if bytes.HasPrefix(b, p) {
 			b = b[len(p):]
 			p = p[len(p):]

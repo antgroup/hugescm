@@ -1,8 +1,9 @@
 package mime
 
 import (
-	"mime"
+	stdmime "mime"
 	"slices"
+	"strings"
 
 	"github.com/antgroup/hugescm/modules/mime/internal/charset"
 	"github.com/antgroup/hugescm/modules/mime/internal/magic"
@@ -51,14 +52,9 @@ func (m *MIME) Parent() *MIME {
 func (m *MIME) Is(expectedMIME string) bool {
 	// Parsing is needed because some detected MIME types contain parameters
 	// that need to be stripped for the comparison.
-	expectedMIME, _, _ = mime.ParseMediaType(expectedMIME)
-	found, _, _ := mime.ParseMediaType(m.mime)
-
-	if expectedMIME == found {
-		return true
-	}
-
-	return slices.Contains(m.aliases, expectedMIME)
+	expectedMIME, _, _ = stdmime.ParseMediaType(expectedMIME)
+	found, _, _ := stdmime.ParseMediaType(m.mime)
+	return expectedMIME == found || slices.Contains(m.aliases, expectedMIME)
 }
 
 func newMIME(
@@ -113,12 +109,33 @@ func (m *MIME) match(in []byte, readLimit uint32) *MIME {
 
 // Flatten transforms an hierarchy of MIMEs into a slice of MIMEs.
 func (m *MIME) Flatten() []*MIME {
-	out := []*MIME{m}
+	out := []*MIME{m} //nolint:prealloc
 	for _, c := range m.children {
 		out = append(out, c.Flatten()...)
 	}
 
 	return out
+}
+
+// Hierarchy returns an easy to read list of ancestors for m.
+// For example, application/json would return json>txt>root.
+func (m *MIME) Hierarchy() string {
+	var h strings.Builder
+	for m := m; m != nil; m = m.Parent() {
+		e := strings.TrimPrefix(m.Extension(), ".")
+		if e == "" {
+			// There are some MIME without extensions. When generating the hierarchy,
+			// it would be confusing to use empty string as extension.
+			// Use the subtype instead; ex: application/x-executable -> x-executable.
+			e = strings.Split(m.String(), "/")[1]
+			if m.Is("application/octet-stream") {
+				// for octet-stream use root, because it's short and used in many places
+				e = "root"
+			}
+		}
+		h.WriteString(">" + e)
+	}
+	return strings.TrimPrefix(h.String(), ">")
 }
 
 // clone creates a new MIME with the provided optional MIME parameters.
@@ -170,6 +187,7 @@ func (m *MIME) lookup(mime string) *MIME {
 // The sub-format will be detected if all the detectors in the parent chain return true.
 // The extension should include the leading dot, as in ".html".
 func (m *MIME) Extend(detector func(raw []byte, limit uint32) bool, mime, extension string, aliases ...string) {
+	mime, _, _ = stdmime.ParseMediaType(mime)
 	c := &MIME{
 		mime:      mime,
 		extension: extension,

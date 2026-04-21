@@ -24,11 +24,10 @@ func (s StringObject) GetItem() item.Item {
 	return item.NewItem(string(s))
 }
 
-// Pager represents a simple terminal pager built with bubbletea.
+// Pager represents a simple terminal pager built with viewport.
 // It implements io.Writer and must be closed to display content.
 type Pager struct {
 	buf          bytes.Buffer
-	closed       bool
 	colorMode    term.Level
 	useAltScreen bool
 }

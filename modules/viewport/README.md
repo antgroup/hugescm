@@ -142,15 +142,17 @@ prefixMode := filterableviewport.FilterMode{
 
 | Key | Action |
 |---|---|
-| `j` / `down` | Scroll down |
+| `j` / `down` / `enter` | Scroll down |
 | `k` / `up` | Scroll up |
-| `f` / `pgdown` / `ctrl+f` | Page down |
+| `f` / `pgdown` / `ctrl+f` / `space` | Page down |
 | `b` / `pgup` / `ctrl+b` | Page up |
 | `d` / `ctrl+d` | Half page down |
 | `u` / `ctrl+u` | Half page up |
-| `g` / `ctrl+g` | Jump to top |
-| `G` | Jump to bottom |
+| `g` / `ctrl+g` / `home` | Jump to top |
+| `G` / `end` | Jump to bottom |
 | `left` / `right` | Horizontal pan |
+
+> **Note**: The viewport does not handle quit keys (`q`, `esc`, `ctrl+c`) - this is intentional as viewport is a generic scrolling component and the quit logic should be handled by the parent application.
 
 ### Filterable Viewport
 

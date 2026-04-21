@@ -22,8 +22,8 @@ type KeyMap struct {
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
 		PageDown: key.NewBinding(
-			key.WithKeys("pgdown", "f", "ctrl+f"),
-			key.WithHelp("f", "pgdn"),
+			key.WithKeys("pgdown", "f", "ctrl+f", "space"),
+			key.WithHelp("space/f", "page down"),
 		),
 		PageUp: key.NewBinding(
 			key.WithKeys("pgup", "b", "ctrl+b"),
@@ -42,7 +42,7 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("↑/k", "scroll up"),
 		),
 		Down: key.NewBinding(
-			key.WithKeys("down", "j"),
+			key.WithKeys("down", "j", "enter"),
 			key.WithHelp("↓/j", "scroll down"),
 		),
 		Left: key.NewBinding(
@@ -54,11 +54,11 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("→", "right"),
 		),
 		Top: key.NewBinding(
-			key.WithKeys("g", "ctrl+g"),
+			key.WithKeys("g", "ctrl+g", "home"),
 			key.WithHelp("g", "top"),
 		),
 		Bottom: key.NewBinding(
-			key.WithKeys("G"),
+			key.WithKeys("G", "end"),
 			key.WithHelp("G", "bottom"),
 		),
 	}

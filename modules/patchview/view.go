@@ -174,7 +174,7 @@ func NewPatchView(patches []*diferenco.Patch, opts ...Option) *PatchView {
 	pv := &PatchView{
 		patches:      patches,
 		renderer:     NewPatchRenderer(),
-		listVp:       viewport.New[*patchItem](0, 0, viewport.WithSelectionEnabled[*patchItem](true)),
+		listVp:       viewport.New(0, 0, viewport.WithSelectionEnabled[*patchItem](true)),
 		listWidthPct: 20,
 		style:        DefaultStyle(),
 	}

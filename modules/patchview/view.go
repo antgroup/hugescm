@@ -6,155 +6,559 @@ import (
 	"strconv"
 	"strings"
 
-	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/compat"
-
 	"github.com/antgroup/hugescm/modules/diferenco"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/antgroup/hugescm/modules/viewport"
+	"github.com/antgroup/hugescm/modules/viewport/item"
 	"github.com/clipperhouse/displaywidth"
 )
 
-// Theme defines colors for the patch view.
-type Theme struct {
-	// List colors
-	Addition lipgloss.Style
-	Deletion lipgloss.Style
-	Selected lipgloss.Style
-
-	// Diff content colors
-	AdditionLine lipgloss.Style
-	DeletionLine lipgloss.Style
-	ContextLine  lipgloss.Style
-	MetaLine     lipgloss.Style
-	FragLine     lipgloss.Style
-}
-
-// defaultTheme is the cached default theme instance.
-// Colors are designed to be consistent with GitHub's diff styling.
-var defaultTheme = Theme{
-	Addition: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#22863A"), Dark: lipgloss.Color("#85E89D"),
-	}),
-	Deletion: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#CB2431"), Dark: lipgloss.Color("#F97583"),
-	}),
-	Selected: lipgloss.NewStyle().Background(compat.AdaptiveColor{
-		Light: lipgloss.Color("#ebf1fc"), Dark: lipgloss.Color("#282a38"),
-	}),
-	AdditionLine: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#22863A"), Dark: lipgloss.Color("#85E89D"),
-	}),
-	DeletionLine: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#CB2431"), Dark: lipgloss.Color("#F97583"),
-	}),
-	ContextLine: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#24292E"), Dark: lipgloss.Color("#E1E4E8"),
-	}),
-	// MetaLine: diff header lines (diff --zeta, index, new file mode, etc.)
-	// Uses a dim/subtle color to not distract from the actual diff content.
-	MetaLine: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#6E7781"), Dark: lipgloss.Color("#8B949E"),
-	}),
-	// FragLine: fragment header lines (---, +++, @@ ... @@)
-	// Uses a distinctive but not overwhelming color (cyan/teal tone).
-	FragLine: lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
-		Light: lipgloss.Color("#0550AE"), Dark: lipgloss.Color("#58A6FF"),
-	}),
-}
-
-// DefaultTheme returns the default theme (GitHub-style colors).
-// Returns a copy to prevent modification of the cached instance.
-func DefaultTheme() Theme {
-	return defaultTheme
-}
-
-// UI styles - cached to avoid repeated allocations.
-var (
-	styleHeaderBg    = lipgloss.NewStyle().Background(lipgloss.Color("236"))
-	styleFileCount   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	styleSeparator   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	stylePathDisplay = lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)
-	styleFilesTitle  = lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true)
-	styleFooterBg    = lipgloss.NewStyle().
-				Background(lipgloss.Color("236")).
-				Foreground(lipgloss.Color("7")).
-				Padding(0, 1)
-
-	// Status styles for header
-	statusStyles = map[string]lipgloss.Style{
-		"A": lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true),
-		"D": lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
-		"R": lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
-		"M": lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true),
-	}
+const (
+	headerHeight    = 1
+	footerHeight    = 1
+	gapWidth        = 1
+	borderSize      = 2
+	titleHeight     = 1
+	hScrollStep     = 10
+	hScrollFastStep = 20
 )
 
-type model struct {
+// PatchView is an interactive patch navigation view.
+type PatchView struct {
 	patches []*diferenco.Patch
 	cursor  int
 
-	vp      viewport.Model
-	width   int
-	height  int
-	hScroll int
+	renderer  *PatchRenderer
+	listVp    *viewport.Model[*patchItem]
+	statusBar StatusBar
 
+	width        int
+	height       int
 	listWidthPct int
 	focusRight   bool
-	listYOffset  int
-	theme        Theme
 
-	// Cache for formatted diff content.
-	// IMPORTANT: This cache assumes that:
-	// 1. Patch content is immutable during the viewer's lifetime
-	// 2. Theme is static and won't change after initialization
-	// If either assumption is violated, the cache must be invalidated.
-	cachedPatch    *diferenco.Patch
-	cachedContent  string
-	cachedMaxWidth int
+	yOffset int
+	xOffset int
 
-	// Cache for stats width calculation
-	cachedStatsWidth int
+	style PatchViewStyle
 }
 
-const (
-	headerHeight = 1
-	footerHeight = 1
-	gapWidth     = 1
-	borderSize   = 2
-	titleHeight  = 1
-)
+// Ensure patchItem implements viewport.Object
+var _ viewport.Object = (*patchItem)(nil)
+
+// patchItem wraps a patch for the viewport.
+type patchItem struct {
+	patch    *diferenco.Patch
+	selected bool
+	width    int
+	style    PatchViewStyle
+}
+
+func newPatchItem(p *diferenco.Patch, selected bool, width int, style PatchViewStyle) *patchItem {
+	return &patchItem{patch: p, selected: selected, width: width, style: style}
+}
+
+func (p *patchItem) GetItem() item.Item {
+	return item.NewItem(p.render())
+}
+
+func (p *patchItem) render() string {
+	path := patchName(p.patch)
+	stat := p.patch.Stat()
+	additions := stat.Addition
+	deletions := stat.Deletion
+
+	added := strconv.Itoa(additions)
+	deleted := strconv.Itoa(deletions)
+
+	var statsWidth int
+	switch {
+	case additions > 0 && deletions > 0:
+		statsWidth = len(added) + 3 + len(deleted)
+	case additions != 0:
+		statsWidth = len(added) + 1
+	case deletions != 0:
+		statsWidth = len(deleted) + 1
+	}
+
+	reserved := 2 + statsWidth + 1
+	availableForPath := max(p.width-reserved, 0)
+
+	var line strings.Builder
+	if p.selected {
+		line.WriteString(p.style.Selected.Render("▌ "))
+		if availableForPath > 0 {
+			if displaywidth.String(path) > availableForPath {
+				line.WriteString(p.style.Selected.Render(truncatePath(path, availableForPath)))
+			} else {
+				line.WriteString(p.style.Selected.Render(path))
+			}
+		}
+		line.WriteString(p.style.Selected.Render(" "))
+		switch {
+		case additions > 0 && deletions > 0:
+			addStyle := p.style.Selected.Foreground(p.style.Addition.GetForeground())
+			delStyle := p.style.Selected.Foreground(p.style.Deletion.GetForeground())
+			line.WriteString(addStyle.Render("+" + added))
+			line.WriteString(p.style.Selected.Render(" "))
+			line.WriteString(delStyle.Render("-" + deleted))
+		case additions != 0:
+			addStyle := p.style.Selected.Foreground(p.style.Addition.GetForeground())
+			line.WriteString(addStyle.Render("+" + added))
+		case deletions != 0:
+			delStyle := p.style.Selected.Foreground(p.style.Deletion.GetForeground())
+			line.WriteString(delStyle.Render("-" + deleted))
+		}
+	} else {
+		line.WriteString("  ")
+		if availableForPath > 0 {
+			if displaywidth.String(path) > availableForPath {
+				line.WriteString(truncatePath(path, availableForPath))
+			} else {
+				line.WriteString(path)
+			}
+		}
+		line.WriteString(" ")
+		switch {
+		case additions > 0 && deletions > 0:
+			line.WriteString(p.style.Addition.Render("+" + added + " "))
+			line.WriteString(p.style.Deletion.Render("-" + deleted))
+		case additions != 0:
+			line.WriteString(p.style.Addition.Render("+" + added))
+		case deletions != 0:
+			line.WriteString(p.style.Deletion.Render("-" + deleted))
+		}
+	}
+
+	return line.String()
+}
+
+// Option configures the patch view.
+type Option func(*PatchView)
+
+// WithStyle sets a custom style.
+func WithStyle(style PatchViewStyle) Option {
+	return func(pv *PatchView) {
+		pv.style = style
+	}
+}
+
+// WithListWidth sets the file list width percentage (default 20).
+func WithListWidth(pct int) Option {
+	return func(pv *PatchView) {
+		pv.listWidthPct = pct
+	}
+}
+
+// WithStatusBar sets a custom status bar.
+func WithStatusBar(sb StatusBar) Option {
+	return func(pv *PatchView) {
+		pv.statusBar = sb
+	}
+}
 
 // Run starts the interactive patch navigation view.
 func Run(patches []*diferenco.Patch, opts ...Option) error {
 	if len(patches) == 0 {
 		return nil
 	}
-	m := &model{
-		patches:      patches,
-		vp:           viewport.New(),
-		listWidthPct: 20,
-		theme:        DefaultTheme(),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	p := tea.NewProgram(m, tea.WithOutput(os.Stdout))
+	pv := NewPatchView(patches, opts...)
+	p := tea.NewProgram(pv, tea.WithOutput(os.Stdout))
 	_, err := p.Run()
 	return err
 }
 
-// Option configures the patch view.
-type Option func(*model)
+// NewPatchView creates a new PatchView.
+func NewPatchView(patches []*diferenco.Patch, opts ...Option) *PatchView {
+	pv := &PatchView{
+		patches:      patches,
+		renderer:     NewPatchRenderer(),
+		listVp:       viewport.New[*patchItem](0, 0, viewport.WithSelectionEnabled[*patchItem](true)),
+		listWidthPct: 20,
+		style:        DefaultStyle(),
+	}
 
-// WithTheme sets a custom theme.
-func WithTheme(theme Theme) Option {
-	return func(m *model) {
-		m.theme = theme
+	for _, opt := range opts {
+		opt(pv)
+	}
+
+	// Set up default status bar if not provided
+	if pv.statusBar == nil {
+		pv.statusBar = NewDefaultStatusBar()
+	}
+
+	// Apply style to components
+	pv.renderer.SetStyle(pv.style)
+	if sb, ok := pv.statusBar.(interface{ SetStyle(PatchViewStyle) }); ok {
+		sb.SetStyle(pv.style)
+	}
+	if sb, ok := pv.statusBar.(PatchesSetter); ok {
+		sb.SetPatches(patches)
+	}
+
+	return pv
+}
+
+func (pv *PatchView) Init() tea.Cmd {
+	return nil
+}
+
+func (pv *PatchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		pv.width = msg.Width
+		pv.height = msg.Height
+		pv.setupLayout()
+		return pv, nil
+
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "q", "ctrl+c":
+			return pv, tea.Quit
+
+		case "n":
+			if pv.cursor < len(pv.patches)-1 {
+				pv.selectFile(pv.cursor + 1)
+			}
+			return pv, nil
+
+		case "p":
+			if pv.cursor > 0 {
+				pv.selectFile(pv.cursor - 1)
+			}
+			return pv, nil
+
+		case "tab":
+			pv.focusRight = !pv.focusRight
+			return pv, nil
+
+		case "left":
+			if pv.focusRight {
+				pv.focusRight = false
+			}
+			return pv, nil
+
+		case "right":
+			if !pv.focusRight {
+				pv.focusRight = true
+			}
+			return pv, nil
+		}
+
+		// Right panel focus: handle diff scrolling
+		if pv.focusRight {
+			switch msg.String() {
+			case "j", "down":
+				pv.yOffset++
+				pv.clampYOffset()
+			case "k", "up":
+				pv.yOffset--
+				pv.clampYOffset()
+			case "h":
+				pv.xOffset = max(0, pv.xOffset-hScrollStep)
+			case "l":
+				pv.xOffset += hScrollStep
+			case "ctrl+h", "ctrl+left":
+				pv.xOffset = max(0, pv.xOffset-hScrollFastStep)
+			case "ctrl+l", "ctrl+right":
+				pv.xOffset += hScrollFastStep
+			case "ctrl+d":
+				pv.yOffset += pv.diffViewportHeight() / 2
+				pv.clampYOffset()
+			case "ctrl+u":
+				pv.yOffset -= pv.diffViewportHeight() / 2
+				pv.clampYOffset()
+			case "g", "home":
+				pv.yOffset = 0
+			case "G", "end":
+				pv.yOffset = pv.renderer.TotalLines() - pv.diffViewportHeight()
+				pv.clampYOffset()
+			case "]":
+				pv.jumpToNextHunk()
+			case "[":
+				pv.jumpToPrevHunk()
+			}
+			return pv, nil
+		}
+
+		// Left panel focus: 'l' switches to right panel
+		if msg.String() == "l" {
+			pv.focusRight = true
+			return pv, nil
+		}
+
+		// Forward to list viewport
+		vp, cmd := pv.listVp.Update(msg)
+		pv.listVp = vp
+		newCursor := pv.listVp.GetSelectedItemIdx()
+		if newCursor != pv.cursor && newCursor >= 0 && newCursor < len(pv.patches) {
+			pv.cursor = newCursor
+			pv.renderer.SetPatch(pv.patches[newCursor])
+			pv.yOffset = 0
+			pv.xOffset = 0
+			if sb, ok := pv.statusBar.(CursorSetter); ok {
+				sb.SetCursor(newCursor)
+			}
+			pv.updateFileListSelection()
+		}
+		return pv, cmd
+	}
+
+	return pv, nil
+}
+
+func (pv *PatchView) View() tea.View {
+	if pv.width <= 0 || pv.height <= 0 {
+		return tea.NewView("")
+	}
+
+	header := pv.renderHeader()
+	fileList := pv.renderFileList()
+	gap := " "
+	diffContent := pv.renderDiffContent()
+	footer := pv.renderFooter()
+
+	mainContent := lipgloss.JoinHorizontal(lipgloss.Top, fileList, gap, diffContent)
+	fullView := lipgloss.JoinVertical(lipgloss.Left, header, mainContent, footer)
+
+	view := tea.NewView(fullView)
+	view.AltScreen = true
+	return view
+}
+
+// Layout calculations
+
+func (pv *PatchView) headerHeight() int {
+	if pv.statusBar != nil {
+		return pv.statusBar.Height()
+	}
+	return headerHeight
+}
+
+func (pv *PatchView) listPaneHeight() int {
+	return max(pv.height-pv.headerHeight()-footerHeight, 0)
+}
+
+func (pv *PatchView) listContentHeight() int {
+	return max(pv.listPaneHeight()-borderSize-titleHeight, 1)
+}
+
+func (pv *PatchView) listWidth() int {
+	return max(pv.width*pv.listWidthPct/100, 1)
+}
+
+func (pv *PatchView) diffPaneWidth() int {
+	return max(pv.width-pv.listWidth()-gapWidth, 0)
+}
+
+func (pv *PatchView) diffPaneHeight() int {
+	return max(pv.height-pv.headerHeight()-footerHeight, 0)
+}
+
+func (pv *PatchView) diffViewportWidth() int {
+	return max(pv.diffPaneWidth()-borderSize, 0)
+}
+
+func (pv *PatchView) diffViewportHeight() int {
+	return max(pv.diffPaneHeight()-borderSize-titleHeight, 0)
+}
+
+// Actions
+
+func (pv *PatchView) selectFile(idx int) {
+	if len(pv.patches) == 0 {
+		return
+	}
+	idx = max(0, min(idx, len(pv.patches)-1))
+	if idx == pv.cursor {
+		return
+	}
+	pv.cursor = idx
+	pv.renderer.SetPatch(pv.patches[idx])
+	pv.yOffset = 0
+	pv.xOffset = 0
+
+	if sb, ok := pv.statusBar.(CursorSetter); ok {
+		sb.SetCursor(idx)
 	}
 }
 
+func (pv *PatchView) setupLayout() {
+	listWidth := pv.listWidth() - borderSize
+	listHeight := pv.listContentHeight()
+
+	if listWidth > 0 && listHeight > 0 {
+		pv.listVp.SetWidth(listWidth)
+		pv.listVp.SetHeight(listHeight)
+		pv.updateFileList()
+	}
+
+	vpWidth := pv.diffViewportWidth()
+	vpHeight := pv.diffViewportHeight()
+	pv.renderer.SetSize(vpWidth, vpHeight)
+
+	if len(pv.patches) > 0 && pv.renderer.patch == nil {
+		pv.renderer.SetPatch(pv.patches[pv.cursor])
+	}
+}
+
+func (pv *PatchView) updateFileList() {
+	if len(pv.patches) == 0 {
+		pv.listVp.SetObjects(nil)
+		return
+	}
+
+	width := pv.listVp.GetWidth()
+	items := make([]*patchItem, len(pv.patches))
+	for i, p := range pv.patches {
+		items[i] = newPatchItem(p, i == pv.cursor, width, pv.style)
+	}
+	pv.listVp.SetObjects(items)
+	pv.listVp.SetSelectedItemIdx(pv.cursor)
+}
+
+func (pv *PatchView) updateFileListSelection() {
+	if len(pv.patches) == 0 {
+		return
+	}
+
+	width := pv.listVp.GetWidth()
+	items := make([]*patchItem, len(pv.patches))
+	for i, p := range pv.patches {
+		items[i] = newPatchItem(p, i == pv.cursor, width, pv.style)
+	}
+	pv.listVp.SetObjects(items)
+}
+
+func (pv *PatchView) clampYOffset() {
+	maxY := max(0, pv.renderer.TotalLines()-pv.diffViewportHeight())
+	pv.yOffset = max(0, min(pv.yOffset, maxY))
+}
+
+func (pv *PatchView) jumpToNextHunk() {
+	offsets := pv.renderer.HunkOffsets()
+	for _, off := range offsets {
+		if off > pv.yOffset {
+			pv.yOffset = off
+			pv.clampYOffset()
+			return
+		}
+	}
+}
+
+func (pv *PatchView) jumpToPrevHunk() {
+	offsets := pv.renderer.HunkOffsets()
+	for i := len(offsets) - 1; i >= 0; i-- {
+		if offsets[i] < pv.yOffset {
+			pv.yOffset = offsets[i]
+			pv.clampYOffset()
+			return
+		}
+	}
+}
+
+// Rendering
+
+func (pv *PatchView) renderHeader() string {
+	if pv.statusBar != nil {
+		return pv.statusBar.View(pv.width)
+	}
+	return pv.style.HeaderBg.Width(pv.width).Render(" No changes")
+}
+
+func (pv *PatchView) renderFileList() string {
+	listHeight := pv.listPaneHeight()
+
+	borderColor := lipgloss.Color("8")
+	if !pv.focusRight {
+		borderColor = lipgloss.Color("12")
+	}
+
+	listStyle := lipgloss.NewStyle().
+		Width(pv.listWidth()).
+		Height(listHeight).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor)
+
+	if len(pv.patches) == 0 {
+		return listStyle.Render(" No changes")
+	}
+
+	title := pv.style.FilesTitle.Render(" Files ")
+	content := pv.listVp.View()
+	return listStyle.Render(title + "\n" + content)
+}
+
+func (pv *PatchView) renderDiffContent() string {
+	paneWidth := pv.diffPaneWidth()
+	paneHeight := pv.diffPaneHeight()
+
+	borderColor := lipgloss.Color("8")
+	if pv.focusRight {
+		borderColor = lipgloss.Color("12")
+	}
+
+	diffStyle := lipgloss.NewStyle().
+		Width(paneWidth).
+		Height(paneHeight).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor)
+
+	if len(pv.patches) > 0 {
+		pv.renderer.SetYOffset(pv.yOffset)
+		pv.renderer.SetXOffset(pv.xOffset)
+		content := pv.renderer.Render()
+
+		pctText := ""
+		total := pv.renderer.TotalLines()
+		if total > 0 {
+			vpH := pv.diffViewportHeight()
+			pct := min(100, (pv.yOffset+vpH)*100/max(total, 1))
+			pctText = fmt.Sprintf(" (%d%%)", pct)
+		}
+
+		title := pv.style.FilesTitle.Render(fmt.Sprintf(" Diff%s ", pctText))
+		return diffStyle.Render(title + "\n" + content)
+	}
+
+	return diffStyle.Render(" No diff content")
+}
+
+func (pv *PatchView) renderFooter() string {
+	var scrollInfo string
+	total := pv.renderer.TotalLines()
+	if total > 0 {
+		vpH := pv.diffViewportHeight()
+		pct := min(100, (pv.yOffset+vpH)*100/max(total, 1))
+		scrollInfo = fmt.Sprintf("Lines: %d-%d/%d (%d%%)",
+			pv.yOffset+1,
+			min(pv.yOffset+vpH, total),
+			total,
+			pct)
+
+		if pv.xOffset > 0 {
+			scrollInfo += fmt.Sprintf("  Col: %d+", pv.xOffset)
+		}
+	}
+
+	var keys string
+	if pv.focusRight {
+		keys = "j/k:scroll  h/l:hscroll  [/]:hunk  g/G:top/bottom  tab:files  n/p:file  q:quit"
+	} else {
+		keys = "j/k:navigate  l/→:diff  tab:diff  n/p:file  q:quit"
+	}
+
+	leftWidth := lipgloss.Width(scrollInfo)
+	rightWidth := lipgloss.Width(keys)
+	spaceWidth := max(pv.width-leftWidth-rightWidth-2, 0)
+
+	content := scrollInfo + " " + strings.Repeat(" ", spaceWidth) + keys
+
+	return pv.style.FooterBg.Width(pv.width).Render(content)
+}
+
+// truncatePath truncates a path from the left to fit within maxWidth.
 func truncatePath(path string, maxWidth int) string {
 	if maxWidth <= 0 {
 		return ""
@@ -180,736 +584,4 @@ func truncatePath(path string, maxWidth int) string {
 		cut = i
 	}
 	return "…" + string(runes[cut:])
-}
-
-// truncateLeftToWidth truncates a string from the left to fit within maxWidth.
-// It preserves ANSI escape codes and uses ellipsis to indicate truncation.
-// Example: truncateLeftToWidth("abcde", 3) → "…de"
-func truncateLeftToWidth(s string, maxWidth int) string {
-	if maxWidth <= 0 {
-		return ""
-	}
-	width := lipgloss.Width(s)
-	if width <= maxWidth {
-		return s
-	}
-	// Calculate how many characters to remove from the left
-	remove := width - maxWidth + 1 // +1 for ellipsis
-	return ansi.TruncateLeftWc(s, remove, "…")
-}
-
-func (m *model) Init() tea.Cmd {
-	return nil
-}
-
-func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		m.setupLayout()
-		return m, nil
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "up", "k":
-			if !m.focusRight && m.cursor > 0 {
-				m.selectFile(m.cursor - 1)
-			}
-			return m, nil
-		case "down", "j":
-			if !m.focusRight && m.cursor < len(m.patches)-1 {
-				m.selectFile(m.cursor + 1)
-			}
-			return m, nil
-		case "n":
-			if m.cursor < len(m.patches)-1 {
-				m.selectFile(m.cursor + 1)
-			}
-			return m, nil
-		case "p":
-			if m.cursor > 0 {
-				m.selectFile(m.cursor - 1)
-			}
-			return m, nil
-		case "tab":
-			m.focusRight = !m.focusRight
-			return m, nil
-		case "left":
-			if m.focusRight {
-				m.focusRight = false
-			}
-			return m, nil
-		case "right":
-			if !m.focusRight {
-				m.focusRight = true
-			}
-			return m, nil
-		case "h":
-			if m.focusRight {
-				m.hScroll = max(0, m.hScroll-10)
-				m.updateContent()
-			}
-			return m, nil
-		case "l":
-			if m.focusRight {
-				m.hScroll += 10
-				m.updateContent()
-			} else {
-				m.focusRight = true
-			}
-			return m, nil
-		case "ctrl+h", "ctrl+left":
-			if m.focusRight {
-				m.hScroll = max(0, m.hScroll-20)
-				m.updateContent()
-			}
-			return m, nil
-		case "ctrl+l", "ctrl+right":
-			if m.focusRight {
-				m.hScroll += 20
-				m.updateContent()
-			}
-			return m, nil
-		}
-		if m.focusRight {
-			vp, cmd := m.vp.Update(msg)
-			m.vp = vp
-			return m, cmd
-		}
-		return m, nil
-	}
-	vp, cmd := m.vp.Update(msg)
-	m.vp = vp
-	return m, cmd
-}
-
-func (m *model) View() tea.View {
-	if m.width <= 0 || m.height <= 0 {
-		return tea.NewView("")
-	}
-	header := m.renderHeader()
-	fileList := m.renderFileList()
-	diffContent := m.renderDiffContent()
-	footer := m.renderFooter()
-	mainContent := lipgloss.JoinHorizontal(lipgloss.Top, fileList, " ", diffContent)
-	fullView := lipgloss.JoinVertical(lipgloss.Left, header, mainContent, footer)
-	view := tea.NewView(fullView)
-	view.AltScreen = true
-	return view
-}
-
-func (m *model) selectFile(idx int) {
-	if len(m.patches) == 0 {
-		return
-	}
-	idx = max(0, min(idx, len(m.patches)-1))
-
-	changed := idx != m.cursor
-	if changed {
-		m.cursor = idx
-		m.hScroll = 0
-		m.vp.GotoTop()
-	}
-
-	// Always sync state, even if cursor didn't change
-	m.syncListYOffset()
-	m.updateContent()
-}
-
-// syncListYOffset ensures the cursor is visible in the file list.
-// This should be called whenever the cursor or list dimensions change.
-func (m *model) syncListYOffset() {
-	if len(m.patches) == 0 {
-		m.listYOffset = 0
-		return
-	}
-	contentHeight := m.listContentHeight()
-	totalFiles := len(m.patches)
-
-	startIdx := m.listYOffset
-	endIdx := min(startIdx+contentHeight, totalFiles)
-
-	// Scroll up if cursor is above visible area
-	if m.cursor < startIdx {
-		m.listYOffset = m.cursor
-	}
-	// Scroll down if cursor is below visible area
-	if m.cursor >= endIdx {
-		m.listYOffset = max(0, m.cursor-contentHeight+1)
-	}
-
-	// Clamp offset to valid range
-	maxOffset := max(0, totalFiles-contentHeight)
-	m.listYOffset = min(max(m.listYOffset, 0), maxOffset)
-}
-
-func (m *model) setupLayout() {
-	vpWidth := m.diffViewportWidth()
-	vpHeight := m.diffViewportHeight()
-	if vpWidth > 0 {
-		m.vp.SetWidth(vpWidth)
-	}
-	if vpHeight > 0 {
-		m.vp.SetHeight(vpHeight)
-	}
-	m.syncListYOffset()
-	m.updateContent()
-}
-
-func (m *model) updateContent() {
-	if len(m.patches) == 0 {
-		m.vp.SetContent("No changes")
-		return
-	}
-
-	// Use cached content if available
-	currentPatch := m.patches[m.cursor]
-	var raw string
-	var maxLineWidth int
-
-	if m.cachedPatch == currentPatch {
-		// Cache hit: use cached formatted content
-		raw = m.cachedContent
-		maxLineWidth = m.cachedMaxWidth
-	} else {
-		// Cache miss: format and cache the content
-		raw = m.formatPatch(currentPatch)
-		maxLineWidth = 0
-		for line := range strings.SplitSeq(raw, "\n") {
-			if w := lipgloss.Width(line); w > maxLineWidth {
-				maxLineWidth = w
-			}
-		}
-		// Update cache
-		m.cachedPatch = currentPatch
-		m.cachedContent = raw
-		m.cachedMaxWidth = maxLineWidth
-	}
-
-	vpWidth := m.vp.Width()
-	maxHScroll := max(0, maxLineWidth-vpWidth)
-	m.hScroll = min(m.hScroll, maxHScroll)
-
-	content := raw
-	if vpWidth > 0 && m.hScroll > 0 {
-		lines := strings.Split(content, "\n")
-		for i, line := range lines {
-			lineWidth := lipgloss.Width(line)
-			if lineWidth > m.hScroll {
-				lines[i] = ansi.TruncateLeftWc(line, m.hScroll, "")
-			} else {
-				lines[i] = ""
-			}
-		}
-		content = strings.Join(lines, "\n")
-	}
-	m.vp.SetContent(content)
-}
-
-func (m *model) listPaneHeight() int {
-	return max(m.height-headerHeight-footerHeight, 0)
-}
-func (m *model) listContentHeight() int {
-	return max(m.listPaneHeight()-borderSize-titleHeight, 1)
-}
-func (m *model) listWidth() int     { return max(m.width*m.listWidthPct/100, 1) }
-func (m *model) diffPaneWidth() int { return max(m.width-m.listWidth()-gapWidth, 0) }
-func (m *model) diffPaneHeight() int {
-	return max(m.height-headerHeight-footerHeight, 0)
-}
-func (m *model) diffViewportWidth() int { return max(m.diffPaneWidth()-borderSize, 0) }
-func (m *model) diffViewportHeight() int {
-	return max(m.diffPaneHeight()-borderSize-titleHeight, 0)
-}
-
-func (m *model) renderFileList() string {
-	innerWidth := m.listWidth() - borderSize
-	listHeight := m.listPaneHeight()
-	contentHeight := m.listContentHeight()
-	listStyle := paneStyle(m.listWidth(), listHeight, !m.focusRight)
-
-	if len(m.patches) == 0 {
-		return listStyle.Render(" No changes")
-	}
-
-	// Use cached stats width
-	statsWidth := m.getStatsWidth()
-
-	startIdx := m.listYOffset
-	endIdx := min(startIdx+contentHeight, len(m.patches))
-	lines := make([]string, 0, contentHeight)
-	for i := startIdx; i < endIdx; i++ {
-		lines = append(lines, m.renderFileLine(m.patches[i], i == m.cursor, innerWidth, statsWidth))
-	}
-	for len(lines) < contentHeight {
-		lines = append(lines, "")
-	}
-	title := styleFilesTitle.Render(" Files ")
-	return listStyle.Render(title + "\n" + strings.Join(lines, "\n"))
-}
-
-func (m *model) renderFileLine(p *diferenco.Patch, selected bool, width, statsWidth int) string {
-	stat := p.Stat()
-	path := patchName(p)
-
-	// Fixed column layout:
-	// [prefix: 2][path: variable][padding: 1][stats: right-aligned]
-	const (
-		prefixWidth = 2
-		padding     = 1
-	)
-
-	// Calculate path width
-	pathWidth := max(width-prefixWidth-statsWidth-padding, 0)
-
-	// Truncate path if needed
-	if pathWidth > 0 && displaywidth.String(path) > pathWidth {
-		path = truncatePath(path, pathWidth)
-	}
-	// Pad path to exact display width (important for wide characters)
-	pathDisplay := padRightDisplayWidth(path, pathWidth)
-
-	// Build the complete line
-	var line strings.Builder
-
-	// Render prefix and path
-	if selected {
-		prefix := "▌ "
-		line.WriteString(m.theme.Selected.Render(prefix + pathDisplay + strings.Repeat(" ", padding)))
-	} else {
-		line.WriteString("  ")
-		line.WriteString(pathDisplay)
-		line.WriteString(strings.Repeat(" ", padding))
-	}
-
-	// Render stats - optimized: use len() for pure ASCII numbers
-	statsText, statsRendered := m.renderStats(stat, selected)
-	line.WriteString(statsRendered)
-
-	// Add padding if needed - optimized: len() for ASCII numbers
-	if paddingNeeded := statsWidth - len(statsText); paddingNeeded > 0 {
-		if selected {
-			line.WriteString(m.theme.Selected.Render(strings.Repeat(" ", paddingNeeded)))
-		} else {
-			line.WriteString(strings.Repeat(" ", paddingNeeded))
-		}
-	}
-
-	return line.String()
-}
-
-// renderStats renders the stats text with appropriate colors.
-// Returns the plain text and the styled text.
-// Optimized: stats are always ASCII numbers, so we use strconv.Itoa instead of fmt.Sprintf.
-func (m *model) renderStats(stat diferenco.FileStat, selected bool) (string, string) {
-	if stat.Addition > 0 && stat.Deletion > 0 {
-		addedText := "+" + strconv.Itoa(stat.Addition)
-		deletedText := "-" + strconv.Itoa(stat.Deletion)
-		statsText := addedText + " " + deletedText
-		if selected {
-			addedStyle := m.theme.Selected.Foreground(m.theme.Addition.GetForeground())
-			deletedStyle := m.theme.Selected.Foreground(m.theme.Deletion.GetForeground())
-			return statsText, addedStyle.Render(addedText) + " " + deletedStyle.Render(deletedText)
-		}
-		return statsText, m.theme.Addition.Render(addedText) + " " + m.theme.Deletion.Render(deletedText)
-	}
-
-	if stat.Addition > 0 {
-		addedText := "+" + strconv.Itoa(stat.Addition)
-		if selected {
-			addedStyle := m.theme.Selected.Foreground(m.theme.Addition.GetForeground())
-			return addedText, addedStyle.Render(addedText)
-		}
-		return addedText, m.theme.Addition.Render(addedText)
-	}
-
-	if stat.Deletion > 0 {
-		deletedText := "-" + strconv.Itoa(stat.Deletion)
-		if selected {
-			deletedStyle := m.theme.Selected.Foreground(m.theme.Deletion.GetForeground())
-			return deletedText, deletedStyle.Render(deletedText)
-		}
-		return deletedText, m.theme.Deletion.Render(deletedText)
-	}
-
-	return "", ""
-}
-
-// padRightDisplayWidth pads a string with spaces on the right to reach the target display width.
-// This correctly handles strings containing wide characters (CJK, emoji, etc.).
-func padRightDisplayWidth(s string, width int) string {
-	w := displaywidth.String(s)
-	if w >= width {
-		return s
-	}
-	return s + strings.Repeat(" ", width-w)
-}
-
-// getStatsWidth returns the cached stats width, computing it if necessary.
-// This avoids recalculating the width on every render.
-func (m *model) getStatsWidth() int {
-	if m.cachedStatsWidth > 0 {
-		return m.cachedStatsWidth
-	}
-	m.cachedStatsWidth = m.computeMaxStatsWidth()
-	return m.cachedStatsWidth
-}
-
-// computeMaxStatsWidth calculates the maximum stats width across all patches
-// to ensure consistent column width for right alignment.
-// Optimized: stats are always ASCII numbers, so we use strconv.Itoa instead of fmt.Sprintf.
-func (m *model) computeMaxStatsWidth() int {
-	const (
-		minStatsWidth = 4  // keeps a small stable column even for tiny stats
-		maxStatsWidth = 16 // prevents excessive space for very large stats
-	)
-
-	maxWidth := minStatsWidth
-	for _, p := range m.patches {
-		stat := p.Stat()
-		statsText := formatStatsText(stat.Addition, stat.Deletion)
-		// Optimized: stats are always ASCII, so len() is accurate and faster
-		if w := len(statsText); w > maxWidth {
-			maxWidth = w
-		}
-	}
-	return min(maxWidth, maxStatsWidth)
-}
-
-// formatStatsText formats stats as text for display width calculation.
-func formatStatsText(addition, deletion int) string {
-	switch {
-	case addition > 0 && deletion > 0:
-		return "+" + strconv.Itoa(addition) + " -" + strconv.Itoa(deletion)
-	case addition > 0:
-		return "+" + strconv.Itoa(addition)
-	case deletion > 0:
-		return "-" + strconv.Itoa(deletion)
-	default:
-		return ""
-	}
-}
-
-func (m *model) renderDiffContent() string {
-	paneWidth := m.diffPaneWidth()
-	paneHeight := m.diffPaneHeight()
-	diffStyle := paneStyle(paneWidth, paneHeight, m.focusRight)
-
-	if len(m.patches) == 0 {
-		return diffStyle.Render(" No diff content")
-	}
-	var pctText string
-	if m.vp.TotalLineCount() > 0 {
-		percentage := min(100, (m.vp.YOffset()+m.vp.Height())*100/m.vp.TotalLineCount())
-		pctText = fmt.Sprintf(" (%d%%)", percentage)
-	}
-	title := styleFilesTitle.Render(fmt.Sprintf(" Diff%s ", pctText))
-	return diffStyle.Render(title + "\n" + m.vp.View())
-}
-
-func statusStyle(status string) lipgloss.Style {
-	if s, ok := statusStyles[status]; ok {
-		return s
-	}
-	return statusStyles["M"]
-}
-
-// paneStyle returns a styled border for panes, with different colors based on focus state.
-func paneStyle(width, height int, focused bool) lipgloss.Style {
-	borderColor := lipgloss.Color("8")
-	if focused {
-		borderColor = lipgloss.Color("12")
-	}
-	return lipgloss.NewStyle().
-		Width(width).
-		Height(height).
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(borderColor)
-}
-
-func (m *model) renderHeader() string {
-	if len(m.patches) == 0 {
-		return styleHeaderBg.Width(m.width).Render(" No changes")
-	}
-	p := m.patches[m.cursor]
-	stat := p.Stat()
-	ps := patchStatus(p)
-	status := statusStyle(ps).Render(ps)
-	var stats string
-	switch {
-	case stat.Addition > 0 && stat.Deletion > 0:
-		stats = m.theme.Addition.Render("+"+strconv.Itoa(stat.Addition)) + " " + m.theme.Deletion.Render("-"+strconv.Itoa(stat.Deletion))
-	case stat.Addition != 0:
-		stats = m.theme.Addition.Render("+" + strconv.Itoa(stat.Addition))
-	case stat.Deletion != 0:
-		stats = m.theme.Deletion.Render("-" + strconv.Itoa(stat.Deletion))
-	}
-	fileCount := styleFileCount.Render(strconv.Itoa(m.cursor+1) + "/" + strconv.Itoa(len(m.patches)))
-	sep := styleSeparator.Render("│")
-	fileCountWidth := lipgloss.Width(fileCount)
-	statsWidth := lipgloss.Width(stats)
-	fixedWidth := 1 + 1 + 3 + fileCountWidth + 2
-	availableForPathAndStats := m.width - fixedWidth
-	showStats := availableForPathAndStats > statsWidth+10
-	pathWidth := availableForPathAndStats
-	if showStats {
-		pathWidth = availableForPathAndStats - statsWidth - 1
-	}
-	pathWidth = max(pathWidth, 0)
-	pathDisplay := patchName(p)
-	if pathWidth > 0 && lipgloss.Width(pathDisplay) > pathWidth {
-		pathDisplay = truncateLeftToWidth(pathDisplay, pathWidth)
-	}
-	pathDisplay = stylePathDisplay.Render(pathDisplay)
-	left := " " + status + " " + sep + " " + pathDisplay
-	if showStats {
-		left = " " + status + " " + sep + " " + pathDisplay + " " + stats
-	}
-	spaceWidth := max(m.width-lipgloss.Width(left)-lipgloss.Width(fileCount), 0)
-	return styleHeaderBg.Width(m.width).Render(left + strings.Repeat(" ", spaceWidth) + fileCount)
-}
-
-func (m *model) renderFooter() string {
-	var scrollInfo string
-	if m.vp.TotalLineCount() > 0 {
-		percentage := min(100, (m.vp.YOffset()+m.vp.Height())*100/m.vp.TotalLineCount())
-		scrollInfo = fmt.Sprintf("Lines: %d-%d/%d (%d%%)",
-			m.vp.YOffset()+1,
-			min(m.vp.YOffset()+m.vp.Height(), m.vp.TotalLineCount()),
-			m.vp.TotalLineCount(),
-			percentage)
-		if m.hScroll > 0 {
-			scrollInfo += fmt.Sprintf("  Col: %d+", m.hScroll)
-		}
-	}
-	keys := "j/k:navigate  l/→:diff  tab:diff  n/p:file  q:quit"
-	if m.focusRight {
-		keys = "j/k:scroll  h/l:hscroll  ←→:focus  tab:files  n/p:file  q:quit"
-	}
-	spaceWidth := max(m.width-lipgloss.Width(scrollInfo)-lipgloss.Width(keys)-2, 0)
-	content := scrollInfo + " " + strings.Repeat(" ", spaceWidth) + keys
-	return styleFooterBg.Width(m.width).Render(content)
-}
-
-// patchName returns the display name for a patch.
-func patchName(p *diferenco.Patch) string {
-	if p == nil {
-		return ""
-	}
-	switch {
-	case p.From == nil && p.To != nil:
-		return p.To.Name
-	case p.From != nil && p.To == nil:
-		return p.From.Name
-	case p.From != nil && p.To != nil && p.From.Name != p.To.Name:
-		return p.From.Name + " → " + p.To.Name
-	case p.To != nil:
-		return p.To.Name
-	case p.From != nil:
-		return p.From.Name
-	default:
-		return ""
-	}
-}
-
-// patchStatus returns the status character for a patch.
-func patchStatus(p *diferenco.Patch) string {
-	if p == nil {
-		return "M"
-	}
-	switch {
-	case p.From == nil:
-		return "A"
-	case p.To == nil:
-		return "D"
-	case p.From != nil && p.To != nil && p.From.Name != p.To.Name:
-		return "R"
-	default:
-		return "M"
-	}
-}
-
-const (
-	srcPrefix = "a/"
-	dstPrefix = "b/"
-	zeroOID   = "0000000000000000000000000000000000000000000000000000000000000000"
-)
-
-// formatPatch formats a single patch using the model's theme.
-func (m *model) formatPatch(p *diferenco.Patch) string {
-	var sb strings.Builder
-
-	// Write file patch header
-	m.writeFilePatchHeader(&sb, p)
-
-	if len(p.Hunks) == 0 {
-		return sb.String()
-	}
-
-	for _, hunk := range p.Hunks {
-		m.formatHunk(&sb, hunk)
-	}
-	return sb.String()
-}
-
-func (m *model) writeFilePatchHeader(sb *strings.Builder, p *diferenco.Patch) {
-	from, to := p.From, p.To
-	if from == nil && to == nil {
-		return
-	}
-
-	// Three cases: modification, new file, or deleted file
-	switch {
-	case from != nil && to != nil:
-		m.writeModifyHeader(sb, p, from, to)
-	case from == nil:
-		m.writeNewFileHeader(sb, p, to)
-	case to == nil:
-		m.writeDeleteHeader(sb, p, from)
-	}
-}
-
-// writeModifyHeader writes diff header for file modification.
-func (m *model) writeModifyHeader(sb *strings.Builder, p *diferenco.Patch, from, to *diferenco.File) {
-	hashEquals := from.Hash == to.Hash
-
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s%s %s%s", srcPrefix, from.Name, dstPrefix, to.Name)))
-	sb.WriteByte('\n')
-
-	if from.Mode != to.Mode {
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("old mode %o", from.Mode)))
-		sb.WriteByte('\n')
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("new mode %o", to.Mode)))
-		sb.WriteByte('\n')
-	}
-
-	if from.Name != to.Name {
-		sb.WriteString(m.theme.MetaLine.Render("rename from " + from.Name))
-		sb.WriteByte('\n')
-		sb.WriteString(m.theme.MetaLine.Render("rename to " + to.Name))
-		sb.WriteByte('\n')
-	}
-
-	if !hashEquals {
-		switch {
-		case from.Mode != to.Mode:
-			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", from.Hash, to.Hash)))
-		default:
-			sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s %o", from.Hash, to.Hash, from.Mode)))
-		}
-		sb.WriteByte('\n')
-	}
-
-	if !hashEquals {
-		m.writeFileMarkers(sb, p, srcPrefix+from.Name, dstPrefix+to.Name)
-	}
-}
-
-// writeNewFileHeader writes diff header for new file.
-func (m *model) writeNewFileHeader(sb *strings.Builder, p *diferenco.Patch, to *diferenco.File) {
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+to.Name, dstPrefix+to.Name)))
-	sb.WriteByte('\n')
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("new file mode %o", to.Mode)))
-	sb.WriteByte('\n')
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", zeroOID, to.Hash)))
-	sb.WriteByte('\n')
-
-	m.writeFileMarkers(sb, p, "/dev/null", dstPrefix+to.Name)
-}
-
-// writeDeleteHeader writes diff header for deleted file.
-func (m *model) writeDeleteHeader(sb *strings.Builder, p *diferenco.Patch, from *diferenco.File) {
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("diff --zeta %s %s", srcPrefix+from.Name, dstPrefix+from.Name)))
-	sb.WriteByte('\n')
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("deleted file mode %o", from.Mode)))
-	sb.WriteByte('\n')
-	sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("index %s..%s", from.Hash, zeroOID)))
-	sb.WriteByte('\n')
-
-	m.writeFileMarkers(sb, p, srcPrefix+from.Name, "/dev/null")
-}
-
-// writeFileMarkers writes file markers based on patch type (binary/fragments/text).
-// For text files: writes "--- fromPath" and "+++ toPath"
-// For binary/fragments: writes "Binary/Fragments files ... differ"
-func (m *model) writeFileMarkers(sb *strings.Builder, p *diferenco.Patch, fromPath, toPath string) {
-	switch {
-	case p.IsBinary:
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("Binary files %s and %s differ", fromPath, toPath)))
-		sb.WriteByte('\n')
-	case p.IsFragments:
-		sb.WriteString(m.theme.MetaLine.Render(fmt.Sprintf("Fragments files %s and %s differ", fromPath, toPath)))
-		sb.WriteByte('\n')
-	default:
-		sb.WriteString(m.theme.FragLine.Render("--- " + fromPath))
-		sb.WriteByte('\n')
-		sb.WriteString(m.theme.FragLine.Render("+++ " + toPath))
-		sb.WriteByte('\n')
-	}
-}
-
-func (m *model) formatHunk(sb *strings.Builder, hunk *diferenco.Hunk) {
-	fromCount, toCount := 0, 0
-	for _, l := range hunk.Lines {
-		switch l.Kind {
-		case diferenco.Delete:
-			fromCount++
-		case diferenco.Insert:
-			toCount++
-		default:
-			fromCount++
-			toCount++
-		}
-	}
-
-	var header strings.Builder
-	header.WriteString("@@")
-
-	// Format from line range
-	switch {
-	case fromCount > 1:
-		fmt.Fprintf(&header, " -%d,%d", hunk.FromLine, fromCount)
-	case hunk.FromLine == 1 && fromCount == 0:
-		header.WriteString(" -0,0")
-	default:
-		fmt.Fprintf(&header, " -%d", hunk.FromLine)
-	}
-
-	// Format to line range
-	switch {
-	case toCount > 1:
-		fmt.Fprintf(&header, " +%d,%d", hunk.ToLine, toCount)
-	case hunk.ToLine == 1 && toCount == 0:
-		header.WriteString(" +0,0")
-	default:
-		fmt.Fprintf(&header, " +%d", hunk.ToLine)
-	}
-
-	header.WriteString(" @@")
-
-	sb.WriteString(m.theme.FragLine.Render(header.String()))
-	sb.WriteByte('\n')
-
-	for _, line := range hunk.Lines {
-		m.formatLine(sb, line)
-	}
-}
-
-func (m *model) formatLine(sb *strings.Builder, line diferenco.Line) {
-	content := strings.TrimSuffix(line.Content, "\n")
-
-	switch line.Kind {
-	case diferenco.Delete:
-		sb.WriteByte('-')
-		sb.WriteString(m.theme.DeletionLine.Render(content))
-	case diferenco.Insert:
-		sb.WriteByte('+')
-		sb.WriteString(m.theme.AdditionLine.Render(content))
-	default:
-		sb.WriteByte(' ')
-		sb.WriteString(m.theme.ContextLine.Render(content))
-	}
-	sb.WriteByte('\n')
 }

@@ -12,6 +12,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/alecthomas/chroma/v2 v2.23.1
 	github.com/charmbracelet/x/ansi v0.11.7
+	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260420102150-fe550f2efce5
 	github.com/clipperhouse/displaywidth v0.11.0
 	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/ebitengine/purego v0.10.0
@@ -26,6 +27,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/zeebo/blake3 v0.2.4
+	github.com/zeebo/xxh3 v1.1.0
 	golang.org/x/crypto v0.50.0
 	golang.org/x/net v0.53.0
 	golang.org/x/sync v0.20.0

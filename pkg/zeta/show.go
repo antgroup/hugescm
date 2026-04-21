@@ -27,7 +27,6 @@ type ShowOptions struct {
 	Textconv  bool
 	Algorithm diferenco.Algorithm
 	Limit     int64
-	WordDiff  bool
 }
 
 type showObject struct {
@@ -191,15 +190,6 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 			return nil
 		}
 		warn("nav mode fallback to unified patch output: %v", err)
-	}
-
-	// Use word-diff formatter when enabled
-	if opts.WordDiff && w.EnableColor() {
-		formatter := newDiffFormatter(true)
-		for _, p := range patch {
-			_, _ = io.WriteString(w, formatter.formatPatch(p))
-		}
-		return nil
 	}
 
 	e := diferenco.NewUnifiedEncoder(w, tui.EncoderOptions(w.ColorMode())...)

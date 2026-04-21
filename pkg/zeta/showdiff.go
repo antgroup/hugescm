@@ -3,7 +3,6 @@ package zeta
 import (
 	"context"
 	"fmt"
-	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -35,7 +34,6 @@ type DiffOptions struct {
 	Textconv  bool
 	UseColor  bool
 	ThreeWay  bool
-	WordDiff  bool // word-level diff highlighting
 	Algorithm diferenco.Algorithm
 }
 
@@ -229,15 +227,6 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch
 		return err
 	}
 	defer w.Close() // nolint
-
-	// Use word-diff formatter when enabled and color is supported
-	if opts.WordDiff && w.ColorMode() != term.LevelNone {
-		formatter := newDiffFormatter(true)
-		for _, p := range patch {
-			_, _ = io.WriteString(w, formatter.formatPatch(p))
-		}
-		return nil
-	}
 
 	encoderOpts := tui.EncoderOptions(w.ColorMode())
 	if opts.NoRename {

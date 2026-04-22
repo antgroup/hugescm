@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-04-22
+
+### Added
+
+- **Hot Diff/Show Commands**: Add `hot diff` and `hot show` commands for viewing differences in git repositories
+- **Interactive Diff Navigation**: Add `--nav` flag to `zeta diff` and `zeta show` commands for built-in interactive diff viewer with syntax highlighting
+- **Advanced Viewport Module**: Import feature-rich viewport component with text wrapping, selection, and filtering capabilities
+- **MultiBar Progress**: Rewrite progress bar component using `bubbles/progress` with concurrent multi-bar rendering and EWMA speed tracking
+- **LOONG64 Support**: Enable builds for LoongArch64 architecture
+
+### Changed
+
+- **Patch View Improvements**:
+  - Refactor patchview module with improved navigation mode
+  - Add LRU cache for syntax highlighting (up to 1000 entries)
+  - Remove standalone word-diff in favor of integrated nav mode
+  - Enhance diff theme and rendering
+- **TUI Enhancements**:
+  - Switch to custom viewport implementation for better control
+  - Optimize pager rendering performance
+  - Improve word diff performance
+- **Code Cleanup**:
+  - Remove legacy `diffformat.go` module (287 lines removed)
+  - Code tidy and refactoring across multiple modules
+
+### Fixed
+
+- Fix double close issue in `writeCredentials` for keyring file storage
+- Harden keyring file storage with atomic writes and lock handling
+- Fix `truncatePath` in hot commands
+- Fix pager status bar space display
+- Fix multi `-m` flag handling in commit command
+- Fix small bug in diferenco module
+
+### Dependencies
+
+- **Updated**:
+  - `charm.land/bubbletea/v2` from v2.0.2 to v2.0.6
+  - `charm.land/lipgloss/v2` from v2.0.2 to v2.0.3
+  - `golang.org/x/crypto` from v0.49.0 to v0.50.0
+  - `golang.org/x/net` from v0.52.0 to v0.53.0
+  - `golang.org/x/sys` from v0.42.0 to v0.43.0
+  - `golang.org/x/term` from v0.41.0 to v0.42.0
+  - `golang.org/x/text` from v0.35.0 to v0.36.0
+- **Added**: `github.com/zeebo/xxh3` v1.1.0 for fast hashing
+- **Removed**: `github.com/vbauerster/mpb/v8` (replaced by custom MultiBar implementation)
+
 ## [0.22.0] - 2026-03-27
 
 ### Added

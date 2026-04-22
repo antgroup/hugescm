@@ -30,6 +30,8 @@ type App struct {
 	Snapshot   command.Snapshot   `cmd:"snapshot" help:"Create a snapshot commit for the worktree"`
 	Az         command.Az         `cmd:"az" help:"Analyze repository large files"`
 	Co         command.Co         `cmd:"co" help:"EXPERIMENTAL: Clones a repository into a newly created directory"`
+	Diff       command.Diff       `cmd:"diff" help:"Show changes between commits, commit and working tree, etc"`
+	Show       command.Show       `cmd:"show" help:"Show the changes introduced by a commit"`
 	Debug      bool               `name:"debug" help:"Enable debug mode; analyze timing"`
 }
 

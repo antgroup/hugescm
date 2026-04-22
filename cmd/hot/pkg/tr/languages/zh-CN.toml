@@ -120,6 +120,15 @@ Date = "日期"
 "Converting text to Unicode" = "将文本转为 Unicode"
 "Output to a specific file instead of stdout" = "输出到特定文件而不是 stdout"
 "Disable alternate screen buffer for pager" = "禁用 pager 的备用屏幕缓冲区"
+# diff
+"Show changes between commits, commit and working tree, etc" = "显示提交之间、提交与工作区等的变更"
+"Commit range or paths" = "提交范围或路径"
+"Show staged changes" = "显示暂存区的变更"
+"Same as --cached" = "同 --cached"
+"Output patches in JSON format" = "以 JSON 格式输出补丁"
+# show
+"Show the changes introduced by a commit" = "显示提交引入的变更"
+"Commit to show" = "要显示的提交"
 # stat
 "View repository status" = "查看存储库状态"
 "Git Version: %s\n" = "Git 版本：%s\n"

@@ -104,7 +104,11 @@ func (p Patch) Format() ([]byte, int) {
 		} else {
 			fmt.Fprintf(b, " +%d", hunk.ToLine)
 		}
-		fmt.Fprint(b, " @@\n")
+		if hunk.Section != "" {
+			fmt.Fprintf(b, " @@ %s\n", hunk.Section)
+		} else {
+			fmt.Fprint(b, " @@\n")
+		}
 		lines += len(hunk.Lines) + 1
 		for _, l := range hunk.Lines {
 			switch l.Kind {
@@ -173,7 +177,11 @@ func (p Patch) String() string {
 		} else {
 			fmt.Fprintf(b, " +%d", hunk.ToLine)
 		}
-		fmt.Fprint(b, " @@\n")
+		if hunk.Section != "" {
+			fmt.Fprintf(b, " @@ %s\n", hunk.Section)
+		} else {
+			fmt.Fprint(b, " @@\n")
+		}
 		for _, l := range hunk.Lines {
 			switch l.Kind {
 			case Delete:
@@ -199,6 +207,10 @@ type Hunk struct {
 	ToLine int `json:"to_line"`
 	// The set of line based edits to apply.
 	Lines []Line `json:"lines,omitempty"`
+	// Section is the optional context text after the @@ markers in unified diff.
+	// For example, in "@@ -1,5 +1,6 @@ function main", the section is "function main".
+	// This provides context about which function/class the change belongs to.
+	Section string `json:"section,omitempty"`
 }
 
 func (h Hunk) Stat() (int, int) {

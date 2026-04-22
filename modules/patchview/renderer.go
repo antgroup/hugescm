@@ -299,10 +299,10 @@ func (r *PatchRenderer) codeWidth() int {
 func (r *PatchRenderer) renderHunkHeader(hunk *diferenco.Hunk, showLineNums bool, codeW int) string {
 	style := &r.style.DiffStyle.DividerLine
 
-	// Build hunk header
+	// Build hunk header with section
 	fromCount := hunkFromCount(hunk)
 	toCount := hunkToCount(hunk)
-	header := formatHunkHeader(hunk.FromLine, fromCount, hunk.ToLine, toCount, "")
+	header := formatHunkHeader(hunk.FromLine, fromCount, hunk.ToLine, toCount, hunk.Section)
 
 	// Remove leading @@ if present
 	headerContent := header
@@ -423,12 +423,16 @@ func hunkToCount(hunk *diferenco.Hunk) int {
 }
 
 // formatHunkHeader formats a hunk header.
-func formatHunkHeader(fromLine, fromCount, toLine, toCount int, _ string) string {
+func formatHunkHeader(fromLine, fromCount, toLine, toCount int, section string) string {
 	var sb strings.Builder
 	sb.WriteString("@@")
 	sb.WriteString(formatHunkRange(fromLine, fromCount, "-"))
 	sb.WriteString(formatHunkRange(toLine, toCount, "+"))
 	sb.WriteString(" @@")
+	if section != "" {
+		sb.WriteString(" ")
+		sb.WriteString(section)
+	}
 	return sb.String()
 }
 

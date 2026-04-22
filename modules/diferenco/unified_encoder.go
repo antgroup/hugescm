@@ -225,6 +225,10 @@ func (e *UnifiedEncoder) writePatchHunk(b *strings.Builder, hunk *Hunk) {
 		_, _ = b.WriteString(strconv.Itoa(hunk.ToLine))
 	}
 	_, _ = b.WriteString(" @@")
+	if hunk.Section != "" {
+		_, _ = b.WriteString(" ")
+		_, _ = b.WriteString(hunk.Section)
+	}
 	_, _ = b.WriteString(e.color.Reset(color.Frag))
 	_ = b.WriteByte('\n')
 	for _, line := range hunk.Lines {

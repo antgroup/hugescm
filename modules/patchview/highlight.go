@@ -19,6 +19,8 @@ const (
 	defaultCacheSize = 1000
 	// maxSourceLenForCache is the maximum source length allowed for caching.
 	maxSourceLenForCache = 10000
+	// tabSpaces is the number of spaces to replace tabs with.
+	tabSpaces = "    " // 4 spaces
 )
 
 // lruCache is an LRU cache implementation.
@@ -159,6 +161,9 @@ func (h *SyntaxHighlighter) Highlight(source, bgColor string) string {
 		return source
 	}
 
+	// Preprocess: sanitize line (replace tabs, escape control chars)
+	source = sanitizeLine(source)
+
 	// Check cache
 	if h.cacheEnabled && len(source) <= maxSourceLenForCache {
 		cacheKey := h.createCacheKey(source, h.cachedFilename, bgColor)
@@ -171,6 +176,29 @@ func (h *SyntaxHighlighter) Highlight(source, bgColor string) string {
 	}
 
 	return h.doHighlight(source, bgColor)
+}
+
+// sanitizeLine processes a line of code:
+// - Replaces tabs with spaces
+// - Replaces control characters with Unicode Control Picture characters
+func sanitizeLine(s string) string {
+	var result strings.Builder
+	result.Grow(len(s) + len(s)/4) // extra space for tab expansion
+
+	for _, r := range s {
+		switch {
+		case r == '\t':
+			result.WriteString(tabSpaces)
+		case r == 0x7F:
+			result.WriteRune('\u2421') // DEL -> ␡
+		case r >= 0x00 && r <= 0x1F:
+			result.WriteRune('\u2400' + r) // Control chars -> Unicode Control Picture
+		default:
+			result.WriteRune(r)
+		}
+	}
+
+	return result.String()
 }
 
 // doHighlight performs actual highlighting.
@@ -221,7 +249,9 @@ type diffFormatter struct {
 }
 
 func newDiffFormatter(bgColor string) *diffFormatter {
-	return &diffFormatter{bgColor: bgColor}
+	return &diffFormatter{
+		bgColor: bgColor,
+	}
 }
 
 func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Iterator) error {
@@ -231,20 +261,13 @@ func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Itera
 			continue
 		}
 
-		// Escape ANSI sequences
-		value = escapeANSI(value)
-
 		entry := style.Get(token.Type)
 		if entry.IsZero() {
-			_, _ = fmt.Fprint(w, value)
+			fmt.Fprint(w, value)
 			continue
 		}
 
-		s := lipgloss.NewStyle()
-		if f.bgColor != "" {
-			s = s.Background(lipgloss.Color(f.bgColor))
-		}
-
+		s := lipgloss.NewStyle().Background(lipgloss.Color(f.bgColor))
 		if entry.Bold == chroma.Yes {
 			s = s.Bold(true)
 		}
@@ -258,30 +281,9 @@ func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Itera
 			s = s.Foreground(lipgloss.Color(entry.Colour.String()))
 		}
 
-		_, _ = fmt.Fprint(w, s.Render(value))
+		fmt.Fprint(w, s.Render(value))
 	}
 	return nil
-}
-
-// escapeANSI escapes ANSI sequences.
-func escapeANSI(s string) string {
-	// Simple handling: remove existing ANSI escape sequences
-	var result strings.Builder
-	inEscape := false
-	for _, r := range s {
-		if r == '\x1b' {
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			if r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z' {
-				inEscape = false
-			}
-			continue
-		}
-		result.WriteRune(r)
-	}
-	return result.String()
 }
 
 // getDefaultChromaStyle returns a theme suitable for terminal background.

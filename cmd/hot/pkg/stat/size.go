@@ -47,9 +47,13 @@ func (e *SizeExecutor) Paths() []string {
 // git cat-file --batch-check --batch-all-objects
 func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) error {
 	if !git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
-		return errors.New("require Git 2.28 or later")
+		return errors.New("require Git 2.35.0 or later")
 	}
-	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: repoPath}, "cat-file", "--batch-check", "--batch-all-objects", "--unordered")
+	args := []string{"cat-file", "--batch-check", "--batch-all-objects"}
+	if git.IsGitVersionAtLeast(git.NewVersion(2, 42, 0)) {
+		args = append(args, "--unordered")
+	}
+	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: repoPath}, args...)
 	if err != nil {
 		return fmt.Errorf("start git cat-file error %w", err)
 	}

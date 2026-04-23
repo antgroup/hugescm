@@ -12,7 +12,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/alecthomas/chroma/v2 v2.23.1
 	github.com/charmbracelet/x/ansi v0.11.7
-	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260420102150-fe550f2efce5
+	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260422141420-a6cbdff8a7e2
 	github.com/clipperhouse/displaywidth v0.11.0
 	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/ebitengine/purego v0.10.0
@@ -45,9 +45,9 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260420095748-421e4a7fa8d7 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260422141423-a0f1f21775f7 // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
-	github.com/charmbracelet/x/exp/slice v0.0.0-20260420102150-fe550f2efce5 // indirect
+	github.com/charmbracelet/x/exp/slice v0.0.0-20260422141420-a6cbdff8a7e2 // indirect
 	github.com/charmbracelet/x/exp/strings v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect

@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -170,7 +171,14 @@ func countObjects(ctx context.Context, repoPath string) int {
 }
 
 func (m *Migrator) hashObjects(ctx context.Context) error {
-	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: m.from}, "cat-file", "--batch-check", "--batch-all-objects", "--unordered")
+	if !git.IsGitVersionAtLeast(git.NewVersion(2, 35, 0)) {
+		return errors.New("require Git 2.35.0 or later")
+	}
+	args := []string{"cat-file", "--batch-check", "--batch-all-objects"}
+	if git.IsGitVersionAtLeast(git.NewVersion(2, 42, 0)) {
+		args = append(args, "--unordered")
+	}
+	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: m.from}, args...)
 	if err != nil {
 		return fmt.Errorf("start git cat-file error %w", err)
 	}

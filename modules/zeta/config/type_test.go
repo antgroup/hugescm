@@ -4,9 +4,10 @@
 package config
 
 import (
+	"strings"
 	"testing"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml/v2"
 )
 
 func TestSizeUnmarshalText(t *testing.T) {
@@ -91,7 +92,7 @@ size = "2048"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var c Config
-			if _, err := toml.Decode(tt.input, &c); err != nil {
+			if err := toml.NewDecoder(strings.NewReader(tt.input)).Decode(&c); err != nil {
 				t.Fatalf("Decode error: %v", err)
 			}
 			if c.Threshold != tt.expected.Threshold {
@@ -111,7 +112,7 @@ threshold = "2g"
 size = "5g"
 `
 	var cfg Config
-	if _, err := toml.Decode(input, &cfg); err != nil {
+	if err := toml.NewDecoder(strings.NewReader(input)).Decode(&cfg); err != nil {
 		t.Fatalf("Decode error: %v", err)
 	}
 
@@ -138,7 +139,7 @@ func TestSizeDefault(t *testing.T) {
 [fragment]
 `
 	var cfg Config
-	if _, err := toml.Decode(input, &cfg); err != nil {
+	if err := toml.NewDecoder(strings.NewReader(input)).Decode(&cfg); err != nil {
 		t.Fatalf("Decode error: %v", err)
 	}
 
@@ -158,7 +159,7 @@ largeSize = "10m"
 maxEntries = 8
 `
 	var cfg Config
-	if _, err := toml.Decode(input, &cfg); err != nil {
+	if err := toml.NewDecoder(strings.NewReader(input)).Decode(&cfg); err != nil {
 		t.Fatalf("Decode error: %v", err)
 	}
 

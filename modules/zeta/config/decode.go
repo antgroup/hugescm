@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
@@ -45,7 +44,7 @@ func LoadSystem() (*Config, error) {
 	if _, err := os.Stat(systemPath); err != nil {
 		return nil, err
 	}
-	if _, err := toml.DecodeFile(systemPath, &cfg); err != nil {
+	if err := LoadConfigFile(systemPath, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
@@ -57,7 +56,7 @@ func LoadGlobal() (*Config, error) {
 	if _, err := os.Stat(userPath); err != nil && os.IsNotExist(err) {
 		return &cfg, nil
 	}
-	if _, err := toml.DecodeFile(userPath, &cfg); err != nil {
+	if err := LoadConfigFile(userPath, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
@@ -91,7 +90,7 @@ func Load(zetaDir string) (*Config, error) {
 		return cfg, nil
 	}
 	var rc Config
-	if _, err := toml.DecodeFile(filepath.Join(zetaDir, "zeta.toml"), &rc); err != nil {
+	if err := LoadConfigFile(filepath.Join(zetaDir, "zeta.toml"), &rc); err != nil {
 		return nil, err
 	}
 	cfg.Overwrite(&rc)

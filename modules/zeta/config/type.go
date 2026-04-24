@@ -6,7 +6,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/strengthen"
@@ -46,24 +45,49 @@ func (b *Boolean) UnmarshalTOML(a any) error {
 	case bool:
 		if data {
 			b.val = BOOLEAN_TRUE
-			return nil
+		} else {
+			b.val = BOOLEAN_FALSE
 		}
-		b.val = BOOLEAN_FALSE
 		return nil
 	case int64:
 		if data != 0 {
 			b.val = BOOLEAN_TRUE
-			return nil
+		} else {
+			b.val = BOOLEAN_FALSE
 		}
-		b.val = BOOLEAN_FALSE
+		return nil
+	case int:
+		if data != 0 {
+			b.val = BOOLEAN_TRUE
+		} else {
+			b.val = BOOLEAN_FALSE
+		}
 		return nil
 	default:
+		return fmt.Errorf("invalid boolean value: %T", a)
 	}
 	switch strings.ToLower(s) {
 	case "true", "yes", "on", "1":
 		b.val = BOOLEAN_TRUE
 	case "false", "no", "off", "0":
 		b.val = BOOLEAN_FALSE
+	default:
+		return fmt.Errorf("invalid boolean value: %q", s)
+	}
+	return nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler for Boolean.
+// This is used by go-toml/v2 for decoding boolean values.
+func (b *Boolean) UnmarshalText(text []byte) error {
+	s := strings.ToLower(string(text))
+	switch s {
+	case "true", "yes", "on", "1":
+		b.val = BOOLEAN_TRUE
+	case "false", "no", "off", "0":
+		b.val = BOOLEAN_FALSE
+	default:
+		return fmt.Errorf("invalid boolean value: %q", string(text))
 	}
 	return nil
 }
@@ -168,246 +192,6 @@ const (
 	StrategyExtreme     Strategy = "extreme"
 )
 
-type Section map[string]any
-
 type Display interface {
 	Show(a any, keys ...string) error
-}
-
-func (s Section) displayTo(d Display, sectionKey string) error {
-	for subKey, v := range s {
-		if err := d.Show(v, sectionKey, subKey); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s Section) filter(k string) (any, error) {
-	v, ok := s[k]
-	if !ok {
-		return nil, ErrKeyNotFound
-	}
-	rv := reflect.ValueOf(v)
-	switch rv.Kind() {
-	case reflect.Array:
-		if rv.Len() == 0 {
-			return nil, ErrKeyNotFound
-		}
-		return rv.Index(0).Interface(), nil
-	case reflect.Slice:
-		if rv.Len() == 0 {
-			return nil, ErrKeyNotFound
-		}
-		return rv.Index(0).Interface(), nil
-	default:
-	}
-	return v, nil
-}
-
-func (s Section) filterAll(k string) ([]any, error) {
-	v, ok := s[k]
-	if !ok {
-		return nil, ErrKeyNotFound
-	}
-	vals := make([]any, 0, 4)
-	rv := reflect.ValueOf(v)
-	switch rv.Kind() {
-	case reflect.Array:
-		for i := range rv.Len() {
-			vals = append(vals, rv.Index(i).Interface())
-		}
-	case reflect.Slice:
-		for i := range rv.Len() {
-			vals = append(vals, rv.Index(i).Interface())
-		}
-	default:
-		vals = append(vals, v)
-	}
-	return vals, nil
-}
-
-type Sections map[string]Section
-
-func (ss Sections) filter(key string) (any, error) {
-	sectionKey, subKey, ok := strings.Cut(key, ".")
-	if !ok {
-		return nil, &ErrBadConfigKey{key: key}
-	}
-	if s, ok := ss[sectionKey]; ok {
-		return s.filter(subKey)
-	}
-	return nil, ErrKeyNotFound
-}
-
-func (ss Sections) filterAll(key string) ([]any, error) {
-	sectionKey, subKey, ok := strings.Cut(key, ".")
-	if !ok {
-		return nil, &ErrBadConfigKey{key: key}
-	}
-	if s, ok := ss[sectionKey]; ok {
-		return s.filterAll(subKey)
-	}
-	return nil, ErrKeyNotFound
-}
-
-func (ss Sections) deleteKey(key string) (bool, error) {
-	sectionKey, subKey, ok := strings.Cut(key, ".")
-	if !ok {
-		return false, &ErrBadConfigKey{key: key}
-	}
-	s, ok := ss[sectionKey]
-	if !ok {
-		return false, ErrKeyNotFound
-	}
-	var deleted bool
-	if _, ok := s[subKey]; ok {
-		delete(s, subKey)
-		deleted = true
-	}
-	if len(s) == 0 {
-		delete(ss, sectionKey)
-	}
-	return deleted, nil
-}
-
-// valuesToStringArray converts a value to []string.
-// It handles nested []any for the valuesAppend scenario where multiple values
-// are appended to the same config key through repeated command-line options.
-func valuesToStringArray(o any) []string {
-	switch v := o.(type) {
-	case string:
-		return []string{v}
-	case []string:
-		return v
-	case []any:
-		rv := make([]string, 0, len(v))
-		for _, a := range v {
-			rv = append(rv, valuesToStringArray(a)...)
-		}
-		return rv
-	}
-	return nil
-}
-
-// valuesToInt64Array converts a value to []int64.
-// It handles nested []any for the valuesAppend scenario where multiple values
-// are appended to the same config key through repeated command-line options.
-func valuesToInt64Array(o any) []int64 {
-	switch v := o.(type) {
-	case int:
-		return []int64{int64(v)}
-	case int8:
-		return []int64{int64(v)}
-	case int16:
-		return []int64{int64(v)}
-	case int32:
-		return []int64{int64(v)}
-	case int64:
-		return []int64{v}
-	case []int64:
-		return v
-	case []any:
-		rv := make([]int64, 0, len(v))
-		for _, a := range v {
-			rv = append(rv, valuesToInt64Array(a)...)
-		}
-		return rv
-	}
-	return nil
-}
-
-// valuesToBoolArray converts a value to []bool.
-// Note: TOML arrays are homogeneous, so this does not handle nested []any
-// since boolean arrays cannot contain mixed types in valid TOML.
-func valuesToBoolArray(o any) []bool {
-	switch v := o.(type) {
-	case string:
-		return []bool{strengthen.SimpleAtob(v, false)}
-	case bool:
-		return []bool{v}
-	case []any:
-		values := make([]bool, 0, len(v)+1)
-		for _, e := range v {
-			if s, ok := e.(string); ok {
-				values = append(values, strengthen.SimpleAtob(s, false))
-				continue
-			}
-			if i, ok := e.(bool); ok {
-				values = append(values, i)
-				continue
-			}
-		}
-		return values
-	default:
-	}
-	return nil
-}
-
-// valuesToFloatArray converts a value to []float64.
-// It handles nested []any for the valuesAppend scenario where multiple values
-// are appended to the same config key through repeated command-line options.
-func valuesToFloatArray(o any) []float64 {
-	switch v := o.(type) {
-	case float32:
-		return []float64{float64(v)}
-	case []float32:
-		f64 := make([]float64, 0, len(v))
-		for _, f := range v {
-			f64 = append(f64, float64(f))
-		}
-		return f64
-	case float64:
-		return []float64{v}
-	case []float64:
-		return v
-	case []any:
-		rv := make([]float64, 0, len(v))
-		for _, a := range v {
-			rv = append(rv, valuesToFloatArray(a)...)
-		}
-		return rv
-	}
-	return nil
-}
-
-// valuesAppend appends a value to an existing config value, converting both to slices.
-// This enables "zeta config core.sparse dir1" followed by "zeta config --append core.sparse dir2".
-func valuesAppend(raw any, val any) any {
-	switch nv := val.(type) {
-	case string:
-		rv := valuesToStringArray(raw)
-		return append(rv, nv)
-	case int64:
-		rv := valuesToInt64Array(raw)
-		return append(rv, nv)
-	case bool:
-		rv := valuesToBoolArray(raw)
-		return append(rv, nv)
-	case float64:
-		rv := valuesToFloatArray(raw)
-		return append(rv, nv)
-	default:
-	}
-	return []any{val}
-}
-
-func (ss Sections) updateKey(key string, val any, append bool) (bool, error) {
-	sectionKey, subKey, ok := strings.Cut(key, ".")
-	if !ok {
-		return false, &ErrBadConfigKey{key: key}
-	}
-	s, ok := ss[sectionKey]
-	if !ok {
-		newSection := make(Section)
-		newSection[subKey] = val
-		ss[sectionKey] = newSection
-		return true, nil
-	}
-	if raw, ok := s[subKey]; ok && append {
-		s[subKey] = valuesAppend(raw, val)
-		return true, nil
-	}
-	s[subKey] = val
-	return false, nil
 }

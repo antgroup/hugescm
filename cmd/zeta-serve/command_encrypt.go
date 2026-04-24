@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/pkg/serve"
+	"github.com/pelletier/go-toml/v2"
 )
 
 type pseudoConfig struct {
@@ -24,7 +24,7 @@ func (pc *pseudoConfig) Decode(cfg string, expandEnv bool) error {
 		return err
 	}
 	defer r.Close() // nolint
-	if _, err := toml.NewDecoder(r).Decode(pc); err != nil {
+	if err := toml.NewDecoder(r).Decode(pc); err != nil {
 		return err
 	}
 	return nil

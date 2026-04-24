@@ -6,9 +6,9 @@ package httpserver
 import (
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/pkg/serve"
 	"github.com/antgroup/hugescm/pkg/version"
+	"github.com/pelletier/go-toml/v2"
 )
 
 const (
@@ -49,7 +49,7 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 		},
 		BannerVersion: version.GetServerVersion(),
 	}
-	if _, err = toml.NewDecoder(r).Decode(sc); err != nil {
+	if err := toml.NewDecoder(r).Decode(sc); err != nil {
 		return nil, err
 	}
 	var d *serve.Decrypter

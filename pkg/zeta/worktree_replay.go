@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
+	"github.com/pelletier/go-toml/v2"
 )
 
 type CherryPickOptions struct {
@@ -46,8 +47,11 @@ const (
 
 func (w *Worktree) replayMD() (*ReplayMD, error) {
 	var md ReplayMD
-	_, err := toml.DecodeFile(filepath.Join(w.odb.Root(), REPLAY_MD), &md)
+	data, err := os.ReadFile(filepath.Join(w.odb.Root(), REPLAY_MD))
 	if err != nil {
+		return nil, err
+	}
+	if err := toml.NewDecoder(strings.NewReader(string(data))).Decode(&md); err != nil {
 		return nil, err
 	}
 	return &md, nil

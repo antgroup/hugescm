@@ -4,41 +4,36 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/strengthen"
 )
 
-func atomicEncode(zf string, a any) error {
-	zfd := filepath.Dir(zf)
-	_ = os.MkdirAll(zfd, 0755)
-
-	cachePath := fmt.Sprintf("%s/.zeta-%d.toml", zfd, time.Now().UnixNano())
-	fd, err := os.Create(cachePath)
+func atomicEncode(zf string, doc Document) error {
+	data, err := MarshalDocument(doc)
 	if err != nil {
 		return err
 	}
+	return atomicWrite(zf, data)
+}
 
-	enc := toml.NewEncoder(fd)
-	enc.Indent = ""
-	if err := enc.Encode(a); err != nil {
-		_ = fd.Close()
-		_ = os.Remove(cachePath)
+// atomicWrite writes data to a file atomically using write-and-rename pattern.
+func atomicWrite(path string, data []byte) error {
+	dir := filepath.Dir(path)
+	_ = os.MkdirAll(dir, 0755)
+
+	cachePath := fmt.Sprintf("%s/.zeta-%d.toml", dir, time.Now().UnixNano())
+
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
 		return err
 	}
 
-	// Close the file before rename to ensure data is flushed to disk
-	if err := fd.Close(); err != nil {
-		_ = os.Remove(cachePath)
-		return err
-	}
-
-	if err := os.Rename(cachePath, zf); err != nil {
+	if err := os.Rename(cachePath, path); err != nil {
 		_ = os.Remove(cachePath)
 		return err
 	}
@@ -50,7 +45,7 @@ func Encode(zetaDir string, config *Config) error {
 		return ErrInvalidArgument
 	}
 	zf := filepath.Join(zetaDir, "zeta.toml")
-	return atomicEncode(zf, config)
+	return atomicWriteConfig(zf, config)
 }
 
 func EncodeGlobal(config *Config) error {
@@ -58,7 +53,17 @@ func EncodeGlobal(config *Config) error {
 		return ErrInvalidArgument
 	}
 	zfg := strengthen.ExpandPath("~/.zeta.toml")
-	return atomicEncode(zfg, config)
+	return atomicWriteConfig(zfg, config)
+}
+
+// atomicWriteConfig writes a Config struct to a file atomically using go-toml/v2.
+func atomicWriteConfig(path string, config *Config) error {
+	var buf bytes.Buffer
+	encoder := newTOMLEncoder(&buf)
+	if err := encoder.Encode(config); err != nil {
+		return err
+	}
+	return atomicWrite(path, buf.Bytes())
 }
 
 type UpdateOptions struct {
@@ -70,16 +75,40 @@ func updateInternal(zf string, opts *UpdateOptions) error {
 	if opts == nil || opts.Values == nil {
 		return errors.New("invalid argument for update config")
 	}
-	md := make(Sections)
-	if _, err := toml.DecodeFile(zf, &md); err != nil && !os.IsNotExist(err) {
+	// Load existing document or create new one
+	doc, err := loadDocumentOrNew(zf)
+	if err != nil {
 		return err
 	}
+	// Apply updates
 	for k, v := range opts.Values {
-		if _, err := md.updateKey(k, v, opts.Append); err != nil {
-			return err
+		if opts.Append {
+			if err := doc.Add(k, v); err != nil {
+				return err
+			}
+		} else {
+			if _, err := doc.Set(k, v); err != nil {
+				return err
+			}
 		}
 	}
-	return atomicEncode(zf, md)
+	// Validate before write
+	if err := ValidateDocument(doc); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+	return atomicEncode(zf, doc)
+}
+
+// loadDocumentOrNew loads a document from file or returns a new empty document.
+func loadDocumentOrNew(path string) (Document, error) {
+	doc, err := LoadDocumentFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return NewDocument(), nil
+		}
+		return nil, err
+	}
+	return doc, nil
 }
 
 func UpdateSystem(opts *UpdateOptions) error {
@@ -101,19 +130,28 @@ func unsetInternal(zf string, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
 	}
-	md := make(Sections)
-	if _, err := toml.DecodeFile(zf, &md); err != nil {
+	// Load existing document
+	doc, err := LoadDocumentFile(zf)
+	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
+	// Delete keys
 	for _, k := range keys {
-		if _, err := md.deleteKey(k); err != nil && err != ErrKeyNotFound {
+		if err := doc.Delete(k); err != nil {
+			if err == ErrKeyNotFound {
+				continue
+			}
 			return err
 		}
 	}
-	return atomicEncode(zf, md)
+	// Validate before write
+	if err := ValidateDocument(doc); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+	return atomicEncode(zf, doc)
 }
 
 func UnsetSystem(keys ...string) error {

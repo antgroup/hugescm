@@ -11,7 +11,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
@@ -19,6 +18,7 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta/config"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
+	"github.com/pelletier/go-toml/v2"
 )
 
 func TestWorktree(t *testing.T) {

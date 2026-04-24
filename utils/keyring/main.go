@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/base58"
+	"github.com/pelletier/go-toml/v2"
 )
 
 // Cred represents a credential
@@ -401,7 +401,7 @@ func (s *credentialStorage) readCredentials() (map[string]*Cred, error) {
 	defer func() { _ = file.Close() }()
 
 	var credFile credentialsFile
-	if _, err := toml.NewDecoder(file).Decode(&credFile); err != nil {
+	if err := toml.NewDecoder(file).Decode(&credFile); err != nil {
 		return nil, fmt.Errorf("failed to parse credentials file: %w", err)
 	}
 

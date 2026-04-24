@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 )
@@ -42,7 +42,7 @@ func parseOneDict(name string, p string) error {
 		return err
 	}
 	defer fd.Close() // nolint
-	if _, err := toml.NewDecoder(fd).Decode(&dict); err != nil {
+	if err := toml.NewDecoder(fd).Decode(&dict); err != nil {
 		return err
 	}
 	languagesDicts[name] = dict

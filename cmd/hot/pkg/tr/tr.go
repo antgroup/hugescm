@@ -7,8 +7,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/locale"
+	"github.com/pelletier/go-toml/v2"
 )
 
 //go:embed languages
@@ -38,7 +38,7 @@ func DelayInitializeLocale() error {
 		return err
 	}
 	defer fd.Close() // nolint
-	if _, err := toml.NewDecoder(fd).Decode(&langTable); err != nil {
+	if err := toml.NewDecoder(fd).Decode(&langTable); err != nil {
 		return err
 	}
 	return nil

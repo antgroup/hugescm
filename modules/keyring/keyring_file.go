@@ -22,9 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/base58"
 	"github.com/antgroup/hugescm/modules/strengthen"
+	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -230,7 +230,7 @@ func (s *credentialStorage) readCredentials() (map[string]*Cred, error) {
 	defer file.Close() // nolint
 
 	var credFile credentialsFile
-	if _, err := toml.NewDecoder(file).Decode(&credFile); err != nil {
+	if err := toml.NewDecoder(file).Decode(&credFile); err != nil {
 		return nil, fmt.Errorf("failed to parse credentials file: %w", err)
 	}
 

@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/trace"
 )
@@ -72,15 +71,15 @@ func (opts *DisplayOptions) Show(a any, keys ...string) error {
 }
 
 func displayTo(d Display, zfg string) error {
-	md := make(Sections)
-	if _, err := toml.DecodeFile(zfg, &md); err != nil {
+	doc, err := LoadDocumentFile(zfg)
+	if err != nil {
 		return err
 	}
-	for sectionKey, s := range md {
-		if s == nil {
+	for sectionKey, section := range doc {
+		if section == nil {
 			continue
 		}
-		if err := s.displayTo(d, sectionKey); err != nil {
+		if err := section.displayTo(d, sectionKey); err != nil {
 			return err
 		}
 	}
@@ -132,13 +131,13 @@ func (opts *GetOptions) show(vals []any) {
 }
 
 func getFromFile(opts *GetOptions, zfg string) error {
-	md := make(Sections)
-	if _, err := toml.DecodeFile(zfg, &md); err != nil {
+	doc, err := LoadDocumentFile(zfg)
+	if err != nil {
 		return err
 	}
 	if opts.ALL {
 		for _, k := range opts.Keys {
-			vals, err := md.filterAll(k)
+			vals, err := doc.GetAll(k)
 			if err != nil {
 				return err
 			}
@@ -147,7 +146,7 @@ func getFromFile(opts *GetOptions, zfg string) error {
 		return nil
 	}
 	for _, k := range opts.Keys {
-		val, err := md.filter(k)
+		val, err := doc.GetFirst(k)
 		if err != nil {
 			return err
 		}

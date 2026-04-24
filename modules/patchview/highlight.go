@@ -263,7 +263,7 @@ func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Itera
 
 		entry := style.Get(token.Type)
 		if entry.IsZero() {
-			fmt.Fprint(w, value)
+			_, _ = fmt.Fprint(w, value)
 			continue
 		}
 
@@ -281,7 +281,7 @@ func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Itera
 			s = s.Foreground(lipgloss.Color(entry.Colour.String()))
 		}
 
-		fmt.Fprint(w, s.Render(value))
+		_, _ = fmt.Fprint(w, s.Render(value))
 	}
 	return nil
 }

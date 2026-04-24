@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
+	"github.com/pelletier/go-toml/v2"
 )
 
 type RebaseOptions struct {
@@ -404,8 +405,11 @@ const (
 
 func (w *Worktree) rebaseMD() (*RebaseMD, error) {
 	var md RebaseMD
-	_, err := toml.DecodeFile(filepath.Join(w.odb.Root(), REBASE_MD), &md)
+	data, err := os.ReadFile(filepath.Join(w.odb.Root(), REBASE_MD))
 	if err != nil {
+		return nil, err
+	}
+	if err := toml.NewDecoder(strings.NewReader(string(data))).Decode(&md); err != nil {
 		return nil, err
 	}
 	return &md, nil

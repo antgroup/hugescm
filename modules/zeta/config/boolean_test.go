@@ -41,38 +41,91 @@ func TestBooleanUnmarshal(t *testing.T) {
 		name     string
 		input    any
 		expected int
+		wantErr  bool
 	}{
 		// Boolean values
-		{"bool true", true, BOOLEAN_TRUE},
-		{"bool false", false, BOOLEAN_FALSE},
+		{"bool true", true, BOOLEAN_TRUE, false},
+		{"bool false", false, BOOLEAN_FALSE, false},
 		// String values
-		{"string true", "true", BOOLEAN_TRUE},
-		{"string false", "false", BOOLEAN_FALSE},
-		{"string yes", "yes", BOOLEAN_TRUE},
-		{"string no", "no", BOOLEAN_FALSE},
-		{"string on", "on", BOOLEAN_TRUE},
-		{"string off", "off", BOOLEAN_FALSE},
-		{"string 1", "1", BOOLEAN_TRUE},
-		{"string 0", "0", BOOLEAN_FALSE},
+		{"string true", "true", BOOLEAN_TRUE, false},
+		{"string false", "false", BOOLEAN_FALSE, false},
+		{"string yes", "yes", BOOLEAN_TRUE, false},
+		{"string no", "no", BOOLEAN_FALSE, false},
+		{"string on", "on", BOOLEAN_TRUE, false},
+		{"string off", "off", BOOLEAN_FALSE, false},
+		{"string 1", "1", BOOLEAN_TRUE, false},
+		{"string 0", "0", BOOLEAN_FALSE, false},
 		// Integer values
-		{"int 1", int64(1), BOOLEAN_TRUE},
-		{"int 0", int64(0), BOOLEAN_FALSE},
+		{"int 1", int64(1), BOOLEAN_TRUE, false},
+		{"int 0", int64(0), BOOLEAN_FALSE, false},
 		// Case insensitive
-		{"TRUE", "TRUE", BOOLEAN_TRUE},
-		{"FALSE", "FALSE", BOOLEAN_FALSE},
-		{"Yes", "Yes", BOOLEAN_TRUE},
-		{"No", "No", BOOLEAN_FALSE},
+		{"TRUE", "TRUE", BOOLEAN_TRUE, false},
+		{"FALSE", "FALSE", BOOLEAN_FALSE, false},
+		{"Yes", "Yes", BOOLEAN_TRUE, false},
+		{"No", "No", BOOLEAN_FALSE, false},
+		// Invalid values should error
+		{"invalid string", "invalid", BOOLEAN_UNSET, true},
+		{"invalid float", 3.14, BOOLEAN_UNSET, true},
+		{"unsupported type", struct{}{}, BOOLEAN_UNSET, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var b Boolean
-			if err := b.UnmarshalTOML(tt.input); err != nil {
+			err := b.UnmarshalTOML(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("UnmarshalTOML(%v) expected error, got nil", tt.input)
+				}
+				return
+			}
+			if err != nil {
 				t.Errorf("UnmarshalTOML(%v) error = %v", tt.input, err)
 				return
 			}
 			if b.val != tt.expected {
 				t.Errorf("UnmarshalTOML(%v) = %v, want %v", tt.input, b.val, tt.expected)
+			}
+		})
+	}
+}
+
+func TestBooleanUnmarshalText(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+		wantErr  bool
+	}{
+		{"true", "true", BOOLEAN_TRUE, false},
+		{"false", "false", BOOLEAN_FALSE, false},
+		{"yes", "yes", BOOLEAN_TRUE, false},
+		{"no", "no", BOOLEAN_FALSE, false},
+		{"on", "on", BOOLEAN_TRUE, false},
+		{"off", "off", BOOLEAN_FALSE, false},
+		{"1", "1", BOOLEAN_TRUE, false},
+		{"0", "0", BOOLEAN_FALSE, false},
+		{"TRUE", "TRUE", BOOLEAN_TRUE, false},
+		{"FALSE", "FALSE", BOOLEAN_FALSE, false},
+		{"invalid", "invalid", BOOLEAN_UNSET, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var b Boolean
+			err := b.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("UnmarshalText(%q) expected error, got nil", tt.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("UnmarshalText(%q) error = %v", tt.input, err)
+				return
+			}
+			if b.val != tt.expected {
+				t.Errorf("UnmarshalText(%q) = %v, want %v", tt.input, b.val, tt.expected)
 			}
 		})
 	}

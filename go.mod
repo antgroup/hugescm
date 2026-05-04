@@ -24,7 +24,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/klauspost/compress v1.18.6
 	github.com/klauspost/cpuid/v2 v2.3.0
-	github.com/pelletier/go-toml/v2 v2.3.0
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/zeebo/blake3 v0.2.4
 	github.com/zeebo/xxh3 v1.1.0

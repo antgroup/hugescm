@@ -152,10 +152,10 @@ func (w *Worktree) current() (plumbing.ReferenceName, plumbing.Hash, error) {
 		return ref.Name(), ref.Hash(), nil
 	}
 	t, err := w.Reference(ref.Target())
-	switch err {
-	case nil:
+	if err == nil {
 		return t.Name(), t.Hash(), nil
-	case plumbing.ErrReferenceNotFound:
+	}
+	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return ref.Target(), plumbing.ZeroHash, nil
 	}
 	return "", plumbing.ZeroHash, err

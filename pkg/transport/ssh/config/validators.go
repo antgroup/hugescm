@@ -74,7 +74,7 @@ func validate(key, val string) error {
 	if mustBeUint(lkey) {
 		_, err := strconv.ParseUint(val, 10, 64)
 		if err != nil {
-			return fmt.Errorf("ssh_config: %v", err)
+			return fmt.Errorf("ssh_config: %w", err)
 		}
 	}
 	return nil

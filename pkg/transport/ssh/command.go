@@ -5,6 +5,7 @@ package ssh
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -61,18 +62,19 @@ func (c *Command) Close() error {
 		_ = cc.Close()
 	}
 	if err := c.Wait(); err != nil {
-		switch a := err.(type) {
-		case *ssh.ExitError:
-			exitStatus := a.ExitStatus()
+		var exitErr *ssh.ExitError
+		var exitMissingErr *ssh.ExitMissingError
+		if errors.As(err, &exitErr) {
+			exitStatus := exitErr.ExitStatus()
 			trace.DbgPrint("Exit status %v", exitStatus)
 			c.lastError = &zeta.ErrExitCode{
 				Code:    exitStatus,
-				Message: a.String(),
+				Message: exitErr.String(),
 			}
-		case *ssh.ExitMissingError:
+		} else if errors.As(err, &exitMissingErr) {
 			c.lastError = &zeta.ErrExitCode{
 				Code:    500,
-				Message: a.Error(),
+				Message: exitMissingErr.Error(),
 			}
 		}
 		_ = c.client.Close()

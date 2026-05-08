@@ -3,6 +3,7 @@
 package keyring
 
 import (
+	"errors"
 	"context"
 	"testing"
 )
@@ -54,7 +55,7 @@ func TestSecurityCLI(t *testing.T) {
 	// Test 4: Get after erase (should return ErrNotFound)
 	t.Run("GetAfterErase", func(t *testing.T) {
 		_, err := getFromSecurityCLI(ctx, cred)
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("expected ErrNotFound, got: %v", err)
 		} else {
 			t.Log("GetAfterErase: OK - returned ErrNotFound as expected")

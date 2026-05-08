@@ -86,7 +86,7 @@ func TestObjectReaderCallsClose(t *testing.T) {
 
 	got := or.Close()
 
-	if expected != got {
+	if !errors.Is(got, expected) {
 		t.Errorf("Expected %v, got %v", expected, got)
 	}
 	if atomic.LoadUint32(&calls) != 1 {

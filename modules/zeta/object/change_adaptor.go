@@ -19,11 +19,11 @@ func newChange(c merkletrie.Change) (*Change, error) {
 
 	var err error
 	if ret.From, err = newChangeEntry(c.From); err != nil {
-		return nil, fmt.Errorf("from field: %s", err)
+		return nil, fmt.Errorf("from field: %w", err)
 	}
 
 	if ret.To, err = newChangeEntry(c.To); err != nil {
-		return nil, fmt.Errorf("to field: %s", err)
+		return nil, fmt.Errorf("to field: %w", err)
 	}
 
 	return ret, nil
@@ -56,7 +56,7 @@ func newChanges(src merkletrie.Changes) (Changes, error) {
 	for i, e := range src {
 		ret[i], err = newChange(e)
 		if err != nil {
-			return nil, fmt.Errorf("change #%d: %s", i, err)
+			return nil, fmt.Errorf("change #%d: %w", i, err)
 		}
 	}
 

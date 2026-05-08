@@ -4,6 +4,7 @@
 package config
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -136,7 +137,7 @@ func TestDocumentSetGet(t *testing.T) {
 	}
 
 	_, err = doc.GetFirst("nonexistent.key")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("GetFirst() error = %v, want ErrKeyNotFound", err)
 	}
 }
@@ -206,7 +207,7 @@ func TestDocumentDelete(t *testing.T) {
 
 	// Delete non-existent key should return ErrKeyNotFound
 	err = doc.Delete("nonexistent.key")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("Delete() error = %v, want ErrKeyNotFound", err)
 	}
 
@@ -279,7 +280,7 @@ func TestDocumentGetAll(t *testing.T) {
 
 	// Non-existent key
 	_, err = doc.GetAll("nonexistent.key")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("GetAll() error = %v, want ErrKeyNotFound", err)
 	}
 }

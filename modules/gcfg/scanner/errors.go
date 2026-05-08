@@ -5,6 +5,7 @@
 package scanner
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -105,11 +106,13 @@ func (p ErrorList) Err() error {
 // one error per line, if the err parameter is an ErrorList. Otherwise
 // it prints the err string.
 func PrintError(w io.Writer, err error) {
-	if list, ok := err.(ErrorList); ok {
+	if list, ok := errors.AsType[ErrorList](err); ok {
 		for _, e := range list {
 			_, _ = fmt.Fprintf(w, "%s\n", e)
 		}
-	} else if err != nil {
+		return
+	}
+	if err != nil {
 		_, _ = fmt.Fprintf(w, "%s\n", err)
 	}
 }

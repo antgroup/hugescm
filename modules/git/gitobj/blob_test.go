@@ -93,7 +93,7 @@ func TestBlobCallCloseFn(t *testing.T) {
 
 	got := b.Close()
 
-	if expected != got {
+	if !errors.Is(got, expected) {
 		t.Errorf("Expected %v, got %v", expected, got)
 	}
 	if uint32(1) != calls {

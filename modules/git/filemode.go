@@ -2,6 +2,7 @@ package git
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -172,11 +173,8 @@ func (e *ErrMalformedMode) Error() string {
 }
 
 func IsErrMalformedMode(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrMalformedMode)
-	return ok
+	var e *ErrMalformedMode
+	return errors.As(err, &e)
 }
 
 // ToOSFileMode returns the os.FileMode to be used when creating file

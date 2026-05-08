@@ -4,6 +4,7 @@
 package object
 
 import (
+	"errors"
 	"bytes"
 	"context"
 	"io"
@@ -137,7 +138,7 @@ func (iter *FileIter) ForEach(ctx context.Context, cb func(*File) error) error {
 	for {
 		f, err := iter.Next(ctx)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 
@@ -145,7 +146,7 @@ func (iter *FileIter) ForEach(ctx context.Context, cb func(*File) error) error {
 		}
 
 		if err := cb(f); err != nil {
-			if err == plumbing.ErrStop {
+			if errors.Is(err, plumbing.ErrStop) {
 				return nil
 			}
 

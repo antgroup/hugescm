@@ -125,11 +125,11 @@ func DecodeFrom(reader io.Reader) (*Pointer, io.Reader, error) {
 	buf = buf[:n]
 
 	var contents io.Reader = bytes.NewReader(buf)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		contents = io.MultiReader(contents, reader)
 	}
 
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, contents, err
 	}
 

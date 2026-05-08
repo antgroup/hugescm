@@ -552,7 +552,7 @@ func parentsContainingPath(ctx context.Context, path string, c *object.Commit) (
 	iter := c.MakeParents()
 	for {
 		parent, err := iter.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return result, nil
 		}
 		if err != nil {

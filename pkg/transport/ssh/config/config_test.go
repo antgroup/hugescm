@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"bytes"
 	"log"
 	"os"
@@ -323,7 +324,7 @@ func TestIncludeRecursive(t *testing.T) {
 		UserConfigFinder: testConfigFinder("testdata/include-recursive"),
 	}
 	val, err := us.GetStrict("kevinburke.ssh_config.test.example.com", "Port")
-	if err != ErrDepthExceeded {
+	if !errors.Is(err, ErrDepthExceeded) {
 		t.Errorf("Recursive include: expected ErrDepthExceeded, got %v", err)
 	}
 	if val != "" {

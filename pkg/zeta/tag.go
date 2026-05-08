@@ -23,7 +23,7 @@ import (
 func (r *Repository) RemoveTag(tags []string) error {
 	for _, t := range tags {
 		ref, err := r.Reference(plumbing.NewTagReferenceName(t))
-		if err == plumbing.ErrReferenceNotFound {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			die_error("tag '%s' not found.", t)
 			return err
 		}
@@ -105,8 +105,14 @@ func (r *Repository) NewTag(ctx context.Context, opts *NewTagOptions) error {
 	}
 	tagName := plumbing.NewTagReferenceName(opts.Name)
 	oldRef, err := r.ReferencePrefixMatch(tagName)
-	switch err {
-	case nil:
+	if err != nil {
+		if !errors.Is(err, plumbing.ErrReferenceNotFound) {
+			die_error("find tag: %v", err)
+			return err
+		}
+		// Tag doesn't exist, continue
+	} else {
+		// Tag already exists
 		if oldRef.Name() != tagName {
 			die("'%s' exists; cannot create '%s'", oldRef.Name(), tagName)
 			return errors.New("tag exists")
@@ -115,9 +121,6 @@ func (r *Repository) NewTag(ctx context.Context, opts *NewTagOptions) error {
 			die("tag '%s' already exists", opts.Name)
 			return errors.New("tag exists")
 		}
-	case plumbing.ErrReferenceNotFound:
-	default:
-		die_error("find tag: %v", err)
 	}
 	var message string
 	switch {

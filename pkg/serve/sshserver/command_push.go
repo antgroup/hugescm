@@ -58,7 +58,7 @@ func (c *Push) ParseArgs(args []string) error {
 		case 'S':
 			size, err := strconv.ParseInt(nextArg, 10, 64)
 			if err != nil {
-				return fmt.Errorf("parse '--size': %s error: %s", nextArg, err)
+				return fmt.Errorf("parse '--size': %s error: %w", nextArg, err)
 			}
 			if size < 0 {
 				return errors.New("--size cannot be less than 0")
@@ -205,7 +205,7 @@ func (s *Server) TagPush(e *Session, tagName string, oldRev, newRev plumbing.Has
 	}
 	defer rr.Close() // nolint
 	if err = rr.DoPush(e.Context(), command, e, e); err != nil {
-		if es, ok := err.(*zeta.ErrStatusCode); ok {
+		var es *zeta.ErrStatusCode; if errors.As(err, &es) {
 			return e.ExitFormat(es.Code, "reason: %v", err)
 		}
 		return e.ExitError(err)
@@ -237,7 +237,7 @@ func (s *Server) BranchPush(e *Session, branchName string, oldRev, newRev plumbi
 	}
 	defer rr.Close() // nolint
 	if err = rr.DoPush(e.Context(), command, e, e); err != nil {
-		if es, ok := err.(*zeta.ErrStatusCode); ok {
+		var es *zeta.ErrStatusCode; if errors.As(err, &es) {
 			return e.ExitFormat(es.Code, "reason: %v", err)
 		}
 		return e.ExitError(err)

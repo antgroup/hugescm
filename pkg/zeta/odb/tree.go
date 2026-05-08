@@ -85,7 +85,7 @@ func (h *treeMaker) recurseMakeTree(e *TreeEntry, parent, fullpath string) {
 	if fullpath == e.Path {
 		te.Mode = e.Mode
 		te.Hash = e.Hash
-		te.Size = int64(e.Size)
+		te.Size = e.Size
 	} else {
 		te.Mode = filemode.Dir
 		h.trees[fullpath] = &object.Tree{}

@@ -80,55 +80,8 @@ func ParseSafeTensors(reader io.ReadSeeker) (*SafeTensorsParser, error) {
 		}
 
 		// Parse tensor information
-		if tensorMap, ok := value.(map[string]any); ok {
-			dtype, _ := tensorMap["dtype"].(string)
-
-			// Parse shape
-			var shape []int64
-			if shapeInterface, ok := tensorMap["shape"].([]any); ok {
-				shape = make([]int64, len(shapeInterface))
-				for i, s := range shapeInterface {
-					if val, ok := s.(float64); ok {
-						shape[i] = int64(val)
-					}
-				}
-			}
-
-			// Parse data_offsets
-			var offsets []int64
-			if offsetsInterface, ok := tensorMap["data_offsets"].([]any); ok {
-				offsets = make([]int64, len(offsetsInterface))
-				for i, o := range offsetsInterface {
-					if val, ok := o.(float64); ok {
-						offsets[i] = int64(val)
-					}
-				}
-			}
-
-			if len(offsets) == 2 {
-				start := offsets[0]
-				end := offsets[1]
-
-				// Boundary check: ensure offsets are non-negative and start < end
-				if start < 0 || end < 0 || start >= end {
-					continue // Skip invalid tensor
-				}
-
-				// Boundary check: ensure size is reasonable (max 100GB per tensor)
-				tensorSize := end - start
-				if tensorSize > 100<<30 {
-					continue // Skip unreasonably large tensor
-				}
-
-				// Calculate actual file offset (after Header)
-				parser.tensors = append(parser.tensors, TensorMeta{
-					Name:   name,
-					Dtype:  dtype,
-					Shape:  shape,
-					Offset: parser.headerSize + start,
-					Size:   tensorSize,
-				})
-			}
+		if tensor, ok := parseTensorMetadata(name, value, parser.headerSize); ok {
+			parser.tensors = append(parser.tensors, tensor)
 		}
 	}
 
@@ -155,4 +108,74 @@ func (p *SafeTensorsParser) GetChunks() []chunk {
 // GetTensorMetadata returns tensor metadata
 func (p *SafeTensorsParser) GetTensorMetadata() []TensorMeta {
 	return p.tensors
+}
+
+// parseTensorMetadata parses a single tensor's metadata from raw header
+func parseTensorMetadata(name string, value any, headerSize int64) (TensorMeta, bool) {
+	tensorMap, ok := value.(map[string]any)
+	if !ok {
+		return TensorMeta{}, false
+	}
+
+	dtype, _ := tensorMap["dtype"].(string)
+	shape := parseShape(tensorMap["shape"])
+	offsets := parseDataOffsets(tensorMap["data_offsets"])
+
+	if len(offsets) != 2 {
+		return TensorMeta{}, false
+	}
+
+	start := offsets[0]
+	end := offsets[1]
+
+	// Boundary check: ensure offsets are non-negative and start < end
+	if start < 0 || end < 0 || start >= end {
+		return TensorMeta{}, false
+	}
+
+	// Boundary check: ensure size is reasonable (max 100GB per tensor)
+	tensorSize := end - start
+	if tensorSize > 100<<30 {
+		return TensorMeta{}, false
+	}
+
+	return TensorMeta{
+		Name:   name,
+		Dtype:  dtype,
+		Shape:  shape,
+		Offset: headerSize + start,
+		Size:   tensorSize,
+	}, true
+}
+
+// parseShape parses the shape array from tensor metadata
+func parseShape(shapeValue any) []int64 {
+	shapeInterface, ok := shapeValue.([]any)
+	if !ok {
+		return nil
+	}
+
+	shape := make([]int64, len(shapeInterface))
+	for i, s := range shapeInterface {
+		if val, ok := s.(float64); ok {
+			shape[i] = int64(val)
+		}
+	}
+	return shape
+}
+
+// parseDataOffsets parses the data_offsets array from tensor metadata
+func parseDataOffsets(offsetsValue any) []int64 {
+	offsetsInterface, ok := offsetsValue.([]any)
+	if !ok {
+		return nil
+	}
+
+	offsets := make([]int64, len(offsetsInterface))
+	for i, o := range offsetsInterface {
+		if val, ok := o.(float64); ok {
+			offsets[i] = int64(val)
+		}
+	}
+	return offsets
 }

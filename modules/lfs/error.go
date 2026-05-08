@@ -1,6 +1,9 @@
 package lfs
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type notAPointerError struct {
 	message string
@@ -18,7 +21,8 @@ func IsNewNotAPointerError(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*notAPointerError)
+	var e *notAPointerError
+	ok := errors.As(err, &e)
 	return ok
 }
 
@@ -35,9 +39,6 @@ func NewBadPointerKeyError(message string) error {
 }
 
 func IsBadPointerKeyError(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*badPointerKeyError)
-	return ok
+	var e *badPointerKeyError
+	return errors.As(err, &e)
 }

@@ -48,7 +48,7 @@ func (r *Repository) MoveBranch(from, to string, force bool) error {
 		return plumbing.ErrReferenceNotFound
 	}
 	fromRef, err := r.Reference(plumbing.NewBranchReferenceName(from))
-	if err == plumbing.ErrReferenceNotFound {
+	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die_error("'%s' not found.", from)
 		return err
 	}
@@ -65,7 +65,7 @@ func (r *Repository) MoveBranch(from, to string, force bool) error {
 	}
 	target := plumbing.NewBranchReferenceName(to)
 	var toRef *plumbing.Reference
-	if toRef, err = r.ReferencePrefixMatch(target); err != nil && err != plumbing.ErrReferenceNotFound {
+	if toRef, err = r.ReferencePrefixMatch(target); err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		restoreBranch()
 		die_error("resolve branch '%s' error: %v", target, err)
 		return err
@@ -107,7 +107,7 @@ func (r *Repository) RemoveBranch(branches []string, force bool) error {
 	}
 	for _, b := range branches {
 		ref, err := r.Reference(plumbing.NewBranchReferenceName(b))
-		if err == plumbing.ErrReferenceNotFound {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			die_error("branch '%s' not found", b)
 			return err
 		}

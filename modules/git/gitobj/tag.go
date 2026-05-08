@@ -72,7 +72,7 @@ func (t *Tag) Decode(hash hash.Hash, r io.Reader, size int64) (int, error) {
 			case "object":
 				sha, err := hex.DecodeString(value)
 				if err != nil {
-					return 0, fmt.Errorf("git/object: unable to decode SHA-1: %s", err)
+					return 0, fmt.Errorf("git/object: unable to decode SHA-1: %w", err)
 				}
 
 				t.Object = sha

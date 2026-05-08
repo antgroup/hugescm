@@ -30,11 +30,8 @@ func (err *ErrRevisionNotFound) Error() string {
 }
 
 func IsErrRevisionNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrRevisionNotFound)
-	return ok
+	var e *ErrRevisionNotFound
+	return errors.As(err, &e)
 }
 
 func IsErrorCode(err error, code uint16) bool {
@@ -45,10 +42,8 @@ func IsErrorCode(err error, code uint16) bool {
 }
 
 func IsNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	if _, ok := err.(*ErrRevisionNotFound); ok {
+	var e *ErrRevisionNotFound
+	if errors.As(err, &e) {
 		return true
 	}
 	return errors.Is(err, sql.ErrNoRows)
@@ -67,11 +62,8 @@ func (e *ErrAlreadyLocked) Error() string {
 }
 
 func IsErrAlreadyLocked(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrAlreadyLocked)
-	return ok
+	var e *ErrAlreadyLocked
+	return errors.As(err, &e)
 }
 
 type ErrNamingRule struct {
@@ -83,11 +75,8 @@ func (e *ErrNamingRule) Error() string {
 }
 
 func IsErrNamingRule(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrNamingRule)
-	return ok
+	var e *ErrNamingRule
+	return errors.As(err, &e)
 }
 
 type ErrExist struct {
@@ -99,9 +88,6 @@ func (e *ErrExist) Error() string {
 }
 
 func IsErrExist(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrExist)
-	return ok
+	var e *ErrExist
+	return errors.As(err, &e)
 }

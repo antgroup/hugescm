@@ -173,34 +173,9 @@ func (w *Worktree) Merge(ctx context.Context, opts *MergeOptions) error {
 		die_error("check fast-forward error: %v", err)
 		return err
 	}
+
 	if fastForward {
-		newRev := from
-		if !opts.FF {
-			message, err := w.mergeMessageGen(ctx, opts, branchName)
-			if err != nil {
-				die_error("unable resolve merge message")
-				return err
-			}
-			if len(message) == 0 {
-				return ErrAborting
-			}
-			if newRev, err = w.mergeFF(ctx, newRev, current.Hash(), message); err != nil {
-				die_error("merge FF error")
-				return err
-			}
-		}
-		trace.DbgPrint("update-ref %s %s", current.Hash(), newRev)
-		if err := w.DoUpdate(ctx, current.Name(), current.Hash(), newRev, w.NewCommitter(), "merge: Fast-forward"); err != nil {
-			die_error("update fast forward: %v", err)
-			return err
-		}
-		if err := w.Reset(ctx, &ResetOptions{Commit: newRev, Mode: MergeReset}); err != nil {
-			die_error("reset worktree: %v", err)
-			return err
-		}
-		fmt.Fprintf(os.Stderr, "%s %s..%s\nFast-forward\n", W("Updating"), shortHash(current.Hash()), shortHash(newRev))
-		_ = w.mergeStat(ctx, current.Hash(), newRev)
-		return nil
+		return w.handleFastForwardMerge(ctx, current, from, opts, branchName)
 	}
 	if opts.FFOnly {
 		fmt.Fprintln(os.Stderr, W("Not possible to fast-forward, aborting."))
@@ -250,6 +225,54 @@ func (w *Worktree) makeSquashMessage(ctx context.Context, from plumbing.Hash, ig
 	return b.String(), nil
 }
 
+// handleFastForwardMerge handles the fast-forward merge operation
+func (w *Worktree) handleFastForwardMerge(ctx context.Context, current *plumbing.Reference, from plumbing.Hash, opts *MergeOptions, branchName string) error {
+	newRev, err := w.prepareFastForwardRevision(ctx, current.Hash(), from, opts, branchName)
+	if err != nil {
+		return err
+	}
+
+	trace.DbgPrint("update-ref %s %s", current.Hash(), newRev)
+	if err := w.DoUpdate(ctx, current.Name(), current.Hash(), newRev, w.NewCommitter(), "merge: Fast-forward"); err != nil {
+		die_error("update fast forward: %v", err)
+		return err
+	}
+
+	if err := w.Reset(ctx, &ResetOptions{Commit: newRev, Mode: MergeReset}); err != nil {
+		die_error("reset worktree: %v", err)
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "%s %s..%s\nFast-forward\n", W("Updating"), shortHash(current.Hash()), shortHash(newRev))
+	_ = w.mergeStat(ctx, current.Hash(), newRev)
+	return nil
+}
+
+// prepareFastForwardRevision prepares the new revision for fast-forward merge
+func (w *Worktree) prepareFastForwardRevision(ctx context.Context, currentHash, from plumbing.Hash, opts *MergeOptions, branchName string) (plumbing.Hash, error) {
+	if opts.FF {
+		return from, nil
+	}
+
+	message, err := w.mergeMessageGen(ctx, opts, branchName)
+	if err != nil {
+		die_error("unable resolve merge message")
+		return plumbing.ZeroHash, err
+	}
+
+	if len(message) == 0 {
+		return plumbing.ZeroHash, ErrAborting
+	}
+
+	newRev, err := w.mergeFF(ctx, from, currentHash, message)
+	if err != nil {
+		die_error("merge FF error")
+		return plumbing.ZeroHash, err
+	}
+
+	return newRev, nil
+}
+
 func (w *Worktree) mergeInternal(ctx context.Context, into, from plumbing.Hash, branch1, branch2 string, squash, allowUnrelatedHistories, textconv, signoff bool, messageFn func() string) (plumbing.Hash, error) {
 	c1, err := w.odb.Commit(ctx, into)
 	if err != nil {
@@ -261,7 +284,7 @@ func (w *Worktree) mergeInternal(ctx context.Context, into, from plumbing.Hash, 
 	}
 	result, err := w.mergeTree(ctx, c1, c2, nil, branch1, branch2, allowUnrelatedHistories, textconv)
 	if err != nil {
-		if mr, ok := err.(*odb.MergeResult); ok {
+		if mr, ok := errors.AsType[*odb.MergeResult](err); ok {
 			for _, m := range mr.Messages {
 				fmt.Fprintln(os.Stderr, m)
 			}

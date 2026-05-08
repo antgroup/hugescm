@@ -5,6 +5,7 @@ package object
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -63,14 +64,14 @@ func (c *commitLimitIter) Next(ctx context.Context) (*Commit, error) {
 func (c *commitLimitIter) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		commit, nextErr := c.Next(ctx)
-		if nextErr == io.EOF {
+		if errors.Is(nextErr, io.EOF) {
 			break
 		}
 		if nextErr != nil {
 			return nextErr
 		}
 		err := cb(commit)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			return nil
 		} else if err != nil {
 			return err

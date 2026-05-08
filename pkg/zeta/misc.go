@@ -63,8 +63,8 @@ func IsErrNotZetaDir(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ErrNotZetaDir)
-	return ok
+	var e *ErrNotZetaDir
+	return errors.As(err, &e)
 }
 
 func checkDestination(repoName, destination string, mustEmpty bool) (string, bool, error) {
@@ -255,7 +255,8 @@ func IsExitCode(err error, i int) bool {
 	if err == nil {
 		return false
 	}
-	if e, ok := err.(*ErrExitCode); ok {
+	var e *ErrExitCode
+	if errors.As(err, &e) {
 		return e.ExitCode == i
 	}
 	return false

@@ -3,13 +3,14 @@
 package keyring
 
 import (
+	"errors"
 	"testing"
 )
 
 func TestGet(t *testing.T) {
 	cred, err := Get(t.Context(), &Cred{Server: "zeta.io"})
 	if err != nil {
-		if err == ErrNotFound {
+		if errors.Is(err, ErrNotFound) {
 			t.Skip("no credential found for zeta.io")
 		}
 		t.Fatalf("Get failed: %v", err)

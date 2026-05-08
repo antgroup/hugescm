@@ -71,7 +71,7 @@ func (d *ODB) MetadataUnpack(r io.Reader, quiet bool) error {
 		count++
 		if _, err = io.ReadFull(cr, oidBytes[:]); err != nil {
 			b.Exit()
-			err := fmt.Errorf("unexpected metadata hash, err: %v", err)
+			err := fmt.Errorf("unexpected metadata hash, err: %w", err)
 			fmt.Fprint(os.Stderr, err)
 			return err
 		}

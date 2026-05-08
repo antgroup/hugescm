@@ -68,7 +68,7 @@ func (e *ServiceError) Error() string {
 
 func readResponseBody(resp *http.Response) ([]byte, error) {
 	out, err := io.ReadAll(resp.Body)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		err = nil
 	}
 	return out, err
@@ -147,12 +147,12 @@ func NewDownloader(verbose bool, insecure bool, proxyURL string) Downloader {
 func readError(resp *http.Response) error {
 	m, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 	if err != nil {
-		return fmt.Errorf("response parse mime error: %v", err)
+		return fmt.Errorf("response parse mime error: %w", err)
 	}
 	if m == "application/json" {
 		ec := &ErrorCode{status: resp.StatusCode}
 		if err := json.NewDecoder(resp.Body).Decode(ec); err != nil {
-			return fmt.Errorf("json decode error: %v", err)
+			return fmt.Errorf("json decode error: %w", err)
 		}
 		return ec
 	}

@@ -396,7 +396,7 @@ func (v *Value) Reset() error {
 			if ok {
 				err := v.Parse(ScanFromTokens(Token{Type: FlagValueToken, Value: envar}), v.Target)
 				if err != nil {
-					return fmt.Errorf("%s (from envar %s=%q)", err, env, envar)
+					return fmt.Errorf("%w (from envar %s=%q)", err, env, envar)
 				}
 				return nil
 			}

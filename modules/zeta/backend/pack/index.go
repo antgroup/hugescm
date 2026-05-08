@@ -121,8 +121,8 @@ func (i *Index) Count() int {
 // Close closes the packfile index if the underlying data stream is closeable.
 // If so, it returns any error involved in closing.
 func (i *Index) Close() error {
-	if close, ok := i.r.(io.Closer); ok {
-		return close.Close()
+	if c, ok := i.r.(io.Closer); ok {
+		return c.Close()
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ var (
 // IsNotFound returns whether a given error represents a missing object in the
 // index.
 func IsNotFound(err error) bool {
-	return err == errNotFound
+	return errors.Is(err, errNotFound)
 }
 
 // Entry returns an entry containing the offset of a given BLAKE3 "name".
@@ -331,7 +331,7 @@ func decodeIndexHeader(r io.ReaderAt) (IndexVersion, error) {
 	case IndexVersionCurrent:
 		return &IndexZ{}, nil
 	}
-	return nil, &UnsupportedVersionErr{uint32(version)}
+	return nil, &UnsupportedVersionErr{version}
 }
 
 // decodeIndexFanout decodes the fanout table given by "r" and beginning at the
@@ -339,7 +339,7 @@ func decodeIndexHeader(r io.ReaderAt) (IndexVersion, error) {
 func decodeIndexFanout(r io.ReaderAt, offset int64) ([]uint32, error) {
 	b := make([]byte, 256*4)
 	if _, err := r.ReadAt(b, offset); err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil, ErrShortFanout
 		}
 		return nil, err

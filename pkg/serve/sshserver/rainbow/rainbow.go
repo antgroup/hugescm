@@ -110,14 +110,14 @@ func plotPos(x float64) (red, green, blue float64) {
 	return red, green, blue
 }
 
-const max = 16 + (6 * (127 + 128) / 256 * 36) + (6 * (127 + 128) / 256 * 6) + (6 * (127 + 128) / 256)
+const maxColors = 16 + (6 * (127 + 128) / 256 * 36) + (6 * (127 + 128) / 256 * 6) + (6 * (127 + 128) / 256)
 
 // nums is used to cache the values of strconv.Itoa(n) for better performance
 // gains.
-var nums = make([]string, 0, max)
+var nums = make([]string, 0, maxColors)
 
 func init() {
-	for i := range max {
+	for i := range maxColors {
 		nums = append(nums, strconv.Itoa(i))
 	}
 }

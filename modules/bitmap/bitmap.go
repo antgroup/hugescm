@@ -35,25 +35,25 @@ func New() *Bitmap {
 func FromReader(r io.Reader, order binary.ByteOrder) (*Bitmap, error) {
 	bits, err := readUint32(r, order)
 	if err != nil {
-		return nil, fmt.Errorf("bitmap: can't read uncompressed bit number: %s", err)
+		return nil, fmt.Errorf("bitmap: can't read uncompressed bit number: %w", err)
 	}
 
 	words, err := readUint32(r, order)
 	if err != nil {
-		return nil, fmt.Errorf("bitmap: can't read compressed word number: %s", err)
+		return nil, fmt.Errorf("bitmap: can't read compressed word number: %w", err)
 	}
 
 	w := make([]uint64, int(words))
 	for i := 0; i < int(words); i++ {
 		w[i], err = readUint64(r, order)
 		if err != nil {
-			return nil, fmt.Errorf("bitmap: can't read %dth word: %s", i+1, err)
+			return nil, fmt.Errorf("bitmap: can't read %dth word: %w", i+1, err)
 		}
 	}
 
 	lastrlw, err := readUint32(r, order)
 	if err != nil {
-		return nil, fmt.Errorf("bitmap: can't read position of current RLW: %s", err)
+		return nil, fmt.Errorf("bitmap: can't read position of current RLW: %w", err)
 	}
 
 	return &Bitmap{

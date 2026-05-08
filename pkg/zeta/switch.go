@@ -39,7 +39,7 @@ func (so *SwitchOptions) Validate() error {
 }
 
 func switchError(target string, err error) {
-	if err == ErrAborting {
+	if errors.Is(err, ErrAborting) {
 		return
 	}
 	die("switch to '%s' error: %v", target, err)
@@ -73,7 +73,7 @@ func (r *Repository) switchBranchFromRemote(ctx context.Context, branch string, 
 func (r *Repository) SwitchBranch(ctx context.Context, branch string, so *SwitchOptions) error {
 	refname := plumbing.NewBranchReferenceName(branch)
 	ref, err := r.Reference(refname)
-	if err == plumbing.ErrReferenceNotFound {
+	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		if !so.Remote {
 			die("couldn't find branch '%s', add '--remote' download and switch to this branch", refname)
 			return err
@@ -122,7 +122,7 @@ func (r *Repository) SwitchDetach(ctx context.Context, basePoint string, so *Swi
 func (r *Repository) SwitchOrphan(ctx context.Context, newBranch string, so *SwitchOptions) error {
 	refname := plumbing.NewBranchReferenceName(newBranch)
 	ref, err := r.ReferencePrefixMatch(refname)
-	if err != nil && err != plumbing.ErrReferenceNotFound {
+	if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die_error("zeta switch: from %s error: %v", newBranch, err)
 		return err
 	}

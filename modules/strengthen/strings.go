@@ -8,8 +8,8 @@ import (
 )
 
 // StrSplitSkipEmpty skip empty string
-func StrSplitSkipEmpty(s string, sep byte, cap int) []string {
-	sv := make([]string, 0, cap)
+func StrSplitSkipEmpty(s string, sep byte, capacity int) []string {
+	sv := make([]string, 0, capacity)
 	var first, i int
 	for ; i < len(s); i++ {
 		if s[i] != sep {

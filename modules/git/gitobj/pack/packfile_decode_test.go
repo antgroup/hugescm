@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
+	"errors"
 	"testing"
 )
 
@@ -44,7 +45,7 @@ func TestDecodePackfileReportsBadHeaders(t *testing.T) {
 		0x0, 0x0, 0x0, 0x0, // Number of packed objects.
 	}), sha1.New())
 
-	if errBadPackHeader != err {
+	if !errors.Is(err, errBadPackHeader) {
 		t.Errorf("Expected %v, got %v", errBadPackHeader, err)
 	}
 	if p != nil {

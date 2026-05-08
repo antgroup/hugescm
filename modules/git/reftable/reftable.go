@@ -373,7 +373,7 @@ func (t *Table) GetReferences() ([]git.Reference, error) {
 
 // PatchUpdateIndexes patches in-place the update indexes stored in the table's
 // header and footer, and syncs the file to the disk.
-func (t *Table) PatchUpdateIndexes(min, max uint64) (returnedErr error) {
+func (t *Table) PatchUpdateIndexes(minVal, maxVal uint64) (returnedErr error) {
 	// Table typically opens the file with read-only permissions. The update index
 	// patching is an exception, and the only case when we should be modifying tables.
 	// Typically the table files would not be modified, and the files in the storage
@@ -393,8 +393,8 @@ func (t *Table) PatchUpdateIndexes(min, max uint64) (returnedErr error) {
 		}
 	}()
 
-	t.footer.MinUpdateIndex = min
-	t.footer.MaxUpdateIndex = max
+	t.footer.MinUpdateIndex = minVal
+	t.footer.MaxUpdateIndex = maxVal
 
 	// Construct a buffer that contains the full footer with patched values.
 	//

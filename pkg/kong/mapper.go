@@ -336,7 +336,7 @@ func durationDecoder() MapperFunc {
 		case string:
 			d, err = time.ParseDuration(v)
 			if err != nil {
-				return fmt.Errorf("expected duration but got %q: %v", v, err)
+				return fmt.Errorf("expected duration but got %q: %w", v, err)
 			}
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 			d = reflect.ValueOf(v).Convert(reflect.TypeFor[time.Duration]()).Interface().(time.Duration) //nolint: forcetypeassert
@@ -896,7 +896,7 @@ func (f *NamedFileContentFlag) Decode(ctx *DecodeContext) error { //nolint: revi
 	filename = ExpandPath(filename)
 	data, err := os.ReadFile(filename) //nolint: gosec
 	if err != nil {
-		return fmt.Errorf("failed to open %q: %v", filename, err)
+		return fmt.Errorf("failed to open %q: %w", filename, err)
 	}
 	f.Contents = data
 	f.Filename = filename
@@ -920,7 +920,7 @@ func (f *FileContentFlag) Decode(ctx *DecodeContext) error { //nolint: revive
 	filename = ExpandPath(filename)
 	data, err := os.ReadFile(filename) //nolint: gosec
 	if err != nil {
-		return fmt.Errorf("failed to open %q: %v", filename, err)
+		return fmt.Errorf("failed to open %q: %w", filename, err)
 	}
 	*f = data
 	return nil
@@ -932,7 +932,7 @@ func jsonTranscode(in, out any) error {
 		return err
 	}
 	if err = json.Unmarshal(data, out); err != nil {
-		return fmt.Errorf("%#v -> %T: %v", in, out, err)
+		return fmt.Errorf("%#v -> %T: %w", in, out, err)
 	}
 	return nil
 }

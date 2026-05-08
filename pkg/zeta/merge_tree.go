@@ -252,7 +252,7 @@ func (r *Repository) MergeTree(ctx context.Context, opts *MergeTreeOptions) erro
 	}
 	result, err := r.mergeTree(ctx, c1, c2, base, opts.Branch1, opts.Branch2, opts.AllowUnrelatedHistories, opts.Textconv)
 	if err != nil {
-		if mr, ok := err.(*odb.MergeResult); ok {
+		if mr, ok := errors.AsType[*odb.MergeResult](err); ok {
 			opts.format(mr)
 			return ErrHasConflicts
 		}

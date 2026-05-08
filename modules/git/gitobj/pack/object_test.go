@@ -49,7 +49,7 @@ func TestObjectUnpackPropogatesErrors(t *testing.T) {
 	if data != nil {
 		t.Errorf("Expected nil, got %v", data)
 	}
-	if expected != err {
+	if !errors.Is(err, expected) {
 		t.Errorf("Expected %v, got %v", expected, err)
 	}
 }

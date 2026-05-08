@@ -26,7 +26,7 @@ func (s *summer) drawInteractive(title string) error {
 	for n, i := range s.files {
 		items = append(items, Item{Path: n, Total: i.sum, Count: i.count})
 	}
-	sort.Sort(Items(items))
+	sort.Sort(items)
 
 	// Get terminal width
 	termWidth := getTerminalWidth()

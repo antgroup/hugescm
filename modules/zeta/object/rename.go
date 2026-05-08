@@ -451,13 +451,13 @@ outerLoop:
 				dstSizes[dstIdx] = dstSize
 			}
 
-			min, max := srcSize, dstSize
+			minVal, maxVal := srcSize, dstSize
 			if dstSize < srcSize {
-				min = dstSize
-				max = srcSize
+				minVal = dstSize
+				maxVal = srcSize
 			}
 
-			if int(min*100/max) < renameScore {
+			if int(minVal*100/maxVal) < renameScore {
 				// File sizes are too different to be a match
 				continue
 			}
@@ -465,7 +465,7 @@ outerLoop:
 			if s == nil {
 				s, err = fileSimilarityIndex(ctx, from)
 				if err != nil {
-					if err == errIndexFull {
+					if errors.Is(err, errIndexFull) {
 						continue outerLoop
 					}
 					return nil, err
@@ -481,7 +481,7 @@ outerLoop:
 
 			di, err := fileSimilarityIndex(ctx, to)
 			if err != nil {
-				if err == errIndexFull {
+				if errors.Is(err, errIndexFull) {
 					dstTooLarge[dstIdx] = true
 				}
 
@@ -586,7 +586,7 @@ func (i *similarityIndex) hashContent(r io.Reader, size int64, isBin bool) error
 				ptr = 0
 				var err error
 				cnt, err = io.ReadFull(r, buf)
-				if err != nil && err != io.ErrUnexpectedEOF {
+				if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 					return err
 				}
 

@@ -170,7 +170,7 @@ func (w *Worktree) StashPush(ctx context.Context, opts *StashPushOptions) error 
 	}
 	var oldRev plumbing.Hash
 	old, err := w.Reference(StashName)
-	if err != nil && err != plumbing.ErrReferenceNotFound {
+	if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die("resolve refs/stash: %v", err)
 		return err
 	}
@@ -386,7 +386,7 @@ func (w *Worktree) stashApply(ctx context.Context, e *reflog.Entry) error {
 	if status.IsClean() {
 		result, err := w.cherryPickStash(ctx, stashIndex, stashWorktree, cc, cc)
 		if err != nil {
-			if err == ErrHasConflicts {
+			if errors.Is(err, ErrHasConflicts) {
 				die_error("conflicts in index.")
 				return err
 			}
@@ -423,7 +423,7 @@ func (w *Worktree) stashApply(ctx context.Context, e *reflog.Entry) error {
 	result, err := w.cherryPickStash(ctx, stashIndex, stashWorktree, currentIndex, currentWorktree)
 	if err != nil {
 		_ = w.stashApplyTree(ctx, storeResult.stashIndexTree, storeResult.stashWorktreeTree)
-		if err == ErrHasConflicts {
+		if errors.Is(err, ErrHasConflicts) {
 			die_error("conflicts in index.")
 			return err
 		}

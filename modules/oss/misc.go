@@ -73,7 +73,7 @@ func parseSizeFromRange(hdr string) (int64, error) {
 		}
 		size, err := strconv.ParseInt(sv[1], 10, 64)
 		if err != nil {
-			return 0, fmt.Errorf("parse size from range %s %v", hdr, err)
+			return 0, fmt.Errorf("parse size from range %s %w", hdr, err)
 		}
 		return size, nil
 	}
@@ -82,7 +82,7 @@ func parseSizeFromRange(hdr string) (int64, error) {
 	}
 	size, err := strconv.ParseInt(sv[2], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("parse size from range %s %v", hdr, err)
+		return 0, fmt.Errorf("parse size from range %s %w", hdr, err)
 	}
 	return size, nil
 }

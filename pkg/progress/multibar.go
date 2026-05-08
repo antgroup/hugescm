@@ -357,10 +357,10 @@ func formatSpeed(bps float64) string {
 	return fmt.Sprintf("%6.1f %ciB/s", bps/div, "KMGTPE"[exp])
 }
 
-func truncate(s string, max int) string {
+func truncate(s string, maxLen int) string {
 	runes := []rune(s)
-	if len(runes) <= max {
+	if len(runes) <= maxLen {
 		return s
 	}
-	return string(runes[:max-1]) + "…"
+	return string(runes[:maxLen-1]) + "…"
 }

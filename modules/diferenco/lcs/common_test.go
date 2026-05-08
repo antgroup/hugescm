@@ -99,7 +99,7 @@ func checkDiffs(t *testing.T, before string, diffs []Diff, after string) {
 func lcslen(l lcs) int {
 	ans := 0
 	for _, d := range l {
-		ans += int(d.Len)
+		ans += d.Len
 	}
 	return ans
 }

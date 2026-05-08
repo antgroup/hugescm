@@ -49,7 +49,7 @@ func (r *Parser) readLine() (line []byte, cutShort bool) {
 func (r *Parser) CountFields(collectIndexes bool) (fields int, fieldPos []int, hasMore bool) {
 	finished := false
 	var line scan.Bytes
-	cutShort := false
+	var cutShort bool
 	for {
 		line, cutShort = r.readLine()
 		if finished {

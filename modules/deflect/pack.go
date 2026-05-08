@@ -132,7 +132,7 @@ func (a *Auditor) analyzePack(p *pack) error {
 // analyzePack32 processes pack files with 32-bit offsets (< 2GB)
 // Uses sorting algorithm to estimate object sizes by comparing consecutive offsets
 func (a *Auditor) analyzePack32(rs io.ReadSeeker, nr uint32, packsz int64) error {
-	seekTo := int64(nr)*int64(a.rawsz+4) + 4 + 4 + fanout*4
+	seekTo := int64(nr)*(a.rawsz+4) + 4 + 4 + fanout*4
 	if _, err := rs.Seek(seekTo, io.SeekStart); err != nil {
 		return err
 	}
@@ -149,8 +149,8 @@ func (a *Auditor) analyzePack32(rs io.ReadSeeker, nr uint32, packsz int64) error
 	sort.Sort(objs)
 	pre := packsz - a.rawsz
 	for _, o := range objs {
-		sz := pre - int64(o.offset)
-		pre = int64(o.offset)
+		sz := pre - int64(o.offset) //nolint:unconvert // uint32 -> int64 conversion for size calculation
+		pre = int64(o.offset)       //nolint:unconvert // uint32 -> int64 conversion for size calculation
 		if sz > hugeSizeLimit {
 			a.hugeSum += sz
 		}
@@ -199,8 +199,8 @@ func (a *Auditor) analyzePack64(rs io.ReadSeeker, nr uint32, packsz int64) error
 	sort.Sort(objs)
 	pre := packsz - a.rawsz
 	for _, o := range objs {
-		sz := pre - int64(o.offset)
-		pre = int64(o.offset)
+		sz := pre - o.offset
+		pre = o.offset
 		if sz > hugeSizeLimit {
 			a.hugeSum += sz
 		}

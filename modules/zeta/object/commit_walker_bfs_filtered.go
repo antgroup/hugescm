@@ -5,6 +5,7 @@ package object
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -105,7 +106,7 @@ func (w *filterCommitIter) Next(ctx context.Context) (*Commit, error) {
 func (w *filterCommitIter) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		commit, err := w.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 
@@ -113,7 +114,7 @@ func (w *filterCommitIter) ForEach(ctx context.Context, cb func(*Commit) error) 
 			return err
 		}
 
-		if err := cb(commit); err == plumbing.ErrStop {
+		if err := cb(commit); errors.Is(err, plumbing.ErrStop) {
 			break
 		} else if err != nil {
 			return err

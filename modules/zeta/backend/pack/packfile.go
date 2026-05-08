@@ -35,8 +35,8 @@ func (p *Packfile) Close() error {
 		iErr = p.idx.Close()
 	}
 
-	if close, ok := p.r.(io.Closer); ok {
-		return close.Close()
+	if closer, ok := p.r.(io.Closer); ok {
+		return closer.Close()
 	}
 	return iErr
 }
@@ -46,7 +46,7 @@ func (p *Packfile) Exists(name plumbing.Hash) error {
 		if !IsNotFound(err) {
 			// If the error was not an errNotFound, re-wrap it with
 			// additional context.
-			err = fmt.Errorf("zeta: could not load index: %s", err)
+			err = fmt.Errorf("zeta: could not load index: %w", err)
 		}
 		return err
 	}
@@ -65,7 +65,7 @@ func (p *Packfile) Object(name plumbing.Hash) (*SizeReader, error) {
 		if !IsNotFound(err) {
 			// If the error was not an errNotFound, re-wrap it with
 			// additional context.
-			err = fmt.Errorf("zeta: could not load index: %s", err)
+			err = fmt.Errorf("zeta: could not load index: %w", err)
 		}
 		return nil, err
 	}

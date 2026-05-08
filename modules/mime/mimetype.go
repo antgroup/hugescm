@@ -6,6 +6,7 @@
 package mime
 
 import (
+	"errors"
 	"io"
 	"mime"
 	"os"
@@ -59,7 +60,7 @@ func DetectReader(r io.Reader) (*MIME, error) {
 		// io.UnexpectedEOF means len(r) < len(in). It is not an error in this case,
 		// it just means the input file is smaller than the allocated bytes slice.
 		n, err = io.ReadFull(r, in)
-		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 			return errMIME, err
 		}
 		in = in[:n]

@@ -5,6 +5,7 @@ package object
 
 import (
 	"context"
+	"errors"
 	"io"
 	"slices"
 
@@ -83,7 +84,7 @@ func (c *commitPathIter) getNextFileCommit(ctx context.Context) (*Commit, error)
 		parentCommit, parentCommitErr := c.sourceIter.Next(ctx)
 		if parentCommitErr != nil {
 			// If the parent-commit is beyond the initial commit, keep it nil
-			if parentCommitErr != io.EOF {
+			if !errors.Is(parentCommitErr, io.EOF) {
 				return nil, parentCommitErr
 			}
 			parentCommit = nil
@@ -165,14 +166,14 @@ func isParentHash(hash plumbing.Hash, commit *Commit) bool {
 func (c *commitPathIter) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		commit, nextErr := c.Next(ctx)
-		if nextErr == io.EOF {
+		if errors.Is(nextErr, io.EOF) {
 			break
 		}
 		if nextErr != nil {
 			return nextErr
 		}
 		err := cb(commit)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			return nil
 		} else if err != nil {
 			return err

@@ -1,0 +1,51 @@
+version: 2
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    # 复杂度检查（核心）
+    # - nestif          # 检查嵌套的 if 语句
+
+    # 静态分析
+    - staticcheck     # 静态分析工具
+
+    # 代码简化
+    - predeclared     # 检查是否使用了 Go 预定义的标识符
+    - unconvert       # 检查不必要的类型转换
+    - wastedassign    # 检查浪费的赋值语句
+
+    # 错误处理
+    - errcheck        # 检查未处理的错误
+    - errorlint       # 检查错误处理中的常见问题
+
+    # 其他有用的 linter
+    - ineffassign     # 检查无效赋值
+
+linters-settings:
+  nestif:
+    min-complexity: 5
+
+issues:
+  exclude-rules:
+    # 测试文件可以放宽一些限制
+    - path: _test\.go
+      linters:
+        - errcheck
+
+    # 生成的代码可以跳过检查
+    - path: '.*\.pb\.go'
+      linters:
+        - all
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false

@@ -119,7 +119,7 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 	}
 	ref, err := t.FetchReference(ctx, target)
 	cleanedRemote := r.cleanedRemote()
-	if err == transport.ErrReferenceNotExist {
+	if errors.Is(err, transport.ErrReferenceNotExist) {
 		die_error("unable to delete '%s': remote ref does not exist", shortReferenceName(target))
 		die_error("failed to push some refs to '%s'", cleanedRemote)
 		return err
@@ -203,18 +203,17 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 	var fastForward, isNewPush bool
 	var theirs, oldRev plumbing.Hash
 	ref, err := t.FetchReference(ctx, target)
-	switch {
-	case err == transport.ErrReferenceNotExist:
+	if errors.Is(err, transport.ErrReferenceNotExist) {
 		isNewPush = true
 		if current, err := t.FetchReference(ctx, plumbing.HEAD); err == nil {
 			theirs = plumbing.NewHash(current.Hash)
 		}
-	case err != nil:
+	} else if err != nil {
 		if !zeta.IsErrExitCode(err) {
 			die("ls-remote '%s' error: %v", target, err)
 		}
 		return err
-	default:
+	} else {
 		oldRev = plumbing.NewHash(ref.Hash)
 		if newRev == oldRev {
 			fmt.Fprintf(os.Stderr, "Everything up-to-date\n")
@@ -348,7 +347,7 @@ func (r *Repository) Push(ctx context.Context, o *PushOptions) error {
 	if err == nil {
 		return r.doPush(ctx, ref.Name(), ref.Hash(), ref.Name(), o)
 	}
-	if err != plumbing.ErrReferenceNotFound {
+	if !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die_error("resolve %s error: %v", o.Refspec, err)
 		return err
 	}

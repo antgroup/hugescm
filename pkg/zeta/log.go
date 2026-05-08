@@ -103,7 +103,7 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []pl
 		var cc *object.Commit
 		for {
 			cc, err = iter.Next(ctx)
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {
@@ -131,7 +131,7 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []pl
 		commits := make([]*object.Commit, 0, 100)
 		for {
 			cc, err := iter.Next(ctx)
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {
@@ -156,7 +156,7 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []pl
 	p := NewPrinter(ctx)
 	for {
 		cc, err := iter.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -197,7 +197,7 @@ func (r *Repository) revList0(ctx context.Context, want plumbing.Hash, ignore []
 	defer iter.Close()
 	for {
 		cc, err := iter.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

@@ -26,11 +26,12 @@ var (
 )
 
 func (d *ODB) writeObjectToPack(oid plumbing.Hash, metadata bool, w io.Writer, r io.Reader, size int64) error {
-	sizeU := uint64(size + plumbing.HASH_HEX_SIZE)
+	// Calculate size with hash included
+	size += plumbing.HASH_HEX_SIZE
 	if metadata {
-		sizeU = uint64(-sizeU)
+		size = -size
 	}
-	if err := binary.WriteUint64(w, sizeU); err != nil {
+	if err := binary.WriteUint64(w, uint64(size)); err != nil {
 		return err
 	}
 	oids := oid.String()

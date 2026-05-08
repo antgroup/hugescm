@@ -36,8 +36,8 @@ func (i *Index) Count() int {
 // Close closes the packfile index if the underlying data stream is closeable.
 // If so, it returns any error involved in closing.
 func (i *Index) Close() error {
-	if close, ok := i.r.(io.Closer); ok {
-		return close.Close()
+	if c, ok := i.r.(io.Closer); ok {
+		return c.Close()
 	}
 	return nil
 }
@@ -51,7 +51,7 @@ var (
 // IsNotFound returns whether a given error represents a missing object in the
 // index.
 func IsNotFound(err error) bool {
-	return err == errNotFound
+	return errors.Is(err, errNotFound)
 }
 
 // Entry returns an entry containing the offset of a given SHA1 "name".

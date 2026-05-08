@@ -33,8 +33,8 @@ func (p *Packfile) Close() error {
 		iErr = p.idx.Close()
 	}
 
-	if close, ok := p.r.(io.Closer); ok {
-		return close.Close()
+	if c, ok := p.r.(io.Closer); ok {
+		return c.Close()
 	}
 	return iErr
 }
@@ -59,7 +59,7 @@ func (p *Packfile) Object(name []byte) (*Object, error) {
 		if !IsNotFound(err) {
 			// If the error was not an errNotFound, re-wrap it with
 			// additional context.
-			err = fmt.Errorf("git/object/pack: could not load index: %s", err)
+			err = fmt.Errorf("git/object/pack: could not load index: %w", err)
 		}
 		return nil, err
 	}

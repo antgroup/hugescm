@@ -24,7 +24,7 @@ func (c *Commit) MergeBase(ctx context.Context, other *Commit) ([]*Commit, error
 	older := sorted[1]
 
 	newerHistory, err := ancestorsIndex(ctx, older, newer)
-	if err == errIsReachable {
+	if errors.Is(err, errIsReachable) {
 		return []*Commit{older}, nil
 	}
 

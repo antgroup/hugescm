@@ -212,7 +212,7 @@ func (d *Database) WriteBlob(b *Blob) ([]byte, error) {
 	defer d.cleanup(tmp)
 
 	to := NewObjectWriter(tmp, d.Hasher())
-	if _, err = to.WriteHeader(b.Type(), int64(b.Size)); err != nil {
+	if _, err = to.WriteHeader(b.Type(), b.Size); err != nil {
 		return nil, err
 	}
 

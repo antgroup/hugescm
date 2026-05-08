@@ -71,7 +71,7 @@ func NewBlob(raw io.ReadCloser) (*Blob, error) {
 	case ZSTD:
 		zr, err := streamio.GetZstdReader(raw)
 		if err != nil {
-			return nil, fmt.Errorf("unable new zstd decoder: %v", err)
+			return nil, fmt.Errorf("unable new zstd decoder: %w", err)
 		}
 		return &Blob{Contents: zr, Size: uncompressedSize, closeFn: func() error {
 			streamio.PutZstdReader(zr)
@@ -80,7 +80,7 @@ func NewBlob(raw io.ReadCloser) (*Blob, error) {
 	case DEFLATE:
 		zr, err := streamio.GetZlibReader(raw)
 		if err != nil {
-			return nil, fmt.Errorf("unable new zlib decoder: %v", err)
+			return nil, fmt.Errorf("unable new zlib decoder: %w", err)
 		}
 		return &Blob{Contents: zr.Reader, Size: uncompressedSize, closeFn: func() error {
 			streamio.PutZlibReader(zr)

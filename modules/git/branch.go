@@ -65,7 +65,7 @@ func RevParseCurrentName(ctx context.Context, environ []string, repoPath string)
 // RevParseCurrent parse HEAD return hash and refname
 func RevParseCurrent(ctx context.Context, environ []string, repoPath string) (refname string, hash string, err error) {
 	if refname, err = RevParseCurrentName(ctx, environ, repoPath); err != nil {
-		if err != ErrDetachedHEAD {
+		if !errors.Is(err, ErrDetachedHEAD) {
 			return
 		}
 		refname = "HEAD" // git checkout commit

@@ -1,6 +1,7 @@
 package gitobj
 
 import (
+	"errors"
 	"bufio"
 	"hash"
 	"io"
@@ -49,7 +50,7 @@ func findAllBackends(mainLoose *fileStorer, mainPacked *pack.Storage, root strin
 	f, err := os.Open(path.Join(root, "info", "alternates"))
 	if err != nil {
 		// No alternates file, no problem.
-		if err != os.ErrNotExist {
+		if !errors.Is(err, os.ErrNotExist) {
 			return storage, nil
 		}
 		return nil, err

@@ -71,21 +71,21 @@ func (s *Signature) decodeTimeAndTimeZone(b []byte) {
 // Decode decodes a byte slice into a signature
 func (s *Signature) Decode(b []byte) {
 	open := bytes.LastIndexByte(b, '<')
-	close := bytes.LastIndexByte(b, '>')
-	if open == -1 || close == -1 {
+	closeIdx := bytes.LastIndexByte(b, '>')
+	if open == -1 || closeIdx == -1 {
 		return
 	}
 
-	if close < open {
+	if closeIdx < open {
 		return
 	}
 
 	s.Name = string(bytes.Trim(b[:open], " "))
-	s.Email = string(b[open+1 : close])
+	s.Email = string(b[open+1 : closeIdx])
 
-	hasTime := close+2 < len(b)
+	hasTime := closeIdx+2 < len(b)
 	if hasTime {
-		s.decodeTimeAndTimeZone(b[close+2:])
+		s.decodeTimeAndTimeZone(b[closeIdx+2:])
 	}
 }
 

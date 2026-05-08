@@ -425,7 +425,7 @@ func IgnoreFields(regexes ...string) Option {
 
 			re, err := regexp.Compile(r)
 			if err != nil {
-				return fmt.Errorf("unable to compile regex: %v", err)
+				return fmt.Errorf("unable to compile regex: %w", err)
 			}
 
 			k.ignoreFields = append(k.ignoreFields, re)
@@ -461,7 +461,7 @@ func Configuration(loader ConfigurationLoader, paths ...string) Option {
 
 			resolver, err := k.LoadConfig(path)
 			if err != nil {
-				return fmt.Errorf("%s: %v", path, err)
+				return fmt.Errorf("%s: %w", path, err)
 			}
 			if resolver != nil {
 				k.resolvers = append(k.resolvers, resolver)

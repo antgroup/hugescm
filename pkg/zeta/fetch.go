@@ -133,7 +133,7 @@ func (r *Repository) updateTagReference(ctx context.Context, refname plumbing.Re
 	default:
 	}
 	old, err := r.Reference(refname)
-	if err != nil && err != plumbing.ErrReferenceNotFound {
+	if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die_error("resolve %s: %v", refname, err)
 		return err
 	}
@@ -167,7 +167,7 @@ func (r *Repository) resolveRef(refname plumbing.ReferenceName) (*plumbing.Refer
 		return current, current.Name(), nil
 	}
 	current, err := r.Reference(refname)
-	if err != nil && err != plumbing.ErrReferenceNotFound {
+	if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die_error("resolve %s: %v", refname, err)
 		return nil, "", err
 	}
@@ -248,18 +248,17 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (*FetchR
 	}
 	var want plumbing.Hash
 	ref, err := t.FetchReference(ctx, refname)
-	switch {
-	case err == transport.ErrReferenceNotExist:
-		if !plumbing.ValidateHashHex(string(opts.Name)) {
+	if errors.Is(err, transport.ErrReferenceNotExist) {
+		if !plumbing.ValidateHashHex(opts.Name) {
 			die_error("couldn't find remote ref %s", opts.Name)
 			return nil, err
 		}
 		refname = plumbing.ReferenceName(opts.Name)
-		want = plumbing.NewHash(string(opts.Name))
-	case err != nil:
+		want = plumbing.NewHash(opts.Name)
+	} else if err != nil {
 		die("fetch remote reference '%s' error: %v", opts.Name, err)
 		return nil, err
-	default:
+	} else {
 		want = plumbing.NewHash(ref.Hash)
 	}
 

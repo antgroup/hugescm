@@ -542,12 +542,12 @@ func parseComponent(s string) ([]componentFn, error) {
 				continue
 			}
 			if strings.HasPrefix(s[i:], "[:") {
-				close := strings.Index(s[i:], ":]")
-				if close < 0 {
+				closeIdx := strings.Index(s[i:], ":]")
+				if closeIdx < 0 {
 					return nil, errors.New("unclosed character class")
 				}
 
-				if close == 1 {
+				if closeIdx == 1 {
 					// The case "[:]" has a prefix "[:", and
 					// a suffix ":]", but the atom refers to
 					// a character group including the
@@ -564,7 +564,7 @@ func parseComponent(s string) ([]componentFn, error) {
 
 				// Find the associated character class.
 				name := strings.TrimPrefix(
-					strings.ToLower(s[i:i+close]), "[:")
+					strings.ToLower(s[i:i+closeIdx]), "[:")
 				fn, ok := classes[name]
 				if !ok {
 					return nil, fmt.Errorf("wildmatch: unknown class: %q", name)
@@ -573,7 +573,7 @@ func parseComponent(s string) ([]componentFn, error) {
 				include, exclude = appendMaybe(!neg, include, exclude, fn)
 				// Advance to the first index beyond the closing
 				// ":]".
-				i = i + close + 2
+				i = i + closeIdx + 2
 				continue
 			}
 			if c == '-' {

@@ -121,7 +121,7 @@ func (d *ODB) DoTransfer(ctx context.Context, oid plumbing.Hash, transfer Transf
 			_ = fd.Close()
 			return d.doTransferFallback(ctx, oid, transfer, m, mode)
 		}
-		if err != io.ErrUnexpectedEOF {
+		if !errors.Is(err, io.ErrUnexpectedEOF) {
 			_ = fd.Close()
 			return err
 		}

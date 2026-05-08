@@ -4,6 +4,7 @@
 package object
 
 import (
+	"errors"
 	"io"
 	"sort"
 
@@ -94,7 +95,7 @@ func (f *Fragments) Decode(reader Reader) error {
 	for {
 		entry := new(Fragment)
 		if entry.Index, err = binary.ReadUint32(r); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err

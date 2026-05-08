@@ -85,7 +85,7 @@ func (w *Worktree) Status(ctx context.Context, verbose bool) (Status, error) {
 	var hash plumbing.Hash
 
 	ref, err := w.Current()
-	if err != nil && err != plumbing.ErrReferenceNotFound {
+	if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return nil, err
 	}
 
@@ -683,11 +683,11 @@ func (w *Worktree) copyFileToStorage(ctx context.Context, path string) (plumbing
 
 func (w *Worktree) addOrUpdateFileToIndex(idx *index.Index, filename string, h plumbing.Hash, asFragments bool) error {
 	e, err := idx.Entry(filename)
-	if err != nil && err != index.ErrEntryNotFound {
+	if err != nil && !errors.Is(err, index.ErrEntryNotFound) {
 		return err
 	}
 
-	if err == index.ErrEntryNotFound {
+	if errors.Is(err, index.ErrEntryNotFound) {
 		return w.doAddFileToIndex(idx, filename, h, asFragments)
 	}
 
@@ -757,7 +757,7 @@ func (w *Worktree) doRemoveDirectory(idx *index.Index, directory string) (remove
 			r, err = w.doRemoveDirectory(idx, name)
 		} else {
 			_, err = w.doRemoveFile(idx, name)
-			if err == index.ErrEntryNotFound {
+			if errors.Is(err, index.ErrEntryNotFound) {
 				err = nil
 			}
 		}

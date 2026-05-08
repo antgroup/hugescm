@@ -156,7 +156,7 @@ func TestObjectWriterCallsClose(t *testing.T) {
 	if calls != 1 {
 		t.Errorf("Expected %v, got %v", 1, calls)
 	}
-	if expected != got {
+	if !errors.Is(got, expected) {
 		t.Errorf("Expected %v, got %v", expected, got)
 	}
 }

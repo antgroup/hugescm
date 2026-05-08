@@ -12,7 +12,7 @@ import (
 func (d *database) doRemoveBranch(ctx context.Context, rid int64, branchName string) (*Branch, error) {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	var branchID int64
 	var oldRev string
@@ -48,7 +48,7 @@ func (d *database) doCreateBranch(ctx context.Context, rid int64, branchName str
 	now := time.Now()
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	result, err := tx.ExecContext(ctx, "insert into branches(name, rid, hash, created_at, updated_at) values(?,?,?,?,?)", branchName, rid, newRev, now, now)
 	if IsDupEntry(err) {
@@ -85,7 +85,7 @@ func (d *database) DoBranchUpdate(ctx context.Context, cmd *Command) (*Branch, e
 	}
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	var oldRev string
 	var protectionLevel int
@@ -121,7 +121,7 @@ func (d *database) DoBranchUpdate(ctx context.Context, cmd *Command) (*Branch, e
 func (d *database) doCreateTag(ctx context.Context, rid, uid int64, tagName string, newRev string, subject, description string) (*Tag, error) {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	now := time.Now()
 	result, err := d.ExecContext(ctx, "insert into tags(name, rid, uid, hash, subject, description, created_at, updated_at) values(?,?,?,?,?,?,?,?)",
@@ -152,7 +152,7 @@ func (d *database) doCreateTag(ctx context.Context, rid, uid int64, tagName stri
 func (d *database) doRemoveTag(ctx context.Context, rid int64, tagName string) (*Tag, error) {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	var t Tag
 	if err := tx.QueryRowContext(ctx, "select hash, subject, description, uid, created_at, updated_at from tags where rid = ? and name = ?", rid, tagName).Scan(
@@ -193,7 +193,7 @@ func (d *database) doTagUpdate(ctx context.Context, cmd *Command) (*Tag, error) 
 	}
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	var oldRev string
 	if err := tx.QueryRowContext(ctx, "select hash from tags where rid = ? and name = ?", cmd.RID, tagName).Scan(&oldRev); err != nil {
@@ -229,7 +229,7 @@ func (d *database) doTagUpdate(ctx context.Context, cmd *Command) (*Tag, error) 
 func (d *database) doCreateOrdinaryRef(ctx context.Context, rid int64, refname plumbing.ReferenceName, newRev string) (*Reference, error) {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	now := time.Now()
 	result, err := d.ExecContext(ctx, "insert into refs(name, rid, hash, created_at, updated_at) values(?,?,?,?,?)", refname, rid, newRev, now, now)
@@ -259,7 +259,7 @@ func (d *database) doCreateOrdinaryRef(ctx context.Context, rid int64, refname p
 func (d *database) doRemoveOrdinaryRef(ctx context.Context, rid int64, refname plumbing.ReferenceName) (*Reference, error) {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	var ref Reference
 	if err := tx.QueryRowContext(ctx, "select hash, created_at, updated_at from refs where rid = ? and name = ?",
@@ -299,7 +299,7 @@ func (d *database) doOrdinaryRefUpdate(ctx context.Context, cmd *Command) (*Refe
 
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	var oldRev string
 	if err := tx.QueryRowContext(ctx, "select hash from refs where rid = ? and name = ?", cmd.RID, cmd.ReferenceName).Scan(&oldRev); err != nil {

@@ -4,6 +4,7 @@
 package zeta
 
 import (
+	"errors"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -105,7 +106,7 @@ func ReferencesSort(rs References, order string) error {
 
 func (r *Repository) ReferenceExists(ctx context.Context, refname string) error {
 	_, err := r.Reference(plumbing.ReferenceName(refname))
-	if err == plumbing.ErrReferenceNotFound {
+	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		die_error("reference does not exist")
 		return err
 	}

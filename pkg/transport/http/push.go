@@ -21,7 +21,7 @@ func (c *client) Push(ctx context.Context, r io.Reader, cmd *transport.Command) 
 	pushURL := c.baseURL.JoinPath("reference", string(cmd.Refname))
 	var req *http.Request
 	if req, err = c.newRequest(ctx, "POST", pushURL.String(), r); err != nil {
-		return nil, fmt.Errorf("new request error: %v", err)
+		return nil, fmt.Errorf("new request error: %w", err)
 	}
 	req.Header.Set(ZETA_COMMAND_OLDREV, cmd.OldRev)
 	req.Header.Set(ZETA_COMMAND_NEWREV, cmd.NewRev)
@@ -35,7 +35,7 @@ func (c *client) Push(ctx context.Context, r io.Reader, cmd *transport.Command) 
 	}
 	var resp *http.Response
 	if resp, err = c.Do(req); err != nil {
-		return nil, fmt.Errorf("do request error: %v", err)
+		return nil, fmt.Errorf("do request error: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close() // nolint
@@ -83,7 +83,7 @@ func (c *client) BatchCheck(ctx context.Context, refname plumbing.ReferenceName,
 func (c *client) PutObject(ctx context.Context, refname plumbing.ReferenceName, oid plumbing.Hash, r io.Reader, size int64) error {
 	req, err := c.newRequest(ctx, "PUT", c.baseURL.JoinPath("reference", string(refname), "objects", oid.String()).String(), r)
 	if err != nil {
-		return fmt.Errorf("new request error: %v", err)
+		return fmt.Errorf("new request error: %w", err)
 	}
 	sizeS := strconv.FormatInt(size, 10)
 	req.Header.Set("Accept", ZETA_MIME_JSON_METADATA)
@@ -91,7 +91,7 @@ func (c *client) PutObject(ctx context.Context, refname plumbing.ReferenceName, 
 	req.Header.Set(ZETA_COMPRESSED_SIZE, sizeS)
 	resp, err := c.Do(req)
 	if err != nil {
-		return fmt.Errorf("do request error: %v", err)
+		return fmt.Errorf("do request error: %w", err)
 	}
 	defer resp.Body.Close() // nolint
 	if resp.StatusCode != http.StatusOK {

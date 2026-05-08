@@ -201,12 +201,12 @@ func StatsWriteTo(w io.Writer, fileStats []FileStat, isColorSupported bool) {
 	maxNameLen := 0
 	maxChangeLen := 0
 
-	scaleLinear := func(it, width, max uint) uint {
-		if it == 0 || max == 0 {
+	scaleLinear := func(it, width, maxVal uint) uint {
+		if it == 0 || maxVal == 0 {
 			return 0
 		}
 
-		return 1 + (it * (width - 1) / max)
+		return 1 + (it * (width - 1) / maxVal)
 	}
 
 	for _, fs := range fileStats {

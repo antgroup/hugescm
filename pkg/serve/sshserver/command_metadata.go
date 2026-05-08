@@ -54,7 +54,7 @@ func (c *Metadata) ParseArgs(args []string) error {
 		case 'N':
 			i, err := strconv.Atoi(nextArg)
 			if err != nil {
-				return fmt.Errorf("parse depth '%s' error: %v", nextArg, err)
+				return fmt.Errorf("parse depth '%s' error: %w", nextArg, err)
 			}
 			c.Depth = i
 		case 'H':
@@ -71,7 +71,7 @@ func (c *Metadata) ParseArgs(args []string) error {
 		case 'D':
 			i, err := strconv.Atoi(nextArg)
 			if err != nil {
-				return fmt.Errorf("parse depth '%s' error: %v", nextArg, err)
+				return fmt.Errorf("parse depth '%s' error: %w", nextArg, err)
 			}
 			c.Deepen = i
 		case 'S':

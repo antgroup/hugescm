@@ -39,7 +39,7 @@ func TestDecodeIndexV2InvalidFanout(t *testing.T) {
 
 	idx, err := DecodeIndex(bytes.NewReader(buf), sha1.New())
 
-	if ErrShortFanout != err {
+	if !errors.Is(err, ErrShortFanout) {
 		t.Errorf("Expected %v, got %v", ErrShortFanout, err)
 	}
 	if idx != nil {
@@ -61,7 +61,7 @@ func TestDecodeIndexV1(t *testing.T) {
 func TestDecodeIndexV1InvalidFanout(t *testing.T) {
 	idx, err := DecodeIndex(bytes.NewReader(make([]byte, indexFanoutWidth-1)), sha1.New())
 
-	if ErrShortFanout != err {
+	if !errors.Is(err, ErrShortFanout) {
 		t.Errorf("Expected %v, got %v", ErrShortFanout, err)
 	}
 	if idx != nil {

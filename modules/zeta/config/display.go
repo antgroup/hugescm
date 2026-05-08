@@ -4,6 +4,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -185,7 +186,7 @@ func Get(opts *GetOptions, zetaDir string, found bool) error {
 				return nil
 			}
 			found = true
-		case !os.IsNotExist(err) && err != ErrKeyNotFound:
+		case !os.IsNotExist(err) && !errors.Is(err, ErrKeyNotFound):
 			return err
 		}
 	}
@@ -198,7 +199,7 @@ func Get(opts *GetOptions, zetaDir string, found bool) error {
 			return nil
 		}
 		found = true
-	case !os.IsNotExist(err) && err != ErrKeyNotFound:
+	case !os.IsNotExist(err) && !errors.Is(err, ErrKeyNotFound):
 		return err
 	}
 	systemPath := configSystemPath()
@@ -206,7 +207,7 @@ func Get(opts *GetOptions, zetaDir string, found bool) error {
 	if err = getFromFile(opts, systemPath); err == nil {
 		return nil
 	}
-	if found && (os.IsNotExist(err) || err == ErrKeyNotFound) {
+	if found && (os.IsNotExist(err) || errors.Is(err, ErrKeyNotFound)) {
 		// get all key not found in system scope
 		return nil
 	}

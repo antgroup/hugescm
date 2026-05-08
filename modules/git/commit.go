@@ -239,7 +239,7 @@ func RevDivergingCount(ctx context.Context, repoPath string, from, to string) (i
 	if err != nil {
 		return 0, 0, err
 	}
-	counts := strings.Fields(string(line))
+	counts := strings.Fields(line)
 	if len(counts) != 2 {
 		return 0, 0, fmt.Errorf("invalid output from git rev-list --left-right: %v", line)
 	}

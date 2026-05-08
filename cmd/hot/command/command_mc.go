@@ -4,6 +4,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -78,7 +79,7 @@ func (c *Mc) Run(g *Globals) error {
 	if err == nil {
 		return c.cloneAndMigrate(g, uri)
 	}
-	if err != ErrLocalEndpoint {
+	if !errors.Is(err, ErrLocalEndpoint) {
 		fmt.Fprintf(os.Stderr, "bad remote '%s' %v\n", c.From, err)
 		return err
 	}

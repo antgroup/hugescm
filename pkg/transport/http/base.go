@@ -198,8 +198,8 @@ func checkUnauthorized(err error, showErr bool) bool {
 	if err == nil {
 		return false
 	}
-	ec, ok := err.(*ErrorCode)
-	if !ok {
+	var ec *ErrorCode
+	if !errors.As(err, &ec) {
 		return false
 	}
 	if ec.status == http.StatusUnauthorized {
@@ -215,7 +215,7 @@ func parseError(resp *http.Response) error {
 	contentType := resp.Header.Get("Content-Type")
 	m, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		return fmt.Errorf("parse mime '%s' error: %v", contentType, err)
+		return fmt.Errorf("parse mime '%s' error: %w", contentType, err)
 	}
 	if strings.HasPrefix(m, "application/json") {
 		ec := &ErrorCode{status: resp.StatusCode}

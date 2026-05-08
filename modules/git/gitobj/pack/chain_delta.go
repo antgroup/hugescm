@@ -129,9 +129,9 @@ func patch(base, delta []byte) ([]byte, error) {
 			//
 			// Copy the bytes and increment the read pointer
 			// forward.
-			dest = append(dest, delta[pos:int(pos)+c]...)
+			dest = append(dest, delta[pos:pos+c]...)
 
-			pos += int(c)
+			pos += c
 		} else {
 			// Otherwise, "c" is 0, and is an invalid delta
 			// instruction.

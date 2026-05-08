@@ -48,7 +48,7 @@ func NewRepo(ctx context.Context, repoPath, branch string, bare bool, shaFormat 
 		if strings.HasPrefix(message, invalidBranchNameErr) {
 			return ErrInvalidBranchName
 		}
-		return fmt.Errorf("initialize repo %s error %v stderr: %s", repoPath, err, message)
+		return fmt.Errorf("initialize repo %s error %w stderr: %s", repoPath, err, message)
 	}
 	return nil
 }

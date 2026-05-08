@@ -395,12 +395,12 @@ func OptionSeekTo(offset int64) Option {
 }
 
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
-func NewOptions(max int, options ...Option) *ProgressBar {
-	return NewOptions64(int64(max), options...)
+func NewOptions(maxVal int, options ...Option) *ProgressBar {
+	return NewOptions64(int64(maxVal), options...)
 }
 
 // NewOptions64 constructs a new instance of ProgressBar, with any options you specify
-func NewOptions64(max int64, options ...Option) *ProgressBar {
+func NewOptions64(maxVal int64, options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: state{
 			startTime:   time.Time{},
@@ -412,9 +412,9 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			theme:                 ThemeDefault,
 			iterationString:       "it",
 			width:                 40,
-			max:                   max,
+			max:                   maxVal,
 			throttleDuration:      0 * time.Nanosecond,
-			elapsedTime:           max == -1,
+			elapsedTime:           maxVal == -1,
 			predictTime:           true,
 			spinnerType:           9,
 			invisible:             false,
@@ -479,8 +479,8 @@ func getBasicState() state {
 
 // New returns a new ProgressBar
 // with the specified maximum
-func New(max int) *ProgressBar {
-	return NewOptions(max)
+func New(maxVal int) *ProgressBar {
+	return NewOptions(maxVal)
 }
 
 // DefaultBytes provides a progressbar to measure byte
@@ -534,13 +534,13 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 
 // Default provides a progressbar with recommended defaults.
 // Set max to -1 to use as a spinner.
-func Default(max int64, description ...string) *ProgressBar {
+func Default(maxVal int64, description ...string) *ProgressBar {
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
 	}
 	return NewOptions64(
-		max,
+		maxVal,
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
 		OptionSetWidth(10),
@@ -559,7 +559,7 @@ func Default(max int64, description ...string) *ProgressBar {
 
 // DefaultSilent is the same as Default, but does not output anywhere.
 // String() can be used to get the output instead.
-func DefaultSilent(max int64, description ...string) *ProgressBar {
+func DefaultSilent(maxVal int64, description ...string) *ProgressBar {
 	// Mostly the same bar as Default
 
 	desc := ""
@@ -567,7 +567,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 		desc = description[0]
 	}
 	return NewOptions64(
-		max,
+		maxVal,
 		OptionSetDescription(desc),
 		OptionSetWriter(io.Discard),
 		OptionSetWidth(10),
@@ -811,8 +811,8 @@ func (p *ProgressBar) Describe(description string) {
 
 // New64 returns a new ProgressBar
 // with the specified maximum
-func New64(max int64) *ProgressBar {
-	return NewOptions64(max)
+func New64(maxVal int64) *ProgressBar {
+	return NewOptions64(maxVal)
 }
 
 // GetMax returns the max of a bar
@@ -980,9 +980,9 @@ func (p *ProgressBar) lengthUnknown() {
 }
 
 // lengthKnown sets the progress bar to do not ignore the length
-func (p *ProgressBar) lengthKnown(max int64) {
+func (p *ProgressBar) lengthKnown(maxVal int64) {
 	p.config.ignoreLength = false
-	p.config.max = max
+	p.config.max = maxVal
 	p.config.predictTime = true
 }
 
@@ -1029,97 +1029,181 @@ func getStringWidth(c config, str string) int {
 }
 
 func renderProgressBar(c config, s *state) (int, error) {
-	var sb strings.Builder
+	averageRate := calculateAverageRate(s)
 
+	// build statistics string (iterations count, rate, etc.)
+	statsStr := buildStatsString(c, s, averageRate)
+
+	// calculate time brackets
+	leftBrac, rightBrac := calculateTimeBrackets(c, s, averageRate)
+
+	// calculate bar width for full width mode
+	calculateBarWidth(c, s, statsStr, leftBrac, rightBrac)
+
+	// calculate bar visual elements
+	barStart, barEnd, saucer, saucerHead := calculateBarElements(c, s)
+
+	// build the final progress bar string
+	repeatAmount := max(c.width-s.currentSaucerSize, 0)
+	str := buildProgressBarString(c, s, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead, repeatAmount, averageRate)
+
+	if c.colorCodes {
+		str = colorstring.Color(str)
+	}
+
+	s.rendered = str
+	return getStringWidth(c, str), writeString(c, str)
+}
+
+// calculateAverageRate calculates the average rate of progress
+func calculateAverageRate(s *state) float64 {
 	averageRate := average(s.counterLastTenRates)
 	if len(s.counterLastTenRates) == 0 || s.finished {
-		// if no average samples, or if finished,
-		// then average rate should be the total rate
 		if t := time.Since(s.startTime).Seconds(); t > 0 {
 			averageRate = s.currentBytes / t
 		} else {
 			averageRate = 0
 		}
 	}
+	return averageRate
+}
 
-	// show iteration count in "current/total" iterations format
-	if c.showIterationsCount {
-		if sb.Len() == 0 {
-			sb.WriteString("(")
-		} else {
-			sb.WriteString(", ")
-		}
-		if !c.ignoreLength {
-			if c.showBytes {
-				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
-				if currentSuffix == c.maxHumanizedSuffix {
-					if c.showTotalBytes {
-						fmt.Fprintf(&sb, "%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
-					} else {
-						fmt.Fprintf(&sb, "%s%s", currentHumanize, c.maxHumanizedSuffix)
-					}
-				} else if c.showTotalBytes {
-					fmt.Fprintf(&sb, "%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
-				} else {
-					fmt.Fprintf(&sb, "%s%s", currentHumanize, currentSuffix)
-				}
-			} else if c.showTotalBytes {
-				fmt.Fprintf(&sb, "%.0f/%d", s.currentBytes, c.max)
-			} else {
-				fmt.Fprintf(&sb, "%.0f", s.currentBytes)
-			}
-		} else {
-			if c.showBytes {
-				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
-				fmt.Fprintf(&sb, "%s%s", currentHumanize, currentSuffix)
-			} else if c.showTotalBytes {
-				fmt.Fprintf(&sb, "%.0f/%s", s.currentBytes, "-")
-			} else {
-				fmt.Fprintf(&sb, "%.0f", s.currentBytes)
-			}
-		}
-	}
+// buildStatsString builds the statistics string (iterations count, rate, etc.)
+func buildStatsString(c config, s *state, averageRate float64) string {
+	var sb strings.Builder
 
-	// show rolling average rate
-	if c.showBytes && averageRate > 0 && !math.IsInf(averageRate, 1) {
-		if sb.Len() == 0 {
-			sb.WriteString("(")
-		} else {
-			sb.WriteString(", ")
-		}
-		currentHumanize, currentSuffix := humanizeBytes(averageRate, c.useIECUnits)
-		fmt.Fprintf(&sb, "%s%s/s", currentHumanize, currentSuffix)
-	}
+	appendIterationCount(&sb, c, s)
+	appendByteRate(&sb, c, averageRate)
+	appendIterationsRate(&sb, c, averageRate)
 
-	// show iterations rate
-	if c.showIterationsPerSecond {
-		if sb.Len() == 0 {
-			sb.WriteString("(")
-		} else {
-			sb.WriteString(", ")
-		}
-		if averageRate > 1 {
-			fmt.Fprintf(&sb, "%0.0f %s/s", averageRate, c.iterationString)
-		} else if averageRate*60 > 1 {
-			fmt.Fprintf(&sb, "%0.0f %s/min", 60*averageRate, c.iterationString)
-		} else {
-			fmt.Fprintf(&sb, "%0.0f %s/hr", 3600*averageRate, c.iterationString)
-		}
-	}
 	if sb.Len() > 0 {
 		sb.WriteString(")")
 	}
+	return sb.String()
+}
 
-	leftBrac, rightBrac, saucer, saucerHead := "", "", "", ""
-	barStart, barEnd := c.theme.BarStart, c.theme.BarEnd
-	if s.finished && c.theme.BarEndFilled != "" {
-		barEnd = c.theme.BarEndFilled
+// appendIterationCount appends iteration count to the string builder
+func appendIterationCount(sb *strings.Builder, c config, s *state) {
+	if !c.showIterationsCount {
+		return
 	}
 
-	// show time prediction in "current/total" seconds format
+	appendSeparator(sb)
+
+	if !c.ignoreLength {
+		appendIterationCountWithTotal(sb, c, s)
+	} else {
+		appendIterationCountWithoutTotal(sb, c, s)
+	}
+}
+
+// appendSeparator appends opening parenthesis or comma separator
+func appendSeparator(sb *strings.Builder) {
+	if sb.Len() == 0 {
+		sb.WriteString("(")
+	} else {
+		sb.WriteString(", ")
+	}
+}
+
+// appendIterationCountWithTotal appends iteration count when total is known
+func appendIterationCountWithTotal(sb *strings.Builder, c config, s *state) {
+	if c.showBytes {
+		appendBytesCountWithTotal(sb, c, s)
+		return
+	}
+	appendNumericCountWithTotal(sb, c, s)
+}
+
+// appendBytesCountWithTotal appends bytes count when total is known
+func appendBytesCountWithTotal(sb *strings.Builder, c config, s *state) {
+	currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
+
+	// same unit suffix - use compact format
+	if currentSuffix == c.maxHumanizedSuffix {
+		appendSameUnitBytesCount(sb, c, currentHumanize)
+		return
+	}
+
+	// different unit suffix - show both suffixes
+	appendDifferentUnitBytesCount(sb, c, currentHumanize, currentSuffix)
+}
+
+// appendSameUnitBytesCount appends bytes count with same unit suffix
+func appendSameUnitBytesCount(sb *strings.Builder, c config, currentHumanize string) {
+	if c.showTotalBytes {
+		fmt.Fprintf(sb, "%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
+	} else {
+		fmt.Fprintf(sb, "%s%s", currentHumanize, c.maxHumanizedSuffix)
+	}
+}
+
+// appendDifferentUnitBytesCount appends bytes count with different unit suffixes
+func appendDifferentUnitBytesCount(sb *strings.Builder, c config, currentHumanize, currentSuffix string) {
+	if c.showTotalBytes {
+		fmt.Fprintf(sb, "%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
+	} else {
+		fmt.Fprintf(sb, "%s%s", currentHumanize, currentSuffix)
+	}
+}
+
+// appendNumericCountWithTotal appends numeric count when total is known
+func appendNumericCountWithTotal(sb *strings.Builder, c config, s *state) {
+	if c.showTotalBytes {
+		fmt.Fprintf(sb, "%.0f/%d", s.currentBytes, c.max)
+	} else {
+		fmt.Fprintf(sb, "%.0f", s.currentBytes)
+	}
+}
+
+// appendIterationCountWithoutTotal appends iteration count when total is unknown
+func appendIterationCountWithoutTotal(sb *strings.Builder, c config, s *state) {
+	if c.showBytes {
+		currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
+		fmt.Fprintf(sb, "%s%s", currentHumanize, currentSuffix)
+	} else if c.showTotalBytes {
+		fmt.Fprintf(sb, "%.0f/%s", s.currentBytes, "-")
+	} else {
+		fmt.Fprintf(sb, "%.0f", s.currentBytes)
+	}
+}
+
+// appendByteRate appends byte rate to the string builder
+func appendByteRate(sb *strings.Builder, c config, averageRate float64) {
+	if !c.showBytes || averageRate <= 0 || math.IsInf(averageRate, 1) {
+		return
+	}
+
+	appendSeparator(sb)
+	currentHumanize, currentSuffix := humanizeBytes(averageRate, c.useIECUnits)
+	fmt.Fprintf(sb, "%s%s/s", currentHumanize, currentSuffix)
+}
+
+// appendIterationsRate appends iterations rate to the string builder
+func appendIterationsRate(sb *strings.Builder, c config, averageRate float64) {
+	if !c.showIterationsPerSecond {
+		return
+	}
+
+	appendSeparator(sb)
+
+	switch {
+	case averageRate > 1:
+		fmt.Fprintf(sb, "%0.0f %s/s", averageRate, c.iterationString)
+	case averageRate*60 > 1:
+		fmt.Fprintf(sb, "%0.0f %s/min", 60*averageRate, c.iterationString)
+	default:
+		fmt.Fprintf(sb, "%0.0f %s/hr", 3600*averageRate, c.iterationString)
+	}
+}
+
+// calculateTimeBrackets calculates left and right time brackets
+func calculateTimeBrackets(c config, s *state, averageRate float64) (string, string) {
+	leftBrac, rightBrac := "", ""
+
 	switch {
 	case c.predictTime:
-		rightBracNum := (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second)
+		rightBracNum := time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second
 		if rightBracNum.Seconds() < 0 {
 			rightBracNum = 0 * time.Second
 		}
@@ -1129,176 +1213,188 @@ func renderProgressBar(c config, s *state) (int, error) {
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
 	}
 
-	if c.fullWidth && !c.ignoreLength {
-		width, err := termWidth()
-		if err != nil {
-			width = 80
-		}
+	return leftBrac, rightBrac
+}
 
-		if width > 120 {
-			width = 120
-		}
-
-		amend := 1 // an extra space at eol
-		switch {
-		case leftBrac != "" && rightBrac != "":
-			amend = 4 // space, square brackets and colon
-		case leftBrac != "" && rightBrac == "":
-			amend = 4 // space and square brackets and another space
-		case leftBrac == "" && rightBrac != "":
-			amend = 3 // space and square brackets
-		}
-		if c.showDescriptionAtLineEnd {
-			amend += 1 // another space
-		}
-
-		c.width = width - getStringWidth(c, c.description) - 10 - amend - sb.Len() - ansi.StringWidth(leftBrac) - ansi.StringWidth(rightBrac)
-		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
+// calculateBarWidth calculates the bar width for full width mode
+func calculateBarWidth(c config, s *state, statsStr, leftBrac, rightBrac string) {
+	if !c.fullWidth || c.ignoreLength {
+		return
 	}
+
+	width, err := termWidth()
+	if err != nil {
+		width = 80
+	}
+
+	if width > 120 {
+		width = 120
+	}
+
+	amend := calculateAmend(leftBrac, rightBrac, c.showDescriptionAtLineEnd)
+	// Use getStringWidth to properly handle ANSI codes and multi-byte characters
+	c.width = width - getStringWidth(c, c.description) - 10 - amend - getStringWidth(c, statsStr) - ansi.StringWidth(leftBrac) - ansi.StringWidth(rightBrac)
+	s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
+}
+
+// calculateAmend calculates the amend value for bar width calculation
+func calculateAmend(leftBrac, rightBrac string, showDescriptionAtLineEnd bool) int {
+	amend := 1 // an extra space at eol
+	switch {
+	case leftBrac != "" && rightBrac != "":
+		amend = 4 // space, square brackets and colon
+	case leftBrac != "" && rightBrac == "":
+		amend = 4 // space and square brackets and another space
+	case leftBrac == "" && rightBrac != "":
+		amend = 3 // space and square brackets
+	}
+	if showDescriptionAtLineEnd {
+		amend += 1 // another space
+	}
+	return amend
+}
+
+// calculateBarElements calculates bar visual elements
+func calculateBarElements(c config, s *state) (string, string, string, string) {
+	barStart, barEnd := c.theme.BarStart, c.theme.BarEnd
+	if s.finished && c.theme.BarEndFilled != "" {
+		barEnd = c.theme.BarEndFilled
+	}
+
 	if (s.currentSaucerSize > 0 || s.currentPercent > 0) && c.theme.BarStartFilled != "" {
 		barStart = c.theme.BarStartFilled
 	}
-	if s.currentSaucerSize > 0 {
-		if c.ignoreLength {
-			saucer = strings.Repeat(c.theme.SaucerPadding, s.currentSaucerSize-1)
-		} else {
-			saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
-		}
 
-		// Check if an alternate saucer head is set for animation
-		if c.theme.AltSaucerHead != "" && s.isAltSaucerHead {
-			saucerHead = c.theme.AltSaucerHead
-			s.isAltSaucerHead = false
-		} else if c.theme.SaucerHead == "" || s.currentSaucerSize == c.width {
-			// use the saucer for the saucer head if it hasn't been set
-			// to preserve backwards compatibility
-			saucerHead = c.theme.Saucer
-		} else {
-			saucerHead = c.theme.SaucerHead
-			s.isAltSaucerHead = true
-		}
+	saucer, saucerHead := calculateSaucer(c, s)
+	return barStart, barEnd, saucer, saucerHead
+}
+
+// calculateSaucer calculates saucer and saucer head
+func calculateSaucer(c config, s *state) (string, string) {
+	if s.currentSaucerSize <= 0 {
+		return "", ""
 	}
 
-	/*
-		Progress Bar format
-		Description % |------        |  (kb/s) (iteration count) (iteration rate) (predict time)
+	saucer := calculateSaucerBody(c, s)
+	saucerHead := calculateSaucerHead(c, s)
+	return saucer, saucerHead
+}
 
-		or if showDescriptionAtLineEnd is enabled
-		% |------        |  (kb/s) (iteration count) (iteration rate) (predict time) Description
-	*/
-
-	repeatAmount := max(c.width-s.currentSaucerSize, 0)
-
-	str := ""
-
+// calculateSaucerBody calculates the saucer body
+func calculateSaucerBody(c config, s *state) string {
 	if c.ignoreLength {
-		selectedSpinner := spinners[c.spinnerType]
-		if len(c.spinner) > 0 {
-			selectedSpinner = c.spinner
-		}
+		return strings.Repeat(c.theme.SaucerPadding, s.currentSaucerSize-1)
+	}
+	return strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
+}
 
-		var spinner string
-		if c.spinnerChangeInterval != 0 {
-			// if the spinner is changed according to an interval, calculate it
-			spinner = selectedSpinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Nanoseconds()/c.spinnerChangeInterval.Nanoseconds()), float64(len(selectedSpinner)))))]
-		} else {
-			// if the spinner is changed according to the number render was called
-			spinner = selectedSpinner[s.spinnerIdx]
-			s.spinnerIdx = (s.spinnerIdx + 1) % len(selectedSpinner)
-		}
-		if c.elapsedTime {
-			if c.showDescriptionAtLineEnd {
-				str = fmt.Sprintf("\r%s %s [%s] %s ",
-					spinner,
-					sb.String(),
-					leftBrac,
-					c.description)
-			} else {
-				str = fmt.Sprintf("\r%s %s %s [%s] ",
-					spinner,
-					c.description,
-					sb.String(),
-					leftBrac)
-			}
-		} else {
-			if c.showDescriptionAtLineEnd {
-				str = fmt.Sprintf("\r%s %s %s ",
-					spinner,
-					sb.String(),
-					c.description)
-			} else {
-				str = fmt.Sprintf("\r%s %s %s ",
-					spinner,
-					c.description,
-					sb.String())
-			}
-		}
-	} else if rightBrac == "" {
-		str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
-			s.currentPercent,
-			barStart,
-			saucer,
-			saucerHead,
-			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-			barEnd,
-			sb.String())
-		if (s.currentPercent == 100 && c.showElapsedTimeOnFinish) || c.elapsedTime {
-			str = fmt.Sprintf("%s [%s]", str, leftBrac)
-		}
+// calculateSaucerHead calculates the saucer head character
+func calculateSaucerHead(c config, s *state) string {
+	if c.theme.AltSaucerHead != "" && s.isAltSaucerHead {
+		s.isAltSaucerHead = false
+		return c.theme.AltSaucerHead
+	}
 
+	if c.theme.SaucerHead == "" || s.currentSaucerSize == c.width {
+		s.isAltSaucerHead = false
+		return c.theme.Saucer
+	}
+
+	s.isAltSaucerHead = true
+	return c.theme.SaucerHead
+}
+
+// buildProgressBarString builds the final progress bar string
+func buildProgressBarString(c config, s *state, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead string, repeatAmount int, averageRate float64) string {
+	if c.ignoreLength {
+		return buildSpinnerString(c, s, statsStr, leftBrac)
+	}
+
+	if rightBrac == "" {
+		return buildProgressBarWithoutTimePredict(c, s, statsStr, leftBrac, barStart, barEnd, saucer, saucerHead, repeatAmount)
+	}
+
+	return buildProgressBarWithTimePredict(c, s, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead, repeatAmount)
+}
+
+// buildSpinnerString builds spinner string for ignoreLength mode
+func buildSpinnerString(c config, s *state, statsStr, leftBrac string) string {
+	selectedSpinner := spinners[c.spinnerType]
+	if len(c.spinner) > 0 {
+		selectedSpinner = c.spinner
+	}
+
+	spinner := getSpinnerChar(c, s, selectedSpinner)
+
+	if c.elapsedTime {
 		if c.showDescriptionAtLineEnd {
-			str = fmt.Sprintf("\r%s %s ", str, c.description)
-		} else {
-			str = fmt.Sprintf("\r%s%s ", c.description, str)
+			return fmt.Sprintf("\r%s %s [%s] %s ", spinner, statsStr, leftBrac, c.description)
 		}
-	} else {
-		if s.currentPercent == 100 {
-			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
-				s.currentPercent,
-				barStart,
-				saucer,
-				saucerHead,
-				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-				barEnd,
-				sb.String())
-
-			if c.showElapsedTimeOnFinish {
-				str = fmt.Sprintf("%s [%s]", str, leftBrac)
-			}
-
-			if c.showDescriptionAtLineEnd {
-				str = fmt.Sprintf("\r%s %s", str, c.description)
-			} else {
-				str = fmt.Sprintf("\r%s%s", c.description, str)
-			}
-		} else {
-			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s [%s:%s]",
-				s.currentPercent,
-				barStart,
-				saucer,
-				saucerHead,
-				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-				barEnd,
-				sb.String(),
-				leftBrac,
-				rightBrac)
-
-			if c.showDescriptionAtLineEnd {
-				str = fmt.Sprintf("\r%s %s", str, c.description)
-			} else {
-				str = fmt.Sprintf("\r%s%s", c.description, str)
-			}
-		}
+		return fmt.Sprintf("\r%s %s %s [%s] ", spinner, c.description, statsStr, leftBrac)
 	}
 
-	if c.colorCodes {
-		// convert any color codes in the progress bar into the respective ANSI codes
-		str = colorstring.Color(str)
+	if c.showDescriptionAtLineEnd {
+		return fmt.Sprintf("\r%s %s %s ", spinner, statsStr, c.description)
+	}
+	return fmt.Sprintf("\r%s %s %s ", spinner, c.description, statsStr)
+}
+
+// getSpinnerChar gets the current spinner character
+func getSpinnerChar(c config, s *state, selectedSpinner []string) string {
+	if c.spinnerChangeInterval != 0 {
+		idx := int(math.Round(math.Mod(float64(time.Since(s.startTime).Nanoseconds()/c.spinnerChangeInterval.Nanoseconds()), float64(len(selectedSpinner)))))
+		return selectedSpinner[idx]
 	}
 
-	s.rendered = str
+	spinner := selectedSpinner[s.spinnerIdx]
+	s.spinnerIdx = (s.spinnerIdx + 1) % len(selectedSpinner)
+	return spinner
+}
 
-	return getStringWidth(c, str), writeString(c, str)
+// buildProgressBarWithoutTimePredict builds progress bar without time prediction
+func buildProgressBarWithoutTimePredict(c config, s *state, statsStr, leftBrac, barStart, barEnd, saucer, saucerHead string, repeatAmount int) string {
+	str := fmt.Sprintf("%4d%% %s%s%s%s%s %s",
+		s.currentPercent, barStart, saucer, saucerHead,
+		strings.Repeat(c.theme.SaucerPadding, repeatAmount), barEnd, statsStr)
+
+	if (s.currentPercent == 100 && c.showElapsedTimeOnFinish) || c.elapsedTime {
+		str = fmt.Sprintf("%s [%s]", str, leftBrac)
+	}
+
+	return addDescription(c, str)
+}
+
+// buildProgressBarWithTimePredict builds progress bar with time prediction
+func buildProgressBarWithTimePredict(c config, s *state, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead string, repeatAmount int) string {
+	if s.currentPercent == 100 {
+		return buildFinishedProgressBar(c, s, statsStr, leftBrac, barStart, barEnd, saucer, saucerHead, repeatAmount)
+	}
+
+	str := fmt.Sprintf("%4d%% %s%s%s%s%s %s [%s:%s]",
+		s.currentPercent, barStart, saucer, saucerHead,
+		strings.Repeat(c.theme.SaucerPadding, repeatAmount), barEnd, statsStr, leftBrac, rightBrac)
+	return addDescription(c, str)
+}
+
+// buildFinishedProgressBar builds progress bar when finished (100%)
+func buildFinishedProgressBar(c config, s *state, statsStr, leftBrac, barStart, barEnd, saucer, saucerHead string, repeatAmount int) string {
+	str := fmt.Sprintf("%4d%% %s%s%s%s%s %s",
+		s.currentPercent, barStart, saucer, saucerHead,
+		strings.Repeat(c.theme.SaucerPadding, repeatAmount), barEnd, statsStr)
+
+	if c.showElapsedTimeOnFinish {
+		str = fmt.Sprintf("%s [%s]", str, leftBrac)
+	}
+
+	return addDescription(c, str)
+}
+
+// addDescription adds description to the progress bar string
+func addDescription(c config, str string) string {
+	if c.showDescriptionAtLineEnd {
+		return fmt.Sprintf("\r%s %s", str, c.description)
+	}
+	return fmt.Sprintf("\r%s%s", c.description, str)
 }
 
 func clearProgressBar(c config, s state) error {

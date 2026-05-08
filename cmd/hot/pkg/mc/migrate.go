@@ -420,13 +420,13 @@ func (m *Migrator) reconstruct(ctx context.Context) error {
 	}
 	for _, ref := range refs {
 		if oid, err = m.rewriteOneRef(ref); err != nil {
-			return fmt.Errorf("rewrite one ref '%s' error: %v", ref.Name, err)
+			return fmt.Errorf("rewrite one ref '%s' error: %w", ref.Name, err)
 		}
 		if oid == nil {
 			continue
 		}
 		if err := u.Create(ref.Name, hex.EncodeToString(oid)); err != nil {
-			return fmt.Errorf("update-ref '%s' error: %v", ref.Name, err)
+			return fmt.Errorf("update-ref '%s' error: %w", ref.Name, err)
 		}
 		b.Add(1)
 	}

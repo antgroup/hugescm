@@ -73,7 +73,7 @@ func (fs *fileStorer) Store(sha []byte, r io.Reader) (n int64, err error) {
 		// collision).
 		_, err = io.Copy(io.Discard, r)
 		if err != nil {
-			return 0, fmt.Errorf("discard pre-existing object data: %s", err)
+			return 0, fmt.Errorf("discard pre-existing object data: %w", err)
 		}
 
 		return 0, nil

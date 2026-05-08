@@ -2,6 +2,7 @@ package merkletrie
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -61,7 +62,7 @@ func newDoubleIter(ctx context.Context, from, to noder.Noder, hashEqual noder.Eq
 }
 
 func turnEOFIntoNil(e error) error {
-	if e != nil && e != io.EOF {
+	if e != nil && !errors.Is(e, io.EOF) {
 		return e
 	}
 	return nil

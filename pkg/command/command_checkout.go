@@ -5,6 +5,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -105,7 +106,7 @@ func (c *Checkout) runCompatibleCheckout0(r *zeta.Repository, worktreeOnly bool,
 	w := r.Worktree()
 	if len(pathSpec) != 0 {
 		if err := w.DoPathCo(context.Background(), worktreeOnly, oid, pathSpec); err != nil {
-			if oid, ok := plumbing.ExtractNoSuchObject(err); ok {
+			if oid, ok := plumbing.AsNoSuchObjectErr(err); ok {
 				fmt.Fprintf(os.Stderr, "zeta checkout: missing object: %s\ntry download it: zeta cat -t %s\n", oid, oid)
 				return err
 			}
@@ -120,7 +121,7 @@ func (c *Checkout) runCompatibleCheckout0(r *zeta.Repository, worktreeOnly bool,
 		opts.Hash = oid
 	}
 	if err := w.Checkout(context.Background(), opts); err != nil {
-		if err != zeta.ErrAborting {
+		if !errors.Is(err, zeta.ErrAborting) {
 			target := string(branchName)
 			if len(target) == 0 {
 				target = oid.String()

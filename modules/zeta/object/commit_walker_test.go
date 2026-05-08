@@ -1,6 +1,7 @@
 package object
 
 import (
+	"errors"
 	"context"
 	"io"
 	"testing"
@@ -717,7 +718,7 @@ func TestCommitIterNextDirectly(t *testing.T) {
 
 	// EOF
 	c, err = iter.Next(ctx)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		t.Errorf("Expected io.EOF, got %v", err)
 	}
 	if c != nil {
@@ -776,7 +777,7 @@ func TestCommitWalkerErrorPropagation(t *testing.T) {
 		return expectedErr
 	})
 
-	if err != expectedErr {
+	if !errors.Is(err, expectedErr) {
 		t.Errorf("Expected %v, got %v", expectedErr, err)
 	}
 }

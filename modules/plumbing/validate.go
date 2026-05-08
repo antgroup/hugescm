@@ -2,6 +2,7 @@ package plumbing
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 )
 
@@ -14,8 +15,8 @@ func (err ErrBadReferenceName) Error() string {
 }
 
 func IsErrBadReferenceName(err error) bool {
-	_, ok := err.(*ErrBadReferenceName)
-	return ok
+	var e *ErrBadReferenceName
+	return errors.As(err, &e)
 }
 
 // https://github.com/git/git/blob/ae73b2c8f1da39c39335ee76a0f95857712c22a7/refs.c#L41-L290

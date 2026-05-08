@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -23,6 +24,6 @@ func NoSuchObject(oid []byte) error {
 
 // IsNoSuchObject indicates whether an error is a noSuchObject and is non-nil.
 func IsNoSuchObject(e error) bool {
-	err, ok := e.(*noSuchObject)
-	return ok && err != nil
+	var err *noSuchObject
+	return errors.As(e, &err) && err != nil
 }

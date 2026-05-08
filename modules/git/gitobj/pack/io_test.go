@@ -49,7 +49,7 @@ func TestOffsetReaderPropogatesErrors(t *testing.T) {
 
 	n, err := bo.Read(make([]byte, 1))
 
-	if expected != err {
+	if !errors.Is(err, expected) {
 		t.Errorf("Expected %v, got %v", expected, err)
 	}
 	if n != 0 {

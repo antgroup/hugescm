@@ -599,65 +599,108 @@ func (m *Model[T]) updateFocusedMatchHighlight() {
 
 	selectedIdx := m.vp.GetSelectedItemIdx()
 
-	// if only focus changed, update only the affected highlights
-	if m.previousFocusedMatchIdx >= 0 && m.previousFocusedMatchIdx < len(m.allMatches) &&
-		m.focusedMatchIdx != m.previousFocusedMatchIdx &&
-		len(m.allMatches) > 0 {
-		currentHighlights := m.vp.GetHighlights()
-		if len(currentHighlights) == len(m.allMatches) {
-			if m.previousFocusedMatchIdx < len(currentHighlights) {
-				currentHighlights[m.previousFocusedMatchIdx].ItemHighlight.Style = m.styles.Match.Unfocused
-			}
-			if m.focusedMatchIdx < len(currentHighlights) {
-				focusedItemIdx := m.allMatches[m.focusedMatchIdx].ItemIndex
-				if m.matchingItemsOnly {
-					if filteredIdx, ok := m.itemIdxToFilteredIdx[focusedItemIdx]; ok {
-						focusedItemIdx = filteredIdx
-					}
-				}
-				if m.vp.GetSelectionEnabled() && focusedItemIdx == selectedIdx {
-					currentHighlights[m.focusedMatchIdx].ItemHighlight.Style = m.styles.Match.FocusedIfSelected
-				} else {
-					currentHighlights[m.focusedMatchIdx].ItemHighlight.Style = m.styles.Match.Focused
-				}
-			}
-			m.vp.SetHighlights(currentHighlights)
+	// try to update only changed highlights if only focus changed
+	if m.canUpdateHighlightsIncrementally() {
+		if m.updateHighlightsIncrementally(selectedIdx) {
 			m.previousFocusedMatchIdx = m.focusedMatchIdx
 			return
 		}
 	}
 
 	// otherwise, rebuild all highlights
+	m.rebuildAllHighlights(selectedIdx)
+}
+
+// canUpdateHighlightsIncrementally checks if we can update highlights without rebuilding
+func (m *Model[T]) canUpdateHighlightsIncrementally() bool {
+	return m.previousFocusedMatchIdx >= 0 &&
+		m.previousFocusedMatchIdx < len(m.allMatches) &&
+		m.focusedMatchIdx != m.previousFocusedMatchIdx &&
+		len(m.allMatches) > 0
+}
+
+// updateHighlightsIncrementally updates only the changed highlights
+func (m *Model[T]) updateHighlightsIncrementally(selectedIdx int) bool {
+	currentHighlights := m.vp.GetHighlights()
+	if len(currentHighlights) != len(m.allMatches) {
+		return false
+	}
+
+	m.unfocusPreviousHighlight(currentHighlights)
+	m.focusCurrentHighlight(currentHighlights, selectedIdx)
+
+	m.vp.SetHighlights(currentHighlights)
+	return true
+}
+
+// unfocusPreviousHighlight sets the previous highlight to unfocused style
+func (m *Model[T]) unfocusPreviousHighlight(highlights []viewport.Highlight) {
+	if m.previousFocusedMatchIdx < len(highlights) {
+		highlights[m.previousFocusedMatchIdx].ItemHighlight.Style = m.styles.Match.Unfocused
+	}
+}
+
+// focusCurrentHighlight sets the current highlight to focused style
+func (m *Model[T]) focusCurrentHighlight(highlights []viewport.Highlight, selectedIdx int) {
+	if m.focusedMatchIdx >= len(highlights) {
+		return
+	}
+
+	focusedItemIdx := m.allMatches[m.focusedMatchIdx].ItemIndex
+	if m.matchingItemsOnly {
+		if filteredIdx, ok := m.itemIdxToFilteredIdx[focusedItemIdx]; ok {
+			focusedItemIdx = filteredIdx
+		}
+	}
+
+	if m.vp.GetSelectionEnabled() && focusedItemIdx == selectedIdx {
+		highlights[m.focusedMatchIdx].ItemHighlight.Style = m.styles.Match.FocusedIfSelected
+	} else {
+		highlights[m.focusedMatchIdx].ItemHighlight.Style = m.styles.Match.Focused
+	}
+}
+
+// rebuildAllHighlights reconstructs all highlights from scratch
+func (m *Model[T]) rebuildAllHighlights(selectedIdx int) {
 	highlights := make([]viewport.Highlight, len(m.allMatches))
 	for matchIdx, match := range m.allMatches {
-		itemIdx := match.ItemIndex
-		if m.matchingItemsOnly {
-			if filteredIdx, ok := m.itemIdxToFilteredIdx[itemIdx]; ok {
-				itemIdx = filteredIdx
-			} else {
-				panic("focused match item index not found in filtered items")
-			}
-		}
-		style := m.styles.Match.Unfocused
-		if matchIdx == m.focusedMatchIdx {
-			if m.vp.GetSelectionEnabled() && itemIdx == selectedIdx {
-				style = m.styles.Match.FocusedIfSelected
-			} else {
-				style = m.styles.Match.Focused
-			}
-		}
-		highlight := viewport.Highlight{
+		itemIdx := m.getItemIdxForMatch(match.ItemIndex)
+		style := m.getMatchStyle(matchIdx, itemIdx, selectedIdx)
+
+		highlights[matchIdx] = viewport.Highlight{
 			ItemIndex: itemIdx,
 			ItemHighlight: item.Highlight{
 				Style:                    style,
 				ByteRangeUnstyledContent: match.ItemHighlight.ByteRangeUnstyledContent,
 			},
 		}
-		highlights[matchIdx] = highlight
 	}
 
 	m.vp.SetHighlights(highlights)
 	m.previousFocusedMatchIdx = m.focusedMatchIdx
+}
+
+// getItemIdxForMatch converts match item index to display item index
+func (m *Model[T]) getItemIdxForMatch(itemIdx int) int {
+	if m.matchingItemsOnly {
+		if filteredIdx, ok := m.itemIdxToFilteredIdx[itemIdx]; ok {
+			return filteredIdx
+		}
+		panic("focused match item index not found in filtered items")
+	}
+	return itemIdx
+}
+
+// getMatchStyle returns the appropriate style for a match
+func (m *Model[T]) getMatchStyle(matchIdx, itemIdx, selectedIdx int) lipgloss.Style {
+	if matchIdx != m.focusedMatchIdx {
+		return m.styles.Match.Unfocused
+	}
+
+	if m.vp.GetSelectionEnabled() && itemIdx == selectedIdx {
+		return m.styles.Match.FocusedIfSelected
+	}
+	return m.styles.Match.Focused
 }
 
 func (m *Model[T]) renderFilterLine() string {

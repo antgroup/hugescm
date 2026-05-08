@@ -1,6 +1,7 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -12,11 +13,8 @@ type ErrNotExist struct {
 
 // IsErrNotExist if some error is ErrNotExist
 func IsErrNotExist(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrNotExist)
-	return ok
+	var e *ErrNotExist
+	return errors.As(err, &e)
 }
 
 func (err *ErrNotExist) Error() string {
@@ -52,11 +50,8 @@ func (e *ErrUnexpectedType) Error() string {
 }
 
 func IsErrUnexpectedType(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrUnexpectedType)
-	return ok
+	var e *ErrUnexpectedType
+	return errors.As(err, &e)
 }
 
 var (

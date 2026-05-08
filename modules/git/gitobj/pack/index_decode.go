@@ -100,7 +100,7 @@ func decodeIndexHeader(r io.ReaderAt, hash hash.Hash) (IndexVersion, error) {
 		case 2:
 			return &V2{hash: hash}, nil
 		}
-		return nil, &UnsupportedVersionErr{uint32(version)}
+		return nil, &UnsupportedVersionErr{version}
 	}
 	return &V1{hash: hash}, nil
 }

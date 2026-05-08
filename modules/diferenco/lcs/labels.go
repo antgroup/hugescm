@@ -43,7 +43,7 @@ func (t *label) get(d, k int) int {
 	if debug {
 		checkDK(d, k)
 	}
-	return int(t.vec[d][(d+k)/2])
+	return t.vec[d][(d+k)/2]
 }
 
 func newtriang(limit int) label {

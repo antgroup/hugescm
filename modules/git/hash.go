@@ -99,11 +99,11 @@ func HashFromEnv(ctx context.Context, environ []string, repoPath string) (string
 	}, "git", "show-ref")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", fmt.Errorf("unable create stdout pipe %v", err)
+		return "", fmt.Errorf("unable create stdout pipe %w", err)
 	}
 	defer out.Close() // nolint
 	if err := cmd.Start(); err != nil {
-		return "", fmt.Errorf("unable create stdout pipe %v", err)
+		return "", fmt.Errorf("unable create stdout pipe %w", err)
 	}
 	sr := bufio.NewScanner(out)
 	for sr.Scan() {
@@ -153,12 +153,12 @@ func HashEx(ctx context.Context, repoPath string) (*HashResult, error) {
 		"git", "show-ref")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("unable create stdout pipe %v", err)
+		return nil, fmt.Errorf("unable create stdout pipe %w", err)
 	}
 	defer out.Close() // nolint
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("unable create stdout pipe %v", err)
+		return nil, fmt.Errorf("unable create stdout pipe %w", err)
 	}
 
 	sr := bufio.NewScanner(out)

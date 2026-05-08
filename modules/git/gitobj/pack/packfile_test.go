@@ -227,7 +227,7 @@ func TestPackfileClosePropogatesCloseErrors(t *testing.T) {
 		r: &ReaderAtCloser{E: e},
 	}
 
-	if e != p.Close() {
+	if !errors.Is(p.Close(), e) {
 		t.Errorf("Expected %v, got %v", e, p.Close())
 	}
 }

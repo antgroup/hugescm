@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"unicode"
@@ -28,7 +29,7 @@ func (p *sshParser) raiseErrorf(tok *token, msg string, args ...any) {
 }
 
 func (p *sshParser) raiseError(tok *token, err error) {
-	if err == ErrDepthExceeded {
+	if errors.Is(err, ErrDepthExceeded) {
 		panic(err)
 	}
 	// TODO this format is ugly
@@ -142,7 +143,7 @@ func (p *sshParser) parseKV() sshParserStateFn {
 	lastHost := p.config.Hosts[len(p.config.Hosts)-1]
 	if strings.ToLower(key.val) == "include" {
 		inc, err := NewInclude(strings.Split(val.val, " "), hasEquals, key.Position, comment, p.system, p.ignoreMatchDirective, p.depth+1)
-		if err == ErrDepthExceeded {
+		if errors.Is(err, ErrDepthExceeded) {
 			p.raiseError(val, err)
 			return nil
 		}

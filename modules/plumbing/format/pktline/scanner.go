@@ -49,7 +49,7 @@ func (s *Scanner) Err() error {
 func (s *Scanner) Scan() bool {
 	var l int
 	l, s.err = s.readPayloadLen()
-	if s.err == io.EOF {
+	if errors.Is(s.err, io.EOF) {
 		s.err = nil
 		return false
 	}
@@ -80,7 +80,7 @@ func (s *Scanner) Bytes() []byte {
 // pkt-len and subtracting the pkt-len size.
 func (s *Scanner) readPayloadLen() (int, error) {
 	if _, err := io.ReadFull(s.r, s.len[:]); err != nil {
-		if err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.ErrUnexpectedEOF) {
 			return 0, ErrInvalidPktLen
 		}
 

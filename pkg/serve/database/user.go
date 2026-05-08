@@ -96,7 +96,7 @@ func (d *database) NewUser(ctx context.Context, u *User) (*User, error) {
 	now := time.Now()
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new tx error: %v", err)
+		return nil, fmt.Errorf("new tx error: %w", err)
 	}
 	result, err := tx.ExecContext(ctx, "insert into users(username,name,admin,email,type,password,signature_token,created_at,updated_at) values(?,?,?,?,?,?,?,?,?)",
 		u.UserName, u.Name, u.Administrator, u.Email, u.Type, u.Password, u.SignatureToken, now, now)

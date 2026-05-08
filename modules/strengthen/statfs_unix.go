@@ -26,9 +26,9 @@ func GetDiskFreeSpaceEx(mountPath string) (*DiskFreeSpace, error) {
 		return nil, err
 	}
 	ds := &DiskFreeSpace{
-		Total: uint64(st.Blocks) * uint64(st.Bsize),
-		Avail: uint64(st.Bavail) * uint64(st.Bsize),
-		Free:  uint64(st.Bfree) * uint64(st.Bsize),
+		Total: uint64(st.Blocks) * uint64(st.Bsize), //nolint:unconvert // uint32 -> uint64 for disk size calculation
+		Avail: uint64(st.Bavail) * uint64(st.Bsize), //nolint:unconvert // uint32 -> uint64 for disk size calculation
+		Free:  uint64(st.Bfree) * uint64(st.Bsize),  //nolint:unconvert // uint32 -> uint64 for disk size calculation
 	}
 	ds.Used = ds.Total - ds.Free
 	ds.FS = detectFileSystem(&st)

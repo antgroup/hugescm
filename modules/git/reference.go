@@ -210,7 +210,7 @@ func IsErrAlreadyLocked(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ErrAlreadyLocked)
+	var e *ErrAlreadyLocked; ok := errors.As(err, &e)
 	return ok
 }
 
@@ -267,7 +267,7 @@ func (err ErrReferenceBadName) Error() string {
 }
 
 func IsErrReferenceBadName(err error) bool {
-	_, ok := err.(*ErrReferenceBadName)
+	var e *ErrReferenceBadName; ok := errors.As(err, &e)
 	return ok
 }
 

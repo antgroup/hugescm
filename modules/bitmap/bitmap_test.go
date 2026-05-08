@@ -5,6 +5,7 @@ package bitmap
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -113,7 +114,7 @@ func TestBitmapSet(t *testing.T) {
 		t.Fatalf("Set error: %v", err)
 	}
 
-	if err := b.Set(0); err != ErrInvalidBitSet {
+	if err := b.Set(0); !errors.Is(err, ErrInvalidBitSet) {
 		t.Errorf("Expected ErrInvalidBitSet, got %v", err)
 	}
 
@@ -154,7 +155,7 @@ func TestBitmapSetOverflowL(t *testing.T) {
 
 	b := New()
 	b.w = make([]uint64, int(maxUint31)+2)
-	b.w[0] = uint64(newRlw(false, 1, uint32(maxUint31)))
+	b.w[0] = uint64(newRlw(false, 1, uint32(maxUint31))) //nolint:unconvert // rlw -> uint64 conversion is necessary
 	b.n = (int64(maxUint31) + 1) * 64
 	b.lastrlw = 0
 
@@ -167,8 +168,8 @@ func TestBitmapSetOverflowL(t *testing.T) {
 	if b.lastrlw != len(b.w)-2 {
 		t.Errorf("Expected %d, got %d", len(b.w)-2, b.lastrlw)
 	}
-	if b.w[0] != uint64(newRlw(false, 1, uint32(maxUint31))) {
-		t.Errorf("Expected %v, got %v", uint64(newRlw(false, 1, uint32(maxUint31))), b.w[0])
+	if b.w[0] != uint64(newRlw(false, 1, uint32(maxUint31))) { //nolint:unconvert // rlw -> uint64 conversion is necessary
+		t.Errorf("Expected %v, got %v", newRlw(false, 1, uint32(maxUint31)), b.w[0]) //nolint:unconvert // rlw -> uint64 conversion is necessary
 	}
 	if b.w[len(b.w)-2] != uint64(newRlw(false, 0, 1)) {
 		t.Errorf("Expected %v, got %v", uint64(newRlw(false, 0, 1)), b.w[len(b.w)-2])

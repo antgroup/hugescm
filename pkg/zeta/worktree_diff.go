@@ -369,7 +369,7 @@ func (w *Worktree) between(ctx context.Context, opts *DiffOptions) error {
 	trace.DbgPrint("from %s to %s", opts.From, opts.To)
 	oldTree, err := w.parseTreeExhaustive(ctx, opts.From)
 	if err != nil {
-		if err == ErrNotTree {
+		if errors.Is(err, ErrNotTree) {
 			return w.blobDiff(ctx, opts)
 		}
 		fmt.Fprintf(os.Stderr, "resolve tree: %s error: %v\n", opts.From, err)

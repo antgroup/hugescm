@@ -229,7 +229,7 @@ func (r *Reference) Strings() [2]string {
 }
 
 func (r *Reference) String() string {
-	ref := ""
+	var ref string
 	switch r.Type() {
 	case HashReference:
 		ref = r.h.String()

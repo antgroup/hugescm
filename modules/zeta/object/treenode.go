@@ -4,6 +4,7 @@
 package object
 
 import (
+	"errors"
 	"context"
 	"io"
 	"runtime"
@@ -165,7 +166,7 @@ func transformChildren(ctx context.Context, t *Tree, m noder.Matcher, conflictDe
 	// don't defer walker.Close() for efficiency reasons.
 	for {
 		_, e, err = walker.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

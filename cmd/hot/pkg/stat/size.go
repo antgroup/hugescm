@@ -61,7 +61,7 @@ func (e *SizeExecutor) Run(ctx context.Context, repoPath string, extract bool) e
 	br := bufio.NewReader(reader)
 	for {
 		line, err := br.ReadString('\n')
-		if err == io.EOF { // always endswith '\n'
+		if errors.Is(err, io.EOF) { // always endswith '\n'
 			break
 		}
 		if err != nil {

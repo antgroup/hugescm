@@ -26,11 +26,8 @@ func (err *ErrMismatchedObject) Error() string {
 }
 
 func IsErrMismatchedObject(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrMismatchedObject)
-	return ok
+	var e *ErrMismatchedObject
+	return errors.As(err, &e)
 }
 
 type ErrNotExist struct {
@@ -47,15 +44,12 @@ func NewErrNotExist(t string, oid string) error {
 }
 
 func IsErrNotExist(err error) bool {
-	if err == nil {
-		return false
-	}
-	if err == ErrMistakeHashText {
+	if errors.Is(err, ErrMistakeHashText) {
 		// NOT FOUND
 		return true
 	}
-	_, ok := err.(*ErrNotExist)
-	return ok
+	var e *ErrNotExist
+	return errors.As(err, &e)
 }
 
 type ErrStatusCode struct {
@@ -68,11 +62,8 @@ func (err *ErrStatusCode) Error() string {
 }
 
 func IsErrStatusCode(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrStatusCode)
-	return ok
+	var e *ErrStatusCode
+	return errors.As(err, &e)
 }
 
 func NewErrStatusCode(statusCode int, format string, a ...any) error {
@@ -89,9 +80,6 @@ func (err *ErrExitCode) Error() string {
 }
 
 func IsErrExitCode(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrExitCode)
-	return ok
+	var e *ErrExitCode
+	return errors.As(err, &e)
 }

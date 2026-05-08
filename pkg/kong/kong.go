@@ -230,7 +230,7 @@ func (k *Kong) interpolate(node *Node) (err error) {
 			vars := stack.push(node.Vars())
 			node.Help, err = interpolate(node.Help, vars, nil)
 			if err != nil {
-				return fmt.Errorf("help for %s: %s", node.Path(), err)
+				return fmt.Errorf("help for %s: %w", node.Path(), err)
 			}
 			err = next(nil)
 			stack.pop()
@@ -255,19 +255,19 @@ func (k *Kong) interpolateValue(value *Value, vars Vars) (err error) {
 	initialVars := vars.CloneWith(nil)
 	for n, v := range initialVars {
 		if vars[n], err = interpolate(v, initialVars, nil); err != nil {
-			return fmt.Errorf("variable %s for %s: %s", n, value.Summary(), err)
+			return fmt.Errorf("variable %s for %s: %w", n, value.Summary(), err)
 		}
 	}
 
 	if value.Enum, err = interpolate(value.Enum, vars, nil); err != nil {
-		return fmt.Errorf("enum for %s: %s", value.Summary(), err)
+		return fmt.Errorf("enum for %s: %w", value.Summary(), err)
 	}
 
 	if value.Default, err = interpolate(value.Default, vars, nil); err != nil {
-		return fmt.Errorf("default value for %s: %s", value.Summary(), err)
+		return fmt.Errorf("default value for %s: %w", value.Summary(), err)
 	}
 	if value.Enum, err = interpolate(value.Enum, vars, nil); err != nil {
-		return fmt.Errorf("enum value for %s: %s", value.Summary(), err)
+		return fmt.Errorf("enum value for %s: %w", value.Summary(), err)
 	}
 	updatedVars := map[string]string{
 		"default": value.Default,
@@ -276,7 +276,7 @@ func (k *Kong) interpolateValue(value *Value, vars Vars) (err error) {
 	if value.Flag != nil {
 		for i, env := range value.Flag.Envs {
 			if value.Flag.Envs[i], err = interpolate(env, vars, updatedVars); err != nil {
-				return fmt.Errorf("env value for %s: %s", value.Summary(), err)
+				return fmt.Errorf("env value for %s: %w", value.Summary(), err)
 			}
 		}
 		value.Tag.Envs = value.Flag.Envs
@@ -287,12 +287,12 @@ func (k *Kong) interpolateValue(value *Value, vars Vars) (err error) {
 
 		value.Flag.PlaceHolder, err = interpolate(value.Flag.PlaceHolder, vars, updatedVars)
 		if err != nil {
-			return fmt.Errorf("placeholder value for %s: %s", value.Summary(), err)
+			return fmt.Errorf("placeholder value for %s: %w", value.Summary(), err)
 		}
 	}
 	value.Help, err = interpolate(value.Help, vars, updatedVars)
 	if err != nil {
-		return fmt.Errorf("help for %s: %s", value.Summary(), err)
+		return fmt.Errorf("help for %s: %w", value.Summary(), err)
 	}
 	return nil
 }

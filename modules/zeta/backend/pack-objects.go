@@ -176,7 +176,7 @@ func pruneObjects0(ctx context.Context, fo *fileStorer, objects packedObjects, b
 		if po == nil {
 			continue
 		}
-		if err := fo.PruneObject(ctx, oid); err == context.Canceled {
+		if err := fo.PruneObject(ctx, oid); errors.Is(err, context.Canceled) {
 			break
 		}
 		count++

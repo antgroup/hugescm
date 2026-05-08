@@ -29,22 +29,15 @@ func NoSuchObject(oid Hash) error {
 
 // IsNoSuchObject indicates whether an error is a noSuchObject and is non-nil.
 func IsNoSuchObject(e error) bool {
-	if e == nil {
-		return false
-	}
-	err, ok := e.(*noSuchObject)
-	return ok && err != nil
+	var err *noSuchObject
+	return errors.As(e, &err)
 }
 
-func ExtractNoSuchObject(e error) (Hash, bool) {
-	if e == nil {
-		return ZeroHash, false
+func AsNoSuchObjectErr(e error) (Hash, bool) {
+	if e, ok := errors.AsType[*noSuchObject](e); ok {
+		return e.oid, true
 	}
-	err, ok := e.(*noSuchObject)
-	if !ok {
-		return ZeroHash, false
-	}
-	return err.oid, true
+	return ZeroHash, false
 }
 
 type ErrResourceLocked struct {
@@ -60,7 +53,8 @@ func IsErrResourceLocked(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ErrResourceLocked)
+	var e *ErrResourceLocked
+	ok := errors.As(err, &e)
 	return ok
 }
 
@@ -82,6 +76,6 @@ func IsErrRevNotFound(e error) bool {
 	if e == nil {
 		return false
 	}
-	err, ok := e.(*ErrRevNotFound)
-	return ok && err != nil
+	var err *ErrRevNotFound
+	return errors.As(e, &err) && err != nil
 }

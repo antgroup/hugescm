@@ -1,6 +1,7 @@
 package filemode
 
 import (
+	"errors"
 	"encoding/binary"
 	"fmt"
 	"os"
@@ -192,7 +193,7 @@ func IsErrMalformedMode(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ErrMalformedMode)
+	var e *ErrMalformedMode; ok := errors.As(err, &e)
 	return ok
 }
 

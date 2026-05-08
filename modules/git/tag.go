@@ -106,7 +106,7 @@ func (t *Tag) Decode(hash string, reader io.Reader, size int64) error {
 		if !ok {
 			break
 		}
-		switch string(field) {
+		switch field {
 		case "object":
 			t.Object = value
 		case "type":

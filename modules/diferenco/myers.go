@@ -56,7 +56,7 @@ func myersCompute[E comparable](ctx context.Context, seq1 []E, P1 int, seq2 []E,
 	} else {
 		paths.set(0, newSnakePath(nil, 0, 0, V.get(0)))
 	}
-	k := 0
+	var k int
 outer:
 	for {
 		select {

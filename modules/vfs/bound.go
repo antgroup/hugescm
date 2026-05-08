@@ -235,11 +235,8 @@ func (e *ErrNotInsideBaseDir) Error() string {
 }
 
 func IsErrNotInsideBaseDir(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrNotInsideBaseDir)
-	return ok
+	var e *ErrNotInsideBaseDir
+	return errors.As(err, &e)
 }
 
 func insidePathOf(c, p string) bool {

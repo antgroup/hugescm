@@ -89,8 +89,8 @@ func IsErrUnknownRevision(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ErrUnknownRevision)
-	return ok
+	var e *ErrUnknownRevision
+	return errors.As(err, &e)
 }
 
 func (r *Repository) resolveRevision(ctx context.Context, revision string) (plumbing.Hash, error) {

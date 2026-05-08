@@ -4,6 +4,7 @@
 package command
 
 import (
+	"errors"
 	"context"
 
 	"github.com/antgroup/hugescm/pkg/zeta"
@@ -40,10 +41,10 @@ func (c *MergeTree) Run(g *Globals) error {
 		Z:                       c.Z,
 		JSON:                    c.JSON,
 	})
-	if err == zeta.ErrHasConflicts {
+	if errors.Is(err, zeta.ErrHasConflicts) {
 		return &zeta.ErrExitCode{ExitCode: 1, Message: err.Error()}
 	}
-	if err == zeta.ErrUnrelatedHistories {
+	if errors.Is(err, zeta.ErrUnrelatedHistories) {
 		return &zeta.ErrExitCode{ExitCode: 2, Message: err.Error()}
 	}
 	if err != nil {

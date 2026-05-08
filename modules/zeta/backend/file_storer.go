@@ -4,6 +4,7 @@
 package backend
 
 import (
+	"errors"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -243,12 +244,12 @@ func finalizeObject(oldPath string, newPath string) (err error) {
 //	N bytes raw or compressed data
 func (fo *fileStorer) HashTo(ctx context.Context, r io.Reader, size int64) (oid plumbing.Hash, err error) {
 	var payload []byte
-	if payload, err = streamio.ReadMax(r, mimePacketSize); err != nil && err != io.EOF {
-		return oid, fmt.Errorf("ReadFull error: %v", err)
+	if payload, err = streamio.ReadMax(r, mimePacketSize); err != nil && !errors.Is(err, io.EOF) {
+		return oid, fmt.Errorf("ReadFull error: %w", err)
 	}
 	compressed := isBinaryPayload(payload)
 	var contents io.Reader = bytes.NewReader(payload)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		contents = io.MultiReader(contents, r)
 	}
 	hasher := plumbing.NewHasher()

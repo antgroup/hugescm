@@ -206,7 +206,7 @@ func main() {
 		Protocol: "https",
 		Server:   "github.com",
 	})
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		fmt.Printf("❌ Expected ErrNotFound, got: %v\n", err)
 		os.Exit(1)
 	}

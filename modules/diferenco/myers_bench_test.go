@@ -21,15 +21,15 @@ func myersFast[E comparable](ctx context.Context, a []E, P1 int, b []E, P2 int) 
 		return []Change{{P1: P1, P2: P2, Del: n}}, nil
 	}
 
-	max := n + m
-	offset := max
+	mx := n + m
+	offset := mx
 
-	V := make([]int, 2*max+1)
-	trace := make([][]int, 0, max+1)
+	V := make([]int, 2*mx+1)
+	trace := make([][]int, 0, mx+1)
 
 	V[offset] = 0
 
-	for d := 0; d <= max; d++ {
+	for d := 0; d <= mx; d++ {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -71,8 +71,8 @@ func buildScriptFast[E comparable](trace [][]int, a, b []E, P1, P2 int) ([]Chang
 	x := len(a)
 	y := len(b)
 
-	max := len(a) + len(b)
-	offset := max
+	maxVal := len(a) + len(b)
+	offset := maxVal
 
 	changes := make([]Change, 0, 16)
 
@@ -176,8 +176,7 @@ func BenchmarkMyersOriginal(b *testing.B) {
 		c[idx] = randStringBench(20)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = myersCompute(ctx, a, 0, c, 0)
 	}
 }
@@ -193,8 +192,7 @@ func BenchmarkMyersFast(b *testing.B) {
 		c[idx] = randStringBench(20)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = myersFast(ctx, a, 0, c, 0)
 	}
 }
@@ -209,8 +207,7 @@ func BenchmarkMyersOriginalLarge(b *testing.B) {
 		c[idx] = randStringBench(20)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = myersCompute(ctx, a, 0, c, 0)
 	}
 }

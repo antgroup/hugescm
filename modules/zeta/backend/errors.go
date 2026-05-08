@@ -4,6 +4,7 @@
 package backend
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -19,11 +20,8 @@ func (e *ErrMismatchedObjectType) Error() string {
 }
 
 func IsErrMismatchedObjectType(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrMismatchedObjectType)
-	return ok
+	var e *ErrMismatchedObjectType
+	return errors.As(err, &e)
 }
 
 func NewErrMismatchedObjectType(oid plumbing.Hash, t string) error {

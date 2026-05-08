@@ -47,7 +47,7 @@ func (c *Objects) ParseArgs(args []string) error {
 		case 'o':
 			offset, err := strconv.ParseInt(nextArg, 10, 64)
 			if err != nil {
-				return fmt.Errorf("parse '--offset': %s error: %s", nextArg, err)
+				return fmt.Errorf("parse '--offset': %s error: %w", nextArg, err)
 			}
 			if offset < 0 {
 				return errors.New("--offset cannot be less than 0")

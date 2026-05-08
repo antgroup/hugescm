@@ -4,6 +4,7 @@
 package oss
 
 import (
+	"errors"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -53,7 +54,7 @@ func (e *ServiceError) Error() string {
 
 func readResponseBody(resp *http.Response) ([]byte, error) {
 	out, err := io.ReadAll(resp.Body)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		err = nil
 	}
 	return out, err

@@ -92,10 +92,10 @@ func (l *Lexer) Split() ([]string, error) {
 		if token != "" {
 			result = append(result, token)
 		}
-
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
-		} else if err != nil {
+		}
+		if err != nil {
 			return result, err
 		}
 	}

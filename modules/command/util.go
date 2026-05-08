@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"os/exec"
 
 	"github.com/antgroup/hugescm/modules/strengthen"
@@ -14,7 +15,7 @@ func FromError(err error) string {
 	if err == nil {
 		return ""
 	}
-	if e, ok := err.(*exec.ExitError); ok {
+	var e *exec.ExitError; if errors.As(err, &e) {
 		if len(e.Stderr) > 0 {
 			return strengthen.ByteCat([]byte(e.Error()), []byte(". stderr: "), e.Stderr)
 		}
@@ -27,7 +28,7 @@ func FromErrorCode(err error) int {
 	if err == nil {
 		return 0
 	}
-	if e, ok := err.(*exec.ExitError); ok {
+	var e *exec.ExitError; if errors.As(err, &e) {
 		return e.ExitCode()
 	}
 	return -1

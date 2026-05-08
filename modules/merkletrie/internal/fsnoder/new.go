@@ -82,7 +82,7 @@ func decodeChildren(data []byte) ([]noder.Noder, error) {
 	for i, c := range chunks {
 		ret[i], err = decodeChild(c)
 		if err != nil {
-			return nil, fmt.Errorf("malformed element %d (%s): %s", i, c, err)
+			return nil, fmt.Errorf("malformed element %d (%s): %w", i, c, err)
 		}
 	}
 

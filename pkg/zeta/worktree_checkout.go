@@ -191,7 +191,7 @@ func (w *Worktree) checkout(ctx context.Context, opts *CheckoutOptions, bar Prog
 		return w.checkoutSlow(ctx, opts, bar)
 	}
 	current, err := w.Current()
-	if err == plumbing.ErrReferenceNotFound {
+	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return w.checkoutSlow(ctx, opts, bar)
 	}
 	if err != nil {

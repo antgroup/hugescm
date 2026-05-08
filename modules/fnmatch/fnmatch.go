@@ -29,9 +29,9 @@ const (
 )
 
 func unpackRune(str *string) rune {
-	rune, size := utf8.DecodeRuneInString(*str)
+	r, size := utf8.DecodeRuneInString(*str)
 	*str = (*str)[size:]
-	return rune
+	return r
 }
 
 // Matches the pattern against the string, with the given flags,

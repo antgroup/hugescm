@@ -4,6 +4,7 @@
 package migrate
 
 import (
+	"errors"
 	"bufio"
 	"bytes"
 	"context"
@@ -324,7 +325,7 @@ func (m *Migrator) migrateBlobs(ctx context.Context) error {
 	}
 	for {
 		line, err := br.ReadString('\n')
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -562,13 +563,13 @@ func (m *Migrator) rewriteRefs(ctx context.Context, ur *backend.Unpacker) error 
 	var oid plumbing.Hash
 	for _, ref := range refs {
 		if oid, err = m.rewriteOneRef(ur, ref); err != nil {
-			return fmt.Errorf("rewrite one ref '%s' error: %v", ref.Name, err)
+			return fmt.Errorf("rewrite one ref '%s' error: %w", ref.Name, err)
 		}
 		if oid.IsZero() {
 			continue
 		}
 		if err := rdb.Update(plumbing.NewHashReference(plumbing.ReferenceName(ref.Name), oid), nil); err != nil {
-			return fmt.Errorf("zeta update-ref '%s' error: %v", ref.Name, err)
+			return fmt.Errorf("zeta update-ref '%s' error: %w", ref.Name, err)
 		}
 		bar.Add(1)
 	}

@@ -4,6 +4,7 @@
 package odb
 
 import (
+	"errors"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -248,7 +249,7 @@ func readSizeReader(sr backend.SizeReader) ([]byte, error) {
 		n, err := sr.Read(b[len(b):cap(b)])
 		b = b[:len(b)+n]
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				err = nil
 			}
 			return b, err

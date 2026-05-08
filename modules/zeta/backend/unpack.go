@@ -4,6 +4,7 @@
 package backend
 
 import (
+	"errors"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -33,12 +34,12 @@ func (u *Unpacker) method(compressed bool) CompressMethod {
 
 func (u *Unpacker) HashTo(r io.Reader, size int64, modification int64) (oid plumbing.Hash, err error) {
 	payload, err := streamio.ReadMax(r, mimePacketSize)
-	if err != nil && err != io.EOF {
-		return oid, fmt.Errorf("ReadFull error: %v", err)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return oid, fmt.Errorf("ReadFull error: %w", err)
 	}
 	compressed := isBinaryPayload(payload)
 	var contents io.Reader = bytes.NewReader(payload)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		contents = io.MultiReader(contents, r)
 	}
 	hasher := plumbing.NewHasher()

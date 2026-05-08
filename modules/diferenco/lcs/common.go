@@ -144,15 +144,15 @@ func overlap(exist, prop diag) (direction, diag) {
 func (lcs lcs) prepend(x, y int) lcs {
 	if len(lcs) > 0 {
 		d := &lcs[0]
-		if int(d.X) == x+1 && int(d.Y) == y+1 {
+		if d.X == x+1 && d.Y == y+1 {
 			// extend the diagonal down and to the left
-			d.X, d.Y = int(x), int(y)
+			d.X, d.Y = x, y
 			d.Len++
 			return lcs
 		}
 	}
 
-	r := diag{X: int(x), Y: int(y), Len: 1}
+	r := diag{X: x, Y: y, Len: 1}
 	lcs = append([]diag{r}, lcs...)
 	return lcs
 }

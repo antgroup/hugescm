@@ -41,11 +41,8 @@ func (e *ErrDirectoryNotFound) Error() string {
 }
 
 func IsErrDirectoryNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrDirectoryNotFound)
-	return ok
+	var e *ErrDirectoryNotFound
+	return errors.As(err, &e)
 }
 
 type ErrEntryNotFound struct {
@@ -57,11 +54,8 @@ func (e *ErrEntryNotFound) Error() string {
 }
 
 func IsErrEntryNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	_, ok := err.(*ErrEntryNotFound)
-	return ok
+	var e *ErrEntryNotFound
+	return errors.As(err, &e)
 }
 
 // TreeEntry represents a file
@@ -483,7 +477,7 @@ func (t *Tree) Decode(reader Reader) error {
 	for {
 		str, err := r.ReadString(' ')
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
@@ -497,7 +491,7 @@ func (t *Tree) Decode(reader Reader) error {
 		}
 
 		if str, err = r.ReadString(' '); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
@@ -509,7 +503,7 @@ func (t *Tree) Decode(reader Reader) error {
 		}
 
 		name, err := r.ReadString(0)
-		if err != nil && err != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			return err
 		}
 
@@ -655,7 +649,7 @@ func (w *TreeWalker) Next(ctx context.Context) (name string, entry *TreeEntry, e
 		}
 
 		entry, err = w.stack[current].Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// Finished with the current tree, move back up to the parent
 			w.stack = w.stack[:current]
 			w.base, _ = path.Split(w.base)

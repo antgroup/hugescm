@@ -5,6 +5,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -42,8 +43,7 @@ func (c *Commit) Run(g *Globals) error {
 	}
 	oid, err := w.Commit(context.Background(), opts)
 	if err != nil {
-		switch err {
-		case zeta.ErrMissingAuthor:
+		if errors.Is(err, zeta.ErrMissingAuthor) {
 			fmt.Fprintf(os.Stderr, `zeta commit: %s
 %s
 
@@ -60,15 +60,15 @@ func (c *Commit) Run(g *Globals) error {
 				W("to set your account's default identity."),
 				W("Omit --global to set the identity only in this repository."))
 			return err
-		case zeta.ErrNotAllowEmptyMessage:
+		} else if errors.Is(err, zeta.ErrNotAllowEmptyMessage) {
 			fmt.Fprintln(os.Stderr, W("Aborting commit due to empty commit message."))
 			return err
-		case zeta.ErrNoChanges:
+		} else if errors.Is(err, zeta.ErrNoChanges) {
 			fmt.Fprintln(os.Stderr, W("nothing to commit, working tree clean"))
 			return err
-		case zeta.ErrNothingToCommit:
+		} else if errors.Is(err, zeta.ErrNothingToCommit) {
 			return err
-		default:
+		} else {
 			fmt.Fprintf(os.Stderr, "zeta commit error: %v\n", err)
 			return err
 		}

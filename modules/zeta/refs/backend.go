@@ -103,7 +103,7 @@ func forEachReferenceIter(iter bareReferenceIterator, cb func(*plumbing.Referenc
 	for {
 		obj, err := iter.Next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 
@@ -111,7 +111,7 @@ func forEachReferenceIter(iter bareReferenceIterator, cb func(*plumbing.Referenc
 		}
 
 		if err := cb(obj); err != nil {
-			if err == plumbing.ErrStop {
+			if errors.Is(err, plumbing.ErrStop) {
 				return nil
 			}
 

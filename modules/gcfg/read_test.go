@@ -440,7 +440,7 @@ func TestReadWithCallback(t *testing.T) {
 		return nil
 	}
 	err = ReadWithCallback(bytes.NewReader([]byte(text)), cbWithError)
-	if err != expectedErr {
+	if !errors.Is(err, expectedErr) {
 		t.Errorf("expected error: %+v", err)
 	}
 	if !reflect.DeepEqual(results, expected[:3]) {

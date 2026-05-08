@@ -88,7 +88,7 @@ func GetReferences(ctx context.Context, repoPath string, m func(*Reference) bool
 	stderr := command.NewStderr()
 	reader, err := git.NewReader(ctx, &command.RunOpts{RepoPath: repoPath, Stderr: stderr}, "for-each-ref", "--format", strings.Join(statReferencesFormatFields, "%00"))
 	if err != nil {
-		return nil, fmt.Errorf("run git for-each-ref error: %v", err)
+		return nil, fmt.Errorf("run git for-each-ref error: %w", err)
 	}
 	defer reader.Close() // nolint
 	references := make([]*Reference, 0, 100)

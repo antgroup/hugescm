@@ -126,7 +126,7 @@ func (c *Commit) Decode(hash hash.Hash, from io.Reader, size int64) (n int, err 
 				}
 				id, err := hex.DecodeString(value)
 				if err != nil {
-					return n, fmt.Errorf("error parsing tree: %s", err)
+					return n, fmt.Errorf("error parsing tree: %w", err)
 				}
 				c.TreeID = id
 			case "parent":
@@ -135,7 +135,7 @@ func (c *Commit) Decode(hash hash.Hash, from io.Reader, size int64) (n int, err 
 				}
 				id, err := hex.DecodeString(value)
 				if err != nil {
-					return n, fmt.Errorf("error parsing parent: %s", err)
+					return n, fmt.Errorf("error parsing parent: %w", err)
 				}
 				c.ParentIDs = append(c.ParentIDs, id)
 			case "author":

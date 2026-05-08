@@ -4,6 +4,7 @@
 package object
 
 import (
+	"errors"
 	"context"
 	"io"
 
@@ -104,7 +105,7 @@ func (w *commitIteratorByATime) Next(ctx context.Context) (*Commit, error) {
 func (w *commitIteratorByATime) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		c, err := w.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -112,7 +113,7 @@ func (w *commitIteratorByATime) ForEach(ctx context.Context, cb func(*Commit) er
 		}
 
 		err = cb(c)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			break
 		}
 		if err != nil {

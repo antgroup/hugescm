@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"context"
 	"net/http"
 
@@ -28,7 +29,7 @@ func (c *SSHD) Run(globals *Globals) error {
 	}
 	closer := newCloser()
 	go closer.listenSignal(context.Background(), srv)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logrus.Errorf("zeta-seve sshd listen server error: %v", err)
 		return err
 	}

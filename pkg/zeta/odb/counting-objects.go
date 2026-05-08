@@ -4,6 +4,7 @@
 package odb
 
 import (
+	"errors"
 	"context"
 	"io"
 
@@ -220,7 +221,7 @@ func (o *ODB) CountingObjects(ctx context.Context, commit, deepenFrom plumbing.H
 	defer iter.Close()
 	for {
 		cc, err := iter.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

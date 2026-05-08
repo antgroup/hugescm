@@ -143,7 +143,7 @@ func (e *Encoder) WriteIndex(fd *os.File) error {
 	sort.Sort(e.objects)
 	var fanout [256]uint32
 	for _, o := range e.objects {
-		fanout[uint8(o.Hash[0])]++
+		fanout[uint8(o.Hash[0])]++ //nolint:unconvert // byte -> uint8 index conversion
 	}
 
 	hasher := plumbing.NewHasher()
@@ -178,7 +178,7 @@ func (e *Encoder) WriteIndex(fd *os.File) error {
 		offset := o.Offset
 		if offset > math.MaxInt32 {
 			offset64Set = append(offset64Set, offset)
-			offset = uint64(offset64Pos | offset64PosMask)
+			offset = offset64Pos | offset64PosMask
 			offset64Pos++
 		}
 		if err := binary.WriteUint32(w, uint32(offset)); err != nil {

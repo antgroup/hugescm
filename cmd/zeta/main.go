@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -93,7 +94,7 @@ func main() {
 	if err == nil {
 		return
 	}
-	if e, ok := err.(*zeta.ErrExitCode); ok {
+	if e, ok := errors.AsType[*zeta.ErrExitCode](err); ok {
 		os.Exit(e.ExitCode)
 	}
 	os.Exit(127)

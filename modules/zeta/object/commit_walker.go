@@ -87,13 +87,13 @@ func (iter *lookupIter) ForEach(ctx context.Context, cb func(*Commit) error) err
 	for {
 		cc, err := iter.Next(ctx)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 			return err
 		}
 		if err := cb(cc); err != nil {
-			if err == plumbing.ErrStop {
+			if errors.Is(err, plumbing.ErrStop) {
 				return nil
 			}
 			return err
@@ -189,7 +189,7 @@ func (w *commitPreIterator) Next(ctx context.Context) (*Commit, error) {
 
 			var err error
 			c, err = w.stack[current].Next(ctx)
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				w.stack = w.stack[:current]
 				continue
 			}
@@ -256,7 +256,7 @@ func filteredParentIter(c *Commit, seen map[plumbing.Hash]bool) CommitIter {
 func (w *commitPreIterator) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		c, err := w.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -264,7 +264,7 @@ func (w *commitPreIterator) ForEach(ctx context.Context, cb func(*Commit) error)
 		}
 
 		err = cb(c)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			break
 		}
 		if err != nil {
@@ -352,7 +352,7 @@ func (w *commitPostIterator) Next(ctx context.Context) (*Commit, error) {
 func (w *commitPostIterator) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		c, err := w.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -360,7 +360,7 @@ func (w *commitPostIterator) ForEach(ctx context.Context, cb func(*Commit) error
 		}
 
 		err = cb(c)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			break
 		}
 		if err != nil {
@@ -390,7 +390,7 @@ func NewCommitAllIter(ctx context.Context, rdb refs.Backend, odb Backend, commit
 		err = addReference(ctx, odb, commitIterFunc, head, commitsPath, commitsLookup)
 	}
 
-	if err != nil && err != plumbing.ErrReferenceNotFound {
+	if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return nil, err
 	}
 	// add all references along with the HEAD
@@ -402,11 +402,11 @@ func NewCommitAllIter(ctx context.Context, rdb refs.Backend, odb Backend, commit
 
 	for {
 		ref, err := refIter.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 
-		if err == plumbing.ErrReferenceNotFound {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			continue
 		}
 
@@ -492,7 +492,7 @@ func (it *commitAllIterator) Next(ctx context.Context) (*Commit, error) {
 func (it *commitAllIterator) ForEach(ctx context.Context, cb func(*Commit) error) error {
 	for {
 		c, err := it.Next(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -500,7 +500,7 @@ func (it *commitAllIterator) ForEach(ctx context.Context, cb func(*Commit) error
 		}
 
 		err = cb(c)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			break
 		}
 		if err != nil {
@@ -576,7 +576,7 @@ func (w *commitPostIteratorFirstParent) ForEach(ctx context.Context, cb func(*Co
 		}
 
 		err = cb(c)
-		if err == plumbing.ErrStop {
+		if errors.Is(err, plumbing.ErrStop) {
 			break
 		}
 		if err != nil {

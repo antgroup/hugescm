@@ -254,6 +254,11 @@ func (u *UserSettings) GetAllStrict(alias, key string) ([]string, error) {
 	return []string{}, nil
 }
 
+// IsErrDepthExceeded checks if an error is ErrDepthExceeded.
+func IsErrDepthExceeded(err error) bool {
+	return errors.Is(err, ErrDepthExceeded)
+}
+
 // ConfigFinder will invoke f to try to find a ssh config file in a custom
 // location on disk, instead of in /etc/ssh or $HOME/.ssh. f should return the
 // name of a file containing SSH configuration.
@@ -340,7 +345,7 @@ func decodeBytes(b []byte, system, ignoreMatchDirective bool, depth uint8) (c *C
 			if _, ok := r.(runtime.Error); ok {
 				panic(r)
 			}
-			if e, ok := r.(error); ok && e == ErrDepthExceeded {
+			if e, ok := r.(error); ok && errors.Is(e, ErrDepthExceeded) {
 				err = e
 				return
 			}
@@ -564,7 +569,7 @@ func (h *Host) Matches(alias string) bool {
 func (h *Host) String() string {
 	var buf strings.Builder
 	if !h.implicit {
-		buf.WriteString(strings.Repeat(" ", int(h.leadingSpace)))
+		buf.WriteString(strings.Repeat(" ", h.leadingSpace))
 		buf.WriteString("Host")
 		if h.hasEquals {
 			buf.WriteString(" = ")
@@ -624,7 +629,7 @@ func (k *KV) String() string {
 	if k.hasEquals {
 		equals = " = "
 	}
-	line := strings.Repeat(" ", int(k.leadingSpace)) + k.Key + equals + k.Value + k.spaceAfterValue
+	line := strings.Repeat(" ", k.leadingSpace) + k.Key + equals + k.Value + k.spaceAfterValue
 	if k.Comment != "" {
 		line += "#" + k.Comment
 	}
@@ -651,7 +656,7 @@ func (e *Empty) String() string {
 	if e.Comment == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s#%s", strings.Repeat(" ", int(e.leadingSpace)), e.Comment)
+	return fmt.Sprintf("%s#%s", strings.Repeat(" ", e.leadingSpace), e.Comment)
 }
 
 // Include holds the result of an Include directive, including the config files
@@ -800,7 +805,7 @@ func (inc *Include) String() string {
 	if inc.hasEquals {
 		equals = " = "
 	}
-	line := fmt.Sprintf("%sInclude%s%s", strings.Repeat(" ", int(inc.leadingSpace)), equals, strings.Join(inc.directives, " "))
+	line := fmt.Sprintf("%sInclude%s%s", strings.Repeat(" ", inc.leadingSpace), equals, strings.Join(inc.directives, " "))
 	if inc.Comment != "" {
 		line += " #" + inc.Comment
 	}

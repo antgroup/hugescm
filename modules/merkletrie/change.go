@@ -158,7 +158,7 @@ func (l *Changes) addRecursive(ctx context.Context, root noder.Path, ctor noderT
 	var current noder.Path
 	for {
 		if current, err = i.Step(ctx); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err

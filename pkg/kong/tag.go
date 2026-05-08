@@ -193,7 +193,7 @@ func parseTagString(s string) (*Tag, error) {
 	}
 	err = hydrateTag(t, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", s, err)
+		return nil, fmt.Errorf("%s: %w", s, err)
 	}
 	return t, nil
 }
@@ -281,7 +281,7 @@ func hydrateTag(t *Tag, typ reflect.Type) error { //nolint: gocyclo
 	}
 	t.Short, err = t.GetRune("short")
 	if err != nil && t.Get("short") != "" {
-		return fmt.Errorf("invalid short flag name %q: %s", t.Get("short"), err)
+		return fmt.Errorf("invalid short flag name %q: %w", t.Get("short"), err)
 	}
 	t.Hidden = t.Has("hidden")
 	t.Format = t.Get("format")

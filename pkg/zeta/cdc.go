@@ -217,7 +217,7 @@ func (c *CDCChunker) ChunkStreaming(reader io.Reader, size int64, onChunk func(o
 					continue
 				}
 
-				shouldCut := false
+				var shouldCut bool
 
 				switch {
 				case chunkSize < c.normalSize:

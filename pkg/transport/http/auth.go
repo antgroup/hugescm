@@ -282,11 +282,11 @@ func (c *client) checkAuth(ctx context.Context, cred *Credentials, operation tra
 	var err error
 	for range 10 {
 		resp, err = c.checkAuthRedirect(ctx, cred, operation)
-		if err != ErrRedirect {
+		if !errors.Is(err, ErrRedirect) {
 			break
 		}
 	}
-	if err == ErrRedirect {
+	if errors.Is(err, ErrRedirect) {
 		return false, &ErrorCode{Code: http.StatusFound, Message: W("too many redirects")}
 	}
 	if err != nil {
@@ -296,7 +296,7 @@ func (c *client) checkAuth(ctx context.Context, cred *Credentials, operation tra
 	if resp.StatusCode == 200 {
 		var sa transport.SASPayload
 		if err := json.NewDecoder(resp.Body).Decode(&sa); err != nil {
-			return false, fmt.Errorf("decode json error: %v", err)
+			return false, fmt.Errorf("decode json error: %w", err)
 		}
 		if len(sa.Notice) != 0 {
 			remoteNotify(sa.Notice)

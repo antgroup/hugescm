@@ -62,7 +62,7 @@ func (w *Worktree) createBranch(opts *CheckoutOptions) error {
 		return fmt.Errorf("a branch named %q already exists", opts.Branch)
 	}
 
-	if err != plumbing.ErrReferenceNotFound {
+	if !errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return err
 	}
 

@@ -85,11 +85,11 @@ func NewObjectWriteCloser(w io.WriteCloser, sum hash.Hash) *ObjectWriter {
 // uncompressed bytes written, or any error that was encountered along the way.
 //
 // WriteHeader MUST be called only once, or a panic() will occur.
-func (w *ObjectWriter) WriteHeader(typ ObjectType, len int64) (n int, err error) {
+func (w *ObjectWriter) WriteHeader(typ ObjectType, length int64) (n int, err error) {
 	if !atomic.CompareAndSwapUint32(&w.wroteHeader, 0, 1) {
 		return 0, errors.New("git/object: cannot write headers more than once")
 	}
-	return fmt.Fprintf(w, "%s %d\x00", typ, len)
+	return fmt.Fprintf(w, "%s %d\x00", typ, length)
 }
 
 // Write writes the given buffer "p" of uncompressed bytes into the underlying

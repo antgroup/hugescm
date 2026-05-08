@@ -141,7 +141,7 @@ func unsetInternal(zf string, keys ...string) error {
 	// Delete keys
 	for _, k := range keys {
 		if err := doc.Delete(k); err != nil {
-			if err == ErrKeyNotFound {
+			if errors.Is(err, ErrKeyNotFound) {
 				continue
 			}
 			return err

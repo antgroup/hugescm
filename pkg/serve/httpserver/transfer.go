@@ -315,7 +315,7 @@ func (s *Server) GetObject(w http.ResponseWriter, r *Request) {
 
 func (s *Server) updateBranchDryRun(w http.ResponseWriter, r *Request, branchName string) bool {
 	if _, err := s.checkBranchCanUpdate(r.Context(), w, r, branchName); err != nil {
-		var e *zeta.ErrStatusCode; if errors.As(err, &e) {
+		if e, ok := errors.AsType[*zeta.ErrStatusCode](err); ok {
 			renderFailure(w, r.Request, e.Code, e.Message)
 			return false
 		}
@@ -549,7 +549,8 @@ func (s *Server) TagPush(w http.ResponseWriter, r *Request, tagName string) {
 	w.Header().Set("Content-Type", ZETA_MIME_REPORT_RESULT)
 	w.Header().Set("Cache-Control", "no-cache")
 	if err = rr.DoPush(r.Context(), command, r.Body, w); err != nil {
-		var es *zeta.ErrStatusCode; if errors.As(err, &es) {
+		var es *zeta.ErrStatusCode
+		if errors.As(err, &es) {
 			renderFailure(w, r.Request, es.Code, es.Message)
 		}
 		return
@@ -593,7 +594,8 @@ func (s *Server) BranchPush(w http.ResponseWriter, r *Request, branchName string
 	w.Header().Set("Content-Type", ZETA_MIME_REPORT_RESULT)
 	w.Header().Set("Cache-Control", "no-cache")
 	if err = rr.DoPush(r.Context(), command, r.Body, w); err != nil {
-		var es *zeta.ErrStatusCode; if errors.As(err, &es) {
+		var es *zeta.ErrStatusCode
+		if errors.As(err, &es) {
 			renderFailure(w, r.Request, es.Code, es.Message)
 		}
 		return

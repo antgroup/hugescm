@@ -23,7 +23,7 @@ func NoSuchObject(oid []byte) error {
 }
 
 // IsNoSuchObject indicates whether an error is a noSuchObject and is non-nil.
-func IsNoSuchObject(e error) bool {
-	var err *noSuchObject
-	return errors.As(e, &err) && err != nil
+func IsNoSuchObject(err error) bool {
+	var e *noSuchObject
+	return errors.As(err, &e)
 }

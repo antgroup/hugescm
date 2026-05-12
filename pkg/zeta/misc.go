@@ -60,9 +60,6 @@ func (err *ErrNotZetaDir) Error() string {
 }
 
 func IsErrNotZetaDir(err error) bool {
-	if err == nil {
-		return false
-	}
 	var e *ErrNotZetaDir
 	return errors.As(err, &e)
 }
@@ -252,11 +249,7 @@ type ErrExitCode struct {
 }
 
 func IsExitCode(err error, i int) bool {
-	if err == nil {
-		return false
-	}
-	var e *ErrExitCode
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*ErrExitCode](err); ok {
 		return e.ExitCode == i
 	}
 	return false

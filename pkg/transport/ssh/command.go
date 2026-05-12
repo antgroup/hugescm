@@ -62,16 +62,14 @@ func (c *Command) Close() error {
 		_ = cc.Close()
 	}
 	if err := c.Wait(); err != nil {
-		var exitErr *ssh.ExitError
-		var exitMissingErr *ssh.ExitMissingError
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*ssh.ExitError](err); ok {
 			exitStatus := exitErr.ExitStatus()
 			trace.DbgPrint("Exit status %v", exitStatus)
 			c.lastError = &zeta.ErrExitCode{
 				Code:    exitStatus,
 				Message: exitErr.String(),
 			}
-		} else if errors.As(err, &exitMissingErr) {
+		} else if exitMissingErr, ok := errors.AsType[*ssh.ExitMissingError](err); ok {
 			c.lastError = &zeta.ErrExitCode{
 				Code:    500,
 				Message: exitMissingErr.Error(),

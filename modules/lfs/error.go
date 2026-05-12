@@ -18,12 +18,8 @@ func NewNotAPointerError(message string) error {
 }
 
 func IsNewNotAPointerError(err error) bool {
-	if err == nil {
-		return false
-	}
 	var e *notAPointerError
-	ok := errors.As(err, &e)
-	return ok
+	return errors.As(err, &e)
 }
 
 type badPointerKeyError struct {

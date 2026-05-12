@@ -207,11 +207,8 @@ var (
 )
 
 func IsErrAlreadyLocked(err error) bool {
-	if err == nil {
-		return false
-	}
-	var e *ErrAlreadyLocked; ok := errors.As(err, &e)
-	return ok
+	var e *ErrAlreadyLocked
+	return errors.As(err, &e)
 }
 
 func ReferenceTarget(ctx context.Context, repoPath, reference string) (string, error) {
@@ -267,8 +264,8 @@ func (err ErrReferenceBadName) Error() string {
 }
 
 func IsErrReferenceBadName(err error) bool {
-	var e *ErrReferenceBadName; ok := errors.As(err, &e)
-	return ok
+	var e *ErrReferenceBadName
+	return errors.As(err, &e)
 }
 
 // https://github.com/git/git/blob/ae73b2c8f1da39c39335ee76a0f95857712c22a7/refs.c#L41-L290

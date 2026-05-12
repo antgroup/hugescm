@@ -42,8 +42,7 @@ func IsErrorCode(err error, code uint16) bool {
 }
 
 func IsNotFound(err error) bool {
-	var e *ErrRevisionNotFound
-	if errors.As(err, &e) {
+	if _, ok := errors.AsType[*ErrRevisionNotFound](err); ok {
 		return true
 	}
 	return errors.Is(err, sql.ErrNoRows)

@@ -205,7 +205,7 @@ func (c *Command) Output() ([]byte, error) {
 
 	err := c.Run()
 	if err != nil && captureErr {
-		var ee *exec.ExitError; if errors.As(err, &ee) {
+		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 			ee.Stderr = c.rawCmd.Stderr.(*prefixSuffixSaver).Bytes()
 		}
 	}
@@ -228,7 +228,7 @@ func (c *Command) RunEx() error {
 
 	err := c.Run()
 	if err != nil && captureErr {
-		var ee *exec.ExitError; if errors.As(err, &ee) {
+		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 			ee.Stderr = c.rawCmd.Stderr.(*prefixSuffixSaver).Bytes()
 		}
 	}

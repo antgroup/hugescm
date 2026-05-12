@@ -50,12 +50,8 @@ func (err *ErrResourceLocked) Error() string {
 }
 
 func IsErrResourceLocked(err error) bool {
-	if err == nil {
-		return false
-	}
 	var e *ErrResourceLocked
-	ok := errors.As(err, &e)
-	return ok
+	return errors.As(err, &e)
 }
 
 func NewErrResourceLocked(t string, name ReferenceName) error {
@@ -72,10 +68,7 @@ func NewErrRevNotFound(format string, a ...any) error {
 	return &ErrRevNotFound{Reason: fmt.Sprintf(format, a...)}
 }
 
-func IsErrRevNotFound(e error) bool {
-	if e == nil {
-		return false
-	}
-	var err *ErrRevNotFound
-	return errors.As(e, &err) && err != nil
+func IsErrRevNotFound(err error) bool {
+	var e *ErrRevNotFound
+	return errors.As(err, &e)
 }

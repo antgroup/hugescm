@@ -86,9 +86,6 @@ func (e *ErrUnknownRevision) Error() string {
 }
 
 func IsErrUnknownRevision(err error) bool {
-	if err == nil {
-		return false
-	}
 	var e *ErrUnknownRevision
 	return errors.As(err, &e)
 }

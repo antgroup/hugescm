@@ -24,9 +24,9 @@ type ExitCoder interface {
 func exitCodeFromError(err error) int {
 	if e, ok := errors.AsType[ExitCoder](err); ok {
 		return e.ExitCode()
-	} else if err == nil {
+	}
+	if err == nil {
 		return exitOk
 	}
-
 	return exitNotOk
 }

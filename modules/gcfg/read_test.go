@@ -106,8 +106,16 @@ type readtest struct {
 	ok   bool
 }
 
-func newString(s string) *string           { return &s }
-func newStringSlice(s ...string) *[]string { return &s }
+func newString(s string) *string {
+	p := new(string)
+	*p = s
+	return p
+}
+func newStringSlice(s ...string) *[]string {
+	p := new([]string)
+	*p = s
+	return p
+}
 
 var readtests = []struct {
 	group string

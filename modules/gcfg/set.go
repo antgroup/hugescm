@@ -108,18 +108,18 @@ func intMode(mode string) types.IntMode {
 }
 
 var typeModes = map[reflect.Type]types.IntMode{
-	reflect.TypeOf(int(0)):    types.Dec | types.Hex,
-	reflect.TypeOf(int8(0)):   types.Dec | types.Hex,
-	reflect.TypeOf(int16(0)):  types.Dec | types.Hex,
-	reflect.TypeOf(int32(0)):  types.Dec | types.Hex,
-	reflect.TypeOf(int64(0)):  types.Dec | types.Hex,
-	reflect.TypeOf(uint(0)):   types.Dec | types.Hex,
-	reflect.TypeOf(uint8(0)):  types.Dec | types.Hex,
-	reflect.TypeOf(uint16(0)): types.Dec | types.Hex,
-	reflect.TypeOf(uint32(0)): types.Dec | types.Hex,
-	reflect.TypeOf(uint64(0)): types.Dec | types.Hex,
+	reflect.TypeFor[int]():    types.Dec | types.Hex,
+	reflect.TypeFor[int8]():   types.Dec | types.Hex,
+	reflect.TypeFor[int16]():  types.Dec | types.Hex,
+	reflect.TypeFor[int32]():  types.Dec | types.Hex,
+	reflect.TypeFor[int64]():  types.Dec | types.Hex,
+	reflect.TypeFor[uint]():   types.Dec | types.Hex,
+	reflect.TypeFor[uint8]():  types.Dec | types.Hex,
+	reflect.TypeFor[uint16](): types.Dec | types.Hex,
+	reflect.TypeFor[uint32](): types.Dec | types.Hex,
+	reflect.TypeFor[uint64](): types.Dec | types.Hex,
 	// use default mode (allow dec/hex/oct) for uintptr type
-	reflect.TypeOf(big.Int{}): types.Dec | types.Hex,
+	reflect.TypeFor[big.Int](): types.Dec | types.Hex,
 }
 
 func intModeDefault(t reflect.Type) types.IntMode {
@@ -170,7 +170,7 @@ var kindSetters = map[reflect.Kind]setter{
 }
 
 var typeSetters = map[reflect.Type]setter{
-	reflect.TypeOf(big.Int{}): intSetter,
+	reflect.TypeFor[big.Int](): intSetter,
 }
 
 func typeSetter(d any, blank bool, val string, tt tag) error {
@@ -226,7 +226,7 @@ func set(cfg any, sect, sub, name string,
 	value string, blankValue bool, subsectPass bool) error {
 	//
 	vPCfg := reflect.ValueOf(cfg)
-	if vPCfg.Kind() != reflect.Ptr || vPCfg.Elem().Kind() != reflect.Struct {
+	if vPCfg.Kind() != reflect.Pointer || vPCfg.Elem().Kind() != reflect.Struct {
 		return ErrConfigMustBePointerToStruct
 	}
 	vCfg := vPCfg.Elem()
@@ -241,7 +241,7 @@ func set(cfg any, sect, sub, name string,
 	if isSubsect {
 		vst := vSect.Type()
 		if vst.Key().Kind() != reflect.String ||
-			vst.Elem().Kind() != reflect.Ptr ||
+			vst.Elem().Kind() != reflect.Pointer ||
 			vst.Elem().Elem().Kind() != reflect.Struct {
 			return fmt.Errorf("%w: section %q", ErrInvalidMapFieldForSection, sect)
 		}
@@ -283,8 +283,8 @@ func set(cfg any, sect, sub, name string,
 	var vVal reflect.Value
 	// multi-value if unnamed slice type
 	isMulti := vVar.Type().Name() == "" && vVar.Kind() == reflect.Slice ||
-		vVar.Type().Name() == "" && vVar.Kind() == reflect.Ptr && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
-	if isMulti && vVar.Kind() == reflect.Ptr {
+		vVar.Type().Name() == "" && vVar.Kind() == reflect.Pointer && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
+	if isMulti && vVar.Kind() == reflect.Pointer {
 		if vVar.IsNil() {
 			vVar.Set(reflect.New(vVar.Type().Elem()))
 		}
@@ -299,7 +299,7 @@ func set(cfg any, sect, sub, name string,
 	} else {
 		vVal = vVar
 	}
-	isDeref := vVal.Type().Name() == "" && vVal.Type().Kind() == reflect.Ptr
+	isDeref := vVal.Type().Name() == "" && vVal.Type().Kind() == reflect.Pointer
 	isNew := isDeref && vVal.IsNil()
 	// vAddr is address of value to set (dereferenced & allocated as needed)
 	var vAddr reflect.Value

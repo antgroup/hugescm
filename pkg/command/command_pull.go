@@ -19,12 +19,12 @@ type Pull struct {
 	Limit     int64 `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 }
 
-func (c *Pull) Run(g *Globals) error {
+func (c *Pull) Run(ctx context.Context, g *Globals) error {
 	if c.FFOnly && c.Rebase {
 		diev("--ff-only is not compatible with --rebase")
 		return ErrFlagsIncompatible
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -34,7 +34,7 @@ func (c *Pull) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.Pull(context.Background(), &zeta.PullOptions{
+	if err := w.Pull(ctx, &zeta.PullOptions{
 		FF:        c.FF,
 		FFOnly:    c.FFOnly,
 		Rebase:    c.Rebase,

@@ -25,8 +25,8 @@ func (s *Status) NewLine() byte {
 
 // --show-stash
 
-func (s *Status) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (s *Status) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -38,7 +38,7 @@ func (s *Status) Run(g *Globals) error {
 	w := r.Worktree()
 	w.ShowFs(g.Verbose)
 	shortFormat := s.Short || s.Z
-	status, err := w.Status(context.Background(), !shortFormat)
+	status, err := w.Status(ctx, !shortFormat)
 	if err != nil {
 		diev("status: %v", err)
 		return err

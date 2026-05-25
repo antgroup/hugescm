@@ -29,8 +29,8 @@ func (c *Fetch) Summary() string {
 	return fmt.Sprintf(fetchSummaryFormat, W("Usage: "))
 }
 
-func (c *Fetch) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *Fetch) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -39,7 +39,7 @@ func (c *Fetch) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close() // nolint
-	_, err = r.DoFetch(context.Background(), &zeta.DoFetchOptions{
+	_, err = r.DoFetch(ctx, &zeta.DoFetchOptions{
 		Name:        c.Name,
 		Unshallow:   c.Unshallow,
 		Limit:       c.Limit,

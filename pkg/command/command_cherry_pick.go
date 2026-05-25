@@ -13,7 +13,7 @@ type CherryPick struct {
 	Continue bool   `name:"continue" help:"Continue"`
 }
 
-func (c *CherryPick) Run(g *Globals) error {
+func (c *CherryPick) Run(ctx context.Context, g *Globals) error {
 	if c.Abort && c.Continue {
 		diev("--abort is not compatible with --continue")
 		return ErrFlagsIncompatible
@@ -22,7 +22,7 @@ func (c *CherryPick) Run(g *Globals) error {
 		die("missing revision arg")
 		return ErrArgRequired
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -32,7 +32,7 @@ func (c *CherryPick) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.CherryPick(context.Background(), &zeta.CherryPickOptions{
+	if err := w.CherryPick(ctx, &zeta.CherryPickOptions{
 		From:     c.Revision,
 		Abort:    c.Abort,
 		Continue: c.Continue,

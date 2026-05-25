@@ -17,12 +17,12 @@ type Push struct {
 	Force       bool     `name:"force" short:"f" help:"force updates"`
 }
 
-func (c *Push) Run(g *Globals) error {
+func (c *Push) Run(ctx context.Context, g *Globals) error {
 	if len(c.Refspec) == 0 && c.Tag {
 		diev("--tag is not compatible with blank refspec")
 		return errors.New("flags incompatible")
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -31,7 +31,7 @@ func (c *Push) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close() // nolint
-	if err := r.Push(context.Background(), &zeta.PushOptions{
+	if err := r.Push(ctx, &zeta.PushOptions{
 		Refspec:     c.Refspec,
 		PushOptions: c.PushOptions,
 		Tag:         c.Tag,

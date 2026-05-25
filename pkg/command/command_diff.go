@@ -142,7 +142,7 @@ func (c *Diff) NewOutput(ctx context.Context) (zeta.Printer, error) {
 	return zeta.NewPrinter(ctx), nil
 }
 
-func (c *Diff) render(u *diferenco.Patch) error {
+func (c *Diff) render(ctx context.Context, u *diferenco.Patch) error {
 	opts := &zeta.DiffOptions{
 		NameOnly:   c.NameOnly,
 		NameStatus: c.NameStatus,
@@ -160,7 +160,7 @@ func (c *Diff) render(u *diferenco.Patch) error {
 		if c.From != c.To {
 			name = object.PathRenameCombine(c.From, c.To)
 		}
-		return opts.ShowStats(context.Background(), object.FileStats{
+		return opts.ShowStats(ctx, object.FileStats{
 			object.FileStat{
 				Name:     name,
 				Addition: s.Addition,
@@ -168,12 +168,12 @@ func (c *Diff) render(u *diferenco.Patch) error {
 			},
 		})
 	default:
-		return opts.ShowPatch(context.Background(), []*diferenco.Patch{u})
+		return opts.ShowPatch(ctx, []*diferenco.Patch{u})
 	}
 }
 
-func (c *Diff) nameStatus() error {
-	w, err := c.NewOutput(context.Background())
+func (c *Diff) nameStatus(ctx context.Context) error {
+	w, err := c.NewOutput(ctx)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (c *Diff) nameStatus() error {
 	return nil
 }
 
-func (c *Diff) diffNoIndex() error {
+func (c *Diff) diffNoIndex(ctx context.Context) error {
 	if len(c.From) == 0 || len(c.To) == 0 {
 		die("missing arg, example: zeta diff --no-index from to")
 		return ErrArgRequired
@@ -194,7 +194,7 @@ func (c *Diff) diffNoIndex() error {
 	c.From = cleanPath(c.From)
 	c.To = cleanPath(c.To)
 	if c.NameOnly || c.NameStatus {
-		return c.nameStatus()
+		return c.nameStatus(ctx)
 	}
 
 	a, err := c.checkAlgorithm()
@@ -214,20 +214,20 @@ func (c *Diff) diffNoIndex() error {
 		return err
 	}
 	if from.IsBinary || to.IsBinary {
-		return c.render(&diferenco.Patch{
+		return c.render(ctx, &diferenco.Patch{
 			From:     &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
 			To:       &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
 			IsBinary: true,
 		})
 	}
 	if from.Hash == to.Hash {
-		return c.render(&diferenco.Patch{
+		return c.render(ctx, &diferenco.Patch{
 			From:     &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
 			To:       &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
 			IsBinary: false,
 		})
 	}
-	u, err := diferenco.Unified(context.Background(), &diferenco.Options{
+	u, err := diferenco.Unified(ctx, &diferenco.Options{
 		From: &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
 		To:   &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
 		S1:   from.Text,
@@ -238,17 +238,17 @@ func (c *Diff) diffNoIndex() error {
 		diev("zeta diff --no-index error: %v", err)
 		return err
 	}
-	return c.render(u)
+	return c.render(ctx, u)
 }
 
-func (c *Diff) Run(g *Globals) error {
+func (c *Diff) Run(ctx context.Context, g *Globals) error {
 	if c.NoIndex {
-		return c.diffNoIndex()
+		return c.diffNoIndex(ctx)
 	}
 	if _, _, err := zeta.FindZetaDir(g.CWD); err != nil {
-		return c.diffNoIndex()
+		return c.diffNoIndex(ctx)
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -263,7 +263,7 @@ func (c *Diff) Run(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "parse options error: %v\n", err)
 		return err
 	}
-	if err = w.DiffContext(context.Background(), opts); err != nil {
+	if err = w.DiffContext(ctx, opts); err != nil {
 		return err
 	}
 	return nil

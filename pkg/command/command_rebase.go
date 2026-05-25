@@ -16,7 +16,7 @@ type Rebase struct {
 	Continue bool     `name:"continue" help:"Continue"`
 }
 
-func (c *Rebase) Run(g *Globals) error {
+func (c *Rebase) Run(ctx context.Context, g *Globals) error {
 	if c.Abort && c.Continue {
 		diev("--abort is not compatible with --continue")
 		return ErrFlagsIncompatible
@@ -26,7 +26,7 @@ func (c *Rebase) Run(g *Globals) error {
 		return ErrArgRequired
 	}
 
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -49,7 +49,7 @@ func (c *Rebase) Run(g *Globals) error {
 	if len(c.Args) > 1 {
 		opts.Branch = c.Args[1]
 	}
-	if err := w.Rebase(context.Background(), opts); err != nil {
+	if err := w.Rebase(ctx, opts); err != nil {
 		return err
 	}
 	return nil

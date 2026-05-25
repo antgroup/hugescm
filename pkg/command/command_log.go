@@ -45,8 +45,8 @@ func (c *Log) Passthrough(paths []string) {
 	c.paths = append(c.paths, paths...)
 }
 
-func (c *Log) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *Log) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -70,7 +70,7 @@ func (c *Log) Run(g *Globals) error {
 	case c.FirstParent:
 		opts.Order = zeta.LogOrderDFSPostFirstParent
 	}
-	if err := r.Log(context.Background(), opts); err != nil {
+	if err := r.Log(ctx, opts); err != nil {
 		return err
 	}
 	return nil

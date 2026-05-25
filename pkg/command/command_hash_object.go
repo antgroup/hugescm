@@ -19,11 +19,11 @@ type HashObject struct {
 	Path  string `name:"path" help:"Process file as it were from this path" placeholder:"<file>"`
 }
 
-func (c *HashObject) Run(g *Globals) error {
+func (c *HashObject) Run(ctx context.Context, g *Globals) error {
 	if !c.W {
 		return c.hashObject()
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -33,7 +33,7 @@ func (c *HashObject) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	if c.Stdin {
-		oid, err := r.ODB().HashTo(context.Background(), os.Stdin, -1)
+		oid, err := r.ODB().HashTo(ctx, os.Stdin, -1)
 		if err != nil {
 			diev("hash-object error: %v", err)
 			return err
@@ -56,7 +56,7 @@ func (c *HashObject) Run(g *Globals) error {
 		diev("stat %s error: %v", c.Path, err)
 		return err
 	}
-	oid, _, err := r.HashTo(context.Background(), fd, si.Size())
+	oid, _, err := r.HashTo(ctx, fd, si.Size())
 	if err != nil {
 		diev("hash-object error: %v", err)
 		return err

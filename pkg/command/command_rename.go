@@ -27,8 +27,8 @@ func (c *Rename) Summary() string {
 	return fmt.Sprintf(moveSummaryFormat, W("Usage: "))
 }
 
-func (c *Rename) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *Rename) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -38,7 +38,7 @@ func (c *Rename) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.Rename(context.Background(), c.Source, c.Destination, &zeta.RenameOptions{
+	if err := w.Rename(ctx, c.Source, c.Destination, &zeta.RenameOptions{
 		DryRun: c.DryRun,
 		Force:  c.Force,
 	}); err != nil {

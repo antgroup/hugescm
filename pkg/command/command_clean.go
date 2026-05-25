@@ -19,12 +19,12 @@ type Clean struct {
 	ALL    bool `short:"x" shortonly:"" help:"Remove ignored files, too"`
 }
 
-func (c *Clean) Run(g *Globals) error {
+func (c *Clean) Run(ctx context.Context, g *Globals) error {
 	if !c.DryRun && !c.Force {
 		die("refusing to clean, please specify at least -f or -n")
 		return errors.New("refusing to clean")
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -34,7 +34,7 @@ func (c *Clean) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.Clean(context.Background(), &zeta.CleanOptions{DryRun: c.DryRun, Dir: c.Dir, All: c.ALL}); err != nil {
+	if err := w.Clean(ctx, &zeta.CleanOptions{DryRun: c.DryRun, Dir: c.Dir, All: c.ALL}); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta clean error: %v\n", err)
 		return err
 	}

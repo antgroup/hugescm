@@ -153,7 +153,8 @@ func (n *Node) Summary() string {
 	var summary strings.Builder
 	summary.WriteString(n.Path())
 	if flags := n.FlagSummary(true); flags != "" {
-		summary.WriteString(" " + flags)
+		summary.WriteString(" ")
+		summary.WriteString(flags)
 	}
 	args := []string{}
 	optional := 0
@@ -166,7 +167,9 @@ func (n *Node) Summary() string {
 		args = append(args, argSummary)
 	}
 	if len(args) != 0 {
-		summary.WriteString(" " + strings.Join(args, " ") + strings.Repeat("]", optional))
+		summary.WriteString(" ")
+		summary.WriteString(strings.Join(args, " "))
+		summary.WriteString(strings.Repeat("]", optional))
 	} else if len(n.Children) > 0 {
 		summary.WriteString(" <command>")
 	}

@@ -27,12 +27,12 @@ func (c *Restore) Help() string {
  %s`, W("SYNOPSIS"), W("Specify restore location. By default, restores working tree. Use --staged for index only, or both for both."))
 }
 
-func (c *Restore) Run(g *Globals) error {
+func (c *Restore) Run(ctx context.Context, g *Globals) error {
 	if len(c.Paths) == 0 {
 		die("you must specify path(s) to restore")
 		return ErrArgRequired
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -51,7 +51,7 @@ func (c *Restore) Run(g *Globals) error {
 	if !opts.Staged && !c.Worktree {
 		opts.Worktree = true
 	}
-	if err := w.Restore(context.Background(), opts); err != nil {
+	if err := w.Restore(ctx, opts); err != nil {
 		return err
 	}
 	return nil

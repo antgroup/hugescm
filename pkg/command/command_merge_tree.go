@@ -21,8 +21,8 @@ type MergeTree struct {
 	JSON                    bool   `name:"json" help:"Convert conflict results to JSON"`
 }
 
-func (c *MergeTree) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *MergeTree) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -31,7 +31,7 @@ func (c *MergeTree) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close() // nolint
-	err = r.MergeTree(context.Background(), &zeta.MergeTreeOptions{
+	err = r.MergeTree(ctx, &zeta.MergeTreeOptions{
 		Branch1:                 c.Branch1,
 		Branch2:                 c.Branch2,
 		MergeBase:               c.MergeBase,

@@ -80,19 +80,19 @@ func (c *Reset) validateFlags() string {
 	return ""
 }
 
-func (c *Reset) resetAutoFetch(w *zeta.Worktree) error {
-	oid, err := w.Prefetch(context.Background(), c.Revision, c.Limit, c.One)
+func (c *Reset) resetAutoFetch(ctx context.Context, w *zeta.Worktree) error {
+	oid, err := w.Prefetch(ctx, c.Revision, c.Limit, c.One)
 	if err != nil {
 		return err
 	}
-	if err := w.Reset(context.Background(), &zeta.ResetOptions{Commit: oid, Mode: c.ResetMode(), Fetch: c.Fetch, One: c.One, Quiet: c.Quiet}); err != nil {
+	if err := w.Reset(ctx, &zeta.ResetOptions{Commit: oid, Mode: c.ResetMode(), Fetch: c.Fetch, One: c.One, Quiet: c.Quiet}); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta reset to %s error: %v\n", oid, err)
 		return err
 	}
 	return nil
 }
 
-func (c *Reset) Run(g *Globals) error {
+func (c *Reset) Run(ctx context.Context, g *Globals) error {
 	if action := c.validateFlags(); len(action) != 0 {
 		diev("cannot %s reset with paths.", action)
 		return ErrFlagsIncompatible
@@ -101,7 +101,7 @@ func (c *Reset) Run(g *Globals) error {
 		diev("--one required --hard")
 		return ErrArgRequired
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -111,7 +111,7 @@ func (c *Reset) Run(g *Globals) error {
 		return err
 	}
 	defer func() {
-		if err := r.Postflight(context.Background()); err != nil {
+		if err := r.Postflight(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "postflight: prune objects error: %v\n", err)
 		}
 		_ = r.Close()
@@ -123,10 +123,10 @@ func (c *Reset) Run(g *Globals) error {
 	}
 
 	if c.Fetch || c.One {
-		return c.resetAutoFetch(w)
+		return c.resetAutoFetch(ctx, w)
 	}
 
-	oid, err := r.Revision(context.Background(), c.Revision)
+	oid, err := r.Revision(ctx, c.Revision)
 	if plumbing.IsNoSuchObject(err) {
 		fmt.Fprintf(os.Stderr, "zeta reset: %s not found\n", c.Revision)
 		return err
@@ -140,13 +140,13 @@ func (c *Reset) Run(g *Globals) error {
 		return errors.New("no such revision")
 	}
 	if len(c.paths) != 0 {
-		if err := w.ResetSpec(context.Background(), oid, slashPaths(c.paths)); err != nil {
+		if err := w.ResetSpec(ctx, oid, slashPaths(c.paths)); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta reset: error: %v\n", err)
 			return err
 		}
 		return nil
 	}
-	if err := w.Reset(context.Background(), &zeta.ResetOptions{Commit: oid, Mode: c.ResetMode(), Fetch: c.Fetch, One: c.One, Quiet: c.Quiet}); err != nil {
+	if err := w.Reset(ctx, &zeta.ResetOptions{Commit: oid, Mode: c.ResetMode(), Fetch: c.Fetch, One: c.One, Quiet: c.Quiet}); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta reset to %s error: %v\n", oid, err)
 		return err
 	}

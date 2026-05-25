@@ -22,8 +22,8 @@ type Commit struct {
 	Amend             bool     `name:"amend" help:"Replace the tip of the current branch by creating a new commit"`
 }
 
-func (c *Commit) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *Commit) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -41,7 +41,7 @@ func (c *Commit) Run(g *Globals) error {
 		Message:           c.Message,
 		File:              c.File,
 	}
-	oid, err := w.Commit(context.Background(), opts)
+	oid, err := w.Commit(ctx, opts)
 	if err != nil {
 		if errors.Is(err, zeta.ErrMissingAuthor) {
 			fmt.Fprintf(os.Stderr, `zeta commit: %s
@@ -74,5 +74,5 @@ func (c *Commit) Run(g *Globals) error {
 		}
 	}
 	trace.DbgPrint("create commit: %s\n", oid.String())
-	return w.Stats(context.Background())
+	return w.Stats(ctx)
 }

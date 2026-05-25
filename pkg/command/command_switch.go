@@ -42,8 +42,8 @@ func (s *Switch) Discard() bool {
 	return s.Force || s.DiscardChanges
 }
 
-func (s *Switch) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (s *Switch) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -68,13 +68,13 @@ func (s *Switch) Run(g *Globals) error {
 		return err
 	}
 	if s.Create || s.ForceCreate {
-		return r.SwitchNewBranch(context.Background(), branchOrBasePoint, basePoint, so)
+		return r.SwitchNewBranch(ctx, branchOrBasePoint, basePoint, so)
 	}
 	if s.Detach {
-		return r.SwitchDetach(context.Background(), branchOrBasePoint, so)
+		return r.SwitchDetach(ctx, branchOrBasePoint, so)
 	}
 	if s.Orphan {
-		return r.SwitchOrphan(context.Background(), branchOrBasePoint, so)
+		return r.SwitchOrphan(ctx, branchOrBasePoint, so)
 	}
-	return r.SwitchBranch(context.Background(), branchOrBasePoint, so)
+	return r.SwitchBranch(ctx, branchOrBasePoint, so)
 }

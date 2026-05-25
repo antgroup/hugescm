@@ -33,8 +33,8 @@ func (t *Tag) Summary() string {
 	return fmt.Sprintf(tagSummaryFormat, W("Usage: "), or, or)
 }
 
-func (t *Tag) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (t *Tag) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -44,7 +44,7 @@ func (t *Tag) Run(g *Globals) error {
 		return err
 	}
 	if t.List {
-		return r.ListTag(context.Background(), t.Args)
+		return r.ListTag(ctx, t.Args)
 	}
 	if t.Delete {
 		return r.RemoveTag(t.Args)
@@ -52,9 +52,9 @@ func (t *Tag) Run(g *Globals) error {
 
 	switch len(t.Args) {
 	case 0:
-		return r.ListTag(context.Background(), nil)
+		return r.ListTag(ctx, nil)
 	case 1:
-		return r.NewTag(context.Background(), &zeta.NewTagOptions{
+		return r.NewTag(ctx, &zeta.NewTagOptions{
 			Name:     t.Args[0],
 			Target:   "HEAD",
 			Message:  t.Message,
@@ -64,7 +64,7 @@ func (t *Tag) Run(g *Globals) error {
 		})
 	default:
 	}
-	return r.NewTag(context.Background(), &zeta.NewTagOptions{
+	return r.NewTag(ctx, &zeta.NewTagOptions{
 		Name:     t.Args[0],
 		Target:   t.Args[1],
 		Message:  t.Message,

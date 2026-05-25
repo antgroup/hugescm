@@ -48,7 +48,7 @@ func (c *Checkout) Passthrough(paths []string) {
 	c.passthroughArgs = append(c.passthroughArgs, paths...)
 }
 
-func (c *Checkout) doRemote(g *Globals, remote, destination string) error {
+func (c *Checkout) doRemote(ctx context.Context, g *Globals, remote, destination string) error {
 	if c.One && c.Limit != -1 {
 		diev("--one is not compatible with --limit N")
 		return ErrFlagsIncompatible
@@ -58,7 +58,7 @@ func (c *Checkout) doRemote(g *Globals, remote, destination string) error {
 		return ErrFlagsIncompatible
 
 	}
-	r, err := zeta.New(context.Background(), &zeta.NewOptions{
+	r, err := zeta.New(ctx, &zeta.NewOptions{
 		Remote:      remote,
 		Branch:      c.Branch,
 		TagName:     c.TagName,
@@ -78,7 +78,7 @@ func (c *Checkout) doRemote(g *Globals, remote, destination string) error {
 		return err
 	}
 	defer r.Close() // nolint
-	if err := r.Postflight(context.Background()); err != nil {
+	if err := r.Postflight(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "postflight: prune objects error: %v\n", err)
 		return err
 	}
@@ -102,10 +102,10 @@ func (c *Checkout) revision() string {
 	return "HEAD"
 }
 
-func (c *Checkout) runCompatibleCheckout0(r *zeta.Repository, worktreeOnly bool, branchName plumbing.ReferenceName, oid plumbing.Hash, pathSpec []string) error {
+func (c *Checkout) runCompatibleCheckout0(ctx context.Context, r *zeta.Repository, worktreeOnly bool, branchName plumbing.ReferenceName, oid plumbing.Hash, pathSpec []string) error {
 	w := r.Worktree()
 	if len(pathSpec) != 0 {
-		if err := w.DoPathCo(context.Background(), worktreeOnly, oid, pathSpec); err != nil {
+		if err := w.DoPathCo(ctx, worktreeOnly, oid, pathSpec); err != nil {
 			if oid, ok := plumbing.AsNoSuchObjectErr(err); ok {
 				fmt.Fprintf(os.Stderr, "zeta checkout: missing object: %s\ntry download it: zeta cat -t %s\n", oid, oid)
 				return err
@@ -120,7 +120,7 @@ func (c *Checkout) runCompatibleCheckout0(r *zeta.Repository, worktreeOnly bool,
 	if len(branchName) == 0 {
 		opts.Hash = oid
 	}
-	if err := w.Checkout(context.Background(), opts); err != nil {
+	if err := w.Checkout(ctx, opts); err != nil {
 		if !errors.Is(err, zeta.ErrAborting) {
 			target := string(branchName)
 			if len(target) == 0 {
@@ -133,7 +133,7 @@ func (c *Checkout) runCompatibleCheckout0(r *zeta.Repository, worktreeOnly bool,
 	return nil
 }
 
-func (c *Checkout) runCompatibleCheckout(r *zeta.Repository) error {
+func (c *Checkout) runCompatibleCheckout(ctx context.Context, r *zeta.Repository) error {
 	pathSpec := make([]string, 0, len(c.Args))
 	// zeta checkout <something> [<paths>]
 	if len(c.Args) == 0 {
@@ -143,9 +143,9 @@ func (c *Checkout) runCompatibleCheckout(r *zeta.Repository) error {
 			diev("checkout resolve HEAD error: %v", err)
 			return err
 		}
-		return c.runCompatibleCheckout0(r, true, head.Name(), head.Hash(), pathSpec)
+		return c.runCompatibleCheckout0(ctx, r, true, head.Name(), head.Hash(), pathSpec)
 	}
-	rev, refname, err := r.RevisionEx(context.Background(), c.Args[0])
+	rev, refname, err := r.RevisionEx(ctx, c.Args[0])
 	if zeta.IsErrUnknownRevision(err) {
 		pathSpec = append(pathSpec, c.Args...)
 		pathSpec = append(pathSpec, c.passthroughArgs...)
@@ -154,7 +154,7 @@ func (c *Checkout) runCompatibleCheckout(r *zeta.Repository) error {
 			return err
 		}
 		trace.DbgPrint("resolve HEAD: %s", head.Name())
-		return c.runCompatibleCheckout0(r, true, head.Name(), head.Hash(), slashPaths(pathSpec))
+		return c.runCompatibleCheckout0(ctx, r, true, head.Name(), head.Hash(), slashPaths(pathSpec))
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "zeta checkout: resolve revision error: %v\n", err)
@@ -168,14 +168,14 @@ func (c *Checkout) runCompatibleCheckout(r *zeta.Repository) error {
 	if len(pathSpec) != 0 {
 		worktreeOnly = r.IsCurrent(refname)
 	}
-	return c.runCompatibleCheckout0(r, worktreeOnly, refname, rev, slashPaths(pathSpec))
+	return c.runCompatibleCheckout0(ctx, r, worktreeOnly, refname, rev, slashPaths(pathSpec))
 }
 
-func (c *Checkout) Run(g *Globals) error {
+func (c *Checkout) Run(ctx context.Context, g *Globals) error {
 	if len(c.Args) > 0 && transport.IsRemoteEndpoint(c.Args[0]) {
-		return c.doRemote(g, c.Args[0], c.destination())
+		return c.doRemote(ctx, g, c.Args[0], c.destination())
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Verbose:  g.Verbose,
 	})
@@ -183,14 +183,14 @@ func (c *Checkout) Run(g *Globals) error {
 		return err
 	}
 	defer func() {
-		if err := r.Postflight(context.Background()); err != nil {
+		if err := r.Postflight(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "postflight: prune objects error: %v\n", err)
 		}
 		_ = r.Close()
 	}()
 	if c.Batch {
 		w := r.Worktree()
-		if err := w.DoBatchCo(context.Background(), c.One, c.revision(), os.Stdin); err != nil {
+		if err := w.DoBatchCo(ctx, c.One, c.revision(), os.Stdin); err != nil {
 			fmt.Fprintf(os.Stderr, "zeta checkout --batch error: %v\n", err)
 			return err
 		}
@@ -200,7 +200,7 @@ func (c *Checkout) Run(g *Globals) error {
 		diev("--one is not compatible with checkout revision or files")
 		return ErrFlagsIncompatible
 	}
-	if err := c.runCompatibleCheckout(r); err != nil {
+	if err := c.runCompatibleCheckout(ctx, r); err != nil {
 		return err
 	}
 	return nil

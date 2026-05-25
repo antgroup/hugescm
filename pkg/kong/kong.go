@@ -437,7 +437,8 @@ func formatMultilineMessage(w io.Writer, leaders []string, format string, args .
 		if l == "" {
 			continue
 		}
-		leader.WriteString(l + ": ")
+		leader.WriteString(l)
+		leader.WriteString(": ")
 	}
 	_, _ = fmt.Fprintf(w, "%s%s\n", leader.String(), lines[0])
 	for _, line := range lines[1:] {

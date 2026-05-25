@@ -20,8 +20,8 @@ type LsFiles struct {
 	Paths    []string `arg:"" name:"path" optional:"" help:"Given paths, show as match patterns; else, use root as sole argument"`
 }
 
-func (c *LsFiles) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *LsFiles) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -46,7 +46,7 @@ func (c *LsFiles) Run(g *Globals) error {
 	case c.Others:
 		opts.Mode = zeta.ListFilesOthers
 	}
-	if err := w.LsFiles(context.Background(), opts); err != nil {
+	if err := w.LsFiles(ctx, opts); err != nil {
 		diev("zeta ls-files error: %v", err)
 		return err
 	}

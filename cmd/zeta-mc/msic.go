@@ -53,9 +53,9 @@ func pickURI(rawURL string) (string, error) {
 	return "", ErrLocalEndpoint
 }
 
-func (g *Globals) RunEx(repoPath string, cmdArg0 string, args ...string) error {
+func (g *Globals) RunEx(ctx context.Context, repoPath string, cmdArg0 string, args ...string) error {
 	now := time.Now()
-	cmd := command.NewFromOptions(context.Background(),
+	cmd := command.NewFromOptions(ctx,
 		&command.RunOpts{
 			RepoPath:  repoPath,
 			Environ:   os.Environ(),

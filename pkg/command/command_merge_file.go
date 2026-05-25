@@ -38,7 +38,7 @@ func (c *MergeFile) labelName(i int, n string) string {
 	return n
 }
 
-func (c *MergeFile) mergeExtra() error {
+func (c *MergeFile) mergeExtra(ctx context.Context) error {
 	var a diferenco.Algorithm
 	var err error
 	if len(c.DiffAlgorithm) != 0 {
@@ -80,7 +80,7 @@ func (c *MergeFile) mergeExtra() error {
 		LabelO: c.labelName(1, c.O),
 		LabelB: c.labelName(2, c.F2),
 	}
-	mergedText, conflict, err := diferenco.Merge(context.Background(), opts)
+	mergedText, conflict, err := diferenco.Merge(ctx, opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "merge-file: merge error: %v\n", err)
 		return err
@@ -92,11 +92,11 @@ func (c *MergeFile) mergeExtra() error {
 	return nil
 }
 
-func (c *MergeFile) Run(g *Globals) error {
+func (c *MergeFile) Run(ctx context.Context, g *Globals) error {
 	if !c.ObjectID {
-		return c.mergeExtra()
+		return c.mergeExtra(ctx)
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -121,7 +121,7 @@ func (c *MergeFile) Run(g *Globals) error {
 		LabelO:        c.labelName(1, c.O),
 		LabelB:        c.labelName(2, c.F2),
 	}
-	if err := r.MergeFile(context.Background(), opts); err != nil {
+	if err := r.MergeFile(ctx, opts); err != nil {
 		if !zeta.IsExitCode(err, 1) {
 			diev("merge-file: error: %v", err)
 		}

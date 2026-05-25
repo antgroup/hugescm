@@ -21,8 +21,8 @@ type Cat struct {
 	Output   string `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
 }
 
-func (c *Cat) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *Cat) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -31,7 +31,7 @@ func (c *Cat) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close() // nolint
-	return r.Cat(context.Background(), &zeta.CatOptions{
+	return r.Cat(ctx, &zeta.CatOptions{
 		Object:    c.Object,
 		Limit:     c.Limit,
 		Type:      c.Type,

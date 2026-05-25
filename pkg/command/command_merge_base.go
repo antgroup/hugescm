@@ -31,8 +31,8 @@ func (c *MergeBase) Summary() string {
 	return fmt.Sprintf(mergeBaseSummaryFormat, W("Usage: "), or)
 }
 
-func (c *MergeBase) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *MergeBase) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -46,11 +46,11 @@ func (c *MergeBase) Run(g *Globals) error {
 			diev("Need two revisions, eg: zeta merge-base --is-ancestor A B")
 			return ErrArgRequired
 		}
-		return r.IsAncestor(context.Background(), c.Args[0], c.Args[1])
+		return r.IsAncestor(ctx, c.Args[0], c.Args[1])
 	}
 	if len(c.Args) < 2 {
 		diev("At least two versions are required, eg: zeta merge-base A B")
 		return ErrArgRequired
 	}
-	return r.MergeBase(context.Background(), c.Args, c.All)
+	return r.MergeBase(ctx, c.Args, c.All)
 }

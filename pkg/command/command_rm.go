@@ -18,8 +18,8 @@ type Remove struct {
 	PathSpec []string `arg:"" optional:"" name:"pathspec" help:"Path specification, similar to Git path matching mode"`
 }
 
-func (c *Remove) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *Remove) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -30,7 +30,7 @@ func (c *Remove) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.Remove(context.Background(), c.PathSpec, &zeta.RemoveOptions{
+	if err := w.Remove(ctx, c.PathSpec, &zeta.RemoveOptions{
 		Recurse: c.Recurse,
 		Cached:  c.Cached,
 		Force:   c.Force,

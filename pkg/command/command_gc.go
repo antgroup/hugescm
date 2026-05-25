@@ -16,9 +16,9 @@ type GC struct {
 	Quiet bool          `name:"quiet" help:"Operate quietly. Progress is not reported to the standard error stream"`
 }
 
-func (c *GC) Run(g *Globals) error {
+func (c *GC) Run(ctx context.Context, g *Globals) error {
 	trace.DbgPrint("prune: %v", c.Prune)
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -28,5 +28,5 @@ func (c *GC) Run(g *Globals) error {
 		return err
 	}
 	defer r.Close() // nolint
-	return r.Gc(context.Background(), &zeta.GcOptions{Prune: c.Prune})
+	return r.Gc(ctx, &zeta.GcOptions{Prune: c.Prune})
 }

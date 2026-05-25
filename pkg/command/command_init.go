@@ -20,7 +20,7 @@ type Init struct {
 	Directory string `arg:"" name:"directory" help:"Repository directory"`
 }
 
-func (c *Init) Run(g *Globals) error {
+func (c *Init) Run(ctx context.Context, g *Globals) error {
 	if len(c.Branch) != 0 {
 		if !plumbing.ValidateBranchName([]byte(c.Branch)) {
 			diev("'%s' is not a valid branch name", c.Branch)
@@ -31,7 +31,7 @@ func (c *Init) Run(g *Globals) error {
 		diev("Directory '%s' is already managed by zeta", worktree)
 		return &zeta.ErrExitCode{ExitCode: 127}
 	}
-	r, err := zeta.Init(context.Background(), &zeta.InitOptions{
+	r, err := zeta.Init(ctx, &zeta.InitOptions{
 		Branch:    c.Branch,
 		Worktree:  c.Directory,
 		MustEmpty: false,

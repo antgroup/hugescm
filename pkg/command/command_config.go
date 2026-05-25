@@ -4,6 +4,7 @@
 package command
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -24,7 +25,7 @@ type Config struct {
 	Type   string   `name:"type" short:"T" help:"zeta config will ensure that any input or output is valid under the given type constraint(s), support: bool, int, float, date" placeholder:"<type>"`
 }
 
-func (c *Config) Run(g *Globals) error {
+func (c *Config) Run(ctx context.Context, g *Globals) error {
 	if c.List {
 		if len(c.Args) != 0 {
 			die("wrong number of arguments, should be 0")

@@ -36,7 +36,7 @@ func (c *Merge) Summary() string {
 	return fmt.Sprintf(mergeSummaryFormat, W("Usage: "), or, or)
 }
 
-func (c *Merge) Run(g *Globals) error {
+func (c *Merge) Run(ctx context.Context, g *Globals) error {
 	if c.FFOnly && c.Squash {
 		diev("--ff-only is not compatible with --squash")
 		return ErrFlagsIncompatible
@@ -45,7 +45,7 @@ func (c *Merge) Run(g *Globals) error {
 		diev("--abort is not compatible with --continue")
 		return ErrFlagsIncompatible
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -55,7 +55,7 @@ func (c *Merge) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	if err := w.Merge(context.Background(), &zeta.MergeOptions{
+	if err := w.Merge(ctx, &zeta.MergeOptions{
 		From:                    c.Revision,
 		FF:                      c.FF,
 		FFOnly:                  c.FFOnly,

@@ -57,11 +57,11 @@ func (c *Show) checkAlgorithm() (diferenco.Algorithm, error) {
 	return diferenco.Unspecified, nil
 }
 
-func (c *Show) Run(g *Globals) error {
+func (c *Show) Run(ctx context.Context, g *Globals) error {
 	if len(c.Objects) == 0 {
 		c.Objects = append(c.Objects, "HEAD")
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -75,7 +75,7 @@ func (c *Show) Run(g *Globals) error {
 		fmt.Fprintf(os.Stderr, "parse options error: %v\n", err)
 		return err
 	}
-	return r.Show(context.Background(), &zeta.ShowOptions{
+	return r.Show(ctx, &zeta.ShowOptions{
 		Nav:       c.Nav,
 		Objects:   c.Objects,
 		Textconv:  c.Textconv,

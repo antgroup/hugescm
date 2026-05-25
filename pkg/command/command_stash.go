@@ -25,8 +25,8 @@ type StashPush struct {
 	U bool `name:"include-untracked" short:"u" help:"Stashed untracked files with push/save, then cleaned with zeta clean"`
 }
 
-func (c *StashPush) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashPush) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -36,14 +36,14 @@ func (c *StashPush) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashPush(context.Background(), &zeta.StashPushOptions{U: c.U})
+	return w.StashPush(ctx, &zeta.StashPushOptions{U: c.U})
 }
 
 type StashList struct {
 }
 
-func (c *StashList) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashList) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -53,7 +53,7 @@ func (c *StashList) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashList(context.Background())
+	return w.StashList(ctx)
 }
 
 type StashShow struct {
@@ -61,8 +61,8 @@ type StashShow struct {
 	Stash            string `arg:"" optional:"" name:"stash" help:"Stash index" default:"stash@{0}"`
 }
 
-func (c *StashShow) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashShow) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -72,14 +72,14 @@ func (c *StashShow) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashShow(context.Background(), c.Stash)
+	return w.StashShow(ctx, c.Stash)
 }
 
 type StashClear struct {
 }
 
-func (c *StashClear) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashClear) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -89,15 +89,15 @@ func (c *StashClear) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashClear(context.Background())
+	return w.StashClear(ctx)
 }
 
 type StashDrop struct {
 	Stash string `arg:"" optional:"" name:"stash" help:"Stash index" default:"stash@{0}"`
 }
 
-func (c *StashDrop) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashDrop) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -107,7 +107,7 @@ func (c *StashDrop) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashDrop(context.Background(), c.Stash)
+	return w.StashDrop(ctx, c.Stash)
 }
 
 // stash@{1}
@@ -116,8 +116,8 @@ type StashPop struct {
 	Stash string `arg:"" optional:"" name:"stash" help:"Stash index" default:"stash@{0}"`
 }
 
-func (c *StashPop) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashPop) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -127,15 +127,15 @@ func (c *StashPop) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashPop(context.Background(), c.Stash)
+	return w.StashPop(ctx, c.Stash)
 }
 
 type StashApply struct {
 	Stash string `arg:"" optional:"" name:"stash" help:"Stash index" default:"stash@{0}"`
 }
 
-func (c *StashApply) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *StashApply) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -145,5 +145,5 @@ func (c *StashApply) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashApply(context.Background(), c.Stash)
+	return w.StashApply(ctx, c.Stash)
 }

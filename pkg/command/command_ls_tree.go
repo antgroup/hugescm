@@ -32,8 +32,8 @@ func (c *LsTree) NewLine() byte {
 }
 
 // List the contents of a tree object
-func (c *LsTree) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *LsTree) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -43,7 +43,7 @@ func (c *LsTree) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 
-	if err := r.LsTree(context.Background(), &zeta.LsTreeOptions{
+	if err := r.LsTree(ctx, &zeta.LsTreeOptions{
 		OnlyTrees: c.OnlyTrees,
 		Recurse:   c.Recurse,
 		Tree:      c.Tree,

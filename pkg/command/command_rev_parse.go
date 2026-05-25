@@ -16,8 +16,8 @@ type RevParse struct {
 	ZetaDir      bool `name:"zeta-dir" help:"Show the path to the .zeta directory"`
 }
 
-func (c *RevParse) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *RevParse) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,

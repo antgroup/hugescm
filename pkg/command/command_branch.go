@@ -58,8 +58,8 @@ func (b *Branch) IsForceCopy() bool {
 	return b.ForceCopy || b.Force
 }
 
-func (b *Branch) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (b *Branch) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -72,7 +72,7 @@ func (b *Branch) Run(g *Globals) error {
 		return r.ShowCurrent(os.Stdout)
 	}
 	if b.List {
-		return r.ListBranch(context.Background(), b.Args)
+		return r.ListBranch(ctx, b.Args)
 	}
 	if b.IsMove() {
 		if len(b.Args) < 2 {
@@ -89,11 +89,11 @@ func (b *Branch) Run(g *Globals) error {
 		return r.RemoveBranch(b.Args, b.IsForceDelete())
 	}
 	if len(b.Args) == 0 {
-		return r.ListBranch(context.Background(), nil)
+		return r.ListBranch(ctx, nil)
 	}
 	from := "HEAD"
 	if len(b.Args) >= 2 {
 		from = b.Args[1]
 	}
-	return r.CreateBranch(context.Background(), b.Args[0], from, b.IsForceCopy(), false)
+	return r.CreateBranch(ctx, b.Args[0], from, b.IsForceCopy(), false)
 }

@@ -4,9 +4,9 @@
 package main
 
 import (
-	"errors"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -66,7 +66,7 @@ func (c *App) concatDestination(baseName string) (string, error) {
 	return destination, nil
 }
 
-func (c *App) cloneAndMigrate(g *Globals, uri string) error {
+func (c *App) cloneAndMigrate(ctx context.Context, g *Globals, uri string) error {
 	destination, err := c.concatDestination(path.Base(uri))
 	if err != nil {
 		return err
@@ -77,17 +77,17 @@ func (c *App) cloneAndMigrate(g *Globals, uri string) error {
 		return err
 	}
 	defer os.RemoveAll(tempDir) // nolint
-	if err := g.RunEx(command.NoDir, "git", "clone", "--bare", c.From, tempDir); err != nil {
+	if err := g.RunEx(ctx, command.NoDir, "git", "clone", "--bare", c.From, tempDir); err != nil {
 		fmt.Fprintf(os.Stderr, "clone error: %v", err)
 		return err
 	}
-	return c.migrateFrom(g, tempDir, destination)
+	return c.migrateFrom(ctx, g, tempDir, destination)
 }
 
-func (c *App) Run(g *Globals) error {
+func (c *App) Run(ctx context.Context, g *Globals) error {
 	uri, err := pickURI(c.From)
 	if err == nil {
-		return c.cloneAndMigrate(g, uri)
+		return c.cloneAndMigrate(ctx, g, uri)
 	}
 	if !errors.Is(err, ErrLocalEndpoint) {
 		fmt.Fprintf(os.Stderr, "bad remote '%s' %v\n", c.From, err)
@@ -106,18 +106,18 @@ func (c *App) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	return c.migrateFrom(g, absFrom, destination)
+	return c.migrateFrom(ctx, g, absFrom, destination)
 }
 
-func (c *App) migrateFrom(g *Globals, from, to string) error {
+func (c *App) migrateFrom(ctx context.Context, g *Globals, from, to string) error {
 	if c.LFS {
 		fmt.Fprintf(os.Stderr, "Fetch all lfs objects ...\n")
-		if err := g.RunEx(from, "git", "lfs", "fetch", "--all"); err != nil {
+		if err := g.RunEx(ctx, from, "git", "lfs", "fetch", "--all"); err != nil {
 			fmt.Fprintf(os.Stderr, "git lfs fetch error: %v", err)
 		}
 	}
 	now := time.Now()
-	r, err := migrate.NewMigrator(context.Background(), &migrate.MigrateOptions{
+	r, err := migrate.NewMigrator(ctx, &migrate.MigrateOptions{
 		Environ: os.Environ(),
 		From:    from,
 		To:      to,
@@ -133,7 +133,7 @@ func (c *App) migrateFrom(g *Globals, from, to string) error {
 		return err
 	}
 	defer r.Close() // nolint
-	if err := r.Execute(context.Background()); err != nil {
+	if err := r.Execute(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "Execute error: %v\n", err)
 		return err
 	}

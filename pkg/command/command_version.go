@@ -4,6 +4,7 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -41,7 +42,7 @@ func (c *Version) formatJSON() error {
 	return json.NewEncoder(os.Stdout).Encode(m)
 }
 
-func (c *Version) Run(g *Globals) error {
+func (c *Version) Run(ctx context.Context, g *Globals) error {
 	if c.JSON {
 		return c.formatJSON()
 	}

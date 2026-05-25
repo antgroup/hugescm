@@ -17,8 +17,8 @@ type ForEachRef struct {
 	Pattern []string `arg:"" optional:"" name:"pattern" help:"If given, only refs matching at least one pattern are shown"`
 }
 
-func (c *ForEachRef) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *ForEachRef) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -28,7 +28,7 @@ func (c *ForEachRef) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 
-	return r.ForEachReference(context.Background(), &zeta.ForEachReferenceOptions{
+	return r.ForEachReference(ctx, &zeta.ForEachReferenceOptions{
 		FormatJSON: c.JSON,
 		Order:      c.Sort,
 		Pattern:    c.Pattern,

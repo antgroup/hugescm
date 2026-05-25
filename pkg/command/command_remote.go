@@ -23,8 +23,8 @@ type ShowRemote struct {
 	JSON bool `name:"json" short:"j" help:"Data will be returned in JSON format"`
 }
 
-func (c *ShowRemote) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *ShowRemote) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -49,8 +49,8 @@ type SetRemote struct {
 	URL string `arg:"" name:"url" help:"URL for the remote"`
 }
 
-func (c *SetRemote) Run(g *Globals) error {
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+func (c *SetRemote) Run(ctx context.Context, g *Globals) error {
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,

@@ -30,7 +30,7 @@ func (c *CheckIgnore) Summary() string {
 	return fmt.Sprintf(ciSummaryFormat, W("Usage: "), or)
 }
 
-func (c *CheckIgnore) Run(g *Globals) error {
+func (c *CheckIgnore) Run(ctx context.Context, g *Globals) error {
 	if c.Stdin {
 		if len(c.Paths) > 0 {
 			die("cannot specify pathnames with --stdin")
@@ -46,7 +46,7 @@ func (c *CheckIgnore) Run(g *Globals) error {
 			return ErrFlagsIncompatible
 		}
 	}
-	r, err := zeta.Open(context.Background(), &zeta.OpenOptions{
+	r, err := zeta.Open(ctx, &zeta.OpenOptions{
 		Worktree: g.CWD,
 		Values:   g.Values,
 		Verbose:  g.Verbose,
@@ -56,7 +56,7 @@ func (c *CheckIgnore) Run(g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.DoCheckIgnore(context.Background(), &zeta.CheckIgnoreOption{
+	return w.DoCheckIgnore(ctx, &zeta.CheckIgnoreOption{
 		Paths: slashPaths(c.Paths),
 		Stdin: c.Stdin,
 		Z:     c.Z,

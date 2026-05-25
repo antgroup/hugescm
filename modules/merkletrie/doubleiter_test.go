@@ -38,18 +38,18 @@ func (f *fakeNoder) Skip() bool                                      { return fa
 
 type compNoder struct{ *fakeNoder }
 
-func (c compNoder) Mode() filemode.FileMode { return c.fakeNoder.mode }
-func (c compNoder) ModifiedAt() time.Time   { return c.fakeNoder.modifiedAt }
+func (c compNoder) Mode() filemode.FileMode { return c.mode }
+func (c compNoder) ModifiedAt() time.Time   { return c.modifiedAt }
 
 type sizeNoder struct{ *fakeNoder }
 
-func (s sizeNoder) Size() int64 { return s.fakeNoder.size }
+func (s sizeNoder) Size() int64 { return s.size }
 
 type compSizeNoder struct{ *fakeNoder }
 
-func (c compSizeNoder) Mode() filemode.FileMode { return c.fakeNoder.mode }
-func (c compSizeNoder) ModifiedAt() time.Time   { return c.fakeNoder.modifiedAt }
-func (c compSizeNoder) Size() int64             { return c.fakeNoder.size }
+func (c compSizeNoder) Mode() filemode.FileMode { return c.mode }
+func (c compSizeNoder) ModifiedAt() time.Time   { return c.modifiedAt }
+func (c compSizeNoder) Size() int64             { return c.size }
 
 // makeNoder wraps a *fakeNoder so that the interface methods reflect
 // the requested capabilities.

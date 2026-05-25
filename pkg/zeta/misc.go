@@ -13,11 +13,11 @@ import (
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/pathmatch"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/vfs"
-	"github.com/antgroup/hugescm/modules/wildmatch"
 	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -128,7 +128,7 @@ func (r *Repository) Debug(format string, args ...any) {
 
 type Matcher struct {
 	prefix []string
-	ws     []*wildmatch.Wildmatch
+	ws     []*pathmatch.Pattern
 }
 
 func NewMatcher(patterns []string) *Matcher {
@@ -141,12 +141,7 @@ func NewMatcher(patterns []string) *Matcher {
 			m.prefix = append(m.prefix, strings.TrimSuffix(pattern, "/"))
 			continue
 		}
-		w, err := wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Ignore bad wildcard '%s' error: %v\n", pattern, err)
-			continue
-		}
-		m.ws = append(m.ws, w)
+		m.ws = append(m.ws, pathmatch.New(pattern, pathmatch.SystemCase))
 	}
 	return m
 }

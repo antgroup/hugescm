@@ -1,6 +1,6 @@
 //go:build windows || darwin
 
-package wildmatch
+package pathmatch
 
 func init() {
 	SystemCase = CaseFold

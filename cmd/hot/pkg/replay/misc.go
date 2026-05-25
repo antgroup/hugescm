@@ -3,13 +3,11 @@
 package replay
 
 import (
-	"fmt"
-	"os"
 	"runtime"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/git/gitobj"
-	"github.com/antgroup/hugescm/modules/wildmatch"
+	"github.com/antgroup/hugescm/modules/pathmatch"
 )
 
 type Matcher interface {
@@ -61,7 +59,7 @@ func systemCaseEqual(a, b string) bool {
 
 type matcher struct {
 	prefix []string
-	ws     []*wildmatch.Wildmatch
+	ws     []*pathmatch.Pattern
 }
 
 func NewMatcher(patterns []string) Matcher {
@@ -74,12 +72,7 @@ func NewMatcher(patterns []string) Matcher {
 			m.prefix = append(m.prefix, strings.TrimSuffix(pattern, "/"))
 			continue
 		}
-		w, err := wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Ignore bad wildcard '%s' error: %v\n", pattern, err)
-			continue
-		}
-		m.ws = append(m.ws, w)
+		m.ws = append(m.ws, pathmatch.New(pattern, pathmatch.SystemCase))
 	}
 	return m
 }

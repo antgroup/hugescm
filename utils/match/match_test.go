@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/antgroup/hugescm/modules/wildmatch"
+	"github.com/antgroup/hugescm/modules/pathmatch"
 )
 
 var (
@@ -345,24 +345,16 @@ func TestFnMatch(t *testing.T) {
 	}
 	match := func(pattern string) {
 		fmt.Fprintf(os.Stderr, "------------- check match: %s --------\n", pattern)
-		w, err := wildmatch.NewWildmatch(pattern, wildmatch.SystemCase, wildmatch.Contents)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "bad wildcard: %v\n", err)
-			return
-		}
+		p := pathmatch.New(pattern, pathmatch.SystemCase)
 		for _, name := range matchPaths {
-			fmt.Fprintf(os.Stderr, "%s | %s Wildmatch: %v\n", pattern, name, w.Match(name))
+			fmt.Fprintf(os.Stderr, "%s | %s pathmatch: %v\n", pattern, name, p.Match(name))
 		}
 	}
 	for _, p := range patterns {
 		match(p)
 	}
-	w2, err := wildmatch.NewWildmatch("utils/viewport/main.go", wildmatch.SystemCase, wildmatch.Contents)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "bad wildcard: %v\n", err)
-		return
-	}
-	fmt.Fprintf(os.Stderr, "%v\n", w2.Match("utils/viewport/main.go"))
+	p2 := pathmatch.New("utils/viewport/main.go", pathmatch.SystemCase)
+	fmt.Fprintf(os.Stderr, "%v\n", p2.Match("utils/viewport/main.go"))
 }
 
 func TestPathJoin(t *testing.T) {

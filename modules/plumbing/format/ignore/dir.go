@@ -32,6 +32,9 @@ func readIgnoreFile(fs vfs.VFS, path []string, ignoreFile string) (ps []Pattern,
 				ps = append(ps, ParsePattern(s, path))
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
 	}
 	if !os.IsNotExist(err) {
 		return nil, err

@@ -252,6 +252,7 @@ func TestLine(t *testing.T) {
 			if string(line) != s.Text() {
 				t.Errorf("Bytes.Line not like bufio.Scanner")
 			}
+			_ = s.Err()
 		})
 	}
 }

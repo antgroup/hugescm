@@ -41,6 +41,9 @@ func (c *Command) readStderr() {
 	for br.Scan() {
 		fmt.Fprintf(os.Stderr, "remote: %s\n", br.Text())
 	}
+	if err := br.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "scan error: %s\n", br.Text())
+	}
 }
 
 func (c *Command) Start(cmd string) error {

@@ -58,7 +58,9 @@ func detectViaLocaleConf() (_ []string, err error) {
 		}
 		m[value[0]] = strings.Trim(value[1], "\"")
 	}
-
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 	for _, v := range envs {
 		x, ok := m[v]
 		if ok {

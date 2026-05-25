@@ -114,6 +114,10 @@ func HashFromEnv(ctx context.Context, environ []string, repoPath string) (string
 		_, _ = h.Write(line)
 		_, _ = h.Write([]byte("\n"))
 	}
+	if err := sr.Err(); err != nil {
+		_ = cmd.Wait()
+		return "", err
+	}
 	if err := cmd.Wait(); err != nil {
 		if stderr.Len() > 0 {
 			fmt.Fprintf(os.Stderr, "hash %s error: %s\n", repoPath, stderr.String())
@@ -170,6 +174,10 @@ func HashEx(ctx context.Context, repoPath string) (*HashResult, error) {
 		hr.References++
 		_, _ = h.Write(line)
 		_, _ = h.Write([]byte("\n"))
+	}
+	if err := sr.Err(); err != nil {
+		_ = cmd.Wait()
+		return nil, err
 	}
 	if err := cmd.Wait(); err != nil {
 		if stderr.Len() > 0 {

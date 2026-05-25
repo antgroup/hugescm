@@ -87,6 +87,9 @@ func (r *Replayer) commitsToLinear(revision string) ([][]byte, error) {
 		}
 		commits = append(commits, oid)
 	}
+	if err := sr.Err(); err != nil {
+		return nil, err
+	}
 	return commits, nil
 }
 

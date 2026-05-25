@@ -40,11 +40,6 @@ type Pattern struct {
 	hasDoubleStar bool   // true if pattern contains ** anywhere
 }
 
-// doubleStar is the "**" segment that matches zero or more path levels.
-// Written as a named constant rather than a literal to avoid editor/linter
-// warnings about glob-specific syntax.
-const doubleStar = "**"
-
 // New parses pattern and returns a ready-to-use *Pattern.
 //
 // The pattern is split on '/' into segments.  Segments equal to "**" are

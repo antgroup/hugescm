@@ -4,11 +4,11 @@
 package migrate
 
 import (
-	"errors"
 	"bufio"
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -159,6 +159,9 @@ func (m *Migrator) commitsToMigrate(ctx context.Context) ([][]byte, error) {
 		}
 		commits = append(commits, oid)
 	}
+	if err := sr.Err(); err != nil {
+		return nil, err
+	}
 	return commits, nil
 }
 
@@ -290,6 +293,9 @@ func countObjects(ctx context.Context, repoPath string) int {
 			return -1
 		}
 		nums[k] = n
+	}
+	if err := br.Err(); err != nil {
+		return -1
 	}
 	if total := nums["count"] + nums["in-pack"]; total != 0 {
 		return total

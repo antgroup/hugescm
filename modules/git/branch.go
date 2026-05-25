@@ -102,6 +102,9 @@ func FindBranch(ctx context.Context, repoPath string, name string) (*Reference, 
 	if scanner.Scan() {
 		return ParseOneReference(scanner.Text())
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
 	return nil, NewBranchNotFound(name)
 }
 

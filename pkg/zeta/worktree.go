@@ -1025,6 +1025,9 @@ func findMatchInFile(ctx context.Context, file *object.File, treeName string, op
 			})
 		}
 	}
+	if err := br.Err(); err != nil {
+		return nil, err
+	}
 	return grepResults, nil
 }
 

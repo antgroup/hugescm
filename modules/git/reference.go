@@ -453,6 +453,9 @@ func ReferencePrefixMatch(ctx context.Context, repoPath string, refname string) 
 			refs[i] = b
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
 
 	br := func() *Reference {
 		for _, b := range refs {
@@ -495,6 +498,9 @@ func HasSpecificReference(ctx context.Context, repoPath string, referencePrefix 
 	var result bool
 	for scanner.Scan() {
 		result = true
+	}
+	if err := scanner.Err(); err != nil {
+		return false, err
 	}
 	return result, nil
 }

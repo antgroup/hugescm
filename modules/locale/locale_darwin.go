@@ -127,6 +127,9 @@ func parseDefaultsSystemAppleLanguages(domain string) ([]string, error) {
 		}
 		m = append(m, text)
 	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 
 	if len(m) == 0 {
 		return nil, &Error{"detect via user defaults system", ErrNotDetected}

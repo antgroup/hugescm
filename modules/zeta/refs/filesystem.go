@@ -270,7 +270,9 @@ func (b *fsBackend) packedRef(name plumbing.ReferenceName) (*plumbing.Reference,
 			return ref, nil
 		}
 	}
-
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 	return nil, plumbing.ErrReferenceNotFound
 }
 
@@ -321,7 +323,9 @@ func (b *fsBackend) matchPackedRefPrefix(prefix plumbing.ReferenceName) (*plumbi
 			return ref, nil
 		}
 	}
-
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 	return nil, plumbing.ErrReferenceNotFound
 }
 

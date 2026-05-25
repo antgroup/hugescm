@@ -175,7 +175,8 @@ func (m model) View() tea.View {
 			BorderForeground(lipgloss.Color("243"))
 		b.WriteString(tableStyle.Render(m.table.View()))
 		b.WriteString("\n\n")
-		b.WriteString("  " + m.paginator.View())
+		b.WriteString("  ")
+		b.WriteString(m.paginator.View())
 		b.WriteString("\n\n  ↑/k ↓/j: navigate • h/l ←/→: page • q: quit\n")
 	}
 

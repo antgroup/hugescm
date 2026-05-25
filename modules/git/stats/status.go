@@ -188,6 +188,9 @@ func ReferencesStatus(ctx context.Context, repoPath string, refFormat string) (R
 				UpdateIndexMax: name.MaxUpdateIndex,
 			})
 		}
+		if err := scanner.Err(); err != nil {
+			return ReferencesStat{}, err
+		}
 
 		reftableDir, err := os.ReadDir(refsPath)
 		if err != nil {

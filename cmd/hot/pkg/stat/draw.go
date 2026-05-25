@@ -99,5 +99,8 @@ func (s *summer) resolveName(ctx context.Context, repoPath string, seen map[stri
 			s.add(name, size)
 		}
 	}
+	if err := br.Err(); err != nil {
+		return err
+	}
 	return nil
 }

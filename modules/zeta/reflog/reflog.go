@@ -132,6 +132,9 @@ func (d *DB) parse(r io.Reader) ([]*Entry, error) {
 		}
 		entries = append(entries, e)
 	}
+	if err := br.Err(); err != nil {
+		return nil, err
+	}
 	sort.SliceStable(entries, func(i, j int) bool {
 		return true
 	})

@@ -102,6 +102,9 @@ func GetReferences(ctx context.Context, repoPath string, m func(*Reference) bool
 			references = append(references, r)
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
 	return references, nil
 }
 

@@ -70,7 +70,7 @@ func (c *Co) decodeRemote() (remote string, uri string, err error) {
 	return remote, remote, nil
 }
 
-func (c *Co) Run(g *Globals) error {
+func (c *Co) Run(ctx context.Context, g *Globals) error {
 	remote, uri, err := c.decodeRemote()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bad remote '%s' error: '%v'\n", c.From, err)
@@ -81,7 +81,7 @@ func (c *Co) Run(g *Globals) error {
 		return err
 	}
 	trace.DbgPrint("%s --> %s", remote, destination)
-	return co.Co(context.Background(), &co.CoOptions{
+	return co.Co(ctx, &co.CoOptions{
 		Remote:      remote,
 		Destination: destination,
 		Branch:      c.Branch,

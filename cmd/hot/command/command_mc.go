@@ -56,7 +56,7 @@ func (c *Mc) concatDestination(baseName string) (string, error) {
 	return destination, nil
 }
 
-func (c *Mc) cloneAndMigrate(g *Globals, uri string) error {
+func (c *Mc) cloneAndMigrate(ctx context.Context, g *Globals, uri string) error {
 	destination, err := c.concatDestination(path.Base(uri))
 	if err != nil {
 		return err
@@ -67,17 +67,17 @@ func (c *Mc) cloneAndMigrate(g *Globals, uri string) error {
 		return err
 	}
 	defer os.RemoveAll(tempDir) // nolint
-	if err := g.RunEx(context.Background(), command.NoDir, "git", "clone", "--bare", c.From, tempDir); err != nil {
+	if err := g.RunEx(ctx, command.NoDir, "git", "clone", "--bare", c.From, tempDir); err != nil {
 		fmt.Fprintf(os.Stderr, "clone error: %v", err)
 		return err
 	}
-	return c.migrateFrom(g, tempDir, destination)
+	return c.migrateFrom(ctx, g, tempDir, destination)
 }
 
-func (c *Mc) Run(g *Globals) error {
+func (c *Mc) Run(ctx context.Context, g *Globals) error {
 	uri, err := pickURI(c.From)
 	if err == nil {
-		return c.cloneAndMigrate(g, uri)
+		return c.cloneAndMigrate(ctx, g, uri)
 	}
 	if !errors.Is(err, ErrLocalEndpoint) {
 		fmt.Fprintf(os.Stderr, "bad remote '%s' %v\n", c.From, err)
@@ -96,12 +96,12 @@ func (c *Mc) Run(g *Globals) error {
 	if err != nil {
 		return err
 	}
-	return c.migrateFrom(g, absFrom, destination)
+	return c.migrateFrom(ctx, g, absFrom, destination)
 }
 
-func (c *Mc) migrateFrom(g *Globals, from, to string) error {
+func (c *Mc) migrateFrom(ctx context.Context, g *Globals, from, to string) error {
 	now := time.Now()
-	r, err := mc.NewMigrator(context.Background(), &mc.MigrateOptions{
+	r, err := mc.NewMigrator(ctx, &mc.MigrateOptions{
 		From:    from,
 		To:      to, //  os.Environ(), from, to, c.Bare, 4, g.Verbose
 		Format:  c.Format,
@@ -114,7 +114,7 @@ func (c *Mc) migrateFrom(g *Globals, from, to string) error {
 		return err
 	}
 	defer r.Close() // nolint
-	if err := r.Execute(context.Background()); err != nil {
+	if err := r.Execute(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "Execute error: %v\n", err)
 		return err
 	}

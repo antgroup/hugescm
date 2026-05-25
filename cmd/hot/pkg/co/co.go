@@ -185,7 +185,7 @@ func clone(ctx context.Context, o *CoOptions) error {
 		cloneArgs = append(cloneArgs, "--depth="+strconv.Itoa(o.Depth))
 	}
 	if o.Recursive {
-		cloneArgs = append(cloneArgs, "recursive", "--shallow-submodules") // submodule shallow
+		cloneArgs = append(cloneArgs, "--recurse-submodules", "--shallow-submodules") // submodule shallow
 	}
 	cloneArgs = append(cloneArgs, o.Remote, o.Destination)
 	cmd := command.NewFromOptions(ctx, &command.RunOpts{

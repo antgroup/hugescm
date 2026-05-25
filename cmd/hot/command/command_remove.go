@@ -21,12 +21,12 @@ type Remove struct {
 	HeadOnly bool     `short:"H" name:"head-only" help:"Graft only the default branch"`
 }
 
-func (c *Remove) Run(g *Globals) error {
-	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
+func (c *Remove) Run(ctx context.Context, g *Globals) error {
+	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
 	matcher := replay.NewMatcher(c.Paths)
 	if c.Graft {
-		r, err := replay.NewReplayer(context.Background(), repoPath, 4, g.Verbose)
+		r, err := replay.NewReplayer(ctx, repoPath, 4, g.Verbose)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 			return err
@@ -38,7 +38,7 @@ func (c *Remove) Run(g *Globals) error {
 		}
 		return nil
 	}
-	r, err := replay.NewReplayer(context.Background(), repoPath, 3, g.Verbose)
+	r, err := replay.NewReplayer(ctx, repoPath, 3, g.Verbose)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 		return err

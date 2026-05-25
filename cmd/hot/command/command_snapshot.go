@@ -237,7 +237,7 @@ func (c *Snapshot) doSnapshot(ctx context.Context, basePoint string) (string, er
 	return commitID, nil
 }
 
-func (c *Snapshot) Run(g *Globals) error {
+func (c *Snapshot) Run(ctx context.Context, g *Globals) error {
 	var remote, refname string
 	if c.Push {
 		switch len(c.UnresolvedArgs) {
@@ -253,19 +253,19 @@ func (c *Snapshot) Run(g *Globals) error {
 		}
 	}
 	var err error
-	if c.worktree, err = git.RevParseWorktree(context.Background(), c.CWD); err != nil {
+	if c.worktree, err = git.RevParseWorktree(ctx, c.CWD); err != nil {
 		die("can only be run on non-bare repositories, error: %v", err)
 		return err
 	}
-	c.repoPath = git.RevParseRepoPath(context.Background(), c.CWD)
+	c.repoPath = git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", c.repoPath)
-	current, basePoint, err := git.RevParseCurrent(context.Background(), os.Environ(), c.repoPath)
+	current, basePoint, err := git.RevParseCurrent(ctx, os.Environ(), c.repoPath)
 	if err != nil {
 		die("rev-parse HEAD: %v", err)
 		return err
 	}
 	trace.DbgPrint("current '%s' commit: %s", current, basePoint)
-	commit, err := c.doSnapshot(context.Background(), basePoint)
+	commit, err := c.doSnapshot(ctx, basePoint)
 	if err != nil {
 		return err
 	}
@@ -280,7 +280,7 @@ func (c *Snapshot) Run(g *Globals) error {
 		psArgs = append(psArgs, "-f")
 	}
 	psArgs = append(psArgs, remote, fmt.Sprintf("%s:%s", commit, refname))
-	cmd := command.NewFromOptions(context.Background(),
+	cmd := command.NewFromOptions(ctx,
 		&command.RunOpts{
 			RepoPath:  c.repoPath,
 			Environ:   os.Environ(),

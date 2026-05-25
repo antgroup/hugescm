@@ -24,20 +24,20 @@ type Graft struct {
 	ALL      bool     `short:"A" name:"all" help:"Remove all large blobs"`
 }
 
-func (c *Graft) Run(g *Globals) error {
+func (c *Graft) Run(ctx context.Context, g *Globals) error {
 	for _, p := range c.Paths {
-		if err := c.doOnce(g, p); err != nil {
+		if err := c.doOnce(ctx, g, p); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *Graft) doOnce(g *Globals, p string) error {
-	repoPath := git.RevParseRepoPath(context.Background(), p)
+func (c *Graft) doOnce(ctx context.Context, g *Globals, p string) error {
+	repoPath := git.RevParseRepoPath(ctx, p)
 	trace.DbgPrint("check %s size ...", repoPath)
 	e := stat.NewSizeExecutor(c.Limit, c.FullPath)
-	if err := e.Run(context.Background(), repoPath, false); err != nil {
+	if err := e.Run(ctx, repoPath, false); err != nil {
 		fmt.Fprintf(os.Stderr, "check repo size error: %v\n", err)
 		return err
 	}
@@ -52,7 +52,7 @@ func (c *Graft) doOnce(g *Globals, p string) error {
 	if matcher == nil {
 		return nil
 	}
-	r, err := replay.NewReplayer(context.Background(), repoPath, 4, g.Verbose)
+	r, err := replay.NewReplayer(ctx, repoPath, 4, g.Verbose)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 		return err

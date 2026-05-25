@@ -17,9 +17,9 @@ type Az struct {
 	FullPath bool     `short:"F" name:"full-path" help:"Show full path"`
 }
 
-func (c *Az) Run(g *Globals) error {
+func (c *Az) Run(ctx context.Context, g *Globals) error {
 	for _, p := range c.Paths {
-		if err := c.azOnce(p); err != nil {
+		if err := c.azOnce(ctx, p); err != nil {
 			return err
 		}
 	}
@@ -27,8 +27,8 @@ func (c *Az) Run(g *Globals) error {
 }
 
 // git cat-file --batch-check --batch-all-objects
-func (c *Az) azOnce(p string) error {
-	repoPath := git.RevParseRepoPath(context.Background(), p)
+func (c *Az) azOnce(ctx context.Context, p string) error {
+	repoPath := git.RevParseRepoPath(ctx, p)
 	trace.DbgPrint("begin analysis repository: %v large file: %v", repoPath, strengthen.FormatSize(c.Limit))
-	return stat.Az(context.Background(), repoPath, c.Limit, c.FullPath)
+	return stat.Az(ctx, repoPath, c.Limit, c.FullPath)
 }

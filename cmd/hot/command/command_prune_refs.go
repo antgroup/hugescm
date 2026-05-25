@@ -200,15 +200,15 @@ func (c *PruneRefs) pruneRefs(ctx context.Context, repoPath string, references [
 	return nil
 }
 
-func (c *PruneRefs) Run(g *Globals) error {
-	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
+func (c *PruneRefs) Run(ctx context.Context, g *Globals) error {
+	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	prefixes := c.preparePrefixes()
 	fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m%s\x1b[0m\n", W("* The following ref prefixes will be deleted:\n"))
 	for _, p := range prefixes {
 		fmt.Fprintf(os.Stderr, "\x1b[38;2;254;225;64m*  %s\x1b[0m\n", p)
 	}
 	expiredAt := time.Now().Add(-c.Expires)
-	references, err := GetReferences(context.Background(), repoPath, func(r *Reference) bool {
+	references, err := GetReferences(ctx, repoPath, func(r *Reference) bool {
 		return isDirtyReference(r.Name) || (prefixesMatch(r.Name, prefixes) && expiredAt.After(r.LastUpdate))
 	})
 	if err != nil {
@@ -222,7 +222,7 @@ func (c *PruneRefs) Run(g *Globals) error {
 	if err := c.record(repoPath, references); err != nil {
 		return err
 	}
-	if err := c.pruneRefs(context.Background(), repoPath, references); err != nil {
+	if err := c.pruneRefs(ctx, repoPath, references); err != nil {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "\nPrune refs success, total: %d\n", len(references))

@@ -41,10 +41,10 @@ type Cat struct {
 	NoAltScreen bool   `name:"no-alt-screen" help:"Disable alternate screen buffer for pager"`
 }
 
-func (c *Cat) Run(g *Globals) error {
-	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
+func (c *Cat) Run(ctx context.Context, g *Globals) error {
+	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
-	d, err := git.NewDecoder(context.Background(), repoPath)
+	d, err := git.NewDecoder(ctx, repoPath)
 	if err != nil {
 		die("new git decoder error: %v", err)
 		return err

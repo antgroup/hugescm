@@ -23,8 +23,7 @@ type Show struct {
 	JSON   bool   `name:"json" short:"j" help:"Output patches in JSON format"`
 }
 
-func (c *Show) Run(g *Globals) error {
-	ctx := context.Background()
+func (c *Show) Run(ctx context.Context, g *Globals) error {
 	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
 

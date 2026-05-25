@@ -24,9 +24,9 @@ type Smart struct {
 	ALL      bool     `short:"A" name:"all" help:"Remove all large blobs"`
 }
 
-func (c *Smart) Run(g *Globals) error {
+func (c *Smart) Run(ctx context.Context, g *Globals) error {
 	for _, p := range c.Paths {
-		if err := c.doOnce(g, p); err != nil {
+		if err := c.doOnce(ctx, g, p); err != nil {
 			return err
 		}
 	}
@@ -77,11 +77,11 @@ func newMatcher(sz *stat.SizeExecutor, matchAll bool) replay.Matcher {
 	return replay.NewEqualer(selected)
 }
 
-func (c *Smart) doOnce(g *Globals, p string) error {
-	repoPath := git.RevParseRepoPath(context.Background(), p)
+func (c *Smart) doOnce(ctx context.Context, g *Globals, p string) error {
+	repoPath := git.RevParseRepoPath(ctx, p)
 	trace.DbgPrint("check %s size ...", p)
 	e := stat.NewSizeExecutor(c.Limit, c.FullPath)
-	if err := e.Run(context.Background(), repoPath, false); err != nil {
+	if err := e.Run(ctx, repoPath, false); err != nil {
 		fmt.Fprintf(os.Stderr, "analyze repo size error: %v\n", err)
 		return err
 	}
@@ -96,7 +96,7 @@ func (c *Smart) doOnce(g *Globals, p string) error {
 	if matcher == nil {
 		return nil
 	}
-	r, err := replay.NewReplayer(context.Background(), repoPath, 3, g.Verbose)
+	r, err := replay.NewReplayer(ctx, repoPath, 3, g.Verbose)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new rewriter error: %v\n", err)
 		return err

@@ -217,15 +217,15 @@ func (c *ScanRefs) Match(name string) bool {
 	return false
 }
 
-func (c *ScanRefs) Run(g *Globals) error {
+func (c *ScanRefs) Run(ctx context.Context, g *Globals) error {
 	c.fixup()
-	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
+	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
 	order := git.OrderNewest
 	if c.Oldest {
 		order = git.OrderOldest
 	}
-	references, err := refs.ScanReferences(context.Background(), repoPath, c, order)
+	references, err := refs.ScanReferences(ctx, repoPath, c, order)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scan references error: %v\n", err)
 		return err

@@ -19,9 +19,9 @@ type Size struct {
 	FullPath bool     `short:"F" name:"full-path" help:"Show full path"`
 }
 
-func (c *Size) Run(g *Globals) error {
+func (c *Size) Run(ctx context.Context, g *Globals) error {
 	for _, p := range c.Paths {
-		if err := c.sizeOnce(p); err != nil {
+		if err := c.sizeOnce(ctx, p); err != nil {
 			fmt.Fprintf(os.Stderr, "show repo '%s' size error: %v\n", p, err)
 			return err
 		}
@@ -29,11 +29,11 @@ func (c *Size) Run(g *Globals) error {
 	return nil
 }
 
-func (c *Size) sizeOnce(p string) error {
-	repoPath := git.RevParseRepoPath(context.Background(), p)
+func (c *Size) sizeOnce(ctx context.Context, p string) error {
+	repoPath := git.RevParseRepoPath(ctx, p)
 	trace.DbgPrint("check %s size ...", repoPath)
 	e := stat.NewSizeExecutor(c.Limit, c.FullPath)
-	if err := e.Run(context.Background(), repoPath, c.Extract); err != nil {
+	if err := e.Run(ctx, repoPath, c.Extract); err != nil {
 		return err
 	}
 	return nil

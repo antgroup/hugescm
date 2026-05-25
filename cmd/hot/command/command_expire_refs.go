@@ -56,11 +56,11 @@ func (c *ExpireRefs) Expire(ref *refs.Reference) bool {
 	return time.Since(ref.Committer.When) > c.Expires
 }
 
-func (c *ExpireRefs) Run(g *Globals) error {
+func (c *ExpireRefs) Run(ctx context.Context, g *Globals) error {
 	c.fixup()
-	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
+	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v expires: %v", repoPath, c.Expires)
-	references, err := refs.ScanReferences(context.Background(), repoPath, c, git.OrderNone)
+	references, err := refs.ScanReferences(ctx, repoPath, c, git.OrderNone)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "find repo references error: %v\n", err)
 		return err
@@ -78,7 +78,7 @@ func (c *ExpireRefs) Run(g *Globals) error {
 	defer fd.Close() // nolint
 	_, _ = fmt.Fprintf(fd, "CLEANUP START TIME: %v\n", time.Now().Format(time.RFC3339))
 
-	u, err := git.NewRefUpdater(context.Background(), repoPath, os.Environ(), false)
+	u, err := git.NewRefUpdater(ctx, repoPath, os.Environ(), false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "RefUpdater: new ref updater error: %v\n", err)
 		return err

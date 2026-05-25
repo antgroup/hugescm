@@ -23,7 +23,7 @@ type Unbranch struct {
 	Keep     int    `short:"K" name:"keep" help:"Keep the number of commits, 0 keeps all commits"`
 }
 
-func (c *Unbranch) Run(g *Globals) error {
+func (c *Unbranch) Run(ctx context.Context, g *Globals) error {
 	if len(c.Revision) == 0 && c.Keep != 0 {
 		fmt.Fprintf(os.Stderr, "%s\n", tr.W("unbranch unspecified branch mode is incompatible with --keep"))
 		return errors.New("unbranch unspecified branch mode is incompatible with --keep")
@@ -34,9 +34,9 @@ func (c *Unbranch) Run(g *Globals) error {
 			return errors.New("bad branch name")
 		}
 	}
-	repoPath := git.RevParseRepoPath(context.Background(), c.CWD)
+	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
-	r, err := replay.NewReplayer(context.Background(), repoPath, 2, g.Verbose)
+	r, err := replay.NewReplayer(ctx, repoPath, 2, g.Verbose)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "new replayer error: %v\n", err)
 		return err

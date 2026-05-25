@@ -106,7 +106,20 @@ func (w *Worktree) Status(ctx context.Context, verbose bool) (Status, error) {
 func (w *Worktree) status(ctx context.Context, commit plumbing.Hash) (Status, error) {
 	s := make(Status)
 
-	left, err := w.diffCommitWithStaging(ctx, commit, false)
+	// Load the index only once per Status() call and share it between
+	// the two diffs. We deliberately do NOT share the same mindex
+	// root noder: merkletrie.DiffTreeContext mutates the per-node
+	// children slice in place (frame.Drop nils out elements of the
+	// underlying array), so reusing a noder across two diffs would
+	// leave nil entries in subsequent Children() results and panic
+	// in frame.byName.Less. Re-building the root from the same idx
+	// is cheap compared with re-decoding the index file.
+	idx, err := w.odb.Index()
+	if err != nil {
+		return nil, err
+	}
+
+	left, err := w.diffCommitWithStagingFromIndex(ctx, commit, idx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +143,12 @@ func (w *Worktree) status(ctx context.Context, commit plumbing.Hash) (Status, er
 		}
 	}
 
-	right, err := w.diffStagingWithWorktree(ctx, false, true)
+	// Build a worktree-side cache so unchanged large binaries
+	// (whose (size, mtime, mode) still match the index) skip the
+	// full-file BLAKE3 computation.
+	cache := w.buildWorktreeCache(ctx, idx)
+
+	right, err := w.diffStagingWithWorktreeFromIndex(ctx, idx, cache, false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +188,19 @@ func nameFromAction(ch *merkletrie.Change) string {
 }
 
 func (w *Worktree) diffCommitWithStaging(ctx context.Context, commit plumbing.Hash, reverse bool) (merkletrie.Changes, error) {
+	idx, err := w.odb.Index()
+	if err != nil {
+		return nil, err
+	}
+	return w.diffCommitWithStagingFromIndex(ctx, commit, idx, reverse)
+}
+
+// diffCommitWithStagingFromIndex reuses an already loaded *index.Index,
+// avoiding a second odb.Index() decode. It re-builds the mindex root
+// each call on purpose: the merkletrie iterator mutates per-node
+// children slices in place, so a mindex root may be consumed by at
+// most one DiffTreeContext.
+func (w *Worktree) diffCommitWithStagingFromIndex(ctx context.Context, commit plumbing.Hash, idx *index.Index, reverse bool) (merkletrie.Changes, error) {
 	var t *object.Tree
 	if !commit.IsZero() {
 		c, err := w.odb.Commit(ctx, commit)
@@ -183,7 +214,17 @@ func (w *Worktree) diffCommitWithStaging(ctx context.Context, commit plumbing.Ha
 		}
 	}
 
-	return w.diffTreeWithStaging(ctx, t, reverse)
+	var from noder.Noder
+	if t != nil {
+		from = object.NewTreeRootNode(t, noder.NewSparseTreeMatcher(w.Core.SparseDirs), true)
+	}
+
+	indexRoot := mindex.NewRootNode(ctx, idx, w.resolveFragmentsIndex)
+	if reverse {
+		return merkletrie.DiffTreeContext(ctx, indexRoot, from, diffTreeIsEquals)
+	}
+
+	return merkletrie.DiffTreeContext(ctx, from, indexRoot, diffTreeIsEquals)
 }
 
 func (w *Worktree) diffTreeWithStaging(ctx context.Context, t *object.Tree, reverse bool) (merkletrie.Changes, error) {
@@ -266,11 +307,22 @@ func (w *Worktree) diffStagingWithWorktree(ctx context.Context, reverse, exclude
 	if err != nil {
 		return nil, err
 	}
-	from := mindex.NewRootNode(ctx, idx, w.resolveFragmentsIndex)
+	cache := w.buildWorktreeCache(ctx, idx)
+	return w.diffStagingWithWorktreeFromIndex(ctx, idx, cache, reverse, excludeIgnoredChanges)
+}
 
-	to := filesystem.NewRootNode(w.baseDir, noder.NewSparseTreeMatcher(w.Core.SparseDirs))
+// diffStagingWithWorktreeFromIndex reuses an already loaded
+// *index.Index, avoiding a second odb.Index() decode. A fresh mindex
+// root is built on every call because merkletrie consumes it
+// destructively (see diffCommitWithStagingFromIndex). cache may be
+// nil; when non-nil the worktree-side Hash() will consult the cache
+// first and skip full-file BLAKE3 on a hit.
+func (w *Worktree) diffStagingWithWorktreeFromIndex(ctx context.Context, idx *index.Index, cache *filesystem.Cache, reverse, excludeIgnoredChanges bool) (merkletrie.Changes, error) {
+	from := mindex.NewRootNode(ctx, idx, w.resolveFragmentsIndex)
+	to := filesystem.NewRootNodeWithCache(w.baseDir, noder.NewSparseTreeMatcher(w.Core.SparseDirs), cache)
 
 	var c merkletrie.Changes
+	var err error
 	if reverse {
 		c, err = merkletrie.DiffTreeContext(ctx, to, from, diffTreeIsEquals)
 	} else {
@@ -285,6 +337,91 @@ func (w *Worktree) diffStagingWithWorktree(ctx context.Context, reverse, exclude
 		return w.excludeIgnoredChanges(c), nil
 	}
 	return c, nil
+}
+
+// fragmentsResolver returns the real (origin) Entry behind a fragments
+// entry: the resolved Entry must carry the underlying blob hash, the
+// total size and the origin mode. The signature mirrors
+// (*Worktree).resolveFragmentsIndex so tests can inject a fake.
+type fragmentsResolver func(ctx context.Context, e *index.Entry) *index.Entry
+
+// buildWorktreeCache turns every regular-file entry in idx (with
+// fragments resolved to their real size and hash) into a
+// filesystem.Cache, so the worktree side can skip BLAKE3 for unchanged
+// large files.
+//
+// It is a thin wrapper that forwards to buildCacheFromIndex with the
+// production fragments resolver; the heavy lifting is kept in a pure
+// function so it can be unit-tested without an odb.
+func (w *Worktree) buildWorktreeCache(ctx context.Context, idx *index.Index) *filesystem.Cache {
+	return buildCacheFromIndex(ctx, idx, w.resolveFragmentsIndex)
+}
+
+// buildCacheFromIndex is the pure form of buildWorktreeCache. resolve
+// must not be nil when idx contains fragments entries.
+//
+// Only regular files are included: symlinks, submodules, directories,
+// non-merged stages and SkipWorktree entries fall through to the
+// original code path to avoid introducing semantic drift.
+func buildCacheFromIndex(ctx context.Context, idx *index.Index, resolve fragmentsResolver) *filesystem.Cache {
+	if idx == nil {
+		return nil
+	}
+	cache := filesystem.NewCache()
+	for _, e := range idx.Entries {
+		if e.Stage != index.Merged {
+			continue
+		}
+		if e.SkipWorktree {
+			continue
+		}
+		// IntentToAdd (git add -N) entries have a zero blob hash by
+		// convention; honouring them would let a later worktree-side
+		// match silently return the zero hash and hide a real
+		// modification. Skip them so the original code path runs.
+		if e.IntentToAdd {
+			continue
+		}
+		// Skip non-regular kinds; they take the original code path.
+		switch e.Mode.Origin() {
+		case filemode.Symlink, filemode.Submodule, filemode.Dir, filemode.Empty:
+			continue
+		}
+		entry := e
+		size := int64(e.Size)
+		hash := e.Hash
+		if e.Mode&filemode.Fragments != 0 {
+			if resolve == nil {
+				continue
+			}
+			resolved := resolve(ctx, e)
+			if resolved == nil || resolved == e {
+				// resolve returned the input entry verbatim, which
+				// is the convention production code uses to signal
+				// "fragments metadata could not be loaded": the
+				// hash and size on `e` describe the fragments meta
+				// blob, not the underlying file. Caching that
+				// would risk a stale match, so skip and let the
+				// regular path recompute.
+				continue
+			}
+			entry = resolved
+			size = int64(resolved.Size)
+			hash = resolved.Hash
+		}
+		// 36 bytes: blob hash followed by 4 bytes of mode. The order
+		// matches filesystem.Node.Hash() and mindex.Node.Hash() so the
+		// diff routine can compare them with bytes.Equal.
+		buf := make([]byte, 0, filesystem.HashSize)
+		buf = append(buf, hash[:]...)
+		buf = append(buf, entry.Mode.Bytes()...)
+		cache.Put(e.Name, filesystem.CacheEntry{
+			Size:       size,
+			ModifiedAt: entry.ModifiedAt,
+			Hash:       buf,
+		})
+	}
+	return cache
 }
 
 func (w *Worktree) ignoreMatcher() (ignore.Matcher, error) {

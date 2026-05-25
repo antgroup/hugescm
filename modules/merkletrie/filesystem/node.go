@@ -34,6 +34,12 @@ type Node struct {
 	modifiedAt time.Time
 
 	m noder.Matcher
+
+	// cache is optional. When set and the current (size, mtime, mode)
+	// triple matches a cached entry, Hash() reuses the cached hash
+	// bytes and skips opening / hashing the file. All child nodes
+	// share the same *Cache pointer.
+	cache *Cache
 }
 
 // NewRootNode returns the root node based on a given billy.Filesystem.
@@ -43,6 +49,14 @@ type Node struct {
 // of the submodule HEAD
 func NewRootNode(root string, m noder.Matcher) noder.Noder {
 	return &Node{root: root, isDir: true, m: m}
+}
+
+// NewRootNodeWithCache is the same as NewRootNode but accepts an
+// optional Cache. When a worktree file's (size, mtime, mode) tuple
+// matches the cached entry, Hash() returns the cached 36-byte hash
+// and skips the os.Open + BLAKE3 path entirely.
+func NewRootNodeWithCache(root string, m noder.Matcher, cache *Cache) noder.Noder {
+	return &Node{root: root, isDir: true, m: m, cache: cache}
 }
 
 func (n Node) fsPath(p string) string {
@@ -56,10 +70,72 @@ func (n Node) fsPath(p string) string {
 //
 // The hash of a directory is always a 36-bytes slice of zero values
 func (n *Node) Hash() []byte {
-	if len(n.hash) == 0 {
-		n.calculateHash()
+	if len(n.hash) != 0 {
+		return n.hash
 	}
+	// Try the cache first. It is only consulted for regular files
+	// (non-directory, non-symlink) because the cache only stores
+	// hashes for that case. On a hit we skip os.Open + BLAKE3
+	// entirely.
+	if !n.isDir && n.mode&os.ModeSymlink == 0 && n.cache != nil {
+		if e, ok := n.cache.Lookup(n.path); ok {
+			if n.cacheEntryMatches(e) {
+				// Copy the cached bytes before exposing them: many
+				// Node instances may share the same Cache, and we
+				// do not want any accidental append/mutation on the
+				// returned slice to corrupt cached entries (or be
+				// observed across sibling Nodes).
+				n.hash = append(make([]byte, 0, len(e.Hash)), e.Hash...)
+				return n.hash
+			}
+		}
+	}
+	n.calculateHash()
 	return n.hash
+}
+
+// cacheEntryMatches returns true when the cached (size, mtime, mode)
+// triple still matches the local file. Mode comparison is required so
+// that a worktree file whose kind has changed (e.g. became an irregular
+// file) does not silently reuse a cached regular-file hash.
+func (n *Node) cacheEntryMatches(e CacheEntry) bool {
+	if len(e.Hash) != HashSize {
+		return false
+	}
+	if e.Size != n.size {
+		return false
+	}
+	if !sameModTime(e.ModifiedAt, n.modifiedAt) {
+		return false
+	}
+	mode, err := filemode.NewFromOS(n.mode)
+	if err != nil {
+		return false
+	}
+	// The last 4 bytes of the cached hash are the encoded mode; if the
+	// local file's mode changed the cache entry must not be reused.
+	cachedMode := e.Hash[plumbing.HASH_DIGEST_SIZE:]
+	localMode := mode.Bytes()
+	for i := range 4 {
+		if cachedMode[i] != localMode[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// sameModTime mirrors merkletrie/doubleiter.sameModTime: try Equal
+// first and then fall back to a microsecond-truncated comparison. This
+// works around precision differences between os.FileInfo.ModTime and
+// the index's time.Unix(sec, nsec) value.
+func sameModTime(a, b time.Time) bool {
+	if a.Equal(b) {
+		return true
+	}
+	if a.Unix() != b.Unix() {
+		return false
+	}
+	return a.Nanosecond()/1000 == b.Nanosecond()/1000
 }
 
 func (n *Node) Mode() filemode.FileMode {
@@ -176,6 +252,7 @@ func (n *Node) newChildNode(fi os.FileInfo) (*Node, error) {
 		mode:       fi.Mode(),
 		modifiedAt: fi.ModTime(),
 		m:          m,
+		cache:      n.cache,
 	}
 
 	return node, nil

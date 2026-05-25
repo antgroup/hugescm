@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 )
@@ -142,11 +143,46 @@ func (d *doubleIter) sameHash() bool {
 	a, fromOK := from.(noder.Comparators)
 	b, toOK := to.(noder.Comparators)
 	if fromOK && toOK {
-		if a.Mode() == b.Mode() && a.ModifiedAt().Equal(b.ModifiedAt()) {
+		if a.Mode() != b.Mode() {
+			return false
+		}
+		// If both sides expose a Size, a mismatch is enough to declare
+		// them different without ever hashing the file body. This is
+		// crucial for large binaries where computing BLAKE3 over the
+		// full content can be very expensive.
+		if sa, ok := from.(noder.Sizer); ok {
+			if sb, ok2 := to.(noder.Sizer); ok2 && sa.Size() != sb.Size() {
+				return false
+			}
+		}
+		if sameModTime(a.ModifiedAt(), b.ModifiedAt()) {
 			return true
 		}
 	}
 	return d.hashEqual(d.from.current, d.to.current)
+}
+
+// sameModTime compares the mtime reported by both sides.
+//
+// A direct Equal would compare an os.FileInfo.ModTime (which may carry
+// a monotonic clock reading and full nanosecond precision) against the
+// index value rebuilt by time.Unix(sec, nsec) (wall clock only,
+// truncated to whatever precision the index format stores). Those
+// differences can cause Equal to return false and force an unnecessary
+// full-file hash.
+//
+// When Equal fails we fall back to a microsecond-truncated comparison:
+// if both timestamps fall in the same microsecond we treat them as
+// equal. This stays well within the precision of common filesystems
+// and does not introduce false positives.
+func sameModTime(a, b time.Time) bool {
+	if a.Equal(b) {
+		return true
+	}
+	if a.Unix() != b.Unix() {
+		return false
+	}
+	return a.Nanosecond()/1000 == b.Nanosecond()/1000
 }
 
 // Compare returns the comparison between the current elements in the

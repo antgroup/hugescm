@@ -33,6 +33,15 @@ type Comparators interface {
 	ModifiedAt() time.Time
 }
 
+// Sizer is implemented by noders that can report the byte size of the
+// underlying entry without reading its full content. It is used as an
+// extra fast-path in diff routines: if both sides report a size and the
+// sizes differ, the noders cannot be equal regardless of mtime, so we
+// can avoid hashing the file contents.
+type Sizer interface {
+	Size() int64
+}
+
 // Equal functions take two hashers and return if they are equal.
 //
 // These functions are expected to be faster than reflect.Equal or

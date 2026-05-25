@@ -29,6 +29,12 @@ type PatchesSetter interface {
 	SetPatches(patches []*diferenco.Patch)
 }
 
+// StyleSetter is an optional interface for StatusBar implementations that
+// support style propagation from the host PatchView.
+type StyleSetter interface {
+	SetStyle(style PatchViewStyle)
+}
+
 // DefaultStatusBar is the default status bar implementation.
 // It displays: status + separator + path + stats + file count.
 type DefaultStatusBar struct {

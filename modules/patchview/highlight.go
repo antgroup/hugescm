@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/charmbracelet/x/exp/charmtone"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/zeebo/xxh3"
 )
 
@@ -23,103 +23,6 @@ const (
 	tabSpaces = "    " // 4 spaces
 )
 
-// lruCache is an LRU cache implementation.
-type lruCache struct {
-	mu       sync.Mutex
-	items    map[uint64]*lruItem
-	head     *lruItem
-	tail     *lruItem
-	capacity int
-}
-
-type lruItem struct {
-	key   uint64
-	value string
-	prev  *lruItem
-	next  *lruItem
-}
-
-func newLRUCache(capacity int) *lruCache {
-	return &lruCache{
-		items:    make(map[uint64]*lruItem),
-		capacity: capacity,
-	}
-}
-
-func (c *lruCache) get(key uint64) (string, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if item, ok := c.items[key]; ok {
-		c.moveToFrontLocked(item)
-		return item.value, true
-	}
-	return "", false
-}
-
-func (c *lruCache) set(key uint64, value string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if item, ok := c.items[key]; ok {
-		item.value = value
-		c.moveToFrontLocked(item)
-		return
-	}
-	item := &lruItem{key: key, value: value}
-	c.items[key] = item
-	if c.head == nil {
-		c.head = item
-		c.tail = item
-	} else {
-		item.next = c.head
-		c.head.prev = item
-		c.head = item
-	}
-	if c.capacity > 0 && len(c.items) > c.capacity {
-		c.evictTailLocked()
-	}
-}
-
-func (c *lruCache) moveToFrontLocked(item *lruItem) {
-	if item == c.head {
-		return
-	}
-	if item.prev != nil {
-		item.prev.next = item.next
-	}
-	if item.next != nil {
-		item.next.prev = item.prev
-	}
-	if item == c.tail {
-		c.tail = item.prev
-	}
-	item.prev = nil
-	item.next = c.head
-	c.head.prev = item
-	c.head = item
-}
-
-func (c *lruCache) evictTailLocked() {
-	if c.tail == nil {
-		return
-	}
-	delete(c.items, c.tail.key)
-	if c.tail.prev != nil {
-		c.tail.prev.next = nil
-		c.tail = c.tail.prev
-	} else {
-		c.head = nil
-		c.tail = nil
-	}
-}
-
-func (c *lruCache) clear() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.items = make(map[uint64]*lruItem)
-	c.head = nil
-	c.tail = nil
-}
-
 // SyntaxHighlighter is a syntax highlighter.
 type SyntaxHighlighter struct {
 	style *chroma.Style
@@ -127,18 +30,22 @@ type SyntaxHighlighter struct {
 	cachedLexer    chroma.Lexer
 	cachedFilename string
 
-	cache        *lruCache
-	cacheEnabled bool
+	// cache is nil iff lru.New failed, which only happens for non-positive
+	// sizes. Callers must nil-check before use.
+	cache *lru.Cache[uint64, string]
 }
 
 // NewSyntaxHighlighter creates a syntax highlighter.
 // filename: used for language detection
 // isDark: whether the background is dark
 func NewSyntaxHighlighter(filename string, isDark bool) *SyntaxHighlighter {
+	// lru.New only returns an error when size <= 0. defaultCacheSize is a
+	// positive constant so this cannot fail in practice; we still tolerate
+	// a nil cache (Highlight falls back to uncached doHighlight).
+	cache, _ := lru.New[uint64, string](defaultCacheSize)
 	h := &SyntaxHighlighter{
-		style:        getDefaultChromaStyle(isDark),
-		cache:        newLRUCache(defaultCacheSize),
-		cacheEnabled: true,
+		style: getDefaultChromaStyle(isDark),
+		cache: cache,
 	}
 
 	// Warm up lexer
@@ -164,14 +71,14 @@ func (h *SyntaxHighlighter) Highlight(source, bgColor string) string {
 	// Preprocess: sanitize line (replace tabs, escape control chars)
 	source = sanitizeLine(source)
 
-	// Check cache
-	if h.cacheEnabled && len(source) <= maxSourceLenForCache {
+	// Check cache. Skip caching for very long sources to bound memory.
+	if h.cache != nil && len(source) <= maxSourceLenForCache {
 		cacheKey := h.createCacheKey(source, h.cachedFilename, bgColor)
-		if cached, ok := h.cache.get(cacheKey); ok {
+		if cached, ok := h.cache.Get(cacheKey); ok {
 			return cached
 		}
 		result := h.doHighlight(source, bgColor)
-		h.cache.set(cacheKey, result)
+		h.cache.Add(cacheKey, result)
 		return result
 	}
 
@@ -235,7 +142,9 @@ func (h *SyntaxHighlighter) createCacheKey(source, filename, bgColor string) uin
 
 // ClearCache clears the cache.
 func (h *SyntaxHighlighter) ClearCache() {
-	h.cache.clear()
+	if h.cache != nil {
+		h.cache.Purge()
+	}
 }
 
 // Enabled returns whether the highlighter is enabled.
@@ -256,7 +165,12 @@ func newDiffFormatter(bgColor string) *diffFormatter {
 
 func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Iterator) error {
 	for token := it(); token != chroma.EOF; token = it() {
-		value := strings.TrimRight(token.Value, "\n")
+		// Strip trailing CR/LF; renderer.go already removes them from the
+		// raw line before highlighting, but lexers may still emit tokens
+		// containing terminators. Treat \r and \n equivalently so Windows
+		// CRLF input does not leak a stray carriage return into the
+		// highlighted output.
+		value := strings.TrimRight(token.Value, "\r\n")
 		if value == "" {
 			continue
 		}

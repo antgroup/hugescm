@@ -2,6 +2,7 @@ package patchview
 
 import (
 	"fmt"
+	"image/color"
 	"os"
 
 	"charm.land/lipgloss/v2"
@@ -44,6 +45,11 @@ type PatchViewStyle struct {
 	PathDisplay lipgloss.Style
 	FilesTitle  lipgloss.Style
 	FooterBg    lipgloss.Style
+
+	// Pane border colors. BorderActive is used for the focused pane,
+	// BorderInactive for the other pane.
+	BorderActive   color.Color
+	BorderInactive color.Color
 
 	// Status styles for header
 	StatusAdded    lipgloss.Style
@@ -157,22 +163,33 @@ func DefaultLightDiffViewStyle() DiffViewStyle {
 	}
 }
 
-// DefaultDiffViewStyle automatically selects theme based on terminal background.
-func DefaultDiffViewStyle() DiffViewStyle {
-	if hasDarkBackground() {
+// DefaultDiffViewStyle returns a diff view style for the given theme.
+func DefaultDiffViewStyle(isDark bool) DiffViewStyle {
+	if isDark {
 		return DefaultDarkDiffViewStyle()
 	}
 	return DefaultLightDiffViewStyle()
 }
 
 // hasDarkBackground detects terminal background color.
+// This performs terminal IO and should only be called when a real TTY is
+// available (e.g. inside Run). Other call sites should pass the desired
+// theme explicitly or accept the default (dark).
 func hasDarkBackground() bool {
 	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 }
 
-// DefaultStyle returns the default style with auto-detected theme.
+// DefaultStyle returns the dark theme by default. It does NOT probe the
+// terminal so it is safe to call from tests and library init paths. To pick
+// a theme based on the actual terminal background, use DefaultStyleFor with
+// the result of probing the terminal (e.g. inside Run).
 func DefaultStyle() PatchViewStyle {
-	if hasDarkBackground() {
+	return DefaultDarkStyle()
+}
+
+// DefaultStyleFor returns the default style for the requested theme.
+func DefaultStyleFor(isDark bool) PatchViewStyle {
+	if isDark {
 		return DefaultDarkStyle()
 	}
 	return DefaultLightStyle()
@@ -193,6 +210,8 @@ func DefaultDarkStyle() PatchViewStyle {
 		PathDisplay:    lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true),
 		FilesTitle:     lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true),
 		FooterBg:       lipgloss.NewStyle().Foreground(lipgloss.Color("7")).Padding(0, 1),
+		BorderActive:   lipgloss.Color("12"),
+		BorderInactive: lipgloss.Color("8"),
 		StatusAdded:    lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true),
 		StatusDeleted:  lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
 		StatusRenamed:  lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
@@ -215,6 +234,8 @@ func DefaultLightStyle() PatchViewStyle {
 		PathDisplay:    lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Bold(true),
 		FilesTitle:     lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Bold(true),
 		FooterBg:       lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Padding(0, 1),
+		BorderActive:   lipgloss.Color("4"),
+		BorderInactive: lipgloss.Color("8"),
 		StatusAdded:    lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true),
 		StatusDeleted:  lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
 		StatusRenamed:  lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),

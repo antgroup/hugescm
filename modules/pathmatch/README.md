@@ -13,7 +13,7 @@
 ## 快速开始
 
 ```go
-import "code.alipay.com/zeta/zeta/modules/pathmatch"
+import "github.com/antgroup/hugescm/modules/pathmatch"
 
 // 创建模式
 p := pathmatch.New("src/**/*.go")

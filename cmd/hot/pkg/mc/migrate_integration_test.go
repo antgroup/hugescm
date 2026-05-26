@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"code.alipay.com/zeta/zeta/modules/git"
-	"code.alipay.com/zeta/zeta/modules/git/gitobj"
+	"github.com/antgroup/hugescm/modules/git"
+	"github.com/antgroup/hugescm/modules/git/gitobj"
 )
 
 func requireGit(t *testing.T) {

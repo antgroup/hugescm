@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"code.alipay.com/zeta/zeta/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/diferenco"
 )
 
 // --- helpers ---------------------------------------------------------------

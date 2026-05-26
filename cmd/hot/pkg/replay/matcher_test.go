@@ -5,7 +5,7 @@ package replay
 import (
 	"testing"
 
-	"code.alipay.com/zeta/zeta/modules/git/gitobj"
+	"github.com/antgroup/hugescm/modules/git/gitobj"
 )
 
 // TestEqualerMatch verifies that the equaler matcher matches only on

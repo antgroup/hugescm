@@ -185,9 +185,8 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 	}
 
 	if opts.Nav && term.StdoutLevel != term.LevelNone {
-		header := "show " + cc.Hash.String()[:12]
 		var err error
-		if err = patchview.Run(patch, patchview.WithHeader(header)); err == nil {
+		if err = patchview.Run(patch); err == nil {
 			return nil
 		}
 		warn("nav mode fallback to unified patch output: %v", err)

@@ -39,15 +39,13 @@ type PatchRenderer struct {
 	isDark          bool
 }
 
-// NewPatchRenderer creates a new PatchRenderer with the default style for
-// the given theme. No terminal IO is performed; callers (typically
-// PatchView) decide the theme.
-func NewPatchRenderer(isDark bool) *PatchRenderer {
+// NewPatchRenderer creates a new PatchRenderer with default style.
+func NewPatchRenderer() *PatchRenderer {
 	return &PatchRenderer{
-		style:           DefaultStyleFor(isDark),
+		style:           DefaultStyle(),
 		lineNumbers:     true,
 		syntaxHighlight: true,
-		isDark:          isDark,
+		isDark:          hasDarkBackground(),
 	}
 }
 
@@ -154,9 +152,8 @@ func (r *PatchRenderer) Render() string {
 		return r.style.DiffStyle.FileMeta.Render("No changes")
 	}
 
-	layout := r.layoutDecision()
-	showLineNums := layout.showLineNums
-	codeW := layout.codeWidth
+	showLineNums := r.shouldShowLineNumbers()
+	codeW := r.codeWidth()
 
 	var sb strings.Builder
 	sb.Grow(r.width * r.height)
@@ -271,46 +268,31 @@ func (r *PatchRenderer) maxYOffset() int {
 	return max(0, r.totalLines-r.height)
 }
 
-// layout captures the resolved layout decision for a single render pass:
-// whether line numbers are shown and how many columns are available for
-// code. Centralising this avoids the two-place threshold drift between
-// shouldShowLineNumbers and codeWidth.
-type layout struct {
-	showLineNums bool
-	lineNumWidth int
-	codeWidth    int
+// shouldShowLineNumbers determines if line numbers should be shown.
+func (r *PatchRenderer) shouldShowLineNumbers() bool {
+	if !r.lineNumbers {
+		return false
+	}
+	return r.width-r.lineNumWidth() >= minCodeWidth
 }
 
-// layoutDecision computes a single, internally consistent layout decision
-// for the current renderer state. Centralising this avoids the two-place
-// threshold drift that existed when shouldShowLineNumbers and codeWidth
-// were separate methods.
-func (r *PatchRenderer) layoutDecision() layout {
-	if r.width <= 0 {
-		return layout{}
-	}
+// lineNumWidth returns the width needed for line numbers.
+func (r *PatchRenderer) lineNumWidth() int {
 	if !r.lineNumbers {
-		return layout{
-			showLineNums: false,
-			lineNumWidth: 0,
-			codeWidth:    r.width,
-		}
+		return 0
 	}
-	lnW := (r.beforeNumDigits + lineNumPadding*2) + (r.afterNumDigits + lineNumPadding*2)
-	if r.width-lnW < minCodeWidth {
-		// Not enough room for line numbers; hide them and give all of
-		// the width to code.
-		return layout{
-			showLineNums: false,
-			lineNumWidth: 0,
-			codeWidth:    r.width,
-		}
+	// (before digits + padding*2) + (after digits + padding*2)
+	return (r.beforeNumDigits + lineNumPadding*2) + (r.afterNumDigits + lineNumPadding*2)
+}
+
+// codeWidth returns the width available for code content.
+func (r *PatchRenderer) codeWidth() int {
+	w := r.width - r.lineNumWidth()
+	if w < minCodeWidth && r.lineNumbers {
+		// Hide line numbers if width is insufficient
+		return r.width
 	}
-	return layout{
-		showLineNums: true,
-		lineNumWidth: lnW,
-		codeWidth:    r.width - lnW,
-	}
+	return max(w, 0)
 }
 
 // renderHunkHeader renders a hunk header line (@@ -1,3 +1,4 @@).
@@ -322,9 +304,11 @@ func (r *PatchRenderer) renderHunkHeader(hunk *diferenco.Hunk, showLineNums bool
 	toCount := hunkToCount(hunk)
 	header := formatHunkHeader(hunk.FromLine, fromCount, hunk.ToLine, toCount, hunk.Section)
 
-	// Drop the leading "@@" because the divider line style already
-	// provides the visual separator.
-	headerContent := strings.TrimPrefix(header, "@@")
+	// Remove leading @@ if present
+	headerContent := header
+	if len(headerContent) > 2 && headerContent[:2] == "@@" {
+		headerContent = headerContent[2:]
+	}
 
 	var sb strings.Builder
 

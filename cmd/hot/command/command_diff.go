@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/diff"
 	"github.com/antgroup/hugescm/modules/command"
@@ -26,7 +25,8 @@ type Diff struct {
 	Args   []string `arg:"" optional:"" name:"args" help:"Commit range or paths"`
 }
 
-func (c *Diff) Run(ctx context.Context, g *Globals) error {
+func (c *Diff) Run(g *Globals) error {
+	ctx := context.Background()
 	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
 
@@ -117,18 +117,5 @@ func (c *Diff) Run(ctx context.Context, g *Globals) error {
 		return encoder.Encode(patches)
 	}
 
-	// Build header text for patchview from the diff context.
-	var headerText string
-	if len(c.Args) > 0 {
-		headerText = "diff " + strings.Join(c.Args, " ")
-	} else if c.Cached || c.Staged {
-		headerText = "diff --cached"
-	}
-
-	var opts []patchview.Option
-	if headerText != "" {
-		opts = append(opts, patchview.WithHeader(headerText))
-	}
-
-	return patchview.Run(patches, opts...)
+	return patchview.Run(patches)
 }

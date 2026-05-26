@@ -2,7 +2,6 @@ package patchview
 
 import (
 	"fmt"
-	"image/color"
 	"os"
 	"strconv"
 	"strings"
@@ -32,7 +31,6 @@ type PatchView struct {
 
 	renderer  *PatchRenderer
 	listVp    *viewport.Model[*patchItem]
-	listItems []*patchItem
 	statusBar StatusBar
 
 	width        int
@@ -43,43 +41,22 @@ type PatchView struct {
 	yOffset int
 	xOffset int
 
-	// header is an optional context line displayed above the status bar,
-	// e.g. "diff a...b" or a commit range description.
-	header string
-
-	// darkBackground is the resolved theme used by the view. If
-	// darkBackgroundExplicit is false the view will probe the terminal
-	// on Run.
-	darkBackground         bool
-	darkBackgroundExplicit bool
-
-	style         PatchViewStyle
-	styleExplicit bool
+	style PatchViewStyle
 }
 
 // Ensure patchItem implements viewport.Object
 var _ viewport.Object = (*patchItem)(nil)
 
-// patchItem wraps a patch for the viewport. The selected status is read
-// dynamically from a shared cursor pointer so that changing the cursor does
-// not require rebuilding the underlying object slice.
+// patchItem wraps a patch for the viewport.
 type patchItem struct {
-	patch     *diferenco.Patch
-	index     int
-	cursorPtr *int
-	width     int
-	style     PatchViewStyle
+	patch    *diferenco.Patch
+	selected bool
+	width    int
+	style    PatchViewStyle
 }
 
-func newPatchItem(p *diferenco.Patch, index int, cursorPtr *int, width int, style PatchViewStyle) *patchItem {
-	return &patchItem{patch: p, index: index, cursorPtr: cursorPtr, width: width, style: style}
-}
-
-func (p *patchItem) isSelected() bool {
-	if p.cursorPtr == nil {
-		return false
-	}
-	return *p.cursorPtr == p.index
+func newPatchItem(p *diferenco.Patch, selected bool, width int, style PatchViewStyle) *patchItem {
+	return &patchItem{patch: p, selected: selected, width: width, style: style}
 }
 
 func (p *patchItem) GetItem() item.Item {
@@ -109,8 +86,7 @@ func (p *patchItem) render() string {
 	availableForPath := max(p.width-reserved, 0)
 
 	var line strings.Builder
-	selected := p.isSelected()
-	if selected {
+	if p.selected {
 		line.WriteString(p.style.Selected.Render("▌ "))
 		if availableForPath > 0 {
 			if displaywidth.String(path) > availableForPath {
@@ -161,12 +137,10 @@ func (p *patchItem) render() string {
 // Option configures the patch view.
 type Option func(*PatchView)
 
-// WithStyle sets a custom style. Setting a custom style suppresses the
-// automatic theme switch normally performed by Run.
+// WithStyle sets a custom style.
 func WithStyle(style PatchViewStyle) Option {
 	return func(pv *PatchView) {
 		pv.style = style
-		pv.styleExplicit = true
 	}
 }
 
@@ -184,65 +158,25 @@ func WithStatusBar(sb StatusBar) Option {
 	}
 }
 
-// WithDarkBackground forces the dark/light theme. When not provided the
-// theme is probed from the terminal once inside Run. The actual theme is
-// applied by NewPatchView after all options have run, so the option order
-// relative to WithStyle / WithStatusBar does not matter.
-func WithDarkBackground(dark bool) Option {
-	return func(pv *PatchView) {
-		pv.darkBackground = dark
-		pv.darkBackgroundExplicit = true
-	}
-}
-
-// WithHeader sets a context line displayed above the file status bar,
-// for example a commit range like "a1b2c3d...e4f5g6h" or a branch
-// comparison like "main...feature-branch".
-func WithHeader(text string) Option {
-	return func(pv *PatchView) {
-		pv.header = text
-	}
-}
-
 // Run starts the interactive patch navigation view.
 func Run(patches []*diferenco.Patch, opts ...Option) error {
 	if len(patches) == 0 {
 		return nil
 	}
 	pv := NewPatchView(patches, opts...)
-	// Probe the terminal exactly once if the caller did not specify a
-	// theme. We deliberately keep this IO outside of NewPatchView so tests
-	// and library consumers can construct PatchView without touching the
-	// terminal.
-	if !pv.darkBackgroundExplicit {
-		pv.applyTheme(hasDarkBackground())
-	}
 	p := tea.NewProgram(pv, tea.WithOutput(os.Stdout))
 	_, err := p.Run()
 	return err
 }
 
-// NewPatchView creates a new PatchView. It performs no terminal IO.
-//
-// Theme handling:
-//   - If the caller passes WithDarkBackground, that value is honoured.
-//   - If the caller passes WithStyle, the provided style is preserved and
-//     subsequent theme switches only update the renderer's dark flag for
-//     syntax highlighting.
-//   - Otherwise the dark theme is used as the construction-time default to
-//     keep this function side-effect free. The Run helper additionally
-//     probes the actual terminal once before entering the TUI loop. Callers
-//     that drive the model themselves (e.g. embedding it in their own
-//     bubbletea program) are responsible for probing the terminal and
-//     calling WithDarkBackground; otherwise the dark theme will be used.
+// NewPatchView creates a new PatchView.
 func NewPatchView(patches []*diferenco.Patch, opts ...Option) *PatchView {
 	pv := &PatchView{
-		patches:        patches,
-		renderer:       NewPatchRenderer(true),
-		listVp:         viewport.New(0, 0, viewport.WithSelectionEnabled[*patchItem](true)),
-		listWidthPct:   20,
-		style:          DefaultStyle(),
-		darkBackground: true,
+		patches:      patches,
+		renderer:     NewPatchRenderer(),
+		listVp:       viewport.New(0, 0, viewport.WithSelectionEnabled[*patchItem](true)),
+		listWidthPct: 20,
+		style:        DefaultStyle(),
 	}
 
 	for _, opt := range opts {
@@ -254,39 +188,16 @@ func NewPatchView(patches []*diferenco.Patch, opts ...Option) *PatchView {
 		pv.statusBar = NewDefaultStatusBar()
 	}
 
-	// Apply the resolved theme once, after every component exists. This
-	// fixes the option-ordering bug where WithDarkBackground used to call
-	// applyTheme before statusBar was constructed.
-	pv.applyTheme(pv.darkBackground)
-
+	// Apply style to components
+	pv.renderer.SetStyle(pv.style)
+	if sb, ok := pv.statusBar.(interface{ SetStyle(PatchViewStyle) }); ok {
+		sb.SetStyle(pv.style)
+	}
 	if sb, ok := pv.statusBar.(PatchesSetter); ok {
 		sb.SetPatches(patches)
 	}
 
 	return pv
-}
-
-// applyTheme rebuilds the default style for the given theme and propagates
-// it to the renderer and status bar. If the caller provided a custom style
-// via WithStyle we keep that style but still update the renderer's dark
-// mode so syntax highlighting picks the matching palette. Either way the
-// current pv.style is pushed to the renderer and status bar so callers do
-// not need to invoke the setters themselves.
-func (pv *PatchView) applyTheme(dark bool) {
-	pv.darkBackground = dark
-	if !pv.styleExplicit {
-		pv.style = DefaultStyleFor(dark)
-		for _, it := range pv.listItems {
-			it.style = pv.style
-		}
-	}
-	pv.renderer.SetStyle(pv.style)
-	pv.renderer.SetDarkBackground(dark)
-	if pv.statusBar != nil {
-		if sb, ok := pv.statusBar.(StyleSetter); ok {
-			sb.SetStyle(pv.style)
-		}
-	}
 }
 
 func (pv *PatchView) Init() tea.Cmd {
@@ -389,7 +300,7 @@ func (pv *PatchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if sb, ok := pv.statusBar.(CursorSetter); ok {
 				sb.SetCursor(newCursor)
 			}
-			pv.syncListSelection()
+			pv.updateFileListSelection()
 		}
 		return pv, cmd
 	}
@@ -419,16 +330,10 @@ func (pv *PatchView) View() tea.View {
 // Layout calculations
 
 func (pv *PatchView) headerHeight() int {
-	h := 0
-	if pv.header != "" {
-		h++ // one line for the context header
-	}
 	if pv.statusBar != nil {
-		h += pv.statusBar.Height()
-	} else {
-		h += headerHeight
+		return pv.statusBar.Height()
 	}
-	return h
+	return headerHeight
 }
 
 func (pv *PatchView) listPaneHeight() int {
@@ -477,7 +382,6 @@ func (pv *PatchView) selectFile(idx int) {
 	if sb, ok := pv.statusBar.(CursorSetter); ok {
 		sb.SetCursor(idx)
 	}
-	pv.syncListSelection()
 }
 
 func (pv *PatchView) setupLayout() {
@@ -487,7 +391,7 @@ func (pv *PatchView) setupLayout() {
 	if listWidth > 0 && listHeight > 0 {
 		pv.listVp.SetWidth(listWidth)
 		pv.listVp.SetHeight(listHeight)
-		pv.rebuildFileList()
+		pv.updateFileList()
 	}
 
 	vpWidth := pv.diffViewportWidth()
@@ -499,13 +403,8 @@ func (pv *PatchView) setupLayout() {
 	}
 }
 
-// rebuildFileList creates the list of patch items. The selected state is
-// not baked into the items: each item reads pv.cursor via a shared pointer
-// at render time, so navigating between files does not require rebuilding
-// the slice (see syncListSelection).
-func (pv *PatchView) rebuildFileList() {
+func (pv *PatchView) updateFileList() {
 	if len(pv.patches) == 0 {
-		pv.listItems = nil
 		pv.listVp.SetObjects(nil)
 		return
 	}
@@ -513,21 +412,23 @@ func (pv *PatchView) rebuildFileList() {
 	width := pv.listVp.GetWidth()
 	items := make([]*patchItem, len(pv.patches))
 	for i, p := range pv.patches {
-		items[i] = newPatchItem(p, i, &pv.cursor, width, pv.style)
+		items[i] = newPatchItem(p, i == pv.cursor, width, pv.style)
 	}
-	pv.listItems = items
 	pv.listVp.SetObjects(items)
 	pv.listVp.SetSelectedItemIdx(pv.cursor)
 }
 
-// syncListSelection only updates the viewport's selected index. The
-// per-item rendering of the selected state is handled by patchItem itself
-// via the shared cursor pointer, so no slice rebuild is needed.
-func (pv *PatchView) syncListSelection() {
+func (pv *PatchView) updateFileListSelection() {
 	if len(pv.patches) == 0 {
 		return
 	}
-	pv.listVp.SetSelectedItemIdx(pv.cursor)
+
+	width := pv.listVp.GetWidth()
+	items := make([]*patchItem, len(pv.patches))
+	for i, p := range pv.patches {
+		items[i] = newPatchItem(p, i == pv.cursor, width, pv.style)
+	}
+	pv.listVp.SetObjects(items)
 }
 
 func (pv *PatchView) clampYOffset() {
@@ -560,28 +461,19 @@ func (pv *PatchView) jumpToPrevHunk() {
 // Rendering
 
 func (pv *PatchView) renderHeader() string {
-	var parts []string
-
-	// Optional context header (e.g. "diff a1b2c3d...e4f5g6h")
-	if pv.header != "" {
-		headerLine := pv.style.HeaderBg.Width(pv.width).Render(" " + pv.header)
-		parts = append(parts, headerLine)
-	}
-
-	// Status bar (file info with border)
 	if pv.statusBar != nil {
-		parts = append(parts, pv.statusBar.View(pv.width))
-	} else {
-		parts = append(parts, pv.style.HeaderBg.Width(pv.width).Render(" No changes"))
+		return pv.statusBar.View(pv.width)
 	}
-
-	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+	return pv.style.HeaderBg.Width(pv.width).Render(" No changes")
 }
 
 func (pv *PatchView) renderFileList() string {
 	listHeight := pv.listPaneHeight()
 
-	borderColor := pv.borderColor(!pv.focusRight)
+	borderColor := lipgloss.Color("8")
+	if !pv.focusRight {
+		borderColor = lipgloss.Color("12")
+	}
 
 	listStyle := lipgloss.NewStyle().
 		Width(pv.listWidth()).
@@ -602,7 +494,10 @@ func (pv *PatchView) renderDiffContent() string {
 	paneWidth := pv.diffPaneWidth()
 	paneHeight := pv.diffPaneHeight()
 
-	borderColor := pv.borderColor(pv.focusRight)
+	borderColor := lipgloss.Color("8")
+	if pv.focusRight {
+		borderColor = lipgloss.Color("12")
+	}
 
 	diffStyle := lipgloss.NewStyle().
 		Width(paneWidth).
@@ -618,7 +513,9 @@ func (pv *PatchView) renderDiffContent() string {
 		pctText := ""
 		total := pv.renderer.TotalLines()
 		if total > 0 {
-			pctText = fmt.Sprintf(" (%d%%)", scrollPercent(pv.yOffset, pv.diffViewportHeight(), total))
+			vpH := pv.diffViewportHeight()
+			pct := min(100, (pv.yOffset+vpH)*100/max(total, 1))
+			pctText = fmt.Sprintf(" (%d%%)", pct)
 		}
 
 		title := pv.style.FilesTitle.Render(fmt.Sprintf(" Diff%s ", pctText))
@@ -633,7 +530,7 @@ func (pv *PatchView) renderFooter() string {
 	total := pv.renderer.TotalLines()
 	if total > 0 {
 		vpH := pv.diffViewportHeight()
-		pct := scrollPercent(pv.yOffset, vpH, total)
+		pct := min(100, (pv.yOffset+vpH)*100/max(total, 1))
 		scrollInfo = fmt.Sprintf("Lines: %d-%d/%d (%d%%)",
 			pv.yOffset+1,
 			min(pv.yOffset+vpH, total),
@@ -659,58 +556,6 @@ func (pv *PatchView) renderFooter() string {
 	content := scrollInfo + " " + strings.Repeat(" ", spaceWidth) + keys
 
 	return pv.style.FooterBg.Width(pv.width).Render(content)
-}
-
-// Fallback border colors used when the active style does not provide them.
-// Using ANSI 8/12 keeps the look in line with the bundled dark/light themes
-// and avoids depending on a specific true-colour palette.
-var (
-	fallbackBorderActive   color.Color = lipgloss.Color("12")
-	fallbackBorderInactive color.Color = lipgloss.Color("8")
-)
-
-// borderColor picks the border colour for a pane. When focused is true the
-// active colour is used; otherwise the inactive one. A nil entry in the
-// style falls back to a safe default so callers do not have to nil-check.
-func (pv *PatchView) borderColor(focused bool) color.Color {
-	if focused {
-		if pv.style.BorderActive != nil {
-			return pv.style.BorderActive
-		}
-		return fallbackBorderActive
-	}
-	if pv.style.BorderInactive != nil {
-		return pv.style.BorderInactive
-	}
-	return fallbackBorderInactive
-}
-
-// scrollPercent returns a 0..100 indicator of how much of the content has
-// been scrolled past. The formula is:
-//
-//	pct = (yOffset + viewportHeight) * 100 / total
-//
-// which models "the bottom edge of the viewport". Consequences:
-//
-//   - When the viewport bottom reaches the last line (yOffset+vpH==total),
-//     the result is exactly 100.
-//   - When the viewport is taller than the total content, the result is
-//     clamped to 100 (the user already sees everything).
-//   - A non-positive total returns 0 so callers can avoid a separate guard.
-//   - Negative offsets are also clamped to 0; the renderer should never pass
-//     them but the helper stays total to keep tests cheap.
-func scrollPercent(yOffset, viewportHeight, total int) int {
-	if total <= 0 {
-		return 0
-	}
-	pct := (yOffset + viewportHeight) * 100 / total
-	if pct < 0 {
-		return 0
-	}
-	if pct > 100 {
-		return 100
-	}
-	return pct
 }
 
 // truncatePath truncates a path from the left to fit within maxWidth.

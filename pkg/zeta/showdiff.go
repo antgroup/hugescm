@@ -42,23 +42,6 @@ func (opts *DiffOptions) po() *object.PatchOptions {
 	return &object.PatchOptions{Textconv: opts.Textconv, Algorithm: opts.Algorithm, Match: m.Match}
 }
 
-// headerText builds a short description for the patchview header from the
-// diff range fields. Returns "" when no meaningful range is available.
-func (opts *DiffOptions) headerText() string {
-	switch {
-	case opts.MergeBase != "" && opts.From != "" && opts.To != "":
-		return "diff " + opts.From + "..." + opts.To
-	case opts.From != "" && opts.To != "":
-		return "diff " + opts.From + ".." + opts.To
-	case opts.From != "":
-		return "diff " + opts.From
-	case opts.Staged:
-		return "diff --cached"
-	default:
-		return ""
-	}
-}
-
 func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes) error {
 	if opts.NameOnly {
 		return opts.showNameOnly(ctx, changes)
@@ -232,12 +215,8 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
 	if opts.Nav && term.StdoutLevel != term.LevelNone && len(patch) > 0 {
-		var pvOpts []patchview.Option
-		if h := opts.headerText(); h != "" {
-			pvOpts = append(pvOpts, patchview.WithHeader(h))
-		}
 		var err error
-		if err = patchview.Run(patch, pvOpts...); err == nil {
+		if err := patchview.Run(patch); err == nil {
 			return nil
 		}
 		warn("nav mode fallback to unified patch output: %v", err)

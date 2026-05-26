@@ -22,7 +22,6 @@ import (
 type Patch struct {
 	*diferenco.Patch
 	Status          byte // 'A', 'D', 'M', 'R', 'C', 'T' etc.
-	Binary          bool
 	OverflowMarker  bool
 	Collapsed       bool
 	TooLarge        bool
@@ -34,7 +33,7 @@ type Patch struct {
 	byteCount       int
 }
 
-// Reset clears all fields of p in a way that lets the underlying memory be reused.
+// Reset clears all fields of p, allocating a fresh embedded Patch.
 func (p *Patch) Reset() {
 	*p = Patch{Patch: &diferenco.Patch{}}
 }
@@ -60,7 +59,12 @@ type Parser struct {
 	scannedBytes        int // Total bytes scanned (never decreases)
 	finished            bool
 	stopPatchCollection bool
-	err                 error
+	// typeChangeEmptyPatch is set when a type-change ('T') is split into
+	// delete + add. The synthetic second raw line has no corresponding
+	// "diff --git" header in the stream, so Parse must treat it as an
+	// empty-patch entry and skip readDiffHeaderFromPath.
+	typeChangeEmptyPatch bool
+	err                  error
 }
 
 // Limits holds the limits at which either parsing stops or patches are collapsed.
@@ -99,6 +103,16 @@ const (
 	safeMaxLinesUpperBound  = 25000
 	safeMaxBytesUpperBound  = 500 * 5120 // 2.4MB
 	maxPatchBytesUpperBound = 512000     // 500KB
+
+	// maxRawLines is the hard cap on the number of raw lines cached
+	// during initialization. This prevents OOM from malicious input
+	// that contains an unbounded number of ":" lines.
+	maxRawLines = 2 * maxFilesUpperBound // 10000
+
+	// maxHeaderLineBytes is the maximum length of a single line read
+	// during diff header scanning. Lines longer than this are rejected
+	// to prevent OOM from input without newlines.
+	maxHeaderLineBytes = 1 << 20 // 1MB
 )
 
 var (
@@ -129,6 +143,13 @@ func (parser *Parser) Parse() bool {
 
 	if err := parser.initializeCurrentPatch(); err != nil {
 		return false
+	}
+
+	// When a type-change was split, the synthetic second raw line has no
+	// "diff --git" header in the stream. Treat it as an empty-patch entry.
+	if parser.typeChangeEmptyPatch {
+		parser.typeChangeEmptyPatch = false
+		return true
 	}
 
 	if parser.nextPatchFromPath == nil {
@@ -184,7 +205,10 @@ func (parser *Parser) Parse() bool {
 				parser.stopPatchCollection = true
 			} else {
 				parser.finished = true
-				parser.currentPatch.Reset()
+				// Clear only the patch content, preserving From/To
+				// metadata so the caller can see which file triggered
+				// the overflow.
+				parser.currentPatch.ClearPatch()
 			}
 			parser.currentPatch.OverflowMarker = true
 		}
@@ -214,7 +238,7 @@ func (parser *Parser) currentPatchFromPath() []byte {
 }
 
 func (parser *Parser) cacheRawLines(reader *bufio.Reader) {
-	for {
+	for len(parser.rawLines) < maxRawLines {
 		line, err := reader.ReadBytes('\n')
 		if err != nil {
 			if errors.Is(err, io.EOF) {
@@ -265,7 +289,9 @@ func (parser *Parser) initializeCurrentPatch() error {
 		return err
 	}
 
-	if parser.currentPatch.Status == 'T' {
+	if parser.currentPatch.Status == 'T' &&
+		parser.currentPatch.From != nil &&
+		parser.currentPatch.To != nil {
 		parser.handleTypeChangeDiff()
 	}
 
@@ -276,6 +302,7 @@ func (parser *Parser) initializeCurrentPatch() error {
 func (parser *Parser) readDiffHeaderFromPath() ([]byte, error) {
 	var line []byte
 	var err error
+	atEOF := false
 
 	for {
 		// Use unread line if available
@@ -283,18 +310,25 @@ func (parser *Parser) readDiffHeaderFromPath() ([]byte, error) {
 			line = parser.unreadLine
 			parser.unreadLine = nil
 		} else {
+			if atEOF {
+				return nil, nil
+			}
 			line, err = parser.patchReader.ReadBytes('\n')
 			if err != nil {
 				if errors.Is(err, io.EOF) {
-					// Handle EOF with data - last line without newline
-					if len(line) > 0 {
-						// Process the last line
-					} else {
+					if len(line) == 0 {
 						return nil, nil
 					}
+					// Process this last line, but mark EOF so we don't
+					// loop back into ReadBytes again.
+					atEOF = true
 				} else {
 					return nil, fmt.Errorf("read diff header line: %w", err)
 				}
+			}
+			// Guard against extremely long lines (no newline in stream).
+			if len(line) > maxHeaderLineBytes {
+				return nil, fmt.Errorf("diff header line too long (%d bytes, max %d)", len(line), maxHeaderLineBytes)
 			}
 		}
 
@@ -304,18 +338,7 @@ func (parser *Parser) readDiffHeaderFromPath() ([]byte, error) {
 		}
 
 		// Skip non-diff-header lines (index, ---, +++, new file mode, deleted file mode, etc.)
-		if bytes.HasPrefix(line, []byte("index ")) ||
-			bytes.HasPrefix(line, []byte("---")) ||
-			bytes.HasPrefix(line, []byte("+++")) ||
-			bytes.HasPrefix(line, []byte("new file mode ")) ||
-			bytes.HasPrefix(line, []byte("deleted file mode ")) ||
-			bytes.HasPrefix(line, []byte("old mode ")) ||
-			bytes.HasPrefix(line, []byte("new mode ")) ||
-			bytes.HasPrefix(line, []byte("similarity index ")) ||
-			bytes.HasPrefix(line, []byte("copy from ")) ||
-			bytes.HasPrefix(line, []byte("copy to ")) ||
-			bytes.HasPrefix(line, []byte("rename from ")) ||
-			bytes.HasPrefix(line, []byte("rename to ")) {
+		if isDiffMetaLine(line) {
 			continue
 		}
 
@@ -326,6 +349,38 @@ func (parser *Parser) readDiffHeaderFromPath() ([]byte, error) {
 		}
 		return path, nil
 	}
+}
+
+// isDiffMetaLine returns true if the line is a diff metadata line that
+// should be skipped when searching for the "diff --git" header.
+func isDiffMetaLine(line []byte) bool {
+	if len(line) == 0 {
+		return false
+	}
+	switch line[0] {
+	case 'i':
+		return bytes.HasPrefix(line, []byte("index "))
+	case '-':
+		return bytes.HasPrefix(line, []byte("---"))
+	case '+':
+		return bytes.HasPrefix(line, []byte("+++"))
+	case 'n':
+		return bytes.HasPrefix(line, []byte("new file mode ")) ||
+			bytes.HasPrefix(line, []byte("new mode "))
+	case 'd':
+		return bytes.HasPrefix(line, []byte("deleted file mode "))
+	case 'o':
+		return bytes.HasPrefix(line, []byte("old mode "))
+	case 's':
+		return bytes.HasPrefix(line, []byte("similarity index "))
+	case 'c':
+		return bytes.HasPrefix(line, []byte("copy from ")) ||
+			bytes.HasPrefix(line, []byte("copy to "))
+	case 'r':
+		return bytes.HasPrefix(line, []byte("rename from ")) ||
+			bytes.HasPrefix(line, []byte("rename to "))
+	}
+	return false
 }
 
 // parseDiffHeaderPath hand-parses "diff --git a/path b/path" to extract the from-path
@@ -366,40 +421,91 @@ func parseDiffHeaderPath(line []byte) ([]byte, error) {
 	return unescape(path), nil
 }
 
-// parseTwoPaths parses two paths from a diff header line
-// Handles both quoted and unquoted paths
+// parseTwoPaths parses two paths from a diff header line.
+// Handles both quoted and unquoted paths. For unquoted paths that may
+// contain spaces (core.quotepath=false), we use the known "a/" and " b/"
+// structure to split rather than naively splitting on whitespace.
 func parseTwoPaths(line []byte) ([][]byte, error) {
-	var paths [][]byte
+	line = bytes.TrimRight(line, "\r\n")
+	if len(line) == 0 {
+		return nil, nil
+	}
 
-	for len(line) > 0 && len(paths) < 2 {
-		// Skip leading whitespace
-		line = bytes.TrimSpace(line)
-		if len(line) == 0 {
-			break
+	// Case 1: Both paths are quoted
+	if line[0] == '"' {
+		path1, rest, err := parseQuotedPath(line)
+		if err != nil {
+			return nil, err
 		}
-
-		var path []byte
-		var err error
-
-		if line[0] == '"' {
-			// Quoted path: find matching quote handling escape sequences
-			path, line, err = parseQuotedPath(line)
+		path1 = unquoteBytes(path1)
+		rest = bytes.TrimLeft(rest, " \t")
+		if len(rest) == 0 {
+			return [][]byte{path1}, nil
+		}
+		if rest[0] == '"' {
+			path2, _, err := parseQuotedPath(rest)
 			if err != nil {
 				return nil, err
 			}
-			// Unquote after extracting the path
-			path = unquoteBytes(path)
-		} else {
-			// Unquoted path: find next whitespace or end
-			path, line = parseUnquotedPath(line)
+			path2 = unquoteBytes(path2)
+			return [][]byte{path1, path2}, nil
 		}
-
-		if len(path) > 0 {
-			paths = append(paths, path)
-		}
+		// Second path is unquoted (unusual but possible)
+		path2 := bytes.TrimSpace(rest)
+		return [][]byte{path1, path2}, nil
 	}
 
-	return paths, nil
+	// Case 2: Unquoted paths — may contain spaces.
+	// The format is "a/<path> b/<path>". We find " b/" to split.
+	// We search for " b/" from the position after "a/" to handle paths
+	// that themselves contain " b/".
+	if !bytes.HasPrefix(line, []byte("a/")) {
+		// Fallback: simple whitespace split
+		return splitOnWhitespace(line), nil
+	}
+
+	// Try to find " b/" separator. Because the path itself could contain
+	// " b/", we try each occurrence from left to right and pick the one
+	// where the a-path and b-path have equal length (git always pads them
+	// symmetrically: "a/<path> b/<path>").
+	search := []byte(" b/")
+	offset := 2 // start after "a/"
+	for {
+		idx := bytes.Index(line[offset:], search)
+		if idx < 0 {
+			break
+		}
+		splitPos := offset + idx
+		path1 := line[:splitPos]
+		path2 := line[splitPos+1:] // skip the leading space
+		// Validate: a/<x> and b/<x> should have same length
+		if len(path1) == len(path2) {
+			return [][]byte{path1, path2}, nil
+		}
+		offset = splitPos + 1
+	}
+
+	// Fallback: couldn't find a valid split, try simple whitespace split
+	return splitOnWhitespace(line), nil
+}
+
+// splitOnWhitespace splits line into at most 2 parts on whitespace.
+func splitOnWhitespace(line []byte) [][]byte {
+	var paths [][]byte
+	for len(line) > 0 && len(paths) < 2 {
+		line = bytes.TrimLeft(line, " \t")
+		if len(line) == 0 {
+			break
+		}
+		i := bytes.IndexAny(line, " \t")
+		if i < 0 {
+			paths = append(paths, line)
+			break
+		}
+		paths = append(paths, line[:i])
+		line = line[i:]
+	}
+	return paths
 }
 
 // parseQuotedPath parses a quoted path, handling escape sequences
@@ -428,18 +534,15 @@ func parseQuotedPath(line []byte) ([]byte, []byte, error) {
 	return nil, line, fmt.Errorf("unclosed quote in path: %q", line)
 }
 
-// parseUnquotedPath parses an unquoted path up to next whitespace
-func parseUnquotedPath(line []byte) ([]byte, []byte) {
-	i := 0
-	for i < len(line) && line[i] != ' ' && line[i] != '\t' {
-		i++
-	}
-	return line[:i], line[i:]
-}
-
 func (parser *Parser) handleTypeChangeDiff() {
-	// Type change: split into deletion + addition
-	// Use To.Name for synthetic add path, not From.Name
+	// Type change: split into deletion + addition.
+	// The first part (current patch) becomes a deletion; the second part
+	// (synthetic raw line prepended below) becomes an addition.
+	// Because git only emits one "diff --git" header for a type-change,
+	// the synthetic second raw line has NO corresponding header in the
+	// stream. We set typeChangeEmptyPatch so that Parse() treats the
+	// second part as an empty-patch entry and does not try to read a
+	// header that doesn't exist.
 	newRawLine := fmt.Sprintf(
 		":%o %o %s %s A\t%s\n",
 		0,
@@ -457,6 +560,7 @@ func (parser *Parser) handleTypeChangeDiff() {
 	parser.currentPatch.To = nil
 
 	parser.rawLines = append([][]byte{[]byte(newRawLine)}, parser.rawLines...)
+	parser.typeChangeEmptyPatch = true
 }
 
 func parseRawLine(hashFormat git.HashFormat, line []byte, patch *Patch) error {
@@ -524,7 +628,7 @@ func parseRawLine(hashFormat git.HashFormat, line []byte, patch *Patch) error {
 }
 
 func readNextDiff(reader *bufio.Reader, patch *Patch, skipPatch bool) error {
-	var patchLines []string
+	var patchLines [][]byte
 	for currentPatchDone := false; !currentPatchDone || reader.Buffered() > 0; {
 		line, err := reader.Peek(10)
 		if errors.Is(err, io.EOF) {
@@ -551,12 +655,17 @@ func readNextDiff(reader *bufio.Reader, patch *Patch, skipPatch bool) error {
 				}
 				continue
 			}
+			// Inside a hunk, "---" or "+++" is a content line (e.g. a
+			// deletion/addition that starts with "--" or "++"). Consume
+			// it as a regular chunk line.
+			if err := consumeChunkLine(reader, patch, skipPatch, true, &patchLines); err != nil {
+				return err
+			}
 		case bytes.HasPrefix(line, []byte("@@")):
 			if err := consumeChunkLine(reader, patch, skipPatch, false, &patchLines); err != nil {
 				return err
 			}
 		case bytes.HasPrefix(line, []byte("Binary")):
-			patch.Binary = true
 			patch.IsBinary = true
 			fallthrough
 		case bytes.HasPrefix(line, []byte("-")) ||
@@ -585,7 +694,7 @@ func readNextDiff(reader *bufio.Reader, patch *Patch, skipPatch bool) error {
 	return nil
 }
 
-func consumeChunkLine(reader *bufio.Reader, patch *Patch, skipPatch, updateStats bool, patchLines *[]string) error {
+func consumeChunkLine(reader *bufio.Reader, patch *Patch, skipPatch, updateStats bool, patchLines *[][]byte) error {
 	var byteCount int
 	for done := false; !done; {
 		line, err := reader.ReadSlice('\n')
@@ -609,7 +718,11 @@ func consumeChunkLine(reader *bufio.Reader, patch *Patch, skipPatch, updateStats
 		}
 
 		if !skipPatch {
-			*patchLines = append(*patchLines, string(line))
+			// ReadSlice returns a slice of the internal buffer that will
+			// be overwritten on the next read. Copy it.
+			cp := make([]byte, len(line))
+			copy(cp, line)
+			*patchLines = append(*patchLines, cp)
 		}
 	}
 
@@ -744,7 +857,7 @@ func unquoteBytes(s []byte) []byte {
 }
 
 // parseHunks parses collected patch lines into diferenco.Hunk structures.
-func parseHunks(lines []string) ([]*diferenco.Hunk, error) {
+func parseHunks(lines [][]byte) ([]*diferenco.Hunk, error) {
 	if len(lines) == 0 {
 		return nil, nil
 	}
@@ -752,13 +865,14 @@ func parseHunks(lines []string) ([]*diferenco.Hunk, error) {
 	var hunks []*diferenco.Hunk
 	var currentHunk *diferenco.Hunk
 
-	for _, line := range lines {
-		if strings.HasPrefix(line, "@@") {
+	for _, lineBytes := range lines {
+		if bytes.HasPrefix(lineBytes, []byte("@@")) {
 			if currentHunk != nil {
 				hunks = append(hunks, currentHunk)
 			}
 
-			fromLine, fromCount, toLine, toCount, section, err := parseHunkHeader(line)
+			line := string(lineBytes)
+			fromLine, _, toLine, _, section, err := parseHunkHeader(line)
 			if err != nil {
 				return nil, err
 			}
@@ -768,22 +882,20 @@ func parseHunks(lines []string) ([]*diferenco.Hunk, error) {
 				ToLine:   toLine,
 				Section:  section,
 			}
-			_ = fromCount // Reserved for future validation
-			_ = toCount   // Reserved for future validation
 			continue
 		}
 
-		if currentHunk == nil || len(line) == 0 {
+		if currentHunk == nil || len(lineBytes) == 0 {
 			continue
 		}
 
 		// Skip "\ No newline at end of file" marker - it's metadata, not content
-		if strings.HasPrefix(line, "\\ No newline at end of file") {
+		if bytes.HasPrefix(lineBytes, []byte("\\ No newline at end of file")) {
 			continue
 		}
 
 		var kind diferenco.Operation
-		switch line[0] {
+		switch lineBytes[0] {
 		case '+':
 			kind = diferenco.Insert
 		case '-':
@@ -796,7 +908,7 @@ func parseHunks(lines []string) ([]*diferenco.Hunk, error) {
 
 		currentHunk.Lines = append(currentHunk.Lines, diferenco.Line{
 			Kind:    kind,
-			Content: line[1:],
+			Content: string(lineBytes[1:]),
 		})
 	}
 

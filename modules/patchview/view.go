@@ -43,6 +43,10 @@ type PatchView struct {
 	yOffset int
 	xOffset int
 
+	// header is an optional context line displayed above the status bar,
+	// e.g. "diff a...b" or a commit range description.
+	header string
+
 	// darkBackground is the resolved theme used by the view. If
 	// darkBackgroundExplicit is false the view will probe the terminal
 	// on Run.
@@ -188,6 +192,15 @@ func WithDarkBackground(dark bool) Option {
 	return func(pv *PatchView) {
 		pv.darkBackground = dark
 		pv.darkBackgroundExplicit = true
+	}
+}
+
+// WithHeader sets a context line displayed above the file status bar,
+// for example a commit range like "a1b2c3d...e4f5g6h" or a branch
+// comparison like "main...feature-branch".
+func WithHeader(text string) Option {
+	return func(pv *PatchView) {
+		pv.header = text
 	}
 }
 
@@ -406,10 +419,16 @@ func (pv *PatchView) View() tea.View {
 // Layout calculations
 
 func (pv *PatchView) headerHeight() int {
-	if pv.statusBar != nil {
-		return pv.statusBar.Height()
+	h := 0
+	if pv.header != "" {
+		h++ // one line for the context header
 	}
-	return headerHeight
+	if pv.statusBar != nil {
+		h += pv.statusBar.Height()
+	} else {
+		h += headerHeight
+	}
+	return h
 }
 
 func (pv *PatchView) listPaneHeight() int {
@@ -541,10 +560,22 @@ func (pv *PatchView) jumpToPrevHunk() {
 // Rendering
 
 func (pv *PatchView) renderHeader() string {
-	if pv.statusBar != nil {
-		return pv.statusBar.View(pv.width)
+	var parts []string
+
+	// Optional context header (e.g. "diff a1b2c3d...e4f5g6h")
+	if pv.header != "" {
+		headerLine := pv.style.HeaderBg.Width(pv.width).Render(" " + pv.header)
+		parts = append(parts, headerLine)
 	}
-	return pv.style.HeaderBg.Width(pv.width).Render(" No changes")
+
+	// Status bar (file info with border)
+	if pv.statusBar != nil {
+		parts = append(parts, pv.statusBar.View(pv.width))
+	} else {
+		parts = append(parts, pv.style.HeaderBg.Width(pv.width).Render(" No changes"))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }
 
 func (pv *PatchView) renderFileList() string {

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte(":4 4 abcdef1234567890abcdef1234567890abcdef12 1234567890abcdef1234567890abcdef12345678 M\ta b.go\ndiff --git \"a/a b.go\"b/\n-- \"a/a b.go\"\n+++ \"b/a b.go\"\n@@ -1 +1 @@\n-x\no\ndi+y\n")

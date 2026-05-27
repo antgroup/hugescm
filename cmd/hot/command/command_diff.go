@@ -25,8 +25,7 @@ type Diff struct {
 	Args   []string `arg:"" optional:"" name:"args" help:"Commit range or paths"`
 }
 
-func (c *Diff) Run(g *Globals) error {
-	ctx := context.Background()
+func (c *Diff) Run(ctx context.Context, g *Globals) error {
 	repoPath := git.RevParseRepoPath(ctx, c.CWD)
 	trace.DbgPrint("repository location: %v", repoPath)
 

@@ -269,14 +269,70 @@ func commitHeaderEntries(hash, author, date, subject, files string) []HeaderEntr
 }
 
 // Run starts the interactive patch navigation view.
+//
+// When patches is empty the TUI is skipped — there is nothing meaningful
+// to navigate. If the caller configured a top header (e.g. via
+// WithCommitHeader) we still print it to stdout followed by a
+// "No changes" line, so callers like `hot show` keep showing commit
+// metadata for merge / empty commits instead of degenerating to a bare
+// "No changes" message.
 func Run(patches []*diferenco.Patch, opts ...Option) error {
 	if len(patches) == 0 {
+		// Build a throw-away PatchView purely to resolve the configured
+		// header entries + style without duplicating option plumbing.
+		pv := NewPatchView(patches, opts...)
+		if header := RenderHeaderEntries(pv.style, pv.headerEntries); header != "" {
+			_, _ = fmt.Fprintln(os.Stdout, header)
+		}
+		_, _ = fmt.Fprintln(os.Stdout, "No changes")
 		return nil
 	}
 	pv := NewPatchView(patches, opts...)
 	p := tea.NewProgram(pv, tea.WithOutput(os.Stdout))
 	_, err := p.Run()
 	return err
+}
+
+// RenderCommitHeader renders the canonical commit-style header block
+// (Commit / Author / Date / Subject [/ Files]) to a plain (but ANSI-
+// colored) string with one row per non-empty field. Unlike the TUI top
+// header it does not truncate to terminal width — callers print it
+// directly to stdout.
+//
+// Use this when you want to surface commit metadata outside the
+// interactive view (e.g. when there are no patches to navigate and the
+// TUI is skipped entirely).
+func RenderCommitHeader(style PatchViewStyle, hash, author, date, subject, files string) string {
+	return RenderHeaderEntries(style, commitHeaderEntries(hash, author, date, subject, files))
+}
+
+// RenderHeaderEntries renders a list of HeaderEntry rows as a plain
+// (ANSI-colored) string, using the same key padding + highlight rules
+// as the in-TUI top header. Returns "" for an empty input so callers
+// can cheaply skip the row.
+func RenderHeaderEntries(style PatchViewStyle, entries []HeaderEntry) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	rows := make([]string, len(entries))
+	for i, e := range entries {
+		var prefix string
+		if e.Key != "" {
+			prefix = e.Key + ":"
+			if displaywidth.String(prefix) < topHeaderKeyColumn {
+				prefix += strings.Repeat(" ", topHeaderKeyColumn-displaywidth.String(prefix))
+			}
+			prefix = style.HeaderMeta.Render(prefix)
+		} else {
+			prefix = strings.Repeat(" ", topHeaderKeyColumn)
+		}
+		value := e.Value
+		if e.Highlight {
+			value = style.HeaderHash.Render(value)
+		}
+		rows[i] = prefix + value
+	}
+	return strings.Join(rows, "\n")
 }
 
 // SummarizePatches returns a compact one-line summary of a patch set in

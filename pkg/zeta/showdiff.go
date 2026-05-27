@@ -245,11 +245,17 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 }
 
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
-	if opts.Nav && term.StdoutLevel != term.LevelNone && len(patch) > 0 {
+	if opts.Nav && term.StdoutLevel != term.LevelNone {
 		// Build a top header that describes the diff scope, e.g.
 		//   Diff:  HEAD~3..HEAD
 		//   Diff:  --cached
 		//   Files: 3 files changed, +5 -2
+		//
+		// We enter patchview.Run unconditionally (even when patch is
+		// empty): it short-circuits to a plain header + "No changes"
+		// line in that case, which is preferable to dropping through
+		// to the unified encoder — the encoder would silently print
+		// nothing and leave the user staring at an unrefreshed prompt.
 		var entries []patchview.HeaderEntry
 		if title := opts.headerTitle(); title != "" {
 			entries = append(entries, patchview.HeaderEntry{Key: "Diff", Value: title})

@@ -156,9 +156,24 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 	}
 	if len(cc.Parents) == 2 {
 		if navMode {
-			// Merge commits have no diff to navigate; fall back to the
-			// classic LogOne output so the user still sees the commit.
-			return w.LogOne(cc, rdb.M[cc.Hash])
+			// Merge commits have no diff to navigate. We deliberately do
+			// NOT route through the BuiltinPrinter pager here: feeding a
+			// short metadata blob into the pager can still fall through
+			// to the interactive bubbletea path (e.g. when term.GetSize
+			// fails) and leave the terminal waiting for a keypress with
+			// the prompt suppressed. Instead, render the same commit-
+			// style header that we use for the diff-bearing path via
+			// patchview.Run, which short-circuits to a plain stdout
+			// header + "No changes" line when the patch list is empty.
+			// The BuiltinPrinter created by Show stays empty and its
+			// Close() is a no-op, so the prompt is restored cleanly.
+			hash := cc.Hash.String()
+			author := fmt.Sprintf("%s <%s>", cc.Author.Name, cc.Author.Email)
+			date := cc.Author.When.Format(time.RFC1123Z)
+			subject := firstLine(cc.Message)
+			return patchview.Run(nil,
+				patchview.WithCommitHeaderWithFiles(hash, author, date, subject, ""),
+			)
 		}
 		return nil
 	}

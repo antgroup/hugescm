@@ -89,21 +89,22 @@ func (c *Show) Run(ctx context.Context, g *Globals) error {
 
 	trace.DbgPrint("parsed %d patches", len(patches))
 
-	// Display using patchview
-	if len(patches) == 0 {
-		fmt.Println("No changes")
-		return nil
-	}
-
-	// JSON output
+	// JSON output: always emit the raw patch array, even when empty, so
+	// callers piping `hot show --json` get stable, parseable output.
 	if c.JSON {
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(patches)
 	}
 
-	// Terminal not supported: fallback to plain text output
+	// Terminal not supported: fallback to plain text output. We still
+	// surface a "No changes" hint when there is nothing to encode (e.g.
+	// merge commits) so the pipe output is not silently empty.
 	if !term.IsTerminal(os.Stdout.Fd()) {
+		if len(patches) == 0 {
+			fmt.Println("No changes")
+			return nil
+		}
 		encoder := diferenco.NewUnifiedEncoder(os.Stdout, diferenco.WithVCS("git"))
 		return encoder.Encode(patches)
 	}
@@ -112,6 +113,12 @@ func (c *Show) Run(ctx context.Context, g *Globals) error {
 	// -1` for this rather than parsing the (suppressed) format output,
 	// because the main parse path is strictly diff-only. Failure to
 	// resolve metadata is non-fatal — we just fall back to no header.
+	//
+	// The header is configured unconditionally so that merge commits /
+	// empty commits (which produce zero patches) still show their
+	// Commit / Author / Date / Subject details instead of degenerating
+	// to a bare "No changes" line. patchview.Run handles the empty-
+	// patches case by printing the header + "No changes" to stdout.
 	runOpts := []patchview.Option{}
 	if hdr := loadShowHeaderOption(ctx, c.Commit, patches); hdr != nil {
 		runOpts = append(runOpts, hdr)

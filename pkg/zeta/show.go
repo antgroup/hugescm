@@ -144,10 +144,22 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 		fmt.Fprintf(os.Stderr, "resolve references error: %v\n", err)
 		return err
 	}
-	if err := w.LogOne(cc, rdb.M[cc.Hash]); err != nil {
-		return err
+	// In non-nav mode we print the commit log header before the patch so
+	// the output mirrors `git show`. Nav mode renders the same metadata
+	// inside the patchview top header (see below), so emitting LogOne
+	// here would just duplicate it (and corrupt the alt-screen).
+	navMode := opts.Nav && term.StdoutLevel != term.LevelNone
+	if !navMode {
+		if err := w.LogOne(cc, rdb.M[cc.Hash]); err != nil {
+			return err
+		}
 	}
 	if len(cc.Parents) == 2 {
+		if navMode {
+			// Merge commits have no diff to navigate; fall back to the
+			// classic LogOne output so the user still sees the commit.
+			return w.LogOne(cc, rdb.M[cc.Hash])
+		}
 		return nil
 	}
 	oldTree := r.odb.EmptyTree()
@@ -184,12 +196,19 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 		return err
 	}
 
-	if opts.Nav && term.StdoutLevel != term.LevelNone {
-		var err error
-		if err = patchview.Run(patch); err == nil {
-			return nil
-		}
-		warn("nav mode fallback to unified patch output: %v", err)
+	if navMode {
+		// Build a top header with commit metadata so users can see what
+		// they're navigating. We use the full 40-char hash to match the
+		// behaviour of `git show`; the patchview will left-truncate the
+		// line if the terminal is too narrow.
+		hash := cc.Hash.String()
+		author := fmt.Sprintf("%s <%s>", cc.Author.Name, cc.Author.Email)
+		date := cc.Author.When.Format(time.RFC1123Z)
+		subject := firstLine(cc.Message)
+		files := patchview.ColorizedPatchSummary(patchview.DefaultStyle(), patch)
+		return patchview.Run(patch,
+			patchview.WithCommitHeaderWithFiles(hash, author, date, subject, files),
+		)
 	}
 
 	e := diferenco.NewUnifiedEncoder(w, tui.EncoderOptions(w.ColorMode())...)
@@ -265,4 +284,17 @@ func (r *Repository) showFragments(ctx context.Context, w Printer, so *showObjec
 		_, _ = fmt.Fprintf(w, "%d\t%s %d\n", e.Index, e.Hash, e.Size)
 	}
 	return nil
+}
+
+// firstLine returns the first non-empty line of s, stripped of trailing
+// CR/LF. Used to extract the commit subject from a full commit message
+// for the patchview top header.
+func firstLine(s string) string {
+	for line := range strings.SplitSeq(s, "\n") {
+		line = strings.TrimRight(line, "\r")
+		if line != "" {
+			return line
+		}
+	}
+	return ""
 }

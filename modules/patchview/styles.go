@@ -2,6 +2,7 @@ package patchview
 
 import (
 	"fmt"
+	"image/color"
 	"os"
 
 	"charm.land/lipgloss/v2"
@@ -44,6 +45,17 @@ type PatchViewStyle struct {
 	PathDisplay lipgloss.Style
 	FilesTitle  lipgloss.Style
 	FooterBg    lipgloss.Style
+
+	// Border colors for the top header / status bar cards.
+	// These are intentionally neutral (no focus highlight) so the cards
+	// stay visually stable while the user navigates panes.
+	HeaderBorder color.Color
+
+	// Subdued text used inside the top header card (e.g. commit metadata).
+	HeaderMeta lipgloss.Style
+
+	// Highlight style for the commit hash shown in the top header.
+	HeaderHash lipgloss.Style
 
 	// Status styles for header
 	StatusAdded    lipgloss.Style
@@ -193,6 +205,9 @@ func DefaultDarkStyle() PatchViewStyle {
 		PathDisplay:    lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true),
 		FilesTitle:     lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true),
 		FooterBg:       lipgloss.NewStyle().Foreground(lipgloss.Color("7")).Padding(0, 1),
+		HeaderBorder:   lipgloss.Color("8"),
+		HeaderMeta:     lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
+		HeaderHash:     lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true),
 		StatusAdded:    lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true),
 		StatusDeleted:  lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
 		StatusRenamed:  lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
@@ -215,6 +230,9 @@ func DefaultLightStyle() PatchViewStyle {
 		PathDisplay:    lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Bold(true),
 		FilesTitle:     lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Bold(true),
 		FooterBg:       lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Padding(0, 1),
+		HeaderBorder:   lipgloss.Color("7"),
+		HeaderMeta:     lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
+		HeaderHash:     lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true),
 		StatusAdded:    lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true),
 		StatusDeleted:  lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
 		StatusRenamed:  lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),

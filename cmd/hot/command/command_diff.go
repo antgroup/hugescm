@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/diff"
 	"github.com/antgroup/hugescm/modules/command"
@@ -116,5 +117,49 @@ func (c *Diff) Run(ctx context.Context, g *Globals) error {
 		return encoder.Encode(patches)
 	}
 
-	return patchview.Run(patches)
+	// Top header describes the diff scope plus a one-line stats summary,
+	// mirroring how the user invoked the command:
+	//   Diff:  --cached HEAD
+	//   Files: 3 files changed, +5 -2
+	title := c.headerTitle()
+	summary := patchview.ColorizedPatchSummary(patchview.DefaultStyle(), patches)
+
+	var entries []patchview.HeaderEntry
+	if title != "" {
+		entries = append(entries, patchview.HeaderEntry{Key: "Diff", Value: title})
+	}
+	if summary != "" {
+		entries = append(entries, patchview.HeaderEntry{Key: "Files", Value: summary})
+	}
+
+	var runOpts []patchview.Option
+	if len(entries) > 0 {
+		runOpts = append(runOpts, patchview.WithHeaderEntries(entries...))
+	}
+	return patchview.Run(patches, runOpts...)
+}
+
+// headerTitle returns the patchview header value describing the diff
+// scope as the user invoked it. The "Diff:" key is added by the caller
+// when assembling HeaderEntries, so this returns only the value:
+//
+//	"--cached"                 -- staged changes
+//	"--cached <args...>"       -- staged + extra args
+//	"<args...>"                -- when the user passed an explicit range/paths
+//	"worktree"                 -- worktree vs. index, no args
+//
+// We deliberately echo back the user-provided args verbatim so the
+// header matches what they typed.
+func (c *Diff) headerTitle() string {
+	switch {
+	case c.Cached || c.Staged:
+		if len(c.Args) > 0 {
+			return "--cached " + strings.Join(c.Args, " ")
+		}
+		return "--cached"
+	case len(c.Args) > 0:
+		return strings.Join(c.Args, " ")
+	default:
+		return "worktree"
+	}
 }

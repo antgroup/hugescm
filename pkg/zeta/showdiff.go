@@ -42,6 +42,37 @@ func (opts *DiffOptions) po() *object.PatchOptions {
 	return &object.PatchOptions{Textconv: opts.Textconv, Algorithm: opts.Algorithm, Match: m.Match}
 }
 
+// headerTitle returns the value for the "Diff:" row in the patchview
+// top header, describing the diff scope in a way that mirrors how the
+// user invoked the command. The "Diff:" key is added by the caller when
+// assembling HeaderEntries, so we return the value only:
+//
+//	"--cached"               -- staged changes vs. HEAD
+//	"HEAD"                   -- worktree vs. HEAD (no explicit range)
+//	"<from>..<to>"           -- explicit range
+//	"<from>...<to>"          -- three-way merge base form
+//	"<from>"                 -- one-sided range (against worktree/index)
+//	"worktree"               -- default (no args)
+//
+// PathSpec is intentionally not included to keep the header compact.
+func (opts *DiffOptions) headerTitle() string {
+	switch {
+	case opts.Staged:
+		return "--cached"
+	case opts.ThreeWay && opts.From != "" && opts.To != "":
+		return fmt.Sprintf("%s...%s", opts.From, opts.To)
+	case opts.MergeBase != "" && opts.From != "":
+		// "<mergeBase>...<from>" form used internally.
+		return fmt.Sprintf("%s...%s", opts.MergeBase, opts.From)
+	case opts.From != "" && opts.To != "":
+		return fmt.Sprintf("%s..%s", opts.From, opts.To)
+	case opts.From != "":
+		return opts.From
+	default:
+		return "worktree"
+	}
+}
+
 func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes) error {
 	if opts.NameOnly {
 		return opts.showNameOnly(ctx, changes)
@@ -215,11 +246,18 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
 	if opts.Nav && term.StdoutLevel != term.LevelNone && len(patch) > 0 {
-		var err error
-		if err := patchview.Run(patch); err == nil {
-			return nil
+		// Build a top header that describes the diff scope, e.g.
+		//   Diff:  HEAD~3..HEAD
+		//   Diff:  --cached
+		//   Files: 3 files changed, +5 -2
+		var entries []patchview.HeaderEntry
+		if title := opts.headerTitle(); title != "" {
+			entries = append(entries, patchview.HeaderEntry{Key: "Diff", Value: title})
 		}
-		warn("nav mode fallback to unified patch output: %v", err)
+		if summary := patchview.ColorizedPatchSummary(patchview.DefaultStyle(), patch); summary != "" {
+			entries = append(entries, patchview.HeaderEntry{Key: "Files", Value: summary})
+		}
+		return patchview.Run(patch, patchview.WithHeaderEntries(entries...))
 	}
 
 	w, err := opts.NewOutput(ctx)

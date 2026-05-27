@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/antgroup/hugescm/cmd/hot/pkg/diff"
 	"github.com/antgroup/hugescm/modules/command"
@@ -107,5 +108,45 @@ func (c *Show) Run(ctx context.Context, g *Globals) error {
 		return encoder.Encode(patches)
 	}
 
-	return patchview.Run(patches)
+	// Build a top header with commit metadata. We run a second `git log
+	// -1` for this rather than parsing the (suppressed) format output,
+	// because the main parse path is strictly diff-only. Failure to
+	// resolve metadata is non-fatal — we just fall back to no header.
+	runOpts := []patchview.Option{}
+	if hdr := loadShowHeaderOption(ctx, c.Commit, patches); hdr != nil {
+		runOpts = append(runOpts, hdr)
+	}
+	return patchview.Run(patches, runOpts...)
+}
+
+// loadShowHeaderOption returns a patchview.Option populated with the
+// commit metadata for `commit`, or nil if the metadata cannot be
+// resolved. Errors are intentionally swallowed: a missing header is
+// strictly better than failing the whole `hot show`.
+func loadShowHeaderOption(ctx context.Context, commit string, patches []*diferenco.Patch) patchview.Option {
+	// Use %H (full hash) to match `git show` / `git log` defaults; the
+	// patchview will left-truncate if the terminal is too narrow.
+	format := "--format=%H%x09%an <%ae>%x09%aD%x09%s"
+	cmd := command.NewFromOptions(ctx, &command.RunOpts{
+		Environ: os.Environ(),
+	}, "git", "log", "-1", format, commit)
+
+	out, err := cmd.Output()
+	if err != nil {
+		trace.DbgPrint("load show header: %v", err)
+		return nil
+	}
+
+	line := strings.TrimRight(string(out), "\n")
+	parts := strings.SplitN(line, "\t", 4)
+	if len(parts) < 4 {
+		return nil
+	}
+	hash, author, date, subject := parts[0], parts[1], parts[2], parts[3]
+
+	// Add the patch summary as its own "Files:" row in the header so the
+	// user gets the same +X -Y info `git show --stat` would surface, with
+	// the same Addition/Deletion colors used in the file list.
+	files := patchview.ColorizedPatchSummary(patchview.DefaultStyle(), patches)
+	return patchview.WithCommitHeaderWithFiles(hash, author, date, subject, files)
 }

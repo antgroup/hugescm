@@ -11,6 +11,7 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/viewport"
 	"github.com/antgroup/hugescm/modules/viewport/item"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/clipperhouse/displaywidth"
 )
 
@@ -22,7 +23,26 @@ const (
 	titleHeight     = 1
 	hScrollStep     = 10
 	hScrollFastStep = 20
+
+	// topHeaderKeyColumn is the fixed width (in display columns) reserved
+	// for "Key: " prefixes in the top header. It is sized to comfortably
+	// hold the longest canonical key ("Subject:") plus a trailing space.
+	topHeaderKeyColumn = 9
 )
+
+// HeaderEntry is a single "Key: value" row in the top header block.
+//
+// When Key == "", the row is rendered as a plain continuation line
+// indented to topHeaderKeyColumn (used by legacy WithHeader callers that
+// pass a free-form multi-line string).
+//
+// Highlight = true asks the view to render Value with the bold accent
+// style (style.HeaderHash) — used for commit hashes.
+type HeaderEntry struct {
+	Key       string // canonical key text without the trailing ":" (e.g. "Commit").
+	Value     string
+	Highlight bool // if true, render Value with style.HeaderHash (bold + accent).
+}
 
 // PatchView is an interactive patch navigation view.
 type PatchView struct {
@@ -32,6 +52,11 @@ type PatchView struct {
 	renderer  *PatchRenderer
 	listVp    *viewport.Model[*patchItem]
 	statusBar StatusBar
+
+	// headerEntries is the structured top header (rendered as a borderless
+	// "Key: value" block above the status bar). Empty means no top header
+	// is shown — the view collapses to just status bar + main + footer.
+	headerEntries []HeaderEntry
 
 	width        int
 	height       int
@@ -158,6 +183,91 @@ func WithStatusBar(sb StatusBar) Option {
 	}
 }
 
+// WithHeader sets a free-form multi-line top header. Each "\n"-separated
+// segment becomes its own row, rendered as a borderless continuation line
+// (no "Key:" prefix, indented to align with the value column used by
+// WithCommitHeader).
+//
+// Pass an empty string (or do not call this option) to suppress the top
+// header entirely — the view will collapse back to just the status bar.
+//
+// For commit-style metadata prefer WithCommitHeader, which produces the
+// canonical 4-row "Commit/Author/Date/Subject" layout with a highlighted
+// hash; use WithHeader for ad-hoc diff range descriptions and similar.
+func WithHeader(text string) Option {
+	return func(pv *PatchView) {
+		if text == "" {
+			pv.headerEntries = nil
+			return
+		}
+		var entries []HeaderEntry
+		for line := range strings.SplitSeq(text, "\n") {
+			entries = append(entries, HeaderEntry{Value: line})
+		}
+		pv.headerEntries = entries
+	}
+}
+
+// WithHeaderEntries sets a structured top header, one entry per row, of
+// the form "Key: value". A nil key argument produces a continuation row
+// (no key prefix) that still aligns under the value column.
+//
+// Use this when you need full control (e.g. mixing highlighted and plain
+// values); prefer WithCommitHeader for the common commit-metadata case.
+func WithHeaderEntries(entries ...HeaderEntry) Option {
+	return func(pv *PatchView) {
+		if len(entries) == 0 {
+			pv.headerEntries = nil
+			return
+		}
+		pv.headerEntries = append([]HeaderEntry(nil), entries...)
+	}
+}
+
+// WithCommitHeader produces the canonical commit-style top header:
+//
+//	Commit:  <hash>            (hash highlighted via style.HeaderHash)
+//	Author:  <author>
+//	Date:    <date>
+//	Subject: <subject>
+//	Files:   <files>           (only included when non-empty)
+//
+// Empty fields drop their entire row, so callers can pass "" for missing
+// metadata without producing blank lines.
+func WithCommitHeader(hash, author, date, subject string) Option {
+	return func(pv *PatchView) {
+		pv.headerEntries = commitHeaderEntries(hash, author, date, subject, "")
+	}
+}
+
+// WithCommitHeaderWithFiles is like WithCommitHeader but appends an extra
+// "Files: <summary>" row (typically produced by SummarizePatches).
+func WithCommitHeaderWithFiles(hash, author, date, subject, files string) Option {
+	return func(pv *PatchView) {
+		pv.headerEntries = commitHeaderEntries(hash, author, date, subject, files)
+	}
+}
+
+func commitHeaderEntries(hash, author, date, subject, files string) []HeaderEntry {
+	var entries []HeaderEntry
+	if hash != "" {
+		entries = append(entries, HeaderEntry{Key: "Commit", Value: hash, Highlight: true})
+	}
+	if author != "" {
+		entries = append(entries, HeaderEntry{Key: "Author", Value: author})
+	}
+	if date != "" {
+		entries = append(entries, HeaderEntry{Key: "Date", Value: date})
+	}
+	if subject != "" {
+		entries = append(entries, HeaderEntry{Key: "Subject", Value: subject})
+	}
+	if files != "" {
+		entries = append(entries, HeaderEntry{Key: "Files", Value: files})
+	}
+	return entries
+}
+
 // Run starts the interactive patch navigation view.
 func Run(patches []*diferenco.Patch, opts ...Option) error {
 	if len(patches) == 0 {
@@ -167,6 +277,65 @@ func Run(patches []*diferenco.Patch, opts ...Option) error {
 	p := tea.NewProgram(pv, tea.WithOutput(os.Stdout))
 	_, err := p.Run()
 	return err
+}
+
+// SummarizePatches returns a compact one-line summary of a patch set in
+// the form "N files changed, +A -D". Empty input returns "". This is
+// shared by command_diff / command_show / showdiff / show so the header
+// subtitle stays consistent across entry points.
+//
+// The returned string is plain text (no ANSI). For a colorized variant
+// suitable for direct use as a HeaderEntry value, use
+// ColorizedPatchSummary.
+func SummarizePatches(patches []*diferenco.Patch) string {
+	if len(patches) == 0 {
+		return ""
+	}
+	add, del := patchTotals(patches)
+	noun := "files"
+	if len(patches) == 1 {
+		noun = "file"
+	}
+	return fmt.Sprintf("%d %s changed, +%d -%d", len(patches), noun, add, del)
+}
+
+// ColorizedPatchSummary is like SummarizePatches but renders the +A/-D
+// segments with the same Addition/Deletion colors used in the file list,
+// so the Files: row of the top header matches the per-file stats visually.
+//
+// Pass DefaultStyle() (or the same style you pass via WithStyle) so the
+// dark/light theme stays consistent. Empty input returns "".
+//
+// The rest of the string ("N files changed, ") uses the caller's default
+// foreground — we intentionally do NOT wrap it with HeaderMeta because
+// the header renderer already applies HeaderMeta-like keying via the
+// "Files:" prefix and double-styling would dim the +A/-D too much.
+func ColorizedPatchSummary(style PatchViewStyle, patches []*diferenco.Patch) string {
+	if len(patches) == 0 {
+		return ""
+	}
+	add, del := patchTotals(patches)
+	noun := "files"
+	if len(patches) == 1 {
+		noun = "file"
+	}
+	return fmt.Sprintf("%d %s changed, %s %s",
+		len(patches), noun,
+		style.Addition.Render(fmt.Sprintf("+%d", add)),
+		style.Deletion.Render(fmt.Sprintf("-%d", del)),
+	)
+}
+
+func patchTotals(patches []*diferenco.Patch) (add, del int) {
+	for _, p := range patches {
+		if p == nil {
+			continue
+		}
+		st := p.Stat()
+		add += st.Addition
+		del += st.Deletion
+	}
+	return add, del
 }
 
 // NewPatchView creates a new PatchView.
@@ -313,14 +482,20 @@ func (pv *PatchView) View() tea.View {
 		return tea.NewView("")
 	}
 
-	header := pv.renderHeader()
+	statusBar := pv.renderHeader()
 	fileList := pv.renderFileList()
 	gap := " "
 	diffContent := pv.renderDiffContent()
 	footer := pv.renderFooter()
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top, fileList, gap, diffContent)
-	fullView := lipgloss.JoinVertical(lipgloss.Left, header, mainContent, footer)
+
+	var fullView string
+	if topHeader := pv.renderTopHeader(); topHeader != "" {
+		fullView = lipgloss.JoinVertical(lipgloss.Left, topHeader, statusBar, mainContent, footer)
+	} else {
+		fullView = lipgloss.JoinVertical(lipgloss.Left, statusBar, mainContent, footer)
+	}
 
 	view := tea.NewView(fullView)
 	view.AltScreen = true
@@ -328,6 +503,19 @@ func (pv *PatchView) View() tea.View {
 }
 
 // Layout calculations
+
+// topHeaderHeight returns the rendered height of the optional top header
+// block, or 0 when no header is configured.
+//
+// The header is rendered borderless (no padding rows), so the height is
+// simply len(pv.headerEntries) — one terminal row per entry.
+//
+// This invariant (height == len(entries) == lipgloss.Height(renderTopHeader()))
+// is locked down by view_test.go because any drift directly pushes the
+// diff pane into the file list.
+func (pv *PatchView) topHeaderHeight() int {
+	return len(pv.headerEntries)
+}
 
 func (pv *PatchView) headerHeight() int {
 	if pv.statusBar != nil {
@@ -337,7 +525,7 @@ func (pv *PatchView) headerHeight() int {
 }
 
 func (pv *PatchView) listPaneHeight() int {
-	return max(pv.height-pv.headerHeight()-footerHeight, 0)
+	return max(pv.height-pv.topHeaderHeight()-pv.headerHeight()-footerHeight, 0)
 }
 
 func (pv *PatchView) listContentHeight() int {
@@ -353,7 +541,7 @@ func (pv *PatchView) diffPaneWidth() int {
 }
 
 func (pv *PatchView) diffPaneHeight() int {
-	return max(pv.height-pv.headerHeight()-footerHeight, 0)
+	return max(pv.height-pv.topHeaderHeight()-pv.headerHeight()-footerHeight, 0)
 }
 
 func (pv *PatchView) diffViewportWidth() int {
@@ -459,6 +647,61 @@ func (pv *PatchView) jumpToPrevHunk() {
 }
 
 // Rendering
+
+// renderTopHeader renders the optional top header as a borderless block
+// of "Key: value" rows. Total rendered width is at most pv.width (each
+// row is hard-truncated; we never wrap, so height stays predictable).
+//
+// Returns "" when no header is configured, which signals the caller to
+// skip the row entirely in JoinVertical.
+//
+// Layout:
+//   - Each row is `<key padded to topHeaderKeyColumn><value>`.
+//   - Keys use style.HeaderMeta (subdued).
+//   - Values use the default foreground, except entries flagged
+//     highlight=true which use style.HeaderHash (bold accent — used for
+//     commit hashes).
+//   - Continuation rows (key == "") render as `<spaces><value>` aligned
+//     to the value column.
+func (pv *PatchView) renderTopHeader() string {
+	if len(pv.headerEntries) == 0 {
+		return ""
+	}
+
+	width := pv.width
+	if width <= 0 {
+		return ""
+	}
+
+	keyPad := min(topHeaderKeyColumn, width)
+	valueWidth := max(width-keyPad, 0)
+
+	rows := make([]string, len(pv.headerEntries))
+	for i, e := range pv.headerEntries {
+		var prefix string
+		if e.Key != "" {
+			prefix = e.Key + ":"
+			if displaywidth.String(prefix) < keyPad {
+				prefix += strings.Repeat(" ", keyPad-displaywidth.String(prefix))
+			}
+			prefix = pv.style.HeaderMeta.Render(prefix)
+		} else {
+			prefix = strings.Repeat(" ", keyPad)
+		}
+
+		value := e.Value
+		if valueWidth > 0 && lipgloss.Width(value) > valueWidth {
+			value = ansi.TruncateWc(value, valueWidth, "…")
+		}
+		if e.Highlight {
+			value = pv.style.HeaderHash.Render(value)
+		}
+
+		rows[i] = prefix + value
+	}
+
+	return strings.Join(rows, "\n")
+}
 
 func (pv *PatchView) renderHeader() string {
 	if pv.statusBar != nil {

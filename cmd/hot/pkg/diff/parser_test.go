@@ -1516,10 +1516,10 @@ func BenchmarkParseHunks(b *testing.B) {
 	var lines [][]byte
 	lines = append(lines, []byte("@@ -1,100 +1,120 @@ func main() {\n"))
 	for i := range 100 {
-		lines = append(lines, []byte(fmt.Sprintf("-old line %d\n", i)))
+		lines = append(lines, fmt.Appendf(nil, "-old line %d\n", i))
 	}
 	for i := range 120 {
-		lines = append(lines, []byte(fmt.Sprintf("+new line %d\n", i)))
+		lines = append(lines, fmt.Appendf(nil, "+new line %d\n", i))
 	}
 
 	b.ReportAllocs()

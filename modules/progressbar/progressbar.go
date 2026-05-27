@@ -1038,14 +1038,14 @@ func renderProgressBar(c config, s *state) (int, error) {
 	leftBrac, rightBrac := calculateTimeBrackets(c, s, averageRate)
 
 	// calculate bar width for full width mode
-	calculateBarWidth(c, s, statsStr, leftBrac, rightBrac)
+	c.width = calculateBarWidth(c, s, statsStr, leftBrac, rightBrac)
 
 	// calculate bar visual elements
 	barStart, barEnd, saucer, saucerHead := calculateBarElements(c, s)
 
 	// build the final progress bar string
 	repeatAmount := max(c.width-s.currentSaucerSize, 0)
-	str := buildProgressBarString(c, s, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead, repeatAmount, averageRate)
+	str := buildProgressBarString(c, s, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead, repeatAmount)
 
 	if c.colorCodes {
 		str = colorstring.Color(str)
@@ -1217,12 +1217,15 @@ func calculateTimeBrackets(c config, s *state, averageRate float64) (string, str
 }
 
 // calculateBarWidth calculates the bar width for full width mode
-func calculateBarWidth(c config, s *state, statsStr, leftBrac, rightBrac string) {
+func calculateBarWidth(c config, s *state, statsStr, leftBrac, rightBrac string) int {
 	if !c.fullWidth || c.ignoreLength {
-		return
+		return c.width
 	}
 
-	width, err := termWidth()
+	width, err := termWidthFromWriter(c.writer)
+	if err != nil {
+		width, err = termWidth()
+	}
 	if err != nil {
 		width = 80
 	}
@@ -1233,8 +1236,9 @@ func calculateBarWidth(c config, s *state, statsStr, leftBrac, rightBrac string)
 
 	amend := calculateAmend(leftBrac, rightBrac, c.showDescriptionAtLineEnd)
 	// Use getStringWidth to properly handle ANSI codes and multi-byte characters
-	c.width = width - getStringWidth(c, c.description) - 10 - amend - getStringWidth(c, statsStr) - ansi.StringWidth(leftBrac) - ansi.StringWidth(rightBrac)
-	s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
+	calculatedWidth := width - getStringWidth(c, c.description) - 10 - amend - getStringWidth(c, statsStr) - ansi.StringWidth(leftBrac) - ansi.StringWidth(rightBrac)
+	s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(calculatedWidth))
+	return calculatedWidth
 }
 
 // calculateAmend calculates the amend value for bar width calculation
@@ -1305,7 +1309,7 @@ func calculateSaucerHead(c config, s *state) string {
 }
 
 // buildProgressBarString builds the final progress bar string
-func buildProgressBarString(c config, s *state, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead string, repeatAmount int, averageRate float64) string {
+func buildProgressBarString(c config, s *state, statsStr, leftBrac, rightBrac, barStart, barEnd, saucer, saucerHead string, repeatAmount int) string {
 	if c.ignoreLength {
 		return buildSpinnerString(c, s, statsStr, leftBrac)
 	}
@@ -1522,6 +1526,17 @@ var termWidth = func() (width int, err error) {
 	}
 
 	return 0, err
+}
+
+// termWidthFromWriter returns the visible width of the terminal attached to the writer,
+// falling back to termWidth if the writer is not a terminal.
+func termWidthFromWriter(w io.Writer) (int, error) {
+	if f, ok := w.(*os.File); ok {
+		if width, _, err := term.GetSize(int(f.Fd())); err == nil {
+			return width, nil
+		}
+	}
+	return 0, os.ErrNotExist
 }
 
 func shouldCacheOutput(pb *ProgressBar) bool {

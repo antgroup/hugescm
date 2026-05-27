@@ -13,6 +13,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta"
 	"github.com/antgroup/hugescm/modules/zeta/object"
+	"github.com/antgroup/hugescm/pkg/tr"
 	"github.com/antgroup/hugescm/pkg/transport"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"
 )
@@ -95,6 +96,10 @@ func (r *Repository) fetchAny(ctx context.Context, opts *FetchOptions) error {
 		return err
 	}
 	if err := r.fetch(ctx, t, opts); err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, tr.W("canceled"))
+			return err
+		}
 		if !zeta.IsErrExitCode(err) {
 			fmt.Fprintf(os.Stderr, "fetch metadata error: %v\n", err)
 		}
@@ -272,6 +277,10 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (*FetchR
 	if r.odb.Exists(o.Target, true) && o.Deepen != -1 {
 		if opts.FetchAlways {
 			if err := r.fetchObjects(ctx, t, o.Target, o.SizeLimit, o.SkipLarges); err != nil {
+				if errors.Is(err, context.Canceled) {
+					fmt.Fprintln(os.Stderr, tr.W("canceled"))
+					return nil, err
+				}
 				die_error("fetch missing object error: %v", err)
 				return nil, err
 			}
@@ -280,6 +289,10 @@ func (r *Repository) DoFetch(ctx context.Context, opts *DoFetchOptions) (*FetchR
 	}
 
 	if err := r.fetch(ctx, t, o); err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, tr.W("canceled"))
+			return nil, err
+		}
 		die_error("fetch target '%s' error: %v", o.Target, err)
 		return nil, err
 	}

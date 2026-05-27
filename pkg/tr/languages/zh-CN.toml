@@ -83,6 +83,7 @@
 "non-fast-forward" = "非快进"
 "fetch missing object error: %v" = "拉取缺失对象错误：%v"
 "fetch target '%s' error: %v" = "拉取目标 '%s' 错误：%v"
+"canceled" = "操作已被取消"
 # pull
 "Fetch from and integrate with remote" = "从远程获取并与其集成"
 "Specifies which branch to fetch and update" = "指定要获取和更新的分支"

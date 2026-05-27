@@ -278,7 +278,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		_ = os.RemoveAll(destination)
 	}()
 
-	tr, err := client.NewTransport(ctx, endpoint, transport.DOWNLOAD, opts.Verbose)
+	ta, err := client.NewTransport(ctx, endpoint, transport.DOWNLOAD, opts.Verbose)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "connect remote: %v\n", err)
 		return nil, err
@@ -306,7 +306,7 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 		}
 	default:
 	}
-	ref, err := tr.FetchReference(ctx, refname)
+	ref, err := ta.FetchReference(ctx, refname)
 	if err != nil {
 		if !zeta.IsErrExitCode(err) {
 			die_error("Fetch reference '%s': %v", refname, err)
@@ -389,7 +389,11 @@ func New(ctx context.Context, opts *NewOptions) (*Repository, error) {
 	if len(r.Core.SparseDirs) != 0 {
 		fmt.Fprintf(os.Stderr, "")
 	}
-	if err := r.fetch(ctx, tr, fetchOpts); err != nil {
+	if err := r.fetch(ctx, ta, fetchOpts); err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, tr.W("canceled"))
+			return nil, err
+		}
 		if !zeta.IsErrExitCode(err) {
 			fmt.Fprintf(os.Stderr, "fetch objects error: %v\n", err)
 		}

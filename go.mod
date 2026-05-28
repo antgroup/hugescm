@@ -9,7 +9,7 @@ require (
 	charm.land/huh/v2 v2.0.3
 	charm.land/lipgloss/v2 v2.0.3
 	github.com/ProtonMail/go-crypto v1.4.1
-	github.com/alecthomas/chroma/v2 v2.25.0
+	github.com/alecthomas/chroma/v2 v2.26.0
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260525135217-abeec2b8bf0b
 	github.com/clipperhouse/displaywidth v0.11.0

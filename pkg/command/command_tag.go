@@ -19,6 +19,7 @@ type Tag struct {
 	List     bool     `name:"list" short:"l" help:"List tags. With optional <pattern>..."`
 	Delete   bool     `name:"delete" short:"d" help:"Delete tags"`
 	Force    bool     `name:"force" short:"f" help:"Replace the tag if exists"`
+	JSON     bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Args     []string `arg:"" optional:"" name:"args" help:""`
 }
 
@@ -44,7 +45,7 @@ func (t *Tag) Run(ctx context.Context, g *Globals) error {
 		return err
 	}
 	if t.List {
-		return r.ListTag(ctx, t.Args)
+		return r.ListTag(ctx, &zeta.ListTagOptions{JSON: t.JSON, Pattern: t.Args})
 	}
 	if t.Delete {
 		return r.RemoveTag(t.Args)
@@ -52,7 +53,7 @@ func (t *Tag) Run(ctx context.Context, g *Globals) error {
 
 	switch len(t.Args) {
 	case 0:
-		return r.ListTag(ctx, nil)
+		return r.ListTag(ctx, &zeta.ListTagOptions{JSON: t.JSON})
 	case 1:
 		return r.NewTag(ctx, &zeta.NewTagOptions{
 			Name:     t.Args[0],

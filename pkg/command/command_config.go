@@ -21,6 +21,7 @@ type Config struct {
 	Get    bool     `name:"get" help:"Get the value for a given Key"`
 	GetALL bool     `name:"get-all" help:"Get all values for a given Key"`
 	Add    bool     `name:"add" help:"Add a new variable: name value"`
+	JSON   bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Z      bool     `short:"z" shortonly:"" help:"Terminate values with NUL byte"`
 	Type   string   `name:"type" short:"T" help:"zeta config will ensure that any input or output is valid under the given type constraint(s), support: bool, int, float, date" placeholder:"<type>"`
 }
@@ -36,6 +37,7 @@ func (c *Config) Run(ctx context.Context, g *Globals) error {
 			Global: c.Global,
 			Local:  c.Local,
 			Z:      c.Z,
+			JSON:   c.JSON,
 			CWD:    g.CWD,
 			Values: g.Values,
 		})
@@ -46,6 +48,7 @@ func (c *Config) Run(ctx context.Context, g *Globals) error {
 			Global: c.Global,
 			Local:  c.Local,
 			Z:      c.Z,
+			JSON:   c.JSON,
 			Keys:   c.Args,
 			CWD:    g.CWD,
 			Values: g.Values,
@@ -58,6 +61,7 @@ func (c *Config) Run(ctx context.Context, g *Globals) error {
 			Local:  c.Local,
 			ALL:    true,
 			Z:      c.Z,
+			JSON:   c.JSON,
 			Keys:   c.Args,
 			CWD:    g.CWD,
 			Values: g.Values,

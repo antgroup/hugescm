@@ -6,6 +6,7 @@ package zeta
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -40,20 +41,47 @@ func (r *Repository) RemoveTag(tags []string) error {
 	return nil
 }
 
-func (r *Repository) ListTag(ctx context.Context, pattern []string) error {
+type TagEntry struct {
+	Name string        `json:"name"`
+	Hash plumbing.Hash `json:"hash"`
+}
+
+type ListTagOptions struct {
+	JSON    bool
+	Pattern []string
+}
+
+func (r *Repository) ListTag(ctx context.Context, opts *ListTagOptions) error {
 	db, err := refs.ReferencesDB(r.zetaDir)
 	if err != nil {
 		die_error("references db error: %v", err)
 		return err
 	}
-	m := NewMatcher(pattern)
+	m := NewMatcher(opts.Pattern)
+	if opts.JSON {
+		var tags []*TagEntry
+		for _, ref := range db.References() {
+			if !ref.Name().IsTag() {
+				continue
+			}
+			refname := ref.Name().TagName()
+			if !m.Match(refname) {
+				continue
+			}
+			tags = append(tags, &TagEntry{
+				Name: refname,
+				Hash: ref.Hash(),
+			})
+		}
+		return json.NewEncoder(os.Stdout).Encode(tags)
+	}
 	w := NewPrinter(ctx)
 	defer w.Close() // nolint
-	for _, r := range db.References() {
-		if !r.Name().IsTag() {
+	for _, ref := range db.References() {
+		if !ref.Name().IsTag() {
 			continue
 		}
-		refname := r.Name().TagName()
+		refname := ref.Name().TagName()
 		if !m.Match(refname) {
 			continue
 		}

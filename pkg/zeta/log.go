@@ -92,7 +92,7 @@ func (r *Repository) ReferencesEx(ctx context.Context) (*ReferencesEx, error) {
 	return &ReferencesEx{DB: rdb, M: m}, nil
 }
 
-func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []plumbing.Hash, sort commitsSortFunc, formatJSON bool) error {
+func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []plumbing.Hash, sort commitsSortFunc, formatJSON bool, jsonLimit int) error {
 	if formatJSON {
 		iter, err := r.newCommitIter(ctx, opts, ignore)
 		if err != nil {
@@ -113,6 +113,9 @@ func (r *Repository) logPrint(ctx context.Context, opts *LogOptions, ignore []pl
 		}
 		if sort != nil {
 			sort(commits)
+		}
+		if jsonLimit > 0 && len(commits) > jsonLimit {
+			commits = commits[:jsonLimit]
 		}
 		return json.NewEncoder(os.Stdout).Encode(commits)
 	}
@@ -257,7 +260,11 @@ func (r *Repository) logFromMergeBase(ctx context.Context, a, b plumbing.Hash, o
 	}
 	opts.sort(cg.commits)
 	if opts.FormatJSON {
-		return json.NewEncoder(os.Stdout).Encode(cg.commits)
+		commits := cg.commits
+		if opts.JSONLimit > 0 && len(commits) > opts.JSONLimit {
+			commits = commits[:opts.JSONLimit]
+		}
+		return json.NewEncoder(os.Stdout).Encode(commits)
 	}
 	rdb, err := r.ReferencesEx(ctx)
 	if err != nil {
@@ -305,7 +312,7 @@ func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, o
 			Order:      opts.Order,
 			PathFilter: newLogPathFilter(opts.Paths),
 			Reverse:    opts.Reverse,
-		}, nil, opts.SortFunc(), opts.FormatJSON)
+		}, nil, opts.SortFunc(), opts.FormatJSON, opts.JSONLimit)
 	case newRev == nil:
 		return nil
 	default:
@@ -321,7 +328,7 @@ func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, o
 			Order:      opts.Order,
 			PathFilter: newLogPathFilter(opts.Paths),
 			Reverse:    opts.Reverse,
-		}, nil, opts.SortFunc(), opts.FormatJSON)
+		}, nil, opts.SortFunc(), opts.FormatJSON, opts.JSONLimit)
 	}
 	ignore := make([]plumbing.Hash, 0, 2)
 	for _, cc := range bases {
@@ -336,7 +343,7 @@ func (r *Repository) logRevFromTo(ctx context.Context, from, to plumbing.Hash, o
 		Order:      opts.Order,
 		PathFilter: newLogPathFilter(opts.Paths),
 		Reverse:    opts.Reverse,
-	}, ignore, opts.SortFunc(), opts.FormatJSON)
+	}, ignore, opts.SortFunc(), opts.FormatJSON, opts.JSONLimit)
 }
 
 func (r *Repository) Log(ctx context.Context, opts *LogCommandOptions) error {
@@ -379,7 +386,7 @@ func (r *Repository) Log(ctx context.Context, opts *LogCommandOptions) error {
 		Order:      opts.Order,
 		PathFilter: newLogPathFilter(opts.Paths),
 		Reverse:    opts.Reverse,
-	}, nil, opts.SortFunc(), opts.FormatJSON)
+	}, nil, opts.SortFunc(), opts.FormatJSON, opts.JSONLimit)
 }
 
 // newCommitIter returns the commit history from the given LogOptions.

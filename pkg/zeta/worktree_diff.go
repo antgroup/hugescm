@@ -5,6 +5,7 @@ package zeta
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -199,6 +200,9 @@ func (w *Worktree) getStatsContext(ctx context.Context, changes merkletrie.Chang
 
 func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes merkletrie.Changes) error {
 	if opts.NameOnly || opts.NameStatus {
+		if opts.JSON {
+			return opts.showChangesStatusJSON(changes)
+		}
 		return opts.showChangesStatus(ctx, changes)
 	}
 	m := NewMatcher(opts.PathSpec)
@@ -206,6 +210,9 @@ func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes m
 		fileStats, err := w.getStatsContext(ctx, changes, m, opts.Textconv)
 		if err != nil {
 			return err
+		}
+		if opts.JSON {
+			return json.NewEncoder(os.Stdout).Encode(fileStats)
 		}
 		return opts.ShowStats(ctx, fileStats)
 	}

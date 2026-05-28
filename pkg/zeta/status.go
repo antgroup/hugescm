@@ -5,6 +5,7 @@ package zeta
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -102,6 +103,63 @@ const (
 	Copied             StatusCode = 'C'
 	UpdatedButUnmerged StatusCode = 'U'
 )
+
+func (s StatusCode) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(rune(s)))
+}
+
+// StatusJSON is the JSON representation of a Status.
+type StatusJSON struct {
+	Staging   []FileStatusJSON `json:"staged,omitempty"`
+	Unstaging []FileStatusJSON `json:"unstaged,omitempty"`
+	Untracked []FileStatusJSON `json:"untracked,omitempty"`
+}
+
+// FileStatusJSON is the JSON representation of a FileStatus.
+type FileStatusJSON struct {
+	Path     string     `json:"path"`
+	Staging  StatusCode `json:"staging,omitempty"`
+	Worktree StatusCode `json:"worktree,omitempty"`
+	Extra    string     `json:"extra,omitempty"`
+}
+
+func newStatusJSON(status Status, root string) *StatusJSON {
+	cwd, _ := os.Getwd()
+	makePath := func(name string) string {
+		if len(cwd) == 0 {
+			return name
+		}
+		rel, err := filepath.Rel(cwd, filepath.Join(root, name))
+		if err != nil {
+			return name
+		}
+		return rel
+	}
+	sj := &StatusJSON{}
+	for p, s := range status {
+		if s.Worktree == Unmodified && s.Staging == Unmodified {
+			continue
+		}
+		path := makePath(p)
+		if s.Worktree == Untracked && s.Staging == Untracked {
+			sj.Untracked = append(sj.Untracked, FileStatusJSON{Path: path, Worktree: s.Worktree, Staging: s.Staging})
+			continue
+		}
+		fsj := FileStatusJSON{Path: path, Staging: s.Staging, Worktree: s.Worktree, Extra: s.Extra}
+		if s.Staging != Unmodified {
+			sj.Staging = append(sj.Staging, fsj)
+		}
+		if s.Worktree != Unmodified {
+			sj.Unstaging = append(sj.Unstaging, fsj)
+		}
+	}
+	return sj
+}
+
+func (w *Worktree) ShowStatusJSON(status Status) error {
+	sj := newStatusJSON(status, w.baseDir)
+	return json.NewEncoder(os.Stdout).Encode(sj)
+}
 
 type change struct {
 	path string

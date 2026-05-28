@@ -412,6 +412,7 @@ type LogCommandOptions struct {
 	OrderByAuthorDate    bool
 	Reverse              bool
 	FormatJSON           bool
+	JSONLimit            int
 	Paths                []string
 }
 type commitsSortFunc func([]*object.Commit)

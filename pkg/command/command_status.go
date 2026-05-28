@@ -14,6 +14,7 @@ import (
 type Status struct {
 	Short bool `name:"short" short:"s" help:"Give the output in the short-format"`
 	Z     bool `short:"z" shortonly:"" help:"Terminate entries with NUL byte"`
+	JSON  bool `name:"json" short:"j" help:"Data will be returned in JSON format"`
 }
 
 func (s *Status) NewLine() byte {
@@ -42,6 +43,9 @@ func (s *Status) Run(ctx context.Context, g *Globals) error {
 	if err != nil {
 		diev("status: %v", err)
 		return err
+	}
+	if s.JSON {
+		return w.ShowStatusJSON(status)
 	}
 	if shortFormat {
 		w.ShowStatus(status, true, s.Z)

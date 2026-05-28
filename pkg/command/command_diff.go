@@ -25,6 +25,7 @@ type Diff struct {
 	Numstat         bool     `name:"numstat" help:"Show numeric diffstat instead of patch"`
 	Stat            bool     `name:"stat" help:"Show diffstat instead of patch"`
 	Shortstat       bool     `name:"shortstat" help:"Output only the last line of --stat format"`
+	JSON            bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Z               bool     `short:"z" shortonly:"" help:"Output diff-raw with lines terminated with NUL"`
 	Staged          bool     `name:"staged" help:"Compare the differences between the staging area and <revision>"`
 	Cached          bool     `name:"cached" help:"Compare the differences between the staging area and <revision>"`
@@ -99,6 +100,7 @@ func (c *Diff) NewOptions() (*zeta.DiffOptions, error) {
 		Numstat:    c.Numstat,
 		Stat:       c.Stat,
 		Shortstat:  c.Shortstat,
+		JSON:       c.JSON,
 		NewLine:    c.NewLine(),
 		NewOutput:  c.NewOutput,
 		PathSpec:   slashPaths(c.passthroughArgs),
@@ -149,6 +151,7 @@ func (c *Diff) render(ctx context.Context, u *diferenco.Patch) error {
 		Numstat:    c.Numstat,
 		Stat:       c.Stat,
 		Shortstat:  c.Shortstat,
+		JSON:       c.JSON,
 		NewLine:    c.NewLine(),
 		NewOutput:  c.NewOutput,
 		NoRename:   true,

@@ -20,26 +20,39 @@ type Version struct {
 	JSON         bool `short:"j" name:"json" help:"Data will be returned in JSON format"`
 }
 
+type versionInfo struct {
+	Version    string            `json:"version"`
+	Commit     string            `json:"commit"`
+	Time       string            `json:"time"`
+	Arch       string            `json:"arch"`
+	OS         string            `json:"os"`
+	GoVersion  string            `json:"go_version,omitempty"`
+	BuildFlags map[string]string `json:"build_flags,omitempty"`
+}
+
 func (c *Version) formatJSON() error {
-	m := map[string]string{
-		"version": version.GetVersion(),
-		"commit":  version.GetBuildCommit(),
-		"time":    version.GetBuildTime(),
-		"arch":    runtime.GOARCH,
-		"os":      runtime.GOOS,
+	info := versionInfo{
+		Version: version.GetVersion(),
+		Commit:  version.GetBuildCommit(),
+		Time:    version.GetBuildTime(),
+		Arch:    runtime.GOARCH,
+		OS:      runtime.GOOS,
 	}
 	if c.BuildOptions {
-		if info, ok := debug.ReadBuildInfo(); ok {
-			m["go_version"] = strings.TrimPrefix(info.GoVersion, "go")
-			for _, s := range info.Settings {
+		if buildInfo, ok := debug.ReadBuildInfo(); ok {
+			info.GoVersion = strings.TrimPrefix(buildInfo.GoVersion, "go")
+			for _, s := range buildInfo.Settings {
 				if len(s.Value) == 0 {
 					continue
 				}
-				m[s.Key] = s.Value
+				if info.BuildFlags == nil {
+					info.BuildFlags = make(map[string]string)
+				}
+				info.BuildFlags[s.Key] = s.Value
 			}
 		}
 	}
-	return json.NewEncoder(os.Stdout).Encode(m)
+	return json.NewEncoder(os.Stdout).Encode(info)
 }
 
 func (c *Version) Run(ctx context.Context, g *Globals) error {

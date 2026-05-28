@@ -5,6 +5,7 @@ package zeta
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -189,16 +190,42 @@ func (w *Worktree) StashPush(ctx context.Context, opts *StashPushOptions) error 
 	return nil
 }
 
-func (w *Worktree) StashList(ctx context.Context) error {
+type StashListOptions struct {
+	JSON bool
+}
+
+type StashEntry struct {
+	Index     int              `json:"index"`
+	Hash      plumbing.Hash    `json:"hash"`
+	Committer object.Signature `json:"committer"`
+	Message   string           `json:"message"`
+}
+
+func (w *Worktree) StashList(ctx context.Context, opts *StashListOptions) error {
 	if !w.rdb.Exists(StashName) {
+		if opts.JSON {
+			return json.NewEncoder(os.Stdout).Encode([]StashEntry{})
+		}
 		return nil
 	}
-	writer := NewPrinter(ctx)
-	defer writer.Close() // nolint
 	ro, err := w.rdb.Read(StashName)
 	if err != nil {
 		return err
 	}
+	if opts.JSON {
+		entries := make([]StashEntry, 0, len(ro.Entries))
+		for i, e := range ro.Entries {
+			entries = append(entries, StashEntry{
+				Index:     i,
+				Hash:      e.N,
+				Committer: e.Committer,
+				Message:   e.Message,
+			})
+		}
+		return json.NewEncoder(os.Stdout).Encode(entries)
+	}
+	writer := NewPrinter(ctx)
+	defer writer.Close() // nolint
 	for i, e := range ro.Entries {
 		_, _ = fmt.Fprintf(writer, "stash@{%d}: %s\n", i, e.Message)
 	}

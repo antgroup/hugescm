@@ -4,6 +4,7 @@
 package zeta
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -23,6 +24,7 @@ type ListConfigOptions struct {
 	Global bool
 	Local  bool
 	Z      bool
+	JSON   bool
 	CWD    string
 	Values []string
 }
@@ -48,6 +50,9 @@ func ListConfig(opts *ListConfigOptions) error {
 	if (opts.System && opts.Global) || (opts.System && opts.Local) || (opts.Global && opts.Local) {
 		die_error("only one config file at a time")
 		return ErrOnlyOneName
+	}
+	if opts.JSON {
+		return listConfigJSON(opts)
 	}
 	d := &config.DisplayOptions{Writer: os.Stdout, Z: opts.Z}
 	if opts.System {
@@ -103,12 +108,100 @@ func ListConfig(opts *ListConfigOptions) error {
 	return nil
 }
 
+func listConfigJSON(opts *ListConfigOptions) error {
+	merged := make(map[string]map[string]any)
+	mergeDoc := func(doc config.Document) {
+		for section, values := range doc.Raw() {
+			if _, ok := merged[section]; !ok {
+				merged[section] = make(map[string]any)
+			}
+			for k, v := range values {
+				merged[section][k] = v
+			}
+		}
+	}
+	if opts.System {
+		doc, err := config.LoadSystemDocument()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "zeta config --list --system --json error: %v\n", err)
+			return err
+		}
+		if doc != nil {
+			mergeDoc(doc)
+		}
+		return json.NewEncoder(os.Stdout).Encode(merged)
+	}
+	if opts.Global {
+		doc, err := config.LoadGlobalDocument()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "zeta config --list --global --json error: %v\n", err)
+			return err
+		}
+		if doc != nil {
+			mergeDoc(doc)
+		}
+		return json.NewEncoder(os.Stdout).Encode(merged)
+	}
+	if opts.Local {
+		_, zetaDir, err := FindZetaDir(opts.CWD)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "zeta config --list --local --json error: %v\n", err)
+			return err
+		}
+		doc, err := config.LoadLocalDocument(zetaDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "zeta config --list --local --json error: %v\n", err)
+			return err
+		}
+		if doc != nil {
+			mergeDoc(doc)
+		}
+		return json.NewEncoder(os.Stdout).Encode(merged)
+	}
+	// List all configs (system -> global -> local, local overrides)
+	doc, err := config.LoadSystemDocument()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "zeta config --list --json error: %v\n", err)
+		return err
+	}
+	if doc != nil {
+		mergeDoc(doc)
+	}
+	doc, err = config.LoadGlobalDocument()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "zeta config --list --json error: %v\n", err)
+		return err
+	}
+	if doc != nil {
+		mergeDoc(doc)
+	}
+	_, zetaDir, err := FindZetaDir(opts.CWD)
+	switch {
+	case err == nil:
+		doc, err = config.LoadLocalDocument(zetaDir)
+		if err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "zeta config --list --json error: %v\n", err)
+			return err
+		}
+		if doc != nil {
+			mergeDoc(doc)
+		}
+	case IsErrNotZetaDir(err):
+		// success
+	default:
+		fmt.Fprintf(os.Stderr, "zeta config --list --json error: %v\n", err)
+		return err
+	}
+	return json.NewEncoder(os.Stdout).Encode(merged)
+}
+
 type GetConfigOptions struct {
 	System bool
 	Global bool
 	Local  bool
 	ALL    bool
 	Z      bool
+	JSON   bool
 	Keys   []string
 	CWD    string
 	Values []string
@@ -149,6 +242,9 @@ func GetConfig(opts *GetConfigOptions) error {
 	if len(opts.Keys) == 0 {
 		fmt.Fprintf(os.Stderr, "zeta config %s: missing keys\n", opts.subCommand())
 		return ErrMissingKeys
+	}
+	if opts.JSON {
+		return getConfigJSON(opts)
 	}
 	o := &config.GetOptions{
 		Writer: os.Stdout,
@@ -196,6 +292,89 @@ func GetConfig(opts *GetConfigOptions) error {
 		return err
 	}
 	return nil
+}
+
+func getConfigJSON(opts *GetConfigOptions) error {
+	// Load documents based on scope
+	loadDocs := func() ([]config.Document, error) {
+		if opts.System {
+			doc, err := config.LoadSystemDocument()
+			return []config.Document{doc}, err
+		}
+		if opts.Global {
+			doc, err := config.LoadGlobalDocument()
+			return []config.Document{doc}, err
+		}
+		if opts.Local {
+			_, zetaDir, err := FindZetaDir(opts.CWD)
+			if err != nil {
+				return nil, err
+			}
+			doc, err := config.LoadLocalDocument(zetaDir)
+			return []config.Document{doc}, err
+		}
+		// All scopes: local, global, system
+		var docs []config.Document
+		_, zetaDir, err := FindZetaDir(opts.CWD)
+		if err == nil {
+			doc, err := config.LoadLocalDocument(zetaDir)
+			if err != nil && !os.IsNotExist(err) {
+				return nil, err
+			}
+			if doc != nil {
+				docs = append(docs, doc)
+			}
+		}
+		doc, err := config.LoadGlobalDocument()
+		if err != nil {
+			return nil, err
+		}
+		if doc != nil {
+			docs = append(docs, doc)
+		}
+		doc, err = config.LoadSystemDocument()
+		if err != nil {
+			return nil, err
+		}
+		if doc != nil {
+			docs = append(docs, doc)
+		}
+		return docs, nil
+	}
+	docs, err := loadDocs()
+	if err != nil {
+		return err
+	}
+	result := make(map[string]any)
+	for _, key := range opts.Keys {
+		lowerKey := strings.ToLower(key)
+		for _, doc := range docs {
+			if doc == nil {
+				continue
+			}
+			if opts.ALL {
+				vals, err := doc.GetAll(lowerKey)
+				if err != nil {
+					continue
+				}
+				if existing, ok := result[key]; ok {
+					if arr, ok := existing.([]any); ok {
+						result[key] = append(arr, vals...)
+					}
+					continue
+				}
+				result[key] = vals
+				continue
+			}
+			val, err := doc.GetFirst(lowerKey)
+			if err != nil {
+				continue
+			}
+			result[key] = val
+			break
+		}
+	}
+	return json.NewEncoder(os.Stdout).Encode(result)
 }
 
 // ParseBool returns the boolean value represented by the string.

@@ -111,6 +111,36 @@ func DisplayLocal(opts *DisplayOptions, zetaDir string) error {
 	return displayTo(opts, zfg)
 }
 
+// LoadSystemDocument loads the system-level config document.
+func LoadSystemDocument() (Document, error) {
+	zfg := configSystemPath()
+	doc, err := LoadDocumentFile(zfg)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return doc, err
+}
+
+// LoadGlobalDocument loads the global config document.
+func LoadGlobalDocument() (Document, error) {
+	zfg := strengthen.ExpandPath("~/.zeta.toml")
+	doc, err := LoadDocumentFile(zfg)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return doc, err
+}
+
+// LoadLocalDocument loads the local config document.
+func LoadLocalDocument(zetaDir string) (Document, error) {
+	zfg := filepath.Join(zetaDir, "zeta.toml")
+	doc, err := LoadDocumentFile(zfg)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return doc, err
+}
+
 type GetOptions struct {
 	io.Writer
 	Keys    []string

@@ -14,6 +14,7 @@ import (
 type Branch struct {
 	ShowCurrent bool     `name:"show-current" help:"Show current branch name"`
 	List        bool     `name:"list" short:"l" help:"List branches. With optional <pattern>..."`
+	JSON        bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
 	Copy        bool     `name:"copy" short:"c" help:"Copy a branch and its reflog"`
 	ForceCopy   bool     `short:"C" shortonly:"" help:"Copy a branch, even if target exists"`
 	Delete      bool     `name:"delete" short:"d" help:"Delete fully merged branch"`
@@ -72,7 +73,7 @@ func (b *Branch) Run(ctx context.Context, g *Globals) error {
 		return r.ShowCurrent(os.Stdout)
 	}
 	if b.List {
-		return r.ListBranch(ctx, b.Args)
+		return r.ListBranch(ctx, &zeta.ListBranchOptions{JSON: b.JSON, Pattern: b.Args})
 	}
 	if b.IsMove() {
 		if len(b.Args) < 2 {
@@ -89,7 +90,7 @@ func (b *Branch) Run(ctx context.Context, g *Globals) error {
 		return r.RemoveBranch(b.Args, b.IsForceDelete())
 	}
 	if len(b.Args) == 0 {
-		return r.ListBranch(ctx, nil)
+		return r.ListBranch(ctx, &zeta.ListBranchOptions{JSON: b.JSON})
 	}
 	from := "HEAD"
 	if len(b.Args) >= 2 {

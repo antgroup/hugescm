@@ -5,7 +5,6 @@ package command
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -33,15 +32,7 @@ func (c *ShowRemote) Run(ctx context.Context, g *Globals) error {
 		return err
 	}
 	defer r.Close() // nolint
-	remote := r.Core.Remote
-	if c.JSON {
-		m := map[string]string{
-			"remote": remote,
-		}
-		return json.NewEncoder(os.Stdout).Encode(m)
-	}
-	_, _ = fmt.Fprintf(os.Stdout, "remote: %s\n", remote)
-	return nil
+	return r.ShowRemote(&zeta.ShowRemoteOptions{JSON: c.JSON})
 }
 
 // Set or replace remote

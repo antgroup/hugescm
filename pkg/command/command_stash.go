@@ -40,6 +40,7 @@ func (c *StashPush) Run(ctx context.Context, g *Globals) error {
 }
 
 type StashList struct {
+	JSON bool `name:"json" short:"j" help:"Data will be returned in JSON format"`
 }
 
 func (c *StashList) Run(ctx context.Context, g *Globals) error {
@@ -53,7 +54,7 @@ func (c *StashList) Run(ctx context.Context, g *Globals) error {
 	}
 	defer r.Close() // nolint
 	w := r.Worktree()
-	return w.StashList(ctx)
+	return w.StashList(ctx, &zeta.StashListOptions{JSON: c.JSON})
 }
 
 type StashShow struct {

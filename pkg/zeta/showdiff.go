@@ -2,8 +2,10 @@ package zeta
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 
@@ -23,6 +25,7 @@ type DiffOptions struct {
 	Stat       bool
 	Shortstat  bool
 	Staged     bool
+	JSON       bool
 	NewLine    byte
 	NewOutput  func(context.Context) (Printer, error) // new writer func
 	NoRename   bool
@@ -75,15 +78,24 @@ func (opts *DiffOptions) headerTitle() string {
 
 func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes) error {
 	if opts.NameOnly {
+		if opts.JSON {
+			return opts.showNameOnlyJSON(changes)
+		}
 		return opts.showNameOnly(ctx, changes)
 	}
 	if opts.NameStatus {
+		if opts.JSON {
+			return opts.showNameStatusJSON(changes)
+		}
 		return opts.showNameStatus(ctx, changes)
 	}
 	if opts.showStatOnly() {
 		fileStats, err := changes.Stats(ctx, opts.po())
 		if err != nil {
 			return err
+		}
+		if opts.JSON {
+			return json.NewEncoder(os.Stdout).Encode(fileStats)
 		}
 		return opts.ShowStats(ctx, fileStats)
 	}
@@ -92,6 +104,41 @@ func (opts *DiffOptions) ShowChanges(ctx context.Context, changes object.Changes
 		return err
 	}
 	return opts.ShowPatch(ctx, patch)
+}
+
+type diffNameEntry struct {
+	Name string `json:"name"`
+}
+
+type diffNameStatusEntry struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+func (opts *DiffOptions) showNameOnlyJSON(changes object.Changes) error {
+	m := NewMatcher(opts.PathSpec)
+	var entries []diffNameEntry
+	for _, c := range changes {
+		name := c.Name()
+		if !m.Match(name) {
+			continue
+		}
+		entries = append(entries, diffNameEntry{Name: name})
+	}
+	return json.NewEncoder(os.Stdout).Encode(entries)
+}
+
+func (opts *DiffOptions) showNameStatusJSON(changes object.Changes) error {
+	m := NewMatcher(opts.PathSpec)
+	var entries []diffNameStatusEntry
+	for _, c := range changes {
+		name, stat := changeStat(c)
+		if !m.Match(name) {
+			continue
+		}
+		entries = append(entries, diffNameStatusEntry{Name: name, Status: string(stat)})
+	}
+	return json.NewEncoder(os.Stdout).Encode(entries)
 }
 
 func (opts *DiffOptions) showNameOnly(ctx context.Context, changes object.Changes) error {
@@ -245,6 +292,12 @@ func (opts *DiffOptions) ShowStats(ctx context.Context, fileStats object.FileSta
 }
 
 func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch) error {
+	if opts.JSON {
+		if patch == nil {
+			patch = []*diferenco.Patch{}
+		}
+		return json.NewEncoder(os.Stdout).Encode(patch)
+	}
 	if opts.Nav && term.StdoutLevel != term.LevelNone {
 		// Build a top header that describes the diff scope, e.g.
 		//   Diff:  HEAD~3..HEAD
@@ -315,4 +368,33 @@ func (opts *DiffOptions) showChangesStatus(ctx context.Context, changes merkletr
 		}
 	}
 	return nil
+}
+
+func (opts *DiffOptions) showChangesStatusJSON(changes merkletrie.Changes) error {
+	m := NewMatcher(opts.PathSpec)
+	if opts.NameOnly {
+		var entries []diffNameEntry
+		for _, c := range changes {
+			name := nameFromAction(&c)
+			if !m.Match(name) {
+				continue
+			}
+			entries = append(entries, diffNameEntry{Name: name})
+		}
+		return json.NewEncoder(os.Stdout).Encode(entries)
+	}
+	// name-status
+	var entries []diffNameStatusEntry
+	for _, c := range changes {
+		name := nameFromAction(&c)
+		if !m.Match(name) {
+			continue
+		}
+		a, err := c.Action()
+		if err != nil {
+			return err
+		}
+		entries = append(entries, diffNameStatusEntry{Name: name, Status: a.String()})
+	}
+	return json.NewEncoder(os.Stdout).Encode(entries)
 }

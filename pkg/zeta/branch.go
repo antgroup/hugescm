@@ -5,6 +5,7 @@ package zeta
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -128,16 +129,27 @@ func (r *Repository) RemoveBranch(branches []string, force bool) error {
 	return nil
 }
 
-func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
+// BranchEntry is the JSON representation of a branch.
+type BranchEntry struct {
+	Name    string        `json:"name"`
+	Current bool          `json:"current,omitempty"`
+	Hash    plumbing.Hash `json:"hash"`
+}
+
+type ListBranchOptions struct {
+	JSON    bool
+	Pattern []string
+}
+
+func (r *Repository) ListBranch(ctx context.Context, opts *ListBranchOptions) error {
 	db, err := refs.ReferencesDB(r.zetaDir)
 	if err != nil {
 		die_error("open references db error: %v", err)
 		return err
 	}
-	m := NewMatcher(pattern)
-	w := NewPrinter(ctx)
-	defer w.Close() // nolint
+	m := NewMatcher(opts.Pattern)
 	target := db.HEAD().Target()
+	branches := make([]*BranchEntry, 0)
 	for _, r := range db.References() {
 		if !r.Name().IsBranch() {
 			continue
@@ -146,7 +158,17 @@ func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
 		if !m.Match(branchName) {
 			continue
 		}
-		if target == r.Name() {
+		isCurrent := target == r.Name()
+		if opts.JSON {
+			branches = append(branches, &BranchEntry{
+				Name:    branchName,
+				Current: isCurrent,
+				Hash:    r.Hash(),
+			})
+			continue
+		}
+		if isCurrent {
+			w := NewPrinter(ctx)
 			switch w.ColorMode() {
 			case term.Level16M:
 				_, _ = fmt.Fprintf(w, "\x1b[38;2;67;233;123m* %s\x1b[0m\n", branchName)
@@ -155,9 +177,13 @@ func (r *Repository) ListBranch(ctx context.Context, pattern []string) error {
 			default:
 				_, _ = fmt.Fprintf(w, " %s\n", branchName)
 			}
+			w.Close() // nolint
 			continue
 		}
-		_, _ = fmt.Fprintf(w, "  %s\n", branchName)
+		fmt.Fprintf(os.Stdout, "  %s\n", branchName)
+	}
+	if opts.JSON {
+		return json.NewEncoder(os.Stdout).Encode(branches)
 	}
 	return nil
 }

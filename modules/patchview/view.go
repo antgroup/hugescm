@@ -474,7 +474,7 @@ func (pv *PatchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Right panel focus: handle diff scrolling
 		if pv.focusRight {
 			switch msg.String() {
-			case "j", "down":
+			case "j", "down", "enter":
 				pv.yOffset++
 				pv.clampYOffset()
 			case "k", "up":
@@ -493,6 +493,12 @@ func (pv *PatchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				pv.clampYOffset()
 			case "ctrl+u":
 				pv.yOffset -= pv.diffViewportHeight() / 2
+				pv.clampYOffset()
+			case " ", "f", "ctrl+f", "pgdown":
+				pv.yOffset += pv.diffViewportHeight()
+				pv.clampYOffset()
+			case "b", "ctrl+b", "pgup":
+				pv.yOffset -= pv.diffViewportHeight()
 				pv.clampYOffset()
 			case "g", "home":
 				pv.yOffset = 0
@@ -843,7 +849,7 @@ func (pv *PatchView) renderFooter() string {
 
 	var keys string
 	if pv.focusRight {
-		keys = "j/k:scroll  h/l:hscroll  [/]:hunk  g/G:top/bottom  tab:files  n/p:file  q:quit"
+		keys = "j/k/enter:scroll  space/b:page  h/l:hscroll  [/]:hunk  g/G:top/bottom  tab:files  n/p:file  q:quit"
 	} else {
 		keys = "j/k:navigate  l/→:diff  tab:diff  n/p:file  q:quit"
 	}

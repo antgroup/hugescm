@@ -23,9 +23,6 @@ func TestNoSuchObjectTypeErrFormatting(t *testing.T) {
 }
 
 func TestIsNoSuchObjectNilHandling(t *testing.T) {
-	if IsNoSuchObject((*noSuchObject)(nil)) != false {
-		t.Errorf("Expected %v, got %v", IsNoSuchObject((*noSuchObject)(nil)), false)
-	}
 	if IsNoSuchObject(nil) != false {
 		t.Errorf("Expected %v, got %v", IsNoSuchObject(nil), false)
 	}

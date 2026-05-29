@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-05-29
+
+### Added
+
+- **Configuration System Rewrite**: New TOML-based configuration system in `modules/zeta/config`
+  - Introduce `Value`, `Document` abstractions with strong typing and validation
+  - Add `codec_toml.go` for round-trip TOML encoding/decoding
+  - Add comprehensive compatibility tests against legacy behavior
+  - Replace `github.com/BurntSushi/toml` with `github.com/pelletier/go-toml/v2`
+- **`pathmatch` Module**: New Git-compatible path matching module (`modules/pathmatch`)
+  - Idiomatic Go port of Git's `wildmatch.c` (v2.54.0) with full bracket / POSIX class support
+  - Case-fold and no-case-fold build variants
+  - 1128 lines of test cases and 232 lines of fix-regression tests
+  - Replaces and removes the legacy `modules/wildmatch` module
+- **`--json` Output Flag**: Add structured JSON output across commands
+  - `zeta tag`, `zeta branch`, `zeta config`, `zeta diff`, `zeta stash`, `zeta status`, `zeta log`, `zeta remote`, `zeta version`
+- **Hot Subcommand JSON / Raw / Dry-run**:
+  - `hot show`: support tree/blob objects with structured JSON output
+  - `hot scan-refs` / `hot expire-refs`: add `--json`, `--raw` and `--dry-run`
+- **PatchView Enhancements**:
+  - Support `Enter` / `Space` / `PgUp` / `PgDown` for diff scrolling
+  - Borderless key:value top header with full hash and colorized files
+  - Status bar rounded border with optional top header card
+  - Add layout contract tests and `sanitizeLine` for safer rendering
+- **Worktree Status Cache**: New cache for `worktree_status` to speed up `status` on repos with large files
+  - Add `modules/merkletrie/filesystem/cache.go` and supporting tests
+  - Add `docs/status-perf-large-file.md`
+
+### Changed
+
+- **Go Version**: Bump to Go 1.26.3
+- **Signal Handling**: Migrate `zeta` and `hot` commands to `signal.NotifyContext` for cleaner cancellation
+- **CDC Refactor**: Inline chunk strategy into `writeFixedFragments` / `writeCDCFragments`; split out `cdc_gear.go`; add `cdc_test.go`
+- **Safetensors**: Restructure parsing / writing paths alongside the CDC refactor
+- **Ignore Engine**: Rewrite `modules/plumbing/format/ignore/pattern.go` to use the new `pathmatch`-style segment matcher, removing the `path/filepath` dependency
+- **PatchView Cache**: Switch syntax highlight cache from custom LRU to `hashicorp/golang-lru/v2`
+- **Diff Parser**: Remove deprecated `Patch.Binary` field and harden the parser (`cmd/hot/pkg/diff`)
+- **Progress Bar**: Rewrite/clean up `modules/progressbar` (~570 lines of churn); fix progress bar / cancellation behavior
+- **Lint / Code Quality**:
+  - `error.As` cleanup across the codebase
+  - `staticcheck QF1008` fixes
+  - `unconvert`, `golangci-lint`, `go fix` cleanups; add `.golangci.yml`
+  - `bufio.NewScanner` warning cleanup
+- **Translations**: Add zh-CN strings for new flags / messages; drop legacy `zh-CN.tomlp1`
+
+### Fixed
+
+- Fix `hot diff` command
+- Fix `hot` git version detection
+- Fix `show` to render merge-commit metadata without entering the pager TUI
+- Fix `branch` / `log`: restore pager in `ListBranch` and remove default JSON limit in `log`
+- Fix `findAllBackends` bug
+- Fix patchview regression after `zeta show --nav` revert
+- `keyring`: fix file storage lock ordering and stale-lock detection
+- `systemproxy`: harden `scutil` parsing on macOS; fix Windows SOCKS URL and `CONNECT 407` error reporting
+- Bypass an out-of-bounds access bug in `go fix`
+
+### Dependencies
+
+- **Updated**:
+  - `github.com/alecthomas/chroma/v2` v2.23.1 → v2.26.1
+  - `github.com/charmbracelet/x/exp/charmtone` → 2026-05-27 snapshot
+  - `github.com/charmbracelet/ultraviolet` → 2026-05-25 snapshot
+  - `github.com/charmbracelet/x/exp/slice` → 2026-05-27 snapshot
+  - `github.com/ebitengine/purego` v0.10.0 → v0.10.1
+  - `github.com/go-sql-driver/mysql` v1.9.3 → v1.10.0
+  - `github.com/klauspost/compress` v1.18.5 → v1.18.6
+  - `github.com/dlclark/regexp2` v1.12.0 → `regexp2/v2` v2.1.1
+  - `golang.org/x/crypto` v0.50.0 → v0.52.0
+  - `golang.org/x/net` v0.53.0 → v0.55.0
+  - `golang.org/x/sys` v0.43.0 → v0.45.0
+  - `golang.org/x/term` v0.42.0 → v0.43.0
+  - `golang.org/x/text` v0.36.0 → v0.37.0
+- **Added**:
+  - `github.com/hashicorp/golang-lru/v2` v2.0.7
+  - `github.com/pelletier/go-toml/v2` v2.3.1
+- **Removed**:
+  - `github.com/BurntSushi/toml`
+  - `modules/wildmatch` (replaced by `modules/pathmatch`)
+
 ## [0.23.0] - 2026-04-22
 
 ### Added

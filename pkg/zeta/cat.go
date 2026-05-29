@@ -16,6 +16,7 @@ import (
 
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/hexview"
+	"github.com/antgroup/hugescm/modules/imgview"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
@@ -37,6 +38,10 @@ type CatOptions struct {
 	Textconv  bool
 	Direct    bool
 	Output    string
+	// Image controls inline image rendering for binary blobs.
+	// Empty string is treated as "auto" (honour detected terminal capability).
+	// See term.ParseImageMode for accepted values.
+	Image string
 }
 
 func (opts *CatOptions) NewFD() (io.WriteCloser, term.Level, error) {
@@ -163,7 +168,7 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 		_, _ = fmt.Fprintln(fd, h.Sum())
 		return nil
 	}
-	reader, charset, err := diferenco.NewUnifiedReaderEx(b.Contents, opts.Textconv)
+	reader, charset, mimeType, err := diferenco.NewUnifiedReaderTyped(b.Contents, opts.Textconv)
 	if err != nil {
 		return err
 	}
@@ -171,6 +176,21 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 		opts.Limit = b.Size
 	}
 	if len(opts.Output) == 0 && term.StdoutLevel != term.LevelNone && charset == diferenco.BINARY {
+		// Prefer inline image rendering when the blob is a raster image and
+		// the host terminal advertises support for one of the inline-image
+		// protocols. The protocol probe is intentionally on the cold path:
+		// we only run it after MIME has already classified the blob as an
+		// image, so non-image cats pay nothing for image detection.
+		if b.Size > 0 && b.Size <= imgview.MaxImageBytes && imgview.IsRenderable(mimeType) {
+			imageProto := term.ResolveImage(opts.Image)
+			if imgview.CanRender(imageProto, mimeType) {
+				if err := imgview.Stream(os.Stdout, imageProto, mimeType, reader, b.Size); err == nil {
+					return nil
+				}
+				// On failure we cannot re-read b.Contents, so fall through to
+				// the hex dump using the (possibly partially consumed) reader.
+			}
+		}
 		p := NewPrinter(ctx)
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))

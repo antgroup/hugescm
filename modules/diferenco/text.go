@@ -39,14 +39,20 @@ func checkCharset(s string) string {
 	return UTF8
 }
 
-func detectCharset(payload []byte) string {
-	result := mime.DetectAny(payload)
-	for p := result; p != nil; p = p.Parent() {
+// charsetFromMIME walks up the MIME hierarchy looking for a text/plain
+// ancestor and returns its declared charset. If the MIME has no text/plain
+// ancestor, BINARY is returned.
+func charsetFromMIME(m *mime.MIME) string {
+	for p := m; p != nil; p = p.Parent() {
 		if p.Is("text/plain") {
 			return checkCharset(p.String())
 		}
 	}
 	return BINARY
+}
+
+func detectCharset(payload []byte) string {
+	return charsetFromMIME(mime.DetectAny(payload))
 }
 
 func readUnifiedText(r io.Reader) (string, string, error) {
@@ -137,23 +143,38 @@ func ReadUnifiedText(r io.Reader, size int64, textconv bool) (content string, ch
 }
 
 func NewUnifiedReaderEx(r io.Reader, textconv bool) (io.Reader, string, error) {
+	reader, charset, _, err := NewUnifiedReaderTyped(r, textconv)
+	return reader, charset, err
+}
+
+// NewUnifiedReaderTyped behaves like NewUnifiedReaderEx but additionally
+// exposes the detected MIME type. The returned *mime.MIME is always non-nil
+// (it falls back to the root application/octet-stream node when nothing else
+// matches), so callers can safely chain Is/Parent calls without nil checks.
+//
+// When textconv is false the function preserves the cheap null-byte heuristic
+// for the charset decision (so existing text/binary boundaries are unchanged),
+// but still runs MIME detection on the sniff buffer so callers can react to
+// specific binary subtypes (e.g. images).
+func NewUnifiedReaderTyped(r io.Reader, textconv bool) (io.Reader, string, *mime.MIME, error) {
 	sniffBytes, err := streamio.ReadMax(r, sniffLen)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	reader := io.MultiReader(bytes.NewReader(sniffBytes), r)
+	m := mime.DetectAny(sniffBytes)
 	if !textconv {
 		if bytes.IndexByte(sniffBytes, 0) != -1 {
-			return reader, BINARY, nil
+			return reader, BINARY, m, nil
 		}
-		return reader, UTF8, nil
+		return reader, UTF8, m, nil
 	}
-	charset := detectCharset(sniffBytes)
+	charset := charsetFromMIME(m)
 	// binary or UTF-8 not need convert
 	if charset == BINARY || strings.EqualFold(charset, UTF8) {
-		return reader, charset, nil
+		return reader, charset, m, nil
 	}
-	return chardet.NewReader(reader, charset), charset, nil
+	return chardet.NewReader(reader, charset), charset, m, nil
 }
 
 func NewUnifiedReader(r io.Reader) (io.Reader, error) {

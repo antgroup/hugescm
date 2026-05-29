@@ -20,6 +20,7 @@ import (
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/git"
 	"github.com/antgroup/hugescm/modules/hexview"
+	"github.com/antgroup/hugescm/modules/imgview"
 	"github.com/antgroup/hugescm/modules/term"
 	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/tui"
@@ -39,6 +40,7 @@ type Cat struct {
 	Limit       int64  `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Output      string `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
 	NoAltScreen bool   `name:"no-alt-screen" help:"Disable alternate screen buffer for pager"`
+	Image       string `name:"image" help:"Inline image rendering: auto|on|off" default:"auto" enum:"auto,on,off,yes,no,true,false,1,0"`
 }
 
 func (c *Cat) Run(ctx context.Context, g *Globals) error {
@@ -255,7 +257,7 @@ func (c *Cat) formatObject(o *git.Object) error {
 	if c.Type {
 		return c.Println("blob")
 	}
-	reader, charset, err := diferenco.NewUnifiedReaderEx(o, c.Textconv)
+	reader, charset, mimeType, err := diferenco.NewUnifiedReaderTyped(o, c.Textconv)
 	if err != nil {
 		return err
 	}
@@ -267,8 +269,31 @@ func (c *Cat) formatObject(o *git.Object) error {
 	usePager := len(c.Output) == 0 && term.StdoutLevel != term.LevelNone && o.Size <= MAX_SHOW_BINARY_BLOB
 	useAltScreen := !c.NoAltScreen
 
-	// Binary content: always use hexview, with or without pager
+	// Binary content: prefer inline image rendering when possible, otherwise
+	// fall back to the hex dump (with or without pager).
 	if charset == diferenco.BINARY {
+		// Inline image: write directly to stdout, bypassing the pager.
+		// Pagers (and altscreen) routinely strip or mishandle terminal-
+		// specific control sequences such as OSC 1337 or the Kitty graphics
+		// protocol, so a single image frame is sent to the raw terminal.
+		//
+		// The terminal protocol probe is deferred until we know the blob is
+		// actually an image, so non-image cats pay nothing for it.
+		if len(c.Output) == 0 &&
+			o.Size > 0 && o.Size <= imgview.MaxImageBytes &&
+			imgview.IsRenderable(mimeType) {
+			imageProto := term.ResolveImage(c.Image)
+			if imgview.CanRender(imageProto, mimeType) {
+				if err := imgview.Stream(os.Stdout, imageProto, mimeType, reader, o.Size); err == nil {
+					return nil
+				}
+				// Fall through to hexview on any rendering failure. The
+				// reader may have been partially consumed; that is acceptable
+				// because the most common failure (size cap) is guarded
+				// above.
+			}
+		}
+
 		if c.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			c.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))

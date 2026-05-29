@@ -99,9 +99,7 @@ func (s *summer) drawInteractive(title string) error {
 		titleStyle := lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("15"))
-		fmt.Println()
-		fmt.Println(titleStyle.Render(title))
-		fmt.Println()
+		fmt.Printf("\n%s\n\n", titleStyle.Render(title))
 	}
 
 	// Print table

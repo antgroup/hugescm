@@ -51,7 +51,11 @@ func TestListConfig(t *testing.T) {
 	for k, v := range vals {
 		fmt.Fprintf(os.Stderr, "%s = %s\n", k, v)
 	}
-	checkRemote(vals)
+	snap := &repoSnapshot{}
+	collectRemote(vals, snap)
+	for _, it := range snap.Remote {
+		fmt.Fprintf(os.Stderr, "remote: %s = %s\n", it.Label, it.Value)
+	}
 }
 
 func TestTruncateName(t *testing.T) {

@@ -91,14 +91,14 @@ func (b *binaryPrinter) doPrintln(a ...string) {
 func (b *binaryPrinter) writeBorder() error {
 	panelStr := strings.Repeat("─", panelSize)
 	h8 := strings.Repeat("─", 8)
-	b.doPrintln("┌", h8, "┬", panelStr, "┬", panelStr, "┬", h8, "┬", h8, "┐")
+	b.doPrintln("╭", h8, "┬", panelStr, "┬", panelStr, "┬", h8, "┬", h8, "╮")
 	return b.flush()
 }
 
 func (b *binaryPrinter) writeFooter() error {
 	panelStr := strings.Repeat("─", panelSize)
 	h8 := strings.Repeat("─", 8)
-	b.doPrintln("└", h8, "┴", panelStr, "┴", panelStr, "┴", h8, "┴", h8, "┘")
+	b.doPrintln("╰", h8, "┴", panelStr, "┴", panelStr, "┴", h8, "┴", h8, "╯")
 	return b.flush()
 }
 

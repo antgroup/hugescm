@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"strconv"
 	"strings"
@@ -115,9 +116,7 @@ func listConfigJSON(opts *ListConfigOptions) error {
 			if _, ok := merged[section]; !ok {
 				merged[section] = make(map[string]any)
 			}
-			for k, v := range values {
-				merged[section][k] = v
-			}
+			maps.Copy(merged[section], values)
 		}
 	}
 	if opts.System {

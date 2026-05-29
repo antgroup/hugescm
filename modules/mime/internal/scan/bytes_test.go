@@ -2,8 +2,8 @@ package scan
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -522,7 +522,7 @@ func BenchmarkMatch(b *testing.B) {
 		IgnoreCase,
 		FullWord,
 	} {
-		b.Run(fmt.Sprintf("%d", f), func(b *testing.B) {
+		b.Run(strconv.Itoa(int(f)), func(b *testing.B) {
 			for b.Loop() {
 				Bytes(randData).Match(randData, f)
 			}

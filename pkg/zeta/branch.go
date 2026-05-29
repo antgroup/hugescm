@@ -149,26 +149,35 @@ func (r *Repository) ListBranch(ctx context.Context, opts *ListBranchOptions) er
 	}
 	m := NewMatcher(opts.Pattern)
 	target := db.HEAD().Target()
-	branches := make([]*BranchEntry, 0)
-	for _, r := range db.References() {
-		if !r.Name().IsBranch() {
+	if opts.JSON {
+		branches := make([]*BranchEntry, 0)
+		for _, ref := range db.References() {
+			if !ref.Name().IsBranch() {
+				continue
+			}
+			branchName := ref.Name().BranchName()
+			if !m.Match(branchName) {
+				continue
+			}
+			branches = append(branches, &BranchEntry{
+				Name:    branchName,
+				Current: target == ref.Name(),
+				Hash:    ref.Hash(),
+			})
+		}
+		return json.NewEncoder(os.Stdout).Encode(branches)
+	}
+	w := NewPrinter(ctx)
+	defer w.Close() // nolint
+	for _, ref := range db.References() {
+		if !ref.Name().IsBranch() {
 			continue
 		}
-		branchName := r.Name().BranchName()
+		branchName := ref.Name().BranchName()
 		if !m.Match(branchName) {
 			continue
 		}
-		isCurrent := target == r.Name()
-		if opts.JSON {
-			branches = append(branches, &BranchEntry{
-				Name:    branchName,
-				Current: isCurrent,
-				Hash:    r.Hash(),
-			})
-			continue
-		}
-		if isCurrent {
-			w := NewPrinter(ctx)
+		if target == ref.Name() {
 			switch w.ColorMode() {
 			case term.Level16M:
 				_, _ = fmt.Fprintf(w, "\x1b[38;2;67;233;123m* %s\x1b[0m\n", branchName)
@@ -177,13 +186,11 @@ func (r *Repository) ListBranch(ctx context.Context, opts *ListBranchOptions) er
 			default:
 				_, _ = fmt.Fprintf(w, " %s\n", branchName)
 			}
-			w.Close() // nolint
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "  %s\n", branchName)
-	}
-	if opts.JSON {
-		return json.NewEncoder(os.Stdout).Encode(branches)
+		if _, err = fmt.Fprintf(w, "  %s\n", branchName); err != nil {
+			break
+		}
 	}
 	return nil
 }

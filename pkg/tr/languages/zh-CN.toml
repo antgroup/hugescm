@@ -176,7 +176,7 @@
 "Lines starting with '%c' will be ignored." = "以 '%c' 开头的行将被忽略。"
 # log
 "Show commit logs" = "显示提交日志"
-"Limit number of commits in JSON output (default 2000, -1 unlimited)" = "限制 JSON 输出中的提交数量（默认 2000，-1 不限）"
+"Limit number of commits in JSON output (-1 or 0 means unlimited)" = "限制 JSON 输出中的提交数量（-1 或 0 表示不限）"
 "Show the working tree status" = "显示工作区状态"
 "Give the output in the short-format" = "以短格式给出输出"
 "Revision range" = "版本范围"

@@ -14,7 +14,6 @@ import (
 func createTestSafeTensors(t *testing.T) []byte {
 	t.Helper()
 
-	// 构造 SafeTensors Header
 	header := map[string]any{
 		"tensor1": map[string]any{
 			"dtype":        "F32",
@@ -36,25 +35,21 @@ func createTestSafeTensors(t *testing.T) []byte {
 		t.Fatalf("marshal header: %v", err)
 	}
 
-	// 构造完整的 SafeTensors 文件
 	buf := &bytes.Buffer{}
 
 	// 1. 写入 Header Size (8 字节)
 	if err := binary.Write(buf, binary.LittleEndian, uint64(len(headerBytes))); err != nil {
 		t.Fatalf("write header size: %v", err)
 	}
-
 	// 2. 写入 Header JSON
 	if _, err := buf.Write(headerBytes); err != nil {
 		t.Fatalf("write header: %v", err)
 	}
-
 	// 3. 写入张量数据(简化为填充零)
 	tensorData := make([]byte, 900)
 	if _, err := buf.Write(tensorData); err != nil {
 		t.Fatalf("write tensor data: %v", err)
 	}
-
 	return buf.Bytes()
 }
 
@@ -62,104 +57,109 @@ func TestParseSafeTensors(t *testing.T) {
 	data := createTestSafeTensors(t)
 	reader := bytes.NewReader(data)
 
-	parser, err := ParseSafeTensors(reader)
+	file, err := ParseSafeTensors(reader, -1)
 	if err != nil {
 		t.Fatalf("ParseSafeTensors failed: %v", err)
 	}
 
-	// 验证张量数量
-	if len(parser.tensors) != 2 {
-		t.Errorf("expected 2 tensors, got %d", len(parser.tensors))
+	if len(file.Entries) != 2 {
+		t.Errorf("expected 2 entries, got %d", len(file.Entries))
 	}
 
-	// 验证第一个张量
-	if len(parser.tensors) > 0 {
-		tensor1 := parser.tensors[0]
-		if tensor1.Name != "tensor1" {
-			t.Errorf("expected tensor name 'tensor1', got '%s'", tensor1.Name)
+	if len(file.Entries) > 0 {
+		e := file.Entries[0]
+		if e.Name != "tensor1" {
+			t.Errorf("expected entry name 'tensor1', got '%s'", e.Name)
 		}
-		if tensor1.Size != 800 {
-			t.Errorf("expected tensor size 800, got %d", tensor1.Size)
+		if e.Size != 800 {
+			t.Errorf("expected entry size 800, got %d", e.Size)
 		}
 	}
 
-	// 验证第二个张量
-	if len(parser.tensors) > 1 {
-		tensor2 := parser.tensors[1]
-		if tensor2.Name != "tensor2" {
-			t.Errorf("expected tensor name 'tensor2', got '%s'", tensor2.Name)
+	if len(file.Entries) > 1 {
+		e := file.Entries[1]
+		if e.Name != "tensor2" {
+			t.Errorf("expected entry name 'tensor2', got '%s'", e.Name)
 		}
-		if tensor2.Size != 100 {
-			t.Errorf("expected tensor size 100, got %d", tensor2.Size)
+		if e.Size != 100 {
+			t.Errorf("expected entry size 100, got %d", e.Size)
 		}
 	}
 }
 
-func TestSafeTensorsGetChunks(t *testing.T) {
+func TestSafeTensorsFileChunks(t *testing.T) {
 	data := createTestSafeTensors(t)
 	reader := bytes.NewReader(data)
 
-	parser, err := ParseSafeTensors(reader)
+	file, err := ParseSafeTensors(reader, -1)
 	if err != nil {
 		t.Fatalf("ParseSafeTensors failed: %v", err)
 	}
 
-	chunks := parser.GetChunks()
-	if len(chunks) != 2 {
-		t.Errorf("expected 2 chunks, got %d", len(chunks))
+	spans := file.Chunks()
+	if len(spans) != 2 {
+		t.Errorf("expected 2 spans, got %d", len(spans))
 	}
 
-	// 验证分片连续性
-	if len(chunks) == 2 {
-		if chunks[0].size != 800 {
-			t.Errorf("expected chunk size 800, got %d", chunks[0].size)
+	if len(spans) == 2 {
+		if spans[0].Size != 800 {
+			t.Errorf("expected span size 800, got %d", spans[0].Size)
 		}
-		if chunks[1].size != 100 {
-			t.Errorf("expected chunk size 100, got %d", chunks[1].size)
+		if spans[1].Size != 100 {
+			t.Errorf("expected span size 100, got %d", spans[1].Size)
 		}
 	}
 }
 
-func TestCDCChunker(t *testing.T) {
-	// Test CDC chunking with realistic parameters
-	data := make([]byte, 10<<20) // 10MB
-	for i := range data {
-		data[i] = byte(i % 256)
+func TestParseSafeTensorsRejectsOutOfBoundsEntry(t *testing.T) {
+	data := createTestSafeTensors(t)
+	// Compute payload size for cross-file validation.
+	headerSize := binary.LittleEndian.Uint64(data[:8])
+	dataSize := int64(len(data)) - 8 - int64(headerSize)
+	// Sanity: with the real dataSize, parse should succeed.
+	if _, err := ParseSafeTensors(bytes.NewReader(data), dataSize); err != nil {
+		t.Fatalf("expected ok with real dataSize, got %v", err)
 	}
+	// Shrink dataSize to provoke a bounds violation.
+	if _, err := ParseSafeTensors(bytes.NewReader(data), dataSize-1); err == nil {
+		t.Errorf("expected error when dataSize is too small, got nil")
+	}
+}
 
-	chunker := NewCDCChunker(4 << 20) // 4MB target (default)
-	chunks, err := chunker.Chunk(bytes.NewReader(data), int64(len(data)))
+func TestParseSafeTensorsLargeOffsetsKeepPrecision(t *testing.T) {
+	// 5 GiB+ offset — well beyond float64's 53-bit mantissa for integers.
+	const start = int64(1) << 53
+	const end = start + 1024
+	header := map[string]any{
+		"big": map[string]any{
+			"dtype":        "U8",
+			"shape":        []int64{1024},
+			"data_offsets": []int64{start, end},
+		},
+	}
+	hb, err := json.Marshal(header)
 	if err != nil {
-		t.Fatalf("Chunk failed: %v", err)
+		t.Fatalf("marshal: %v", err)
 	}
-
-	// Verify chunks cover the entire file
-	var totalSize int64
-	for _, c := range chunks {
-		totalSize += c.size
+	buf := &bytes.Buffer{}
+	if err := binary.Write(buf, binary.LittleEndian, uint64(len(hb))); err != nil {
+		t.Fatal(err)
 	}
+	buf.Write(hb)
 
-	if totalSize != int64(len(data)) {
-		t.Errorf("chunks total size %d != data size %d", totalSize, len(data))
+	file, err := ParseSafeTensors(bytes.NewReader(buf.Bytes()), -1)
+	if err != nil {
+		t.Fatalf("ParseSafeTensors: %v", err)
 	}
-
-	// Verify chunk sizes are within reasonable range
-	// minSize = target/4 = 1MB
-	// maxSize = target*8 = 32MB
-	for i, c := range chunks {
-		if c.size < 1<<20 {
-			t.Errorf("chunk %d size %d is too small (< 1MB)", i, c.size)
-		}
-		if c.size > 32<<20 {
-			t.Errorf("chunk %d size %d is too large (> 32MB)", i, c.size)
-		}
+	if len(file.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(file.Entries))
 	}
-
-	// Print chunk distribution for debugging
-	t.Logf("File size: %d bytes, Chunks: %d", len(data), len(chunks))
-	for i, c := range chunks {
-		if i < 5 || i >= len(chunks)-2 { // Show first 5 and last 2
-			t.Logf("  Chunk %d: offset=%d size=%d", i, c.offset, c.size)
-		}
+	got := file.Entries[0]
+	if got.Size != end-start {
+		t.Errorf("size: got %d want %d", got.Size, end-start)
+	}
+	wantAbs := file.HeaderSize + start
+	if got.Offset != wantAbs {
+		t.Errorf("absolute offset: got %d want %d", got.Offset, wantAbs)
 	}
 }

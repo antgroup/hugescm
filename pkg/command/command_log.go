@@ -30,7 +30,7 @@ type Log struct {
 	Reverse         bool     `name:"reverse" help:"Reverse order"`
 	FirstParent     bool     `name:"first-parent" help:"Follow only the first parent commit upon seeing a merge commit"`
 	JSON            bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
-	Limit           int      `name:"limit" short:"L" help:"Limit number of commits in JSON output (default 2000, -1 unlimited)" default:"2000"`
+	Limit           int      `name:"limit" short:"L" help:"Limit number of commits in JSON output (-1 or 0 means unlimited)" default:"-1"`
 	paths           []string `kong:"-"`
 }
 

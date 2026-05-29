@@ -11,113 +11,108 @@ import (
 	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
-type chunk struct {
-	offset int64 // chunk offset
-	size   int64 // chunk size
-}
-
-func calculateChunk(size, partSize int64) []chunk {
+// calculateChunk computes fixed-size fragment spans for a file of the given
+// size, using partSize as the nominal chunk size.
+func calculateChunk(size, partSize int64) []Span {
 	N := int(size / partSize)
-	chunks := make([]chunk, 0, N)
+	spans := make([]Span, 0, N)
 	if N == 0 {
-		return []chunk{{offset: 0, size: size}}
+		return []Span{{Offset: 0, Size: size}}
 	}
 	var offset int64
 	for i := 0; i < N-1; i++ {
-		chunks = append(chunks, chunk{offset: offset, size: partSize})
+		spans = append(spans, Span{Offset: offset, Size: partSize})
 		offset += partSize
 	}
 	if size-offset > partSize {
 		if float64(size-offset)/float64(partSize) > 1.5 {
-			chunks = append(chunks, chunk{offset: offset, size: partSize})
+			spans = append(spans, Span{Offset: offset, Size: partSize})
 			offset += partSize
 		} else {
 			curSize := partSize / 2
-			chunks = append(chunks, chunk{offset: offset, size: curSize})
+			spans = append(spans, Span{Offset: offset, Size: curSize})
 			offset += curSize
 		}
 	}
-	chunks = append(chunks, chunk{offset: offset, size: size - offset})
-	return chunks
+	spans = append(spans, Span{Offset: offset, Size: size - offset})
+	return spans
 }
 
+// HashTo computes the (possibly fragmented) hash of an input stream and
+// stores any resulting Fragments object in the object database.
+//
+// Files below Fragment.Threshold() are stored as a single blob. Larger files
+// are split using either fixed-size or content-defined chunking depending on
+// Fragment.EnableCDC.
 func (r *Repository) HashTo(ctx context.Context, reader io.Reader, size int64) (oid plumbing.Hash, fragments bool, err error) {
 	if size < r.Fragment.Threshold() {
 		oid, err = r.odb.HashTo(ctx, io.LimitReader(reader, size), size)
 		return
 	}
-
-	// Use CDC (Content-Defined Chunking) for AI model files
 	if r.Fragment.EnableCDC.True() {
-		return r.hashToWithCDC(ctx, reader, size)
+		return r.writeCDCFragments(ctx, reader, size)
 	}
+	return r.writeFixedFragments(ctx, reader, size)
+}
 
-	// Original fixed-size chunking logic
+// writeFixedFragments splits the stream at boundaries computed by
+// calculateChunk and writes a Fragments object referencing each chunk.
+func (r *Repository) writeFixedFragments(ctx context.Context, reader io.Reader, size int64) (oid plumbing.Hash, fragments bool, err error) {
+	spans := calculateChunk(size, r.Fragment.Size())
+
 	h := plumbing.NewHasher()
 	tr := io.TeeReader(reader, h)
-	chunks := calculateChunk(size, r.Fragment.Size())
+
 	ff := &object.Fragments{
 		Size:    uint64(size),
-		Entries: make([]*object.Fragment, len(chunks)),
+		Entries: make([]*object.Fragment, 0, len(spans)),
 	}
-	for i, k := range chunks {
-		var o plumbing.Hash
-		if o, err = r.odb.HashTo(ctx, io.LimitReader(tr, k.size), k.size); err != nil {
-			return
+	for i, span := range spans {
+		chunkHash, hashErr := r.odb.HashTo(ctx, io.LimitReader(tr, span.Size), span.Size)
+		if hashErr != nil {
+			return plumbing.ZeroHash, false, hashErr
 		}
-		ff.Entries[i] = &object.Fragment{
+		ff.Entries = append(ff.Entries, &object.Fragment{
 			Index: uint32(i),
-			Hash:  o,
-			Size:  uint64(k.size),
-		}
+			Hash:  chunkHash,
+			Size:  uint64(span.Size),
+		})
 	}
-	ff.Origin = h.Sum() // Sum raw file hash
+
+	ff.Origin = h.Sum()
 	oid, err = r.odb.WriteEncoded(ff)
 	fragments = true
 	return
 }
 
-// hashToWithCDC uses CDC (Content-Defined Chunking) for large files
-// Optimized: single-pass streaming with no temporary file I/O
-func (r *Repository) hashToWithCDC(ctx context.Context, reader io.Reader, size int64) (oid plumbing.Hash, fragments bool, err error) {
-	// Streaming CDC implementation:
-	// 1. Compute full file hash while chunking
-	// 2. Use FastCDC for all formats (works well for both structured and unstructured data)
-	// 3. Hash each chunk on-the-fly and build Fragments object
-	// 4. Avoid materializing entire chunks in memory
-
+// writeCDCFragments splits the stream using FastCDC content-defined chunking
+// and writes a Fragments object referencing each chunk.
+func (r *Repository) writeCDCFragments(ctx context.Context, reader io.Reader, size int64) (oid plumbing.Hash, fragments bool, err error) {
 	h := plumbing.NewHasher()
-	teeReader := io.TeeReader(reader, h)
-
-	cdcChunker := NewCDCChunker(r.Fragment.Size())
+	tr := io.TeeReader(reader, h)
 
 	ff := &object.Fragments{
 		Size:    uint64(size),
 		Entries: make([]*object.Fragment, 0),
 	}
 
-	chunkIndex := uint32(0)
-
-	// Use streaming callback - avoid materializing entire chunks!
-	err = cdcChunker.ChunkStreaming(teeReader, size, func(offset, chunkSize int64, chunkReader io.Reader) error {
-		// Stream the chunk directly to hash computation
-		// CRITICAL: chunkReader is a streaming reader, not a materialized byte slice
-		chunkHash, hashErr := r.odb.HashTo(ctx, chunkReader, chunkSize)
+	index := uint32(0)
+	chunker := NewChunker(r.Fragment.Size())
+	walkErr := chunker.Walk(tr, func(span Span, data io.Reader) error {
+		chunkHash, hashErr := r.odb.HashTo(ctx, data, span.Size)
 		if hashErr != nil {
 			return hashErr
 		}
-
 		ff.Entries = append(ff.Entries, &object.Fragment{
-			Index: chunkIndex,
+			Index: index,
 			Hash:  chunkHash,
-			Size:  uint64(chunkSize),
+			Size:  uint64(span.Size),
 		})
-		chunkIndex++
+		index++
 		return nil
 	})
-
-	if err != nil {
-		return plumbing.ZeroHash, false, err
+	if walkErr != nil {
+		return plumbing.ZeroHash, false, walkErr
 	}
 
 	ff.Origin = h.Sum()

@@ -116,20 +116,20 @@ func (s *Sink) parseLines(r io.Reader, text string) ([]int, error) {
 	return s.SplitLines(text), nil
 }
 
-func (s *Sink) WriteLine(w io.Writer, E ...int) {
+func (s *Sink) WriteLine(w io.Writer, indices ...int) {
 	if s.NewLine == NEWLINE_CRLF {
-		for _, e := range E {
+		for _, e := range indices {
 			_, _ = fmt.Fprintf(w, "%s\r\n", s.Lines[e])
 		}
 		return
 	}
 	if s.NewLine == NEWLINE_LF {
-		for _, e := range E {
+		for _, e := range indices {
 			_, _ = fmt.Fprintln(w, s.Lines[e])
 		}
 		return
 	}
-	for _, e := range E {
+	for _, e := range indices {
 		_, _ = io.WriteString(w, s.Lines[e])
 	}
 }

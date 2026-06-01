@@ -75,14 +75,14 @@ func fileStatWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*F
 		return s, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrNonText) {
 		return s, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrNonText) {
 		return s, nil
 	}
 	if err != nil {
@@ -133,14 +133,14 @@ func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*
 		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	fromContent, err := from.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrNonText) {
 		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	toContent, err := to.UnifiedText(ctx, opts.Textconv)
-	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrBinaryData) {
+	if plumbing.IsNoSuchObject(err) || errors.Is(err, diferenco.ErrNonText) {
 		return &diferenco.Patch{From: from.asFile(), To: to.asFile(), IsBinary: true}, nil
 	}
 	if err != nil {

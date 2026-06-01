@@ -11,7 +11,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/alecthomas/chroma/v2 v2.26.1
 	github.com/charmbracelet/x/ansi v0.11.7
-	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260525135217-abeec2b8bf0b
+	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260531005911-0ca8ababeab2
 	github.com/clipperhouse/displaywidth v0.11.0
 	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/ebitengine/purego v0.10.1
@@ -48,7 +48,7 @@ require (
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260525132238-948f4557a654 // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
-	github.com/charmbracelet/x/exp/slice v0.0.0-20260525135217-abeec2b8bf0b // indirect
+	github.com/charmbracelet/x/exp/slice v0.0.0-20260531005911-0ca8ababeab2 // indirect
 	github.com/charmbracelet/x/exp/strings v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
@@ -59,7 +59,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
-	github.com/mattn/go-runewidth v0.0.23 // indirect
+	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect

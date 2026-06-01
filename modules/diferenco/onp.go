@@ -3,10 +3,10 @@
 //	SPDX-License-Identifier: MIT
 //
 //	SOURCE: https://github.com/hattya/go.diff
-//
-// Package diff implements the difference algorithm, which is based upon
+
+// onp implements the O(NP) difference algorithm of
 // S. Wu, U. Manber, G. Myers, and W. Miller,
-// "An O(NP) Sequence Comparison Algorithm" August 1989.
+// "An O(NP) Sequence Comparison Algorithm", August 1989.
 package diferenco
 
 import "context"

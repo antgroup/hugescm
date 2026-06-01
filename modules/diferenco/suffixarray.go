@@ -1,4 +1,3 @@
-// Package diferenco provides diff algorithms.
 // Suffix-Array Diff implementation inspired by diff-match-patch.
 package diferenco
 
@@ -95,9 +94,12 @@ func binarySearchMatch[E cmp.Ordered](data1, data2 []E, sa []int, start2 int) in
 
 	bestLen := 0
 
-	// Check nearby suffixes for matches
-	end := min(pos+10, n) // Limit search range for efficiency
-	for i := pos; i < end; i++ {
+	// Walk forward from the lower-bound position while the suffix still
+	// starts with target[0]. Removing the previous fixed +10 window avoids
+	// missing the actual longest match when many suffixes share the same
+	// first element (very common for source code, e.g. lines starting with
+	// '}', whitespace, or repeated keywords).
+	for i := pos; i < n; i++ {
 		suffixStart := sa[i]
 		if suffixStart >= n || data1[suffixStart] != target[0] {
 			break

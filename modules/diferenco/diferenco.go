@@ -1,3 +1,8 @@
+// Package diferenco provides diff, three-way merge and unified-patch
+// utilities. It exposes multiple diff algorithms (Histogram, Myers, ONP,
+// Patience, Minimal, SuffixArray) behind a single DiffSlices entry point
+// and builds higher-level helpers (Stat, Unified, Merge, DiffRunes,
+// DiffWords) on top of them.
 package diferenco
 
 import (
@@ -34,6 +39,10 @@ const (
 	Histogram
 	ONP
 	Myers
+	// Minimal uses the bounded two-sided Myers O(ND) implementation in the
+	// internal lcs package. The underlying search has a hard depth limit
+	// (see lcs.maxDiffs); when the edit distance exceeds that limit the
+	// result is a best-effort LCS rather than a strictly minimal diff.
 	Minimal
 	Patience
 	SuffixArray
@@ -88,7 +97,7 @@ func AlgorithmFromName(s string) (Algorithm, error) {
 	return Unspecified, fmt.Errorf("%w: '%s' (available options: %s)", ErrUnknownAlgorithm, s, strings.Join(options, ", "))
 }
 
-// commonPrefixLength returns the length of the common prefix of two T slices.
+// commonPrefixLength returns the length of the common prefix of a and b.
 func commonPrefixLength[E comparable](a, b []E) int {
 	n := min(len(a), len(b))
 	i := 0
@@ -98,7 +107,7 @@ func commonPrefixLength[E comparable](a, b []E) int {
 	return i
 }
 
-// commonSuffixLength returns the length of the common suffix of two rune slices.
+// commonSuffixLength returns the length of the common suffix of a and b.
 func commonSuffixLength[E comparable](a, b []E) int {
 	i1, i2 := len(a), len(b)
 	n := min(i1, i2)

@@ -186,17 +186,17 @@ type conflict[E comparable] struct {
 	bIndex int
 }
 
-// Diff3MergeResult describes a merge result
-type Diff3MergeResult[E comparable] struct {
+// diff3MergeResult describes a merge result
+type diff3MergeResult[E comparable] struct {
 	ok       []E
 	conflict *conflict[E]
 }
 
-// Diff3Merge applies the output of diff3MergeIndices to actually
+// diff3Merge applies the output of diff3MergeIndices to actually
 // construct the merged file; the returned result alternates
 // between 'ok' and 'conflict' blocks.
-func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, excludeFalseConflicts bool) ([]*Diff3MergeResult[E], error) {
-	var result []*Diff3MergeResult[E]
+func diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, excludeFalseConflicts bool) ([]*diff3MergeResult[E], error) {
+	var result []*diff3MergeResult[E]
 	files := [][]E{a, o, b}
 	indices, err := diff3MergeIndices(ctx, o, a, b, algo)
 	if err != nil {
@@ -206,7 +206,7 @@ func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, 
 	var okLines []E
 	flushOk := func() {
 		if len(okLines) != 0 {
-			result = append(result, &Diff3MergeResult[E]{ok: okLines})
+			result = append(result, &diff3MergeResult[E]{ok: okLines})
 		}
 		okLines = nil
 	}
@@ -237,7 +237,7 @@ func Diff3Merge[E comparable](ctx context.Context, o, a, b []E, algo Algorithm, 
 				pushOk(files[0][x[1] : x[1]+x[2]])
 			} else {
 				flushOk()
-				result = append(result, &Diff3MergeResult[E]{
+				result = append(result, &diff3MergeResult[E]{
 					conflict: &conflict[E]{
 						a:      a[x[1] : x[1]+x[2]],
 						aIndex: x[1],
@@ -375,9 +375,10 @@ func (s *Sink) writeConflict(out io.Writer, opts *MergeOptions, conflict *confli
 	_, _ = fmt.Fprintf(out, "%s\n", Sep2)
 	s.WriteLine(out, b[:len(b)-suffix]...)
 	_, _ = fmt.Fprintf(out, "%s%s\n", Sep3, opts.LabelB)
-	// Note: Through normal Merge/MergeParallel paths, suffix is always 0 because
-	// the diff3 algorithms already separate common suffix into its own "ok" block.
-	// This branch is kept as defensive code but should never execute in production.
+	// Note: Through the normal Merge path, suffix is always 0 because the
+	// diff3 algorithm already separates common suffixes into their own "ok"
+	// blocks. This branch is kept as defensive code but should never
+	// execute in production.
 	if suffix != 0 {
 		s.WriteLine(out, b[len(b)-suffix:]...)
 	}
@@ -408,7 +409,7 @@ func Merge(ctx context.Context, opts *MergeOptions) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	regions, err := Diff3Merge(ctx, slicesO, slicesA, slicesB, opts.A, true)
+	regions, err := diff3Merge(ctx, slicesO, slicesA, slicesB, opts.A, true)
 	if err != nil {
 		return "", false, err
 	}
@@ -438,11 +439,11 @@ func HasConflict(ctx context.Context, textO, textA, textB string) (bool, error) 
 	slicesO := s.SplitLines(textO)
 	slicesA := s.SplitLines(textA)
 	slicesB := s.SplitLines(textB)
-	regions, err := Diff3Merge(ctx, slicesO, slicesA, slicesB, Histogram, true)
+	regions, err := diff3Merge(ctx, slicesO, slicesA, slicesB, Histogram, true)
 	if err != nil {
 		return false, err
 	}
-	return slices.ContainsFunc(regions, func(result *Diff3MergeResult[int]) bool {
+	return slices.ContainsFunc(regions, func(result *diff3MergeResult[int]) bool {
 		return result.conflict != nil
 	}), nil
 }

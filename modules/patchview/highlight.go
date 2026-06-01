@@ -201,7 +201,7 @@ func getDefaultChromaStyle(isDark bool) *chroma.Style {
 	if isDark {
 		// Dark theme: charmtone palette
 		return chroma.MustNewStyle("zeta-charmtone-dark", chroma.StyleEntries{
-			chroma.Text:                charmtone.Smoke.Hex() + " bg:" + charmtone.Charcoal.Hex(),
+			chroma.Text:                charmtone.Smoke.Hex() + " bg:" + charmtone.Char.Hex(),
 			chroma.Error:               charmtone.Butter.Hex() + " bg:" + charmtone.Sriracha.Hex(),
 			chroma.Comment:             charmtone.Oyster.Hex(),
 			chroma.CommentPreproc:      charmtone.Bengal.Hex(),
@@ -231,7 +231,7 @@ func getDefaultChromaStyle(isDark bool) *chroma.Style {
 			chroma.GenericInserted:     charmtone.Guac.Hex(),
 			chroma.GenericStrong:       "bold",
 			chroma.GenericSubheading:   charmtone.Squid.Hex(),
-			chroma.Background:          "bg:" + charmtone.Charcoal.Hex(),
+			chroma.Background:          "bg:" + charmtone.Char.Hex(),
 		})
 	}
 	// Light theme: catppuccin-latte

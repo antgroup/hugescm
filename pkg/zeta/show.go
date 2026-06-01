@@ -118,11 +118,11 @@ func (r *Repository) showBlob(ctx context.Context, w Printer, opts *ShowOptions,
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}
-	reader, charset, err := diferenco.NewUnifiedReaderEx(b.Contents, opts.Textconv)
+	reader, meta, err := diferenco.NewUnifiedReader(b.Contents, opts.Textconv)
 	if err != nil {
 		return err
 	}
-	if w.EnableColor() && charset == diferenco.BINARY {
+	if w.EnableColor() && !meta.IsText() {
 		if opts.Limit > MAX_SHOW_BINARY_BLOB {
 			reader = io.MultiReader(io.LimitReader(reader, MAX_SHOW_BINARY_BLOB), strings.NewReader(binaryTruncated))
 			opts.Limit = int64(MAX_SHOW_BINARY_BLOB + len(binaryTruncated))

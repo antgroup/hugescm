@@ -321,7 +321,7 @@ func ReadContent(p string, textconv bool) (*Content, error) {
 		return nil, err
 	}
 	if fc.Text, _, err = diferenco.ReadUnifiedText(fd, si.Size(), textconv); err != nil {
-		if errors.Is(err, diferenco.ErrBinaryData) {
+		if errors.Is(err, diferenco.ErrNonText) {
 			fc.IsBinary = true
 			return fc, nil
 		}

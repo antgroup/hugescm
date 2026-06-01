@@ -257,7 +257,7 @@ func (c *Cat) formatObject(o *git.Object) error {
 	if c.Type {
 		return c.Println("blob")
 	}
-	reader, charset, mimeType, err := diferenco.NewUnifiedReaderTyped(o, c.Textconv)
+	reader, meta, err := diferenco.NewUnifiedReader(o, c.Textconv)
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,7 @@ func (c *Cat) formatObject(o *git.Object) error {
 
 	// Binary content: prefer inline image rendering when possible, otherwise
 	// fall back to the hex dump (with or without pager).
-	if charset == diferenco.BINARY {
+	if !meta.IsText() {
 		// Inline image: write directly to stdout, bypassing the pager.
 		// Pagers (and altscreen) routinely strip or mishandle terminal-
 		// specific control sequences such as OSC 1337 or the Kitty graphics
@@ -281,10 +281,10 @@ func (c *Cat) formatObject(o *git.Object) error {
 		// actually an image, so non-image cats pay nothing for it.
 		if len(c.Output) == 0 &&
 			o.Size > 0 && o.Size <= imgview.MaxImageBytes &&
-			imgview.IsRenderable(mimeType) {
+			imgview.IsRenderable(meta.MIME) {
 			imageProto := term.ResolveImage(c.Image)
-			if imgview.CanRender(imageProto, mimeType) {
-				if err := imgview.Stream(os.Stdout, imageProto, mimeType, reader, o.Size); err == nil {
+			if imgview.CanRender(imageProto, meta.MIME) {
+				if err := imgview.Stream(os.Stdout, imageProto, meta.MIME, reader, o.Size); err == nil {
 					return nil
 				}
 				// Fall through to hexview on any rendering failure. The

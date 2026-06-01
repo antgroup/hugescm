@@ -168,23 +168,23 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 		_, _ = fmt.Fprintln(fd, h.Sum())
 		return nil
 	}
-	reader, charset, mimeType, err := diferenco.NewUnifiedReaderTyped(b.Contents, opts.Textconv)
+	reader, meta, err := diferenco.NewUnifiedReader(b.Contents, opts.Textconv)
 	if err != nil {
 		return err
 	}
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}
-	if len(opts.Output) == 0 && term.StdoutLevel != term.LevelNone && charset == diferenco.BINARY {
+	if len(opts.Output) == 0 && term.StdoutLevel != term.LevelNone && !meta.IsText() {
 		// Prefer inline image rendering when the blob is a raster image and
 		// the host terminal advertises support for one of the inline-image
 		// protocols. The protocol probe is intentionally on the cold path:
 		// we only run it after MIME has already classified the blob as an
 		// image, so non-image cats pay nothing for image detection.
-		if b.Size > 0 && b.Size <= imgview.MaxImageBytes && imgview.IsRenderable(mimeType) {
+		if b.Size > 0 && b.Size <= imgview.MaxImageBytes && imgview.IsRenderable(meta.MIME) {
 			imageProto := term.ResolveImage(opts.Image)
-			if imgview.CanRender(imageProto, mimeType) {
-				if err := imgview.Stream(os.Stdout, imageProto, mimeType, reader, b.Size); err == nil {
+			if imgview.CanRender(imageProto, meta.MIME) {
+				if err := imgview.Stream(os.Stdout, imageProto, meta.MIME, reader, b.Size); err == nil {
 					return nil
 				}
 				// On failure we cannot re-read b.Contents, so fall through to

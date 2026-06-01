@@ -212,7 +212,7 @@ func (c *Diff) diffNoIndex(ctx context.Context) error {
 		return err
 	}
 	to, err := zeta.ReadContent(c.To, c.Textconv)
-	if err != nil && !errors.Is(err, diferenco.ErrBinaryData) {
+	if err != nil && !errors.Is(err, diferenco.ErrNonText) {
 		diev("zeta diff --no-index read text error: %v", err)
 		return err
 	}

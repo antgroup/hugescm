@@ -93,7 +93,7 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 	}
 	homeDir, ferr := os.UserHomeDir()
 	if ferr != nil {
-		fmt.Fprintf(os.Stderr, "error: unable search user homeDir: %v", err)
+		fmt.Fprintf(os.Stderr, "error: unable search user homeDir: %v", ferr)
 		return err
 	}
 	fd, ferr := os.OpenFile(filepath.Join(homeDir, ".ssh/known_hosts"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
@@ -103,7 +103,7 @@ func (c *client) HostKeyCallback(hostname string, remote net.Addr, key ssh.Publi
 	}
 	defer fd.Close() // nolint
 	if ferr = knownhosts.WriteKnownHost(fd, hostname, remote, key); ferr != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to add host %s to known_hosts: %v\n", hostname, err)
+		fmt.Fprintf(os.Stderr, "error: failed to add host %s to known_hosts: %v\n", hostname, ferr)
 		return nil
 	}
 	serverName := hostname

@@ -1,8 +1,8 @@
 package config
 
 import (
-	"errors"
 	"bytes"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -126,8 +126,11 @@ func TestGetIdentities(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected nil err, got %v", err)
 	}
-	if len(val) != 1 || val[0] != "~/.ssh/identity" {
-		t.Errorf("expected [\"~/.ssh/identity\"], got %v", val)
+	// We intentionally disable SSH protocol v1 default identity (~/.ssh/identity),
+	// see commit "ssh: disable v1 identity". Even when a host pins Protocol 1,
+	// IdentityFile must not fall back to the v1 identity path.
+	if len(val) != 0 {
+		t.Errorf("expected no default IdentityFile for v1-only host, got %v", val)
 	}
 }
 

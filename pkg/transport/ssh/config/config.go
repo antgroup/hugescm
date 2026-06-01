@@ -349,7 +349,15 @@ func decodeBytes(b []byte, system, ignoreMatchDirective bool, depth uint8) (c *C
 				err = e
 				return
 			}
-			err = errors.New(r.(string))
+			if s, ok := r.(string); ok {
+				err = errors.New(s)
+				return
+			}
+			if e, ok := r.(error); ok {
+				err = e
+				return
+			}
+			err = fmt.Errorf("ssh_config: %v", r)
 		}
 	}()
 
@@ -427,7 +435,10 @@ func (c *Config) GetAll(alias, key string) ([]string, error) {
 					all = append(all, t.Value)
 				}
 			case *Include:
-				val, _ := t.GetAll(alias, key)
+				val, err := t.GetAll(alias, key)
+				if err != nil {
+					return nil, err
+				}
 				if len(val) > 0 {
 					all = append(all, val...)
 				}

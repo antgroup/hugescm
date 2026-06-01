@@ -42,7 +42,7 @@ func (c *Command) readStderr() {
 		fmt.Fprintf(os.Stderr, "remote: %s\n", br.Text())
 	}
 	if err := br.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "scan error: %s\n", br.Text())
+		fmt.Fprintf(os.Stderr, "scan error: %v\n", err)
 	}
 }
 

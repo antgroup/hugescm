@@ -62,25 +62,37 @@ func (c *client) GetObject(ctx context.Context, oid plumbing.Hash, fromByte int6
 	var magic [4]byte
 	if _, err := io.ReadFull(cmd, magic[:]); err != nil {
 		_ = cmd.Close()
-		return nil, cmd.lastError
+		if cmd.lastError != nil {
+			return nil, cmd.lastError
+		}
+		return nil, err
 	}
 	if !bytes.Equal(magic[:], objectsTransportMagic[:]) {
 		_ = cmd.Close()
-		return nil, fmt.Errorf("unexpected magic '%c' '%c' '%c' '%c'", magic[0], magic[1], magic[2], magic[3])
+		return nil, fmt.Errorf("unexpected magic %q", magic[:])
 	}
 	var version uint32
 	if err := binary.Read(cmd, binary.BigEndian, &version); err != nil {
 		_ = cmd.Close()
-		return nil, cmd.lastError
+		if cmd.lastError != nil {
+			return nil, cmd.lastError
+		}
+		return nil, err
 	}
 	var compressedSize, readBytes int64
 	if err := binary.Read(cmd, binary.BigEndian, &readBytes); err != nil {
 		_ = cmd.Close()
-		return nil, cmd.lastError
+		if cmd.lastError != nil {
+			return nil, cmd.lastError
+		}
+		return nil, err
 	}
 	if err := binary.Read(cmd, binary.BigEndian, &compressedSize); err != nil {
 		_ = cmd.Close()
-		return nil, cmd.lastError
+		if cmd.lastError != nil {
+			return nil, cmd.lastError
+		}
+		return nil, err
 	}
 	return &getObjectCommand{
 		Command: cmd,

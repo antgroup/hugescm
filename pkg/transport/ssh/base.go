@@ -59,7 +59,7 @@ func resolvePort(endpoint *transport.Endpoint) string {
 	if port != "22" && len(port) != 0 {
 		return port
 	}
-	if port, err := DefaultUserSettings.GetStrict(endpoint.Host, "Port"); err == nil && len(port) != 0 {
+	if port, err := DefaultUserSettings.GetStrict(endpoint.Hostname(), "Port"); err == nil && len(port) != 0 {
 		return port
 	}
 	return "22"
@@ -81,7 +81,7 @@ func NewTransport(ctx context.Context, endpoint *transport.Endpoint, operation t
 	}
 	cc.Hostname = resolveHostName(endpoint)
 	cc.Port = resolvePort(endpoint)
-	cc.IdentityFile = DefaultUserSettings.Get(endpoint.Host, "IdentityFile")
+	cc.IdentityFile = DefaultUserSettings.Get(endpoint.Hostname(), "IdentityFile")
 	return cc, nil
 }
 

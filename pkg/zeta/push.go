@@ -133,15 +133,15 @@ func (r *Repository) doPushRemove(ctx context.Context, target plumbing.Reference
 	}
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		defer pipeWriter.Close() // nolint
 		if err := r.odb.PushTo(ctx, pipeWriter, &odb.PushObjects{
 			Metadata:     make([]plumbing.Hash, 0),
 			Objects:      make([]plumbing.Hash, 0),
 			LargeObjects: make([]*odb.HaveObject, 0),
 		}, r.quiet); err != nil {
-			die("Push objects: %v", err)
+			_ = pipeWriter.CloseWithError(err)
 			return
 		}
+		_ = pipeWriter.Close()
 	}()
 	cmd := &transport.Command{
 		Refname:     target,
@@ -249,10 +249,11 @@ func (r *Repository) doPush(ctx context.Context, ourName plumbing.ReferenceName,
 	}
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		defer pipeWriter.Close() // nolint
 		if err := r.odb.PushTo(ctx, pipeWriter, po, r.quiet); err != nil {
+			_ = pipeWriter.CloseWithError(err)
 			return
 		}
+		_ = pipeWriter.Close()
 	}()
 	cmd := &transport.Command{
 		Refname:     target,

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-06-03
+
+### Added
+
+- **Image Rendering**: `zeta cat` can now render images inline on capable terminals (`--image` flag)
+- **`hot stat` Dashboard**: Redesign `hot stat` as a lipgloss card-style dashboard
+- **Hexview**: Use rounded corners for border styling
+
+### Changed
+
+- **diferenco**: Refactor text/merge API and fix charset parsing; remove experimental parallel merge code (~2100 lines removed)
+- **patchview**: Replace deprecated `charmtone.Charcoal` with `Char`
+- **Translations**: Add zh-CN translation for `cat --image` flag
+
+### Fixed
+
+- **push**: Fix critical regression where all push operations fail with "read object length error: EOF" — caused by `unconvert tidy` (`4d8f045b`) incorrectly reusing the `size` variable for both wire-length header and payload verification
+- **push**: Propagate write errors via `pipeWriter.CloseWithError` instead of silently closing the pipe
+- **ssh**: Fix host alias lookup, swallowed IO error, and known_hosts test
+
 ## [0.24.0] - 2026-05-29
 
 ### Added

@@ -25,13 +25,24 @@ var (
 	reserved          [16]byte
 )
 
+// writeObjectToPack writes a single object into the push stream.
+//
+// Wire format per object:
+//
+//	[uint64: wireLength] [HASH_HEX_SIZE bytes: oid hex] [size bytes: payload]
+//
+// wireLength = size + HASH_HEX_SIZE (negated when metadata is true).
+//
+// IMPORTANT: `wireLength` MUST be a separate variable from `size`.
+// `size` is the raw payload length and is reused below to verify io.Copy.
+// Do NOT fold them into one variable — a past refactor did that and broke push.
 func (d *ODB) writeObjectToPack(oid plumbing.Hash, metadata bool, w io.Writer, r io.Reader, size int64) error {
-	// Calculate size with hash included
-	size += plumbing.HASH_HEX_SIZE
+	// wireLength is what goes on the wire; size stays as the expected payload length.
+	wireLength := size + plumbing.HASH_HEX_SIZE
 	if metadata {
-		size = -size
+		wireLength = -wireLength
 	}
-	if err := binary.WriteUint64(w, uint64(size)); err != nil {
+	if err := binary.WriteUint64(w, uint64(wireLength)); err != nil {
 		return err
 	}
 	oids := oid.String()
@@ -42,6 +53,7 @@ func (d *ODB) writeObjectToPack(oid plumbing.Hash, metadata bool, w io.Writer, r
 	if err != nil {
 		return err
 	}
+	// n must equal the original payload size, NOT headerSize.
 	if n != size {
 		return fmt.Errorf("expected to write pack %d bytes, actually wrote %d bytes", size, n)
 	}

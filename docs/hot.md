@@ -34,6 +34,8 @@ Git 存储库在长期使用中会积累技术债务：
 | `hot expire-refs` | 清理过期引用 |
 | `hot snapshot` | 为工作树创建快照提交 |
 | `hot cat` | 查看存储库对象（commit/tree/tag/blob） |
+| `hot diff` | 显示提交之间、提交与工作树之间的差异 |
+| `hot show` | 显示某次提交引入的变更 |
 | `hot stat` | 查看存储库状态 |
 | `hot co` | 克隆存储库（实验性） |
 

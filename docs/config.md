@@ -8,7 +8,7 @@ HugeSCM 的配置系统支持三个层级（优先级从低到高）：
 
 | 层级 | 位置 | 说明 |
 |------|------|------|
-| System | `/etc/zeta.toml` | 系统级配置，所有用户共享 |
+| System | `<prefix>/etc/zeta.toml` | 系统级配置，所有用户共享（可通过 `ZETA_CONFIG_SYSTEM` 环境变量覆盖） |
 | Global | `~/.zeta.toml` | 用户级配置，当前用户所有仓库共享 |
 | Local | `.zeta/zeta.toml` | 仓库级配置，仅当前仓库有效 |
 
@@ -208,20 +208,24 @@ export ZETA_TERMINAL_PROMPT=false
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `fragment.threshold` | Size | `1GB` | 文件大小阈值，小于此值不分片 |
-| `fragment.size` | Size | `1GB` | 目标分片大小（固定分片） |
+| `fragment.size` | Size | `1GB` | 目标分片大小（固定分片和 CDC 分片共用） |
 | `fragment.enable_cdc` | Boolean | `false` | 启用 CDC 分片 |
 
 ### 9.1 Size 格式
 
-支持以下单位：
+支持以下单位（均为 1024 进制）：
 
-- `KB`、`MB`、`GB`（1000 进制）
-- `KiB`、`MiB`、`GiB`（1024 进制）
+- `K`/`KB` — 1024 字节
+- `M`/`MB` — 1024² 字节
+- `G`/`GB` — 1024³ 字节
+- `T`/`TB` — 1024⁴ 字节
+
+大小写不敏感，`1g`、`1G`、`1gb`、`1GB` 均等价。
 
 ```toml
 [fragment]
-threshold = "512MiB"
-size = "1GB"
+threshold = "512m"
+size = "1g"
 enable_cdc = true
 ```
 

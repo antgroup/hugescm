@@ -81,6 +81,7 @@ UsedUserAreasWarning=no
 UninstallDisplayIcon={app}\bin\zeta.exe
 
 [Files]
+Source: "..\build\bin\hot.exe"; DestDir: "{app}\bin"; DestName: "hot.exe"
 Source: "..\build\bin\zeta.exe"; DestDir: "{app}\bin"; DestName: "zeta.exe"
 Source: "..\build\bin\zeta-mc.exe"; DestDir: "{app}\bin"; DestName: "zeta-mc.exe"
 Source: "..\build\share\zeta\LEGAL.md"; DestDir: "{app}\share"; DestName: "LEGAL.md"

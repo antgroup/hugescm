@@ -48,7 +48,7 @@ type PatchesSetter interface {
 const statusBarBorderSize = 2
 
 // fallbackHeaderBorder is used when the active style does not set
-// HeaderBorder (e.g. tests that build a zero-value PatchViewStyle).
+// HeaderBorder (e.g. tests that build a zero-value Style).
 var fallbackHeaderBorder color.Color = lipgloss.Color("8")
 
 // DefaultStatusBar is the default status bar implementation.
@@ -63,7 +63,7 @@ var fallbackHeaderBorder color.Color = lipgloss.Color("8")
 type DefaultStatusBar struct {
 	patches []*diferenco.Patch
 	cursor  int
-	style   PatchViewStyle
+	style   Style
 }
 
 // NewDefaultStatusBar creates a new DefaultStatusBar.
@@ -74,7 +74,7 @@ func NewDefaultStatusBar() *DefaultStatusBar {
 }
 
 // SetStyle sets the style for the status bar.
-func (s *DefaultStatusBar) SetStyle(style PatchViewStyle) {
+func (s *DefaultStatusBar) SetStyle(style Style) {
 	s.style = style
 }
 
@@ -229,7 +229,7 @@ func (s *DefaultStatusBar) renderContent(cursor, contentWidth int) string {
 
 // borderColor returns the rounded-border color for the status bar card.
 // Falls back to a neutral grey when the active style leaves HeaderBorder
-// nil (zero-value PatchViewStyle in tests, etc.).
+// nil (zero-value Style in tests, etc.).
 func (s *DefaultStatusBar) borderColor() color.Color {
 	if s.style.HeaderBorder != nil {
 		return s.style.HeaderBorder

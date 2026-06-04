@@ -66,7 +66,7 @@ type PatchView struct {
 	yOffset int
 	xOffset int
 
-	style PatchViewStyle
+	style Style
 }
 
 // Ensure patchItem implements viewport.Object
@@ -77,10 +77,10 @@ type patchItem struct {
 	patch    *diferenco.Patch
 	selected bool
 	width    int
-	style    PatchViewStyle
+	style    Style
 }
 
-func newPatchItem(p *diferenco.Patch, selected bool, width int, style PatchViewStyle) *patchItem {
+func newPatchItem(p *diferenco.Patch, selected bool, width int, style Style) *patchItem {
 	return &patchItem{patch: p, selected: selected, width: width, style: style}
 }
 
@@ -163,7 +163,7 @@ func (p *patchItem) render() string {
 type Option func(*PatchView)
 
 // WithStyle sets a custom style.
-func WithStyle(style PatchViewStyle) Option {
+func WithStyle(style Style) Option {
 	return func(pv *PatchView) {
 		pv.style = style
 	}
@@ -302,7 +302,7 @@ func Run(patches []*diferenco.Patch, opts ...Option) error {
 // Use this when you want to surface commit metadata outside the
 // interactive view (e.g. when there are no patches to navigate and the
 // TUI is skipped entirely).
-func RenderCommitHeader(style PatchViewStyle, hash, author, date, subject, files string) string {
+func RenderCommitHeader(style Style, hash, author, date, subject, files string) string {
 	return RenderHeaderEntries(style, commitHeaderEntries(hash, author, date, subject, files))
 }
 
@@ -310,7 +310,7 @@ func RenderCommitHeader(style PatchViewStyle, hash, author, date, subject, files
 // (ANSI-colored) string, using the same key padding + highlight rules
 // as the in-TUI top header. Returns "" for an empty input so callers
 // can cheaply skip the row.
-func RenderHeaderEntries(style PatchViewStyle, entries []HeaderEntry) string {
+func RenderHeaderEntries(style Style, entries []HeaderEntry) string {
 	if len(entries) == 0 {
 		return ""
 	}
@@ -366,7 +366,7 @@ func SummarizePatches(patches []*diferenco.Patch) string {
 // foreground — we intentionally do NOT wrap it with HeaderMeta because
 // the header renderer already applies HeaderMeta-like keying via the
 // "Files:" prefix and double-styling would dim the +A/-D too much.
-func ColorizedPatchSummary(style PatchViewStyle, patches []*diferenco.Patch) string {
+func ColorizedPatchSummary(style Style, patches []*diferenco.Patch) string {
 	if len(patches) == 0 {
 		return ""
 	}
@@ -415,7 +415,7 @@ func NewPatchView(patches []*diferenco.Patch, opts ...Option) *PatchView {
 
 	// Apply style to components
 	pv.renderer.SetStyle(pv.style)
-	if sb, ok := pv.statusBar.(interface{ SetStyle(PatchViewStyle) }); ok {
+	if sb, ok := pv.statusBar.(interface{ SetStyle(Style) }); ok {
 		sb.SetStyle(pv.style)
 	}
 	if sb, ok := pv.statusBar.(PatchesSetter); ok {
@@ -815,15 +815,7 @@ func (pv *PatchView) renderDiffContent() string {
 		pv.renderer.SetXOffset(pv.xOffset)
 		content := pv.renderer.Render()
 
-		pctText := ""
-		total := pv.renderer.TotalLines()
-		if total > 0 {
-			vpH := pv.diffViewportHeight()
-			pct := min(100, (pv.yOffset+vpH)*100/max(total, 1))
-			pctText = fmt.Sprintf(" (%d%%)", pct)
-		}
-
-		title := pv.style.FilesTitle.Render(fmt.Sprintf(" Diff%s ", pctText))
+		title := pv.style.FilesTitle.Render(" Diff ")
 		return diffStyle.Render(title + "\n" + content)
 	}
 

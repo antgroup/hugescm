@@ -171,7 +171,14 @@ func (f *diffFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Itera
 
 		entry := style.Get(token.Type)
 		if entry.IsZero() {
-			_, _ = fmt.Fprint(w, value)
+			// Still apply the diff background so the token does not
+			// fall back to the terminal default background.
+			if f.bgColor != "" {
+				s := lipgloss.NewStyle().Background(lipgloss.Color(f.bgColor))
+				_, _ = fmt.Fprint(w, s.Render(value))
+			} else {
+				_, _ = fmt.Fprint(w, value)
+			}
 			continue
 		}
 

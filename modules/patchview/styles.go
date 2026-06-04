@@ -14,11 +14,13 @@ const lineNumPadding = 1
 // LineStyle defines the style for a single line.
 type LineStyle struct {
 	LineNumber lipgloss.Style // Line number style
+	Symbol     lipgloss.Style // Leading symbol style (+/-)
 	Code       lipgloss.Style // Code content style
 }
 
-// DiffViewStyle defines the complete style for DiffView.
-type DiffViewStyle struct {
+// Style defines the complete visual style for the patch view.
+type Style struct {
+	// Diff line styles
 	DividerLine LineStyle      // Hunk divider line style (@@ -1,3 +1,4 @@)
 	MissingLine LineStyle      // Missing line style (used in Split view)
 	EqualLine   LineStyle      // Unchanged line style
@@ -26,17 +28,11 @@ type DiffViewStyle struct {
 	DeleteLine  LineStyle      // Deleted line style
 	FileName    lipgloss.Style // File name style
 	FileMeta    lipgloss.Style // File metadata style
-}
 
-// PatchViewStyle defines the visual style for the patch view.
-type PatchViewStyle struct {
 	// File list styles
 	Addition lipgloss.Style
 	Deletion lipgloss.Style
 	Selected lipgloss.Style
-
-	// Diff view styles (using LineStyle for background fill)
-	DiffStyle DiffViewStyle
 
 	// UI styles
 	HeaderBg    lipgloss.Style
@@ -64,17 +60,33 @@ type PatchViewStyle struct {
 	StatusModified lipgloss.Style
 }
 
-// DefaultDarkDiffViewStyle returns the dark theme style.
-func DefaultDarkDiffViewStyle() DiffViewStyle {
+// hasDarkBackground detects terminal background color.
+func hasDarkBackground() bool {
+	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+}
+
+// DefaultStyle returns the default style with auto-detected theme.
+func DefaultStyle() Style {
+	if hasDarkBackground() {
+		return DefaultDarkStyle()
+	}
+	return DefaultLightStyle()
+}
+
+// DefaultDarkStyle returns the dark theme style.
+func DefaultDarkStyle() Style {
 	setPadding := func(s lipgloss.Style) lipgloss.Style {
 		return s.Padding(0, lineNumPadding).Align(lipgloss.Right)
 	}
 
-	return DiffViewStyle{
+	return Style{
+		// Diff line styles
 		DividerLine: LineStyle{
 			LineNumber: setPadding(lipgloss.NewStyle().
 				Foreground(charmtone.Smoke).
 				Background(charmtone.BBQ)),
+			Symbol: lipgloss.NewStyle().
+				Background(charmtone.BBQ),
 			Code: lipgloss.NewStyle().
 				Foreground(charmtone.Smoke).
 				Background(charmtone.BBQ),
@@ -82,6 +94,8 @@ func DefaultDarkDiffViewStyle() DiffViewStyle {
 		MissingLine: LineStyle{
 			LineNumber: setPadding(lipgloss.NewStyle().
 				Background(charmtone.BBQ)),
+			Symbol: lipgloss.NewStyle().
+				Background(charmtone.BBQ),
 			Code: lipgloss.NewStyle().
 				Background(charmtone.BBQ),
 		},
@@ -89,6 +103,8 @@ func DefaultDarkDiffViewStyle() DiffViewStyle {
 			LineNumber: setPadding(lipgloss.NewStyle().
 				Foreground(charmtone.Squid).
 				Background(charmtone.Pepper)),
+			Symbol: lipgloss.NewStyle().
+				Background(charmtone.Pepper),
 			Code: lipgloss.NewStyle().
 				Foreground(charmtone.Squid).
 				Background(charmtone.Pepper),
@@ -97,6 +113,9 @@ func DefaultDarkDiffViewStyle() DiffViewStyle {
 			LineNumber: setPadding(lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#629657")).
 				Background(lipgloss.Color("#2b322a"))),
+			Symbol: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#629657")).
+				Background(lipgloss.Color("#2f362d")),
 			Code: lipgloss.NewStyle().
 				Background(lipgloss.Color("#323931")),
 		},
@@ -104,6 +123,9 @@ func DefaultDarkDiffViewStyle() DiffViewStyle {
 			LineNumber: setPadding(lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#a45c59")).
 				Background(lipgloss.Color("#312929"))),
+			Symbol: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#a45c59")).
+				Background(lipgloss.Color("#352d2d")),
 			Code: lipgloss.NewStyle().
 				Background(lipgloss.Color("#383030")),
 		},
@@ -112,93 +134,13 @@ func DefaultDarkDiffViewStyle() DiffViewStyle {
 			Foreground(lipgloss.Color("#79B8FF")),
 		FileMeta: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#959DA5")),
-	}
-}
 
-// DefaultLightDiffViewStyle returns the light theme style.
-// Color scheme based on One Light Pro (clear, bright, moderate contrast).
-func DefaultLightDiffViewStyle() DiffViewStyle {
-	setPadding := func(s lipgloss.Style) lipgloss.Style {
-		return s.Padding(0, lineNumPadding).Align(lipgloss.Right)
-	}
-
-	return DiffViewStyle{
-		DividerLine: LineStyle{
-			LineNumber: setPadding(lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#696C77")).
-				Background(lipgloss.Color("#E5E5E6"))),
-			Code: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#696C77")).
-				Background(lipgloss.Color("#E5E5E6")),
-		},
-		MissingLine: LineStyle{
-			LineNumber: setPadding(lipgloss.NewStyle().
-				Background(lipgloss.Color("#F0F0F0"))),
-			Code: lipgloss.NewStyle().
-				Background(lipgloss.Color("#F5F5F5")),
-		},
-		EqualLine: LineStyle{
-			LineNumber: setPadding(lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#9D9D9F")).
-				Background(lipgloss.Color("#F0F0F0"))),
-			Code: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#383A42")).
-				Background(lipgloss.Color("#F5F5F5")),
-		},
-		InsertLine: LineStyle{
-			LineNumber: setPadding(lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#50A14F")).
-				Background(lipgloss.Color("#E0F0E0"))),
-			Code: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#383A42")).
-				Background(lipgloss.Color("#D4EDD4")),
-		},
-		DeleteLine: LineStyle{
-			LineNumber: setPadding(lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#E45649")).
-				Background(lipgloss.Color("#FAE8E6"))),
-			Code: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#383A42")).
-				Background(lipgloss.Color("#F5D4D1")),
-		},
-		FileName: lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#4078F2")),
-		FileMeta: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#696C77")),
-	}
-}
-
-// DefaultDiffViewStyle automatically selects theme based on terminal background.
-func DefaultDiffViewStyle() DiffViewStyle {
-	if hasDarkBackground() {
-		return DefaultDarkDiffViewStyle()
-	}
-	return DefaultLightDiffViewStyle()
-}
-
-// hasDarkBackground detects terminal background color.
-func hasDarkBackground() bool {
-	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-}
-
-// DefaultStyle returns the default style with auto-detected theme.
-func DefaultStyle() PatchViewStyle {
-	if hasDarkBackground() {
-		return DefaultDarkStyle()
-	}
-	return DefaultLightStyle()
-}
-
-// DefaultDarkStyle returns the dark theme style.
-func DefaultDarkStyle() PatchViewStyle {
-	return PatchViewStyle{
+		// File list styles
 		Addition: lipgloss.NewStyle().Foreground(lipgloss.Color("#85E89D")),
 		Deletion: lipgloss.NewStyle().Foreground(lipgloss.Color("#F97583")),
 		Selected: lipgloss.NewStyle().Background(lipgloss.Color("#282a38")),
 
-		DiffStyle: DefaultDarkDiffViewStyle(),
-
+		// UI styles
 		HeaderBg:       lipgloss.NewStyle(),
 		FileCount:      lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Separator:      lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
@@ -216,14 +158,75 @@ func DefaultDarkStyle() PatchViewStyle {
 }
 
 // DefaultLightStyle returns the light theme style.
-func DefaultLightStyle() PatchViewStyle {
-	return PatchViewStyle{
+func DefaultLightStyle() Style {
+	setPadding := func(s lipgloss.Style) lipgloss.Style {
+		return s.Padding(0, lineNumPadding).Align(lipgloss.Right)
+	}
+
+	return Style{
+		// Diff line styles
+		DividerLine: LineStyle{
+			LineNumber: setPadding(lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#696C77")).
+				Background(lipgloss.Color("#E5E5E6"))),
+			Symbol: lipgloss.NewStyle().
+				Background(lipgloss.Color("#E5E5E6")),
+			Code: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#696C77")).
+				Background(lipgloss.Color("#E5E5E6")),
+		},
+		MissingLine: LineStyle{
+			LineNumber: setPadding(lipgloss.NewStyle().
+				Background(lipgloss.Color("#F0F0F0"))),
+			Symbol: lipgloss.NewStyle().
+				Background(lipgloss.Color("#F5F5F5")),
+			Code: lipgloss.NewStyle().
+				Background(lipgloss.Color("#F5F5F5")),
+		},
+		EqualLine: LineStyle{
+			LineNumber: setPadding(lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#9D9D9F")).
+				Background(lipgloss.Color("#F0F0F0"))),
+			Symbol: lipgloss.NewStyle().
+				Background(lipgloss.Color("#F5F5F5")),
+			Code: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#383A42")).
+				Background(lipgloss.Color("#F5F5F5")),
+		},
+		InsertLine: LineStyle{
+			LineNumber: setPadding(lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#50A14F")).
+				Background(lipgloss.Color("#E0F0E0"))),
+			Symbol: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#50A14F")).
+				Background(lipgloss.Color("#DAF0DA")),
+			Code: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#383A42")).
+				Background(lipgloss.Color("#D4EDD4")),
+		},
+		DeleteLine: LineStyle{
+			LineNumber: setPadding(lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#E45649")).
+				Background(lipgloss.Color("#FAE8E6"))),
+			Symbol: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#E45649")).
+				Background(lipgloss.Color("#F8DEDA")),
+			Code: lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#383A42")).
+				Background(lipgloss.Color("#F5D4D1")),
+		},
+		FileName: lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#4078F2")),
+		FileMeta: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#696C77")),
+
+		// File list styles
 		Addition: lipgloss.NewStyle().Foreground(lipgloss.Color("#22863A")),
 		Deletion: lipgloss.NewStyle().Foreground(lipgloss.Color("#CB2431")),
 		Selected: lipgloss.NewStyle().Background(lipgloss.Color("#ebf1fc")),
 
-		DiffStyle: DefaultLightDiffViewStyle(),
-
+		// UI styles
 		HeaderBg:       lipgloss.NewStyle(),
 		FileCount:      lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Separator:      lipgloss.NewStyle().Foreground(lipgloss.Color("8")),

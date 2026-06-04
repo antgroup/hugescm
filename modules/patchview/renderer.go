@@ -18,7 +18,7 @@ const (
 // It handles line numbers, syntax highlighting, and horizontal scrolling.
 type PatchRenderer struct {
 	patch   *diferenco.Patch
-	style   PatchViewStyle
+	style   Style
 	width   int
 	height  int
 	xOffset int
@@ -65,7 +65,7 @@ func (r *PatchRenderer) SetSize(width, height int) {
 }
 
 // SetStyle sets the style for rendering.
-func (r *PatchRenderer) SetStyle(style PatchViewStyle) {
+func (r *PatchRenderer) SetStyle(style Style) {
 	r.style = style
 }
 
@@ -145,11 +145,11 @@ func (r *PatchRenderer) Render() string {
 	}
 
 	if r.patch.IsBinary {
-		return r.style.DiffStyle.FileName.Render("Binary file differs")
+		return r.style.FileName.Render("Binary file differs")
 	}
 
 	if len(r.patch.Hunks) == 0 {
-		return r.style.DiffStyle.FileMeta.Render("No changes")
+		return r.style.FileMeta.Render("No changes")
 	}
 
 	showLineNums := r.shouldShowLineNumbers()
@@ -297,7 +297,7 @@ func (r *PatchRenderer) codeWidth() int {
 
 // renderHunkHeader renders a hunk header line (@@ -1,3 +1,4 @@).
 func (r *PatchRenderer) renderHunkHeader(hunk *diferenco.Hunk, showLineNums bool, codeW int) string {
-	style := &r.style.DiffStyle.DividerLine
+	style := &r.style.DividerLine
 
 	// Build hunk header with section
 	fromCount := hunkFromCount(hunk)
@@ -329,17 +329,17 @@ func (r *PatchRenderer) renderLine(l diferenco.Line, beforeLine, afterLine int, 
 
 	switch l.Kind {
 	case diferenco.Insert:
-		style = &r.style.DiffStyle.InsertLine
+		style = &r.style.InsertLine
 		sym = "+"
 		beforeNum = pad(" ", r.beforeNumDigits)
 		afterNum = pad(afterLine, r.afterNumDigits)
 	case diferenco.Delete:
-		style = &r.style.DiffStyle.DeleteLine
+		style = &r.style.DeleteLine
 		sym = "-"
 		beforeNum = pad(beforeLine, r.beforeNumDigits)
 		afterNum = pad(" ", r.afterNumDigits)
 	default:
-		style = &r.style.DiffStyle.EqualLine
+		style = &r.style.EqualLine
 		sym = " "
 		beforeNum = pad(beforeLine, r.beforeNumDigits)
 		afterNum = pad(afterLine, r.afterNumDigits)
@@ -347,44 +347,43 @@ func (r *PatchRenderer) renderLine(l diferenco.Line, beforeLine, afterLine int, 
 
 	var sb strings.Builder
 
-	// Line numbers with background
+	// Line numbers
 	if showLineNums {
 		sb.WriteString(style.LineNumber.Render(beforeNum))
 		sb.WriteString(style.LineNumber.Render(afterNum))
 	}
 
-	// Get original content and remove trailing newlines (\r\n or \n)
+	// Get original content and remove trailing newlines
 	content := strings.TrimRight(l.Content, "\r\n")
 
-	// Apply syntax highlighting (on full code before adding symbol)
+	// Apply syntax highlighting
 	if r.highlighter != nil && r.syntaxHighlight && content != "" {
 		bgColor := extractBgColor(style.Code)
 		content = r.highlighter.Highlight(content, bgColor)
 	}
 
-	// Build full content (symbol + content)
-	fullContent := sym + " " + content
-
-	// Apply horizontal scroll
-	if r.xOffset > 0 && len(fullContent) > 0 {
-		contentWidth := lipgloss.Width(fullContent)
+	// Apply horizontal scroll to code content (symbol is always visible)
+	if r.xOffset > 0 && len(content) > 0 {
+		contentWidth := lipgloss.Width(content)
 		if contentWidth > r.xOffset {
-			fullContent = ansi.TruncateLeftWc(fullContent, r.xOffset, "")
+			content = ansi.TruncateLeftWc(content, r.xOffset, "")
 		} else {
-			fullContent = ""
+			content = ""
 		}
 	}
 
-	// Truncate to fit width and render with background fill
-	truncated := ansi.TruncateWc(fullContent, codeW, "")
-	sb.WriteString(style.Code.Width(codeW).Render(truncated))
+	// Render symbol + code
+	const symWidth = 2
+	sb.WriteString(style.Symbol.Render(sym + " "))
+	truncated := ansi.TruncateWc(content, codeW-symWidth, "")
+	sb.WriteString(style.Code.Width(codeW - symWidth).Render(truncated))
 
 	return sb.String()
 }
 
 // renderEmptyLine renders an empty line for padding.
 func (r *PatchRenderer) renderEmptyLine(showLineNums bool, codeW int) string {
-	style := &r.style.DiffStyle.EqualLine
+	style := &r.style.EqualLine
 	var sb strings.Builder
 
 	if showLineNums {
@@ -395,7 +394,9 @@ func (r *PatchRenderer) renderEmptyLine(showLineNums bool, codeW int) string {
 	}
 
 	// Use Width() to fill background color
-	sb.WriteString(style.Code.Width(codeW).Render(""))
+	const symWidth = 2
+	sb.WriteString(style.Symbol.Render("  "))
+	sb.WriteString(style.Code.Width(codeW - symWidth).Render(""))
 
 	return sb.String()
 }

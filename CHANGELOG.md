@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-06-05
+
+### Changed
+
+- **patchview**: Flatten `DiffViewStyle` + `PatchViewStyle` into a single `Style` struct; add `Symbol` field to `LineStyle` for independent `+`/`-` symbol styling
+- **patchview**: Separate symbol rendering from code content so symbols stay visible during horizontal scroll; remove diff percentage indicator
+- **patchview**: Fix syntax highlight background color lost for zero-value tokens
+
+### Fixed
+
+- **hot replay**: Add case-insensitive ref conflict detection for Windows/macOS — `detectCaseConflicts()` checks for refs that differ only in case and reports them before `update-ref` fails
+- **hot replay**: Improve `RefUpdater.closeWithError` to preserve both stderr and close error context instead of discarding one
+- **hot replay**: Remove `pack.packSizeLimit=16g` from `git gc` invocation
+- **setup**: Include `hot.exe` in Windows installer (`zeta.iss`)
+
+### Documentation
+
+- **CDC**: Major revision (v2.0 → v3.0) — fix mask strategy naming, update default parameters, add tail-merge and call-chain sections, correct config file paths
+- **config**: Fix Size format description (unified 1024-based units), correct system config path
+- **hot**: Document `hot diff` and `hot show` commands
+- **README**: Add `status-perf-large-file.md` link; fix fragment config example
+
 ## [0.25.0] - 2026-06-03
 
 ### Added
@@ -226,6 +248,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fragment object support for large files
 - Support for AI model development, game development, and monorepo scenarios
 
-[Unreleased]: https://github.com/antgroup/hugescm/compare/v0.22.0...HEAD
-[0.22.0]: https://github.com/antgroup/hugescm/compare/v0.21.0...v0.22.0
-[0.21.0]: https://github.com/antgroup/hugescm/releases/tag/v0.21.0
+[Unreleased]: https://code.alipay.com/zeta/zeta/compare/v0.26.0...HEAD
+[0.26.0]: https://code.alipay.com/zeta/zeta/compare/v0.25.0...v0.26.0
+[0.25.0]: https://code.alipay.com/zeta/zeta/compare/v0.24.0...v0.25.0
+[0.24.0]: https://code.alipay.com/zeta/zeta/compare/v0.23.0...v0.24.0
+[0.23.0]: https://code.alipay.com/zeta/zeta/compare/v0.22.0...v0.23.0
+[0.22.0]: https://code.alipay.com/zeta/zeta/compare/v0.21.0...v0.22.0

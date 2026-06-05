@@ -42,6 +42,13 @@ type refUpdater struct {
 // It returns any error encountered, or nil if the reference update(s) was/were
 // successful.
 func (r *refUpdater) UpdateRefs(ctx context.Context, b *hud.ProgressBar) error {
+	if conflicts := r.detectCaseConflicts(); len(conflicts) > 0 {
+		fmt.Fprintf(os.Stderr, "error: case-insensitive ref conflicts detected, please delete one of each pair:\n")
+		for _, c := range conflicts {
+			fmt.Fprintf(os.Stderr, "  %s\n  %s\n\n", c[0], c[1])
+		}
+		return fmt.Errorf("found %d ref name conflict(s) on case-insensitive filesystem", len(conflicts))
+	}
 
 	var maxNameLen int
 	for _, ref := range r.References {
@@ -111,6 +118,26 @@ func (r *refUpdater) rewriteTag(oid []byte) ([]byte, error) {
 		}
 	}
 	return oid, nil
+}
+
+// detectCaseConflicts checks for refs that differ only in case.
+// On case-insensitive filesystems (Windows, macOS), such refs cause
+// git update-ref to fail because the .lock files collide.
+func (r *refUpdater) detectCaseConflicts() [][2]git.ReferenceName {
+	if !caseInsensitive {
+		return nil
+	}
+	seen := make(map[string]git.ReferenceName, len(r.References))
+	var conflicts [][2]git.ReferenceName
+	for _, ref := range r.References {
+		lower := strings.ToLower(string(ref.Name))
+		if prev, ok := seen[lower]; ok {
+			conflicts = append(conflicts, [2]git.ReferenceName{prev, ref.Name})
+		} else {
+			seen[lower] = ref.Name
+		}
+	}
+	return conflicts
 }
 
 func (r *refUpdater) updateOneRef(u *git.RefUpdater, maxNameLen int, seen map[git.ReferenceName]bool, ref *git.Reference) error {

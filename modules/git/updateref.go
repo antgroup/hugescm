@@ -207,14 +207,23 @@ func (u *RefUpdater) teardown() {
 	}
 }
 
+// closeWithError closes the updater with the given error. The passed in error is only used
+// if the updater closes successfully. This is used to close the Updater with errors raised
+// by our logic when the command itself hasn't errored. All subsequent method calls return
+// the error returned from first closeWithError call.
 func (u *RefUpdater) closeWithError(closeErr error) error {
 	if u.closeErr != nil {
 		return u.closeErr
 	}
 	u.teardown() // close input/output
 	if err := u.cmd.Wait(); err != nil {
-		u.closeErr = fmt.Errorf("close error: %w stderr: %s", err, u.stderr.String())
-		return err
+		stderr := u.stderr.String()
+		if closeErr != nil {
+			u.closeErr = fmt.Errorf("%w, stderr: %s, close: %v", err, stderr, closeErr)
+		} else {
+			u.closeErr = fmt.Errorf("%w, stderr: %s", err, stderr)
+		}
+		return u.closeErr
 	}
 	if u.ctx.Err() != nil {
 		u.closeErr = u.ctx.Err()

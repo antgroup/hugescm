@@ -30,7 +30,7 @@ func (r *Replayer) cleanup(prune bool) error {
 			Stdout:    os.Stdout,
 			Stdin:     os.Stdin,
 			NoSetpgid: true,
-		}, "git", "-c", "repack.writeBitmaps=true", "-c", "pack.packSizeLimit=16g", "gc", "--prune=now", "--aggressive")
+		}, "git", "-c", "repack.writeBitmaps=true", "gc", "--prune=now", "--aggressive")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("run git gc error: %w", err)
 	}

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-06-08
+
+### Fixed
+
+- **config**: Fix `StringArray` TOML decoding failure when value is a single string (e.g., `extraHeader = "X-Custom: value"`) — replace dead `UnmarshalTOML(any)` (BurntSushi/toml interface) with `UnmarshalText` for `pelletier/go-toml/v2` compatibility
+- **deflect**: Exclude tmp pack files from `Auditor.Size()` calculation; surface garbage stats in `hot stat/az`
+
 ## [0.26.0] - 2026-06-05
 
 ### Changed

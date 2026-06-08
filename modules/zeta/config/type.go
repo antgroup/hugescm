@@ -144,23 +144,12 @@ func (b Boolean) MarshalText() ([]byte, error) {
 
 type StringArray []string
 
-func (a *StringArray) UnmarshalTOML(data any) error {
-	switch v := data.(type) {
-	case string:
-		*a = []string{v}
-	case []any:
-		var vv []string
-		for _, e := range v {
-			if s, ok := e.(string); ok {
-				vv = append(vv, s)
-				continue
-			}
-			return fmt.Errorf("expected string in array, but got %T", e)
-		}
-		*a = vv
-	default:
-		return fmt.Errorf("unexpected type %T", data)
-	}
+// UnmarshalText implements encoding.TextUnmarshaler for StringArray.
+// This is called by pelletier/go-toml/v2 when the TOML value is a scalar string
+// (e.g., extraHeader = "X-Custom: value"). For array values (e.g.,
+// extraHeader = ["a", "b"]), go-toml/v2 decodes directly into []string.
+func (a *StringArray) UnmarshalText(text []byte) error {
+	*a = []string{string(text)}
 	return nil
 }
 

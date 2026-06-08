@@ -80,6 +80,18 @@ extraHeader = ["X-Custom: value1", "X-Custom: value2"]
 			},
 		},
 		{
+			name: "with string array single value",
+			toml: `
+[http]
+extraHeader = "X-Custom: value1"
+`,
+			want: Config{
+				HTTP: HTTP{
+					ExtraHeader: []string{"X-Custom: value1"},
+				},
+			},
+		},
+		{
 			name: "with boolean",
 			toml: `
 [http]

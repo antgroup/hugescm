@@ -175,3 +175,60 @@ maxEntries = 8
 		t.Errorf("LargeSize() = %d, want %d", cfg.Transport.LargeSize(), expected)
 	}
 }
+
+func TestStringArrayTOMLDecode(t *testing.T) {
+	type HTTP struct {
+		ExtraHeader StringArray `toml:"extraHeader,omitempty"`
+	}
+	type Cfg struct {
+		HTTP HTTP `toml:"http"`
+	}
+
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name: "single string",
+			input: `
+[http]
+extraHeader = "X-Custom: value1"
+`,
+			expected: []string{"X-Custom: value1"},
+		},
+		{
+			name: "array of strings",
+			input: `
+[http]
+extraHeader = ["X-Custom: value1", "X-Custom: value2"]
+`,
+			expected: []string{"X-Custom: value1", "X-Custom: value2"},
+		},
+		{
+			name: "array with one element",
+			input: `
+[http]
+extraHeader = ["X-Only: single"]
+`,
+			expected: []string{"X-Only: single"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var c Cfg
+			if err := toml.NewDecoder(strings.NewReader(tt.input)).Decode(&c); err != nil {
+				t.Fatalf("Decode error: %v", err)
+			}
+			if len(c.HTTP.ExtraHeader) != len(tt.expected) {
+				t.Fatalf("ExtraHeader len = %d, want %d", len(c.HTTP.ExtraHeader), len(tt.expected))
+			}
+			for i, v := range c.HTTP.ExtraHeader {
+				if v != tt.expected[i] {
+					t.Errorf("ExtraHeader[%d] = %q, want %q", i, v, tt.expected[i])
+				}
+			}
+		})
+	}
+}

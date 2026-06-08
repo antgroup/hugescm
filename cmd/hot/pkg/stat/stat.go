@@ -72,14 +72,16 @@ type repoSnapshot struct {
 
 // storageSummary mirrors the subset of stats.Stat the renderer needs.
 type storageSummary struct {
-	DiskSize   int64
-	LooseCount uint64
-	LooseSize  uint64
-	PackCount  uint64
-	PackSize   uint64
-	RecentSize uint64
-	StaleSize  uint64
-	KeepSize   uint64
+	DiskSize     int64
+	LooseCount   uint64
+	LooseSize    uint64
+	PackCount    uint64
+	PackSize     uint64
+	RecentSize   uint64
+	StaleSize    uint64
+	KeepSize     uint64
+	GarbageCount uint32
+	GarbageSize  int64
 }
 
 type lfsSummary struct {
@@ -297,6 +299,8 @@ func Stat(ctx context.Context, o *StatOptions) error {
 		return err
 	}
 	snap.Storage.DiskSize = au.Size()
+	snap.Storage.GarbageCount = au.GarbageCount()
+	snap.Storage.GarbageSize = au.GarbageSize()
 	snap.OversizedCount = len(objects)
 
 	// Render the dashboard first so users see the high-signal view before the

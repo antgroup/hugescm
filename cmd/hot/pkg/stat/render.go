@@ -195,11 +195,15 @@ func storageCard(s *repoSnapshot, width int) string {
 			body.WriteString(progressRow(r.label, r.size, total, barWidth, r.color, r.hint))
 		}
 		body.WriteString("\n\n")
-		body.WriteString(strings.Join([]string{
+		summaryItems := []string{
 			inlineKV("objects", strengthen.FormatSizeU(st.LooseSize+st.PackSize)),
 			inlineKV("loose", strconv.FormatUint(st.LooseCount, 10)),
 			inlineKV("packs", strconv.FormatUint(st.PackCount, 10)),
-		}, "  •  "))
+		}
+		if st.GarbageCount > 0 {
+			summaryItems = append(summaryItems, inlineKV("garbage", strengthen.FormatSize(st.GarbageSize)))
+		}
+		body.WriteString(strings.Join(summaryItems, "  •  "))
 	}
 
 	if tips := storageTips(st); tips != "" {
@@ -390,6 +394,10 @@ func healthBar(score, width int) string {
 
 func storageTips(st storageSummary) string {
 	var tips []string
+	if st.GarbageCount > 0 {
+		tips = append(tips, fmt.Sprintf("%d garbage files (%s), run `git gc` to clean up",
+			st.GarbageCount, strengthen.FormatSize(st.GarbageSize)))
+	}
 	if st.LooseCount > 5000 {
 		tips = append(tips, fmt.Sprintf("loose objects = %d, run `git gc` to pack them", st.LooseCount))
 	}
@@ -489,7 +497,7 @@ func plainReport(s *repoSnapshot) string {
 		}
 	}
 	st := s.Storage
-	fmt.Fprintf(&b, "Storage: disk=%s objects=%s loose=%d packs=%d recent=%s stale=%s keep=%s\n",
+	fmt.Fprintf(&b, "Storage: disk=%s objects=%s loose=%d packs=%d recent=%s stale=%s keep=%s",
 		strengthen.FormatSize(st.DiskSize),
 		strengthen.FormatSizeU(st.LooseSize+st.PackSize),
 		st.LooseCount,
@@ -498,6 +506,10 @@ func plainReport(s *repoSnapshot) string {
 		strengthen.FormatSizeU(st.StaleSize),
 		strengthen.FormatSizeU(st.KeepSize),
 	)
+	if st.GarbageCount > 0 {
+		fmt.Fprintf(&b, " garbage=%d(%s)", st.GarbageCount, strengthen.FormatSize(st.GarbageSize))
+	}
+	b.WriteByte('\n')
 	if s.LFS != nil {
 		fmt.Fprintf(&b, "LFS: count=%d size=%s\n", s.LFS.Count, strengthen.FormatSizeU(s.LFS.Size))
 	}

@@ -39,5 +39,8 @@ func Az(ctx context.Context, repoPath string, limit int64, fullPath bool) error 
 	}
 	_ = showHugeObjects(ctx, repoPath, objects, fullPath)
 	fmt.Fprintf(os.Stderr, "%s%s\n", tr.W("Size: "), blue(strengthen.FormatSize(au.Size())))
+	if gc := au.GarbageCount(); gc > 0 {
+		fmt.Fprintf(os.Stderr, "%s%s (%d files)\n", tr.W("Garbage: "), blue(strengthen.FormatSize(au.GarbageSize())), gc)
+	}
 	return nil
 }

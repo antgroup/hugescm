@@ -81,13 +81,15 @@ func (a *Auditor) duPacks(packdir string, hugeReject, deltaSUM bool) error {
 			return err
 		}
 		size := fi.Size()
+		dirName := fi.Name()
+		if strings.HasPrefix(dirName, "tmp_") {
+			a.garbageCount++
+			a.garbageSize += size
+			continue
+		}
 		a.size += size
 		if deltaSUM {
 			a.delta += size
-		}
-		dirName := fi.Name()
-		if strings.HasPrefix(dirName, "tmp_") {
-			a.tmpPacks++
 		}
 		if filepath.Ext(dirName) != ".pack" {
 			continue

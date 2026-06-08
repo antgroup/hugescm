@@ -24,19 +24,20 @@ type Pack struct {
 
 // Result contains the results of repository housekeeping scan
 type Result struct {
-	Size         int64   // Total repository size in bytes
+	Size         int64   // Total repository size in bytes (excludes garbage files)
 	LooseObjects int     // Number of loose objects
 	Packs        []*Pack // List of pack files
-	TmpPacks     uint32  // Count of temporary pack files
+	GarbageCount uint32  // Count of garbage files (tmp_* in pack directory)
+	GarbageSize  int64   // Total size of garbage files in bytes
 }
 
 // IsUntidy determines if the repository needs housekeeping/maintenance
 // Returns true if any of these conditions are met:
-// - Has temporary pack files
+// - Has garbage files (tmp_* in pack directory)
 // - Has too many loose objects (> 1000)
 // - Has many pack files (> 3) and at least one is small (< 4GB)
 func (r *Result) IsUntidy() bool {
-	if r.TmpPacks > 0 {
+	if r.GarbageCount > 0 {
 		return true
 	}
 	if r.LooseObjects > MaxLooseObjects {
@@ -67,7 +68,8 @@ func HousekeepingScan(repoPath string) (*Result, error) {
 		Size:         au.size,
 		LooseObjects: int(au.counts),
 		Packs:        make([]*Pack, 0, len(au.packs)),
-		TmpPacks:     au.tmpPacks,
+		GarbageCount: au.garbageCount,
+		GarbageSize:  au.garbageSize,
 	}
 	for _, p := range au.packs {
 		result.Packs = append(result.Packs, &Pack{

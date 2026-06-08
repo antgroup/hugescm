@@ -46,15 +46,16 @@ type pack struct {
 
 // Auditor is the main analyzer for Git repository large file detection
 type Auditor struct {
-	*Option         // Embedded auditing configuration
-	repoPath string // Path to the Git repository root directory
-	size     int64  // Total size of all objects in bytes
-	delta    int64  // Size increment for quarantine mode analysis
-	hugeSum  int64  // Total size of files exceeding hugeSizeLimit
-	rawsz    int64  // Size of hash values (20 for SHA1, 32 for SHA256)
-	counts   uint32 // Total number of objects analyzed
-	packs    []pack // List of pack files to be analyzed
-	tmpPacks uint32 // Count of temporary pack files (tmp_*.pack)
+	*Option             // Embedded auditing configuration
+	repoPath     string // Path to the Git repository root directory
+	size         int64  // Total size of all objects in bytes (excludes garbage/tmp files)
+	delta        int64  // Size increment for quarantine mode analysis
+	hugeSum      int64  // Total size of files exceeding hugeSizeLimit
+	rawsz        int64  // Size of hash values (20 for SHA1, 32 for SHA256)
+	counts       uint32 // Total number of objects analyzed
+	packs        []pack // List of pack files to be analyzed
+	garbageCount uint32 // Count of garbage files (tmp_*.pack, tmp_*.idx, etc.)
+	garbageSize  int64  // Total size of garbage files in bytes
 }
 
 // NewAuditor creates a new Auditor instance for analyzing a Git repository
@@ -107,6 +108,16 @@ func (a *Auditor) Delta() int64 {
 // HugeSUM returns the total size of files exceeding hugeSizeLimit
 func (a *Auditor) HugeSUM() int64 {
 	return a.hugeSum
+}
+
+// GarbageCount returns the number of garbage files (tmp_* files in pack directory)
+func (a *Auditor) GarbageCount() uint32 {
+	return a.garbageCount
+}
+
+// GarbageSize returns the total size of garbage files in bytes
+func (a *Auditor) GarbageSize() int64 {
+	return a.garbageSize
 }
 
 // Execute performs the complete repository analysis:

@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/antgroup/hugescm/modules/diferenco"
+	"github.com/antgroup/hugescm/modules/term"
 )
 
 const (
@@ -45,7 +46,7 @@ func NewPatchRenderer() *PatchRenderer {
 		style:           DefaultStyle(),
 		lineNumbers:     true,
 		syntaxHighlight: true,
-		isDark:          hasDarkBackground(),
+		isDark:          term.HasDarkBackground(),
 	}
 }
 

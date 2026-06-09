@@ -61,14 +61,9 @@ type Style struct {
 	StatusModified lipgloss.Style
 }
 
-// hasDarkBackground detects terminal background color.
-func hasDarkBackground() bool {
-	return term.HasDarkBackground()
-}
-
 // DefaultStyle returns the default style with auto-detected theme.
 func DefaultStyle() Style {
-	if hasDarkBackground() {
+	if term.HasDarkBackground() {
 		return DefaultDarkStyle()
 	}
 	return DefaultLightStyle()

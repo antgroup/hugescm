@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-06-09
+
+### Fixed
+
+- **term**: Fix OSC 11 background color query leaking `11;rgb:ffff/ffff/ffff` on terminals that do not support the protocol (e.g., web-based IDEs, basic xterm). Replace `lipgloss/v2/compat` package-level eager query with a lazy `sync.Once` detection that only fires when `detectColorLevel() >= Level16M` or `VTE_VERSION` is set
+- **patchview**: Inline `hasDarkBackground()` wrapper into `DefaultStyle()`
+
+### Changed
+
+- **term**: Add `HasDarkBackground()` (lazy, safe) and `AdaptiveColor` type to `modules/term`, removing all imports of `charm.land/lipgloss/v2/compat`
+- **term**: Export `MakeRaw` / `Restore` wrappers so callers no longer need a direct `golang.org/x/term` dependency
+
 ## [0.27.0] - 2026-06-08
 
 ### Fixed
@@ -255,7 +267,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fragment object support for large files
 - Support for AI model development, game development, and monorepo scenarios
 
-[Unreleased]: https://code.alipay.com/zeta/zeta/compare/v0.26.0...HEAD
+[Unreleased]: https://code.alipay.com/zeta/zeta/compare/v0.28.0...HEAD
+[0.28.0]: https://code.alipay.com/zeta/zeta/compare/v0.27.0...v0.28.0
+[0.27.0]: https://code.alipay.com/zeta/zeta/compare/v0.26.0...v0.27.0
 [0.26.0]: https://code.alipay.com/zeta/zeta/compare/v0.25.0...v0.26.0
 [0.25.0]: https://code.alipay.com/zeta/zeta/compare/v0.24.0...v0.25.0
 [0.24.0]: https://code.alipay.com/zeta/zeta/compare/v0.23.0...v0.24.0

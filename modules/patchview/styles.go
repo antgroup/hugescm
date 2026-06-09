@@ -3,9 +3,10 @@ package patchview
 import (
 	"fmt"
 	"image/color"
-	"os"
 
 	"charm.land/lipgloss/v2"
+
+	"github.com/antgroup/hugescm/modules/term"
 	"github.com/charmbracelet/x/exp/charmtone"
 )
 
@@ -62,7 +63,7 @@ type Style struct {
 
 // hasDarkBackground detects terminal background color.
 func hasDarkBackground() bool {
-	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+	return term.HasDarkBackground()
 }
 
 // DefaultStyle returns the default style with auto-detected theme.

@@ -9,11 +9,11 @@ import (
 	"os"
 
 	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/compat"
+	"github.com/antgroup/hugescm/modules/term"
 )
 
 var (
-	fsNameHighlight = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+	fsNameHighlight = lipgloss.NewStyle().Foreground(term.AdaptiveColor{
 		Light: lipgloss.Color("#D70000"), Dark: lipgloss.Color("#FF6B6B"),
 	}).Bold(true)
 )

@@ -12,7 +12,6 @@ import (
 	"charm.land/bubbles/v2/table"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/compat"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/refs"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/tr"
 	"github.com/antgroup/hugescm/modules/fnmatch"
@@ -25,8 +24,8 @@ func newModel(references *refs.References) model {
 	p := paginator.New()
 	p.Type = paginator.Dots
 	p.PerPage = 20
-	p.ActiveDot = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("235"), Dark: lipgloss.Color("252")}).Render("•")
-	p.InactiveDot = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("250"), Dark: lipgloss.Color("238")}).Render("•")
+	p.ActiveDot = lipgloss.NewStyle().Foreground(term.AdaptiveColor{Light: lipgloss.Color("235"), Dark: lipgloss.Color("252")}).Render("•")
+	p.InactiveDot = lipgloss.NewStyle().Foreground(term.AdaptiveColor{Light: lipgloss.Color("250"), Dark: lipgloss.Color("238")}).Render("•")
 	p.SetTotalPages(len(references.Items))
 
 	return model{

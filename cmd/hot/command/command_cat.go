@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"charm.land/glamour/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -174,7 +173,7 @@ func (c *Cat) markdownOut(w io.Writer, input io.Reader) error {
 	}
 	// Detect background color to pick appropriate style
 	style := "light"
-	if lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
+	if term.HasDarkBackground() {
 		style = "dark"
 	}
 	r, err := glamour.NewTermRenderer(
@@ -214,7 +213,7 @@ func (c *Cat) syntaxHighlightOut(w io.Writer, input io.Reader, termLevel term.Le
 
 	// Detect background color to pick appropriate style
 	styleName := "github"
-	if lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
+	if term.HasDarkBackground() {
 		styleName = "dracula"
 	}
 

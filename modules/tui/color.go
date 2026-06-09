@@ -2,9 +2,7 @@ package tui
 
 import (
 	"maps"
-	"os"
 
-	"charm.land/lipgloss/v2"
 	"github.com/antgroup/hugescm/modules/diferenco"
 	"github.com/antgroup/hugescm/modules/diferenco/color"
 	"github.com/antgroup/hugescm/modules/term"
@@ -135,7 +133,7 @@ func EncoderOptions(level term.Level) []diferenco.EncoderOption {
 	case term.Level16M:
 		// Use truecolor with current theme based on background
 		theme := currentTheme.Dark
-		if !lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
+		if !term.HasDarkBackground() {
 			theme = currentTheme.Light
 		}
 		maps.Copy(cc, theme)

@@ -148,3 +148,16 @@ func IsNativeTerminal(fd uintptr) bool {
 func GetSize(fd int) (width, height int, err error) {
 	return term.GetSize(fd)
 }
+
+// MakeRaw puts the terminal connected to the given file descriptor into raw
+// mode and returns the previous state of the terminal so that it can be
+// restored.
+func MakeRaw(fd int) (*term.State, error) {
+	return term.MakeRaw(fd)
+}
+
+// Restore restores the terminal connected to the given file descriptor to a
+// previous state.
+func Restore(fd int, oldState *term.State) error {
+	return term.Restore(fd, oldState)
+}

@@ -11,8 +11,7 @@ import (
 	"unicode/utf8"
 
 	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/compat"
-	"golang.org/x/term"
+	"github.com/antgroup/hugescm/modules/term"
 )
 
 // ErrInterrupted is returned when user presses Ctrl+C or Ctrl+D.
@@ -22,8 +21,8 @@ const maxAttempts = 3
 
 // Color definitions (package-level to avoid recreation)
 var (
-	blue = compat.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
-	red  = compat.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
+	blue = term.AdaptiveColor{Light: lipgloss.Color("#ace0f9"), Dark: lipgloss.Color("#ace0f9")}
+	red  = term.AdaptiveColor{Light: lipgloss.Color("#FF4672"), Dark: lipgloss.Color("#ED567A")}
 )
 
 var (

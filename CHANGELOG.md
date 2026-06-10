@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-06-10
+
+### Fixed
+
+- **ignore**: Fix `readIgnoreFile` regression (introduced in `70fc094d` "ansi: code tidy") that silently discarded all parsed patterns from `.zetaignore` and `.gitignore` — the `} else if` → `} if` refactor caused `return nil, nil` when the file was successfully opened (`!os.IsNotExist(nil)` is true), making all ignore rules ineffective
+
+### Changed
+
+- **ignore**: Exclude `.git` directory by default in filesystem traversal (`merkletrie/filesystem`) and `ReadPatterns` recursion, consistent with `.zeta` directory handling
+
 ## [0.28.0] - 2026-06-09
 
 ### Fixed
@@ -267,7 +277,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fragment object support for large files
 - Support for AI model development, game development, and monorepo scenarios
 
-[Unreleased]: https://code.alipay.com/zeta/zeta/compare/v0.28.0...HEAD
+[Unreleased]: https://code.alipay.com/zeta/zeta/compare/v0.29.0...HEAD
+[0.29.0]: https://code.alipay.com/zeta/zeta/compare/v0.28.0...v0.29.0
 [0.28.0]: https://code.alipay.com/zeta/zeta/compare/v0.27.0...v0.28.0
 [0.27.0]: https://code.alipay.com/zeta/zeta/compare/v0.26.0...v0.27.0
 [0.26.0]: https://code.alipay.com/zeta/zeta/compare/v0.25.0...v0.26.0

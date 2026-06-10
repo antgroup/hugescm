@@ -15,6 +15,7 @@ import (
 
 var ignore = map[string]bool{
 	".zeta": true,
+	".git":  true,
 }
 
 // The Node represents a file or a directory in a billy.Filesystem. It

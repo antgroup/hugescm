@@ -13,6 +13,7 @@ import (
 const (
 	commentPrefix   = "#"
 	zetaDir         = ".zeta"
+	gitDir          = ".git"
 	gitignoreFile   = ".gitignore"
 	zetaignoreFile  = ".zetaignore"
 	infoExcludeFile = zetaDir + "/info/exclude"
@@ -22,21 +23,22 @@ const (
 func readIgnoreFile(fs vfs.VFS, path []string, ignoreFile string) (ps []Pattern, err error) {
 	ignoreFile = strengthen.ExpandPath(ignoreFile)
 	f, err := os.Open(fs.Join(append(path, ignoreFile)...))
-	if err == nil {
-		defer f.Close() // nolint
-
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			s := scanner.Text()
-			if !strings.HasPrefix(s, commentPrefix) && len(strings.TrimSpace(s)) > 0 {
-				ps = append(ps, ParsePattern(s, path))
-			}
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
 		}
-		if err := scanner.Err(); err != nil {
-			return nil, err
+		return nil, err
+	}
+	defer f.Close() // nolint
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		s := scanner.Text()
+		if !strings.HasPrefix(s, commentPrefix) && len(strings.TrimSpace(s)) > 0 {
+			ps = append(ps, ParsePattern(s, path))
 		}
 	}
-	if !os.IsNotExist(err) {
+	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 
@@ -60,7 +62,7 @@ func ReadPatterns(fs vfs.VFS, path []string) (ps []Pattern, err error) {
 	}
 
 	for _, d := range dirs {
-		if d.IsDir() && d.Name() != zetaDir {
+		if d.IsDir() && d.Name() != zetaDir && d.Name() != gitDir {
 			if NewMatcher(ps).Match(append(path, d.Name()), true) {
 				continue
 			}

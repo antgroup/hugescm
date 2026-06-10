@@ -30,6 +30,8 @@
 | [stash.md](stash.md) | 暂存功能 - stash 命令详解，临时保存工作进度 |
 | [sparse-checkout.md](sparse-checkout.md) | 稀疏检出 - 按需检出指定目录 |
 | [pull-strategy.md](pull-strategy.md) | 拉取策略 - merge、rebase、fast-forward 策略详解 |
+| [merge.md](merge.md) | 三方合并 - merge 设计与实现、冲突检测、字符集处理 |
+| [merge-en.md](merge-en.md) | Three-Way Merge - design doc in English (for community sharing) |
 
 ### 高级特性
 

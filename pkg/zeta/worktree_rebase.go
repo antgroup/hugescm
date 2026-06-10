@@ -176,7 +176,7 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 			DetectRenames: true,
 			Textconv:      textconv,
 			MergeDriver:   mergeDriver,
-			TextGetter:    w.readMissingText,
+			TextResolver:  w.readMissingText,
 		})
 		if err != nil {
 			die_error("merge-tree: %v", err)
@@ -351,7 +351,7 @@ func (w *Worktree) rebaseWithUpstream(ctx context.Context, our, upstream, onto p
 			DetectRenames: true,
 			Textconv:      textconv,
 			MergeDriver:   mergeDriver,
-			TextGetter:    w.readMissingText,
+			TextResolver:  w.readMissingText,
 		})
 		if err != nil {
 			die_error("merge-tree: %v", err)
@@ -560,7 +560,7 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 			DetectRenames: true,
 			Textconv:      false,
 			MergeDriver:   mergeDriver,
-			TextGetter:    w.readMissingText,
+			TextResolver:  w.readMissingText,
 		})
 		if err != nil {
 			die_error("merge-tree: %v", err)

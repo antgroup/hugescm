@@ -336,7 +336,7 @@ func (w *Worktree) cherryPickStash(ctx context.Context, stashIndex, stashWorktre
 		DetectRenames: true,
 		Textconv:      false,
 		MergeDriver:   mergeDriver,
-		TextGetter:    w.readMissingText,
+		TextResolver:  w.readMissingText,
 	})
 	if err != nil {
 		return nil, err
@@ -359,7 +359,7 @@ func (w *Worktree) cherryPickStash(ctx context.Context, stashIndex, stashWorktre
 		DetectRenames: true,
 		Textconv:      false,
 		MergeDriver:   mergeDriver,
-		TextGetter:    w.readMissingText,
+		TextResolver:  w.readMissingText,
 	})
 	if err != nil {
 		return nil, err

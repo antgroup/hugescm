@@ -131,7 +131,7 @@ func (w *Worktree) CherryPick(ctx context.Context, opts *CherryPickOptions) erro
 		DetectRenames: true,
 		Textconv:      false,
 		MergeDriver:   w.resolveMergeDriver(),
-		TextGetter:    w.readMissingText,
+		TextResolver:  w.readMissingText,
 	})
 	if err != nil {
 		die_error("merge-tree: %v", err)
@@ -334,7 +334,7 @@ func (w *Worktree) Revert(ctx context.Context, opts *RevertOptions) error {
 		DetectRenames: true,
 		Textconv:      false,
 		MergeDriver:   w.resolveMergeDriver(),
-		TextGetter:    w.readMissingText,
+		TextResolver:  w.readMissingText,
 	})
 	if err != nil {
 		die_error("merge-tree: %v", err)

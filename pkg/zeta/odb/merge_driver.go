@@ -14,14 +14,14 @@ import (
 )
 
 type MergeDriver func(ctx context.Context, o, a, b string, labelO, labelA, labelB string) (string, bool, error)
-type TextGetter func(ctx context.Context, oid plumbing.Hash, textconv bool) (string, string, error)
+type TextResolver func(ctx context.Context, oid plumbing.Hash, textconv bool) (string, string, error)
 
 type mergeOptions struct {
 	O, A, B                plumbing.Hash
 	LabelO, LabelA, LabelB string
 	Textconv               bool
 	M                      MergeDriver
-	G                      TextGetter
+	G                      TextResolver
 }
 
 type mergeTextResult struct {

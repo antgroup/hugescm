@@ -144,7 +144,7 @@ func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *objec
 		DetectRenames: true,
 		Textconv:      textconv,
 		MergeDriver:   mergeDriver,
-		TextGetter:    r.readMissingText,
+		TextResolver:  r.readMissingText,
 	})
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (r *Repository) mergeTree(ctx context.Context, into, from, base *object.Com
 		DetectRenames: true,
 		Textconv:      textconv,
 		MergeDriver:   mergeDriver,
-		TextGetter:    r.readMissingText,
+		TextResolver:  r.readMissingText,
 	})
 	if err != nil {
 		die_error("merge-tree: %v", err)

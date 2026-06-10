@@ -284,6 +284,7 @@ func (d *differences) nameConflicts() map[string]string {
 		for j := i + 1; j < len(names); j++ {
 			if strings.HasPrefix(names[j], prefix) {
 				conflicts[names[i]] = names[j]
+				break
 			}
 		}
 	}
@@ -327,22 +328,15 @@ func (d *ODB) mergeDifferences(ctx context.Context, o, a, b *object.Tree) (*diff
 	return ds, nil
 }
 
-const (
-	MERGE_VARIANT_NORMAL = 0
-	MERGE_VARIANT_OURS   = 1
-	MERGE_VARIANT_THEIRS = 2
-)
-
 type MergeOptions struct {
 	Branch1       string
 	Branch2       string
 	DetectRenames bool
 	RenameLimit   int
 	RenameScore   int
-	Variant       int
 	Textconv      bool
 	MergeDriver   MergeDriver
-	TextGetter    TextGetter
+	TextResolver  TextResolver
 }
 
 type MergeResult struct {
@@ -379,7 +373,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 			LabelB:   ch.Path,
 			Textconv: opts.Textconv,
 			M:        opts.MergeDriver,
-			G:        opts.TextGetter,
+			G:        opts.TextResolver,
 		})
 		if errors.Is(err, diferenco.ErrNonText) {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
@@ -427,7 +421,7 @@ func (d *ODB) mergeEntry(ctx context.Context, ch *ChangeEntry, opts *MergeOption
 				LabelB:   ch.Path,
 				Textconv: opts.Textconv,
 				M:        opts.MergeDriver,
-				G:        opts.TextGetter,
+				G:        opts.TextResolver,
 			})
 		if errors.Is(err, diferenco.ErrNonText) {
 			result.Messages = append(result.Messages, tr.Sprintf("warning: Cannot merge binary files: %s (%s vs. %s)", ch.Path, opts.Branch1, opts.Branch2))
@@ -502,8 +496,8 @@ func (d *ODB) MergeTree(ctx context.Context, o, a, b *object.Tree, opts *MergeOp
 	if opts.MergeDriver == nil {
 		opts.MergeDriver = diferenco.DefaultMerge // fallback
 	}
-	if opts.TextGetter == nil {
-		opts.TextGetter = d.unifiedText
+	if opts.TextResolver == nil {
+		opts.TextResolver = d.unifiedText
 	}
 	diffs, err := d.mergeDifferences(ctx, o, a, b)
 	if err != nil {

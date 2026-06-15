@@ -6,9 +6,9 @@ package odb
 import (
 	"testing"
 
-	"code.alipay.com/zeta/zeta/modules/plumbing"
-	"code.alipay.com/zeta/zeta/modules/plumbing/filemode"
-	"code.alipay.com/zeta/zeta/modules/zeta/object"
+	"github.com/antgroup/hugescm/modules/plumbing"
+	"github.com/antgroup/hugescm/modules/plumbing/filemode"
+	"github.com/antgroup/hugescm/modules/zeta/object"
 )
 
 // TestNameConflictsFirstMatch verifies that nameConflicts() records the first

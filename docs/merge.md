@@ -416,8 +416,8 @@ func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *objec
 ```go
 import (
     "context"
-    "code.alipay.com/zeta/zeta/modules/diferenco"
-    "code.alipay.com/zeta/zeta/pkg/zeta/odb"
+    "github.com/antgroup/hugescm/modules/diferenco"
+    "github.com/antgroup/hugescm/pkg/zeta/odb"
 )
 
 // 文本级合并（独立使用，不需要存储）

@@ -423,8 +423,8 @@ This matches Git's "recursive" merge strategy behavior.
 ```go
 import (
     "context"
-    "code.alipay.com/zeta/zeta/modules/diferenco"
-    "code.alipay.com/zeta/zeta/pkg/zeta/odb"
+    "github.com/antgroup/hugescm/modules/diferenco"
+    "github.com/antgroup/hugescm/pkg/zeta/odb"
 )
 
 // Text-level merge (standalone, no storage needed)

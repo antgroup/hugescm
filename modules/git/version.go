@@ -29,15 +29,26 @@ func NewVersion(major, minor, patch uint32) Version {
 }
 
 // ParseVersionOutput parses output returned by git-version(1). It is expected to be in the format
-// "git version 2.39.1".
+// "git version 2.39.1" or "git version 2.50.1 (Apple Git-155)".
 func ParseVersionOutput(versionOutput []byte) (Version, error) {
 	trimmedVersionOutput := string(bytes.Trim(versionOutput, " \n"))
-	versionString := strings.SplitN(trimmedVersionOutput, " ", 3)
-	if len(versionString) != 3 {
+
+	// "git version 2.50.1 (Apple Git-155)" -> "git", "version 2.50.1 (Apple Git-155)"
+	_, after, ok := strings.Cut(trimmedVersionOutput, " ")
+	if !ok {
 		return Version{}, fmt.Errorf("invalid version format: %q", string(versionOutput))
 	}
 
-	version, err := ParseVersion(versionString[2])
+	// "version 2.50.1 (Apple Git-155)" -> "version", "2.50.1 (Apple Git-155)"
+	_, versionAndRest, ok := strings.Cut(after, " ")
+	if !ok {
+		return Version{}, fmt.Errorf("invalid version format: %q", string(versionOutput))
+	}
+
+	// "2.50.1 (Apple Git-155)" -> "2.50.1", "(Apple Git-155)"
+	versionStr, _, _ := strings.Cut(versionAndRest, " ")
+
+	version, err := ParseVersion(versionStr)
 	if err != nil {
 		return Version{}, fmt.Errorf("cannot parse git version: %w", err)
 	}

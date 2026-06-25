@@ -205,8 +205,7 @@ func (s *Server) TagPush(e *Session, tagName string, oldRev, newRev plumbing.Has
 	}
 	defer rr.Close() // nolint
 	if err = rr.DoPush(e.Context(), command, e, e); err != nil {
-		var es *zeta.ErrStatusCode
-		if errors.As(err, &es) {
+		if es, ok := errors.AsType[*zeta.ErrStatusCode](err); ok {
 			return e.ExitFormat(es.Code, "reason: %v", err)
 		}
 		return e.ExitError(err)

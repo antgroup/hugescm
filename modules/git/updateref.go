@@ -219,7 +219,7 @@ func (u *RefUpdater) closeWithError(closeErr error) error {
 	if err := u.cmd.Wait(); err != nil {
 		stderr := u.stderr.String()
 		if closeErr != nil {
-			u.closeErr = fmt.Errorf("%w, stderr: %s, close: %v", err, stderr, closeErr)
+			u.closeErr = fmt.Errorf("%w, stderr: %s, close: %w", err, stderr, closeErr)
 		} else {
 			u.closeErr = fmt.Errorf("%w, stderr: %s", err, stderr)
 		}

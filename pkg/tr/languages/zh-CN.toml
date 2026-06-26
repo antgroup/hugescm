@@ -271,6 +271,8 @@
 "Use <n> digits to display object names" = "用 <n> 位数字显示对象名"
 "ID of a tree-ish" = "ID 或者 tree 对象哈希"
 "Given paths, show as match patterns; else, use root as sole argument" = "有路径时，显示为匹配模式；否则，使用根目录作为唯一路径参数"
+"Sort entries (e.g., size)" = "排序条目（例如：size 按大小排序）"
+"Show total size only" = "仅显示总大小"
 # diff
 "Show changes between commits, commit and working tree, etc" = "显示提交之间的更改、提交和工作区等"
 "Compares two given paths on the filesystem" = "比较文件系统上给定的两个路径"

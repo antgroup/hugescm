@@ -34,6 +34,8 @@ type LsTreeOptions struct {
 	Revision  string
 	Paths     []string
 	JSON      bool
+	Sort      string
+	Summarize bool
 }
 
 func sizePadding(e *object.TreeEntry, padding int) string {
@@ -294,6 +296,27 @@ func (r *Repository) LsTreeRecurse(ctx context.Context, opts *LsTreeOptions, t *
 	}
 	if err := r.lsTreeRecurse0(ctx, opts, t, m, "", g); err != nil {
 		return err
+	}
+	if opts.Sort == "size" {
+		sort.Slice(g.entries, func(i, j int) bool {
+			return g.entries[i].Size > g.entries[j].Size
+		})
+	}
+	if opts.Summarize {
+		var totalSize int64
+		var fileCount int
+		for _, e := range g.entries {
+			totalSize += e.Size
+			fileCount++
+		}
+		if opts.JSON {
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{
+				"total_size": totalSize,
+				"file_count": fileCount,
+			})
+		}
+		_, _ = fmt.Fprintf(os.Stdout, "%s\ttotal\t%d files\n", strengthen.FormatSize(totalSize), fileCount)
+		return nil
 	}
 	if opts.NameOnly {
 		if opts.JSON {

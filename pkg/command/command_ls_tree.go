@@ -20,6 +20,8 @@ type LsTree struct {
 	NameOnly  bool     `name:"name-only" alias:"name-status" help:"List only filenames"`
 	Abbrev    int      `name:"abbrev" help:"Use <n> digits to display object names" placeholder:"<n>"`
 	JSON      bool     `name:"json" short:"j" help:"Data will be returned in JSON format"`
+	Sort      string   `name:"sort" short:"S" help:"Sort entries (e.g., size)" placeholder:"<key>"`
+	Summarize bool     `name:"summarize" short:"s" help:"Show total size only"`
 	Revision  string   `arg:"" name:"tree-ish" help:"ID of a tree-ish"`
 	Paths     []string `arg:"" name:"path" optional:"" help:"Given paths, show as match patterns; else, use root as sole argument"`
 }
@@ -44,16 +46,18 @@ func (c *LsTree) Run(ctx context.Context, g *Globals) error {
 	defer r.Close() // nolint
 
 	if err := r.LsTree(ctx, &zeta.LsTreeOptions{
-		OnlyTrees: c.OnlyTrees,
-		Recurse:   c.Recurse,
-		Tree:      c.Tree,
-		NewLine:   c.NewLine(),
-		Long:      c.Long,
-		NameOnly:  c.NameOnly,
-		Abbrev:    c.Abbrev,
-		Revision:  c.Revision,
-		Paths:     slashPaths(c.Paths),
-		JSON:      c.JSON,
+		OnlyTrees:  c.OnlyTrees,
+		Recurse:    c.Recurse,
+		Tree:       c.Tree,
+		NewLine:    c.NewLine(),
+		Long:       c.Long,
+		NameOnly:   c.NameOnly,
+		Abbrev:     c.Abbrev,
+		Revision:   c.Revision,
+		Paths:      slashPaths(c.Paths),
+		JSON:       c.JSON,
+		Sort:       c.Sort,
+		Summarize:  c.Summarize,
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "zeta ls-tree error: %v\n", err)
 		return err

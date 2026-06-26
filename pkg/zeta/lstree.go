@@ -18,6 +18,7 @@ import (
 	"github.com/antgroup/hugescm/modules/merkletrie/noder"
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/plumbing/filemode"
+	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/modules/trace"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/zeta/odb"

@@ -2,6 +2,7 @@ package csv
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -138,7 +139,8 @@ expected: %v
 }
 
 func ourLines(data string, comma, comment byte) []line {
-	p := NewParser(comma, comment, scan.Bytes(data))
+	s := scan.Bytes(data)
+	p := NewParser(comma, comment, &s)
 	lines := []line{}
 	for {
 		fields, indexes, hasMore := p.CountFields(true)
@@ -172,7 +174,7 @@ func stdlibLines(data string, comma, comment byte) ([]line, [][]string, error) {
 	records := [][]string{}
 	for {
 		l, err := r.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -185,7 +187,7 @@ func stdlibLines(data string, comma, comment byte) ([]line, [][]string, error) {
 			// Adjust -1 so tests match.
 			indexes = append(indexes, c-1)
 		}
-		lines = append(lines, line{len(l), indexes, err != io.EOF})
+		lines = append(lines, line{len(l), indexes, !errors.Is(err, io.EOF)})
 		records = append(records, l)
 	}
 
@@ -212,7 +214,7 @@ func BenchmarkCSVStdlibDecoder(b *testing.B) {
 		d.LazyQuotes = true
 		for {
 			_, err := d.Read()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			} else if err != nil {
 				b.Fatalf("error parsing CSV: %s", err)
@@ -224,9 +226,9 @@ func BenchmarkCSVOurParser(b *testing.B) {
 	b.ReportAllocs()
 	// Reuse a single reader to prevent allocs inside the benchmark function.
 	r := scan.Bytes(sample)
-	p := NewParser(',', '#', r)
+	p := NewParser(',', '#', &r)
 	for b.Loop() {
-		p.s = r
+		p.s = &r
 		for {
 			_, _, hasMore := p.CountFields(false)
 			if !hasMore {

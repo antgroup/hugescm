@@ -2,8 +2,9 @@ package scan
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -252,7 +253,6 @@ func TestLine(t *testing.T) {
 			if string(line) != s.Text() {
 				t.Errorf("Bytes.Line not like bufio.Scanner")
 			}
-			_ = s.Err()
 		})
 	}
 }
@@ -512,7 +512,7 @@ func FuzzMatch(f *testing.F) {
 func BenchmarkMatch(b *testing.B) {
 	r := rand.New(rand.NewSource(0))
 	randData := make([]byte, 1024)
-	if _, err := io.ReadFull(r, randData); err != io.ErrUnexpectedEOF && err != nil {
+	if _, err := io.ReadFull(r, randData); !errors.Is(err, io.ErrUnexpectedEOF) && err != nil {
 		b.Fatal(err)
 	}
 	b.ReportAllocs()
@@ -522,7 +522,7 @@ func BenchmarkMatch(b *testing.B) {
 		IgnoreCase,
 		FullWord,
 	} {
-		b.Run(strconv.Itoa(int(f)), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d", f), func(b *testing.B) {
 			for b.Loop() {
 				Bytes(randData).Match(randData, f)
 			}

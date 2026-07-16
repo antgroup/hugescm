@@ -104,9 +104,14 @@ func FromPlain(content []byte) string {
 	if ascii(origContent) {
 		return "utf-8"
 	}
-	// Fallback use chardet
-	if r, err := defaultDetector.DetectBest(origContent); err == nil {
-		return r.Charset
+	// Fallback use chardet for inputs long enough to have detectable features.
+	// Short inputs (e.g. < 64 bytes) lack statistical features for chardet,
+	// so we skip it and fall through to latin().
+	const minChardetLen = 64
+	if len(origContent) >= minChardetLen {
+		if r, err := defaultDetector.DetectBest(origContent); err == nil {
+			return r.Charset
+		}
 	}
 
 	return latin(origContent)

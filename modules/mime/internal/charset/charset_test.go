@@ -156,13 +156,14 @@ func TestFromPlain(t *testing.T) {
 		raw     []byte
 		charset string
 	}{
-		{[]byte{0xe6, 0xf8, 0xe5, 0x85, 0x85}, "windows-1252"},
-		{[]byte{0xe6, 0xf8, 0xe5}, "iso-8859-1"},
+		{[]byte{0xe6, 0xf8, 0xe5, 0x85, 0x85}, "windows-1252"}, // chardet: input must be long enough
+		{[]byte{0xe6, 0xf8, 0xe5}, "iso-8859-1"},               // chardet: short input lacks features
 		{[]byte("æøå"), "utf-8"},
 		{[]byte{}, ""},
 	}
 	for _, tc := range tcases {
-		if cs := FromPlain(tc.raw); cs != tc.charset {
+		cs := FromPlain(tc.raw)
+		if cs != tc.charset {
 			t.Errorf("in: %v; expected: %s; got: %s", tc.raw, tc.charset, cs)
 		}
 	}

@@ -68,8 +68,8 @@ func (c *Diff) Run() error {
 }
 
 type App struct {
-	Checkout Checkout `cmd:"" name:"co" help:"checkout"`
-	Diff     Diff     `cmd:"" name:"diff" help:"diff"`
+	Checkout Checkout `cmd:"co" help:"checkout"`
+	Diff     Diff     `cmd:"diff" help:"diff"`
 }
 
 func TestCheckout(t *testing.T) {

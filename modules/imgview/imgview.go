@@ -15,12 +15,19 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 	"io"
 	"slices"
 	"strconv"
 
 	"github.com/antgroup/hugescm/modules/mime"
 	"github.com/antgroup/hugescm/modules/term"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
 )
 
 // MaxImageBytes caps the size of a single image payload this package will
@@ -38,6 +45,12 @@ const MaxImageBytes = 5 << 20
 // willing to hand to a terminal as-is. SVG is intentionally excluded: it is
 // text-based XML, neither iTerm2 nor Kitty render it natively, and our cat
 // pipeline already routes it through the text rendering path.
+//
+// Both supported protocols can render every format in this list. The iTerm2
+// protocol hands the raw payload to the host terminal, which performs
+// decoding itself. The Kitty graphics protocol natively accepts only PNG
+// (and raw RGB/RGBA); every other listed format is transcoded to PNG before
+// transmission (see [transcodeToPNG]).
 var renderableMIMETypes = []string{
 	"image/png",
 	"image/jpeg",
@@ -45,15 +58,6 @@ var renderableMIMETypes = []string{
 	"image/webp",
 	"image/bmp",
 	"image/tiff",
-}
-
-// kittyNativeMIMETypes is the subset of renderableMIMETypes that the Kitty
-// graphics protocol can decode without server-side transcoding. The protocol
-// only natively supports raw RGB/RGBA and PNG (f=100); other formats produce
-// a black frame or no output at all, so we refuse them on Kitty and let the
-// caller fall back to the hex dump.
-var kittyNativeMIMETypes = []string{
-	"image/png",
 }
 
 // ErrUnsupported is returned when the requested protocol cannot render an
@@ -75,36 +79,40 @@ func IsRenderable(m *mime.MIME) bool {
 }
 
 // CanRender reports whether the given protocol can render the given MIME
-// type without server-side transcoding.
+// type. For iTerm2 the host terminal decodes the raw payload itself; for
+// Kitty the package transcodes any non-PNG format to PNG before
+// transmission (see [renderKitty]), so every entry in renderableMIMETypes
+// is supported by both protocols.
 func CanRender(proto term.ImageProtocol, m *mime.MIME) bool {
 	if m == nil || !proto.Supported() {
 		return false
 	}
-	switch proto {
-	case term.ImageKitty:
-		return slices.ContainsFunc(kittyNativeMIMETypes, m.Is)
-	case term.ImageITerm2:
-		return slices.ContainsFunc(renderableMIMETypes, m.Is)
-	default:
-		return false
-	}
+	return slices.ContainsFunc(renderableMIMETypes, m.Is)
 }
 
 // Render writes an inline-image escape sequence representing data to w using
 // the given protocol. The whole payload is buffered in memory because both
-// supported protocols require a single base64 blob.
+// supported protocols require a single base64 blob (Kitty receives the
+// transcoded PNG, not the original bytes).
 //
-// name is an optional filename hint (used by the iTerm2 protocol; ignored by
-// Kitty). Passing the empty string is fine.
-func Render(w io.Writer, proto term.ImageProtocol, name string, data []byte) error {
+// m, when non-nil, drives two protocol-specific behaviours: iTerm2 derives
+// a filename hint from m.Extension(), and Kitty uses m to decide whether
+// the payload can be sent verbatim (PNG) or must first be transcoded to PNG
+// (see [renderKitty]). A nil m is permitted: iTerm2 omits the filename
+// hint, and Kitty always transcodes via [image.Decode].
+func Render(w io.Writer, proto term.ImageProtocol, m *mime.MIME, data []byte) error {
 	if len(data) > MaxImageBytes {
 		return ErrTooLarge
 	}
 	switch proto {
 	case term.ImageITerm2:
+		name := ""
+		if m != nil {
+			name = "blob" + m.Extension()
+		}
 		return renderITerm2(w, name, data)
 	case term.ImageKitty:
-		return renderKitty(w, data)
+		return renderKitty(w, m, data)
 	default:
 		return ErrUnsupported
 	}
@@ -132,11 +140,7 @@ func Stream(w io.Writer, proto term.ImageProtocol, m *mime.MIME, r io.Reader, si
 	if int64(len(data)) > MaxImageBytes {
 		return ErrTooLarge
 	}
-	name := ""
-	if m != nil {
-		name = "blob" + m.Extension()
-	}
-	return Render(w, proto, name, data)
+	return Render(w, proto, m, data)
 }
 
 // renderITerm2 emits the OSC 1337 inline image sequence understood by
@@ -162,17 +166,59 @@ func renderITerm2(w io.Writer, name string, data []byte) error {
 // graphics chunk; the protocol mandates chunks of at most 4096 bytes.
 const kittyChunkSize = 4096
 
+// transcodeToPNG decodes raw raster image data of any registered format
+// (PNG, JPEG, GIF, WebP, BMP, TIFF — see the blank imports above) and
+// re-encodes it as PNG.
+//
+// This is needed because the Kitty graphics protocol accepts only PNG
+// (f=100) and raw RGB/RGBA natively; non-PNG payload formats such as JPEG
+// or WebP produce a black frame or no output at all if handed over
+// directly. Re-encoding to PNG keeps the payload compressed while remaining
+// universally decodable by any Kitty-compatible terminal.
+//
+// image.Decode sniffs the format automatically from the magic bytes, so the
+// caller is not required to supply a MIME hint.
+func transcodeToPNG(data []byte) ([]byte, error) {
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("imgview: decode for kitty transcode: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, fmt.Errorf("imgview: png encode for kitty: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
 // renderKitty emits the Kitty graphics protocol "transmit + display" command
 // using base64-encoded PNG data, chunked at 4 KiB as required by the spec.
-// CanRender is the gatekeeper that ensures we only reach here with PNG data.
+//
+// When the input is already PNG, the bytes are sent verbatim. For every
+// other format in renderableMIMETypes (JPEG, GIF, WebP, BMP, TIFF) the data
+// is first transcoded to PNG via [transcodeToPNG]; the transcoded PNG must
+// fit within MaxImageBytes or rendering is refused with ErrTooLarge so the
+// caller can fall back to a hex dump.
 //
 //	ESC _ G a=T,f=100,m=<0|1> ; <base64-chunk> ESC \   (first chunk)
 //	ESC _ G m=<0|1>           ; <base64-chunk> ESC \   (subsequent chunks)
 //
 // Per the protocol, only the first control block carries the action/format
 // keys; subsequent blocks carry only the m (more) flag.
-func renderKitty(w io.Writer, data []byte) error {
-	encoded := base64.StdEncoding.EncodeToString(data)
+func renderKitty(w io.Writer, m *mime.MIME, data []byte) error {
+	var pngData []byte
+	if m != nil && m.Is("image/png") {
+		pngData = data
+	} else {
+		var err error
+		pngData, err = transcodeToPNG(data)
+		if err != nil {
+			return err
+		}
+		if len(pngData) > MaxImageBytes {
+			return ErrTooLarge
+		}
+	}
+	encoded := base64.StdEncoding.EncodeToString(pngData)
 	first := true
 	for len(encoded) > 0 {
 		chunk := encoded

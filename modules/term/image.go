@@ -18,10 +18,11 @@ const (
 	// protocol; callers should fall back to a textual representation
 	// (e.g. a hex dump).
 	ImageNone ImageProtocol = iota
-	// ImageITerm2 is the iTerm2 / WezTerm OSC 1337 inline image protocol.
+	// ImageITerm2 is the iTerm2 OSC 1337 inline image protocol, also
+	// implemented by WezTerm, mintty, Ghostty and Otty.
 	ImageITerm2
 	// ImageKitty is the Kitty graphics protocol, also implemented by WezTerm,
-	// Ghostty and recent Konsole builds.
+	// Ghostty, recent Konsole builds, Windows Terminal and VS Code.
 	ImageKitty
 )
 
@@ -59,16 +60,35 @@ const minKonsoleKittyVersion = 220400 // Konsole 22.04
 //
 // Detection order:
 //  1. Kitty graphics: TERM=xterm-kitty, KITTY_WINDOW_ID set,
-//     KONSOLE_VERSION >= 22.04, or TERM_PROGRAM in {ghostty, WezTerm}.
-//  2. iTerm2 OSC 1337: TERM_PROGRAM=iTerm.app, or LC_TERMINAL=iTerm2.
+//     KONSOLE_VERSION >= 22.04, TERM_PROGRAM in {ghostty, WezTerm, kitty,
+//     vscode}, or WT_SESSION (Windows Terminal).
+//  2. iTerm2 OSC 1337: TERM_PROGRAM in {iTerm.app, mintty, otty}, or
+//     LC_TERMINAL=iTerm2.
 //
 // WezTerm also speaks iTerm2's protocol and Sixel, but Kitty graphics is
 // strictly richer (24-bit colour, no quantisation, chunked transfers), so
 // it wins the tie.
 //
+// VS Code's integrated terminal implements both the iTerm2 OSC 1337
+// inline-image protocol and the Kitty graphics protocol (since VS Code
+// 1.110 — microsoft/vscode#286141, xtermjs/xterm.js#5592). Kitty graphics
+// is strictly richer, so VS Code is mapped there unconditionally —
+// matching the precedent set by WezTerm — betting that the bulk of VS
+// Code users will be on a Stable release >= 1.110 by the time zeta
+// ships broadly. Image rendering in VS Code is also opt-in: callers must
+// set terminal.integrated.enableImages=true in settings.json or neither
+// protocol will produce visible output.
+//
+// Caveat: current Stable builds of VS Code can show blurry text cell
+// antialiasing next to Kitty-rendered images, and pre-1.110 builds will
+// silently drop Kitty APC codes (treating them as ASCII passthrough).
+// Both are transient issues; we accept the trade-off betting they will
+// be resolved before zeta ships broadly. Users who need to force iTerm2
+// can do so by overriding TERM_PROGRAM before invoking zeta.
+//
 // Anything else returns ImageNone. Terminals with unreliable support
-// (Warp, VSCode) are intentionally excluded from the auto whitelist; users
-// can force rendering via --image=on.
+// (Warp) are intentionally excluded from the auto whitelist; users can
+// force rendering via --image=on.
 func DetectImageProtocol() ImageProtocol {
 	if os.Getenv("TERM") == "xterm-kitty" {
 		return ImageKitty
@@ -82,13 +102,18 @@ func DetectImageProtocol() ImageProtocol {
 		}
 	}
 	switch os.Getenv("TERM_PROGRAM") {
-	case "ghostty", "WezTerm":
+	case "ghostty", "WezTerm", "kitty", "vscode":
 		return ImageKitty
-	case "iTerm.app":
+	case "iTerm.app", "mintty", "otty":
 		return ImageITerm2
 	}
 	if strings.EqualFold(os.Getenv("LC_TERMINAL"), "iTerm2") {
 		return ImageITerm2
+	}
+	// Windows Terminal supports the Kitty graphics protocol.
+	// It is detected via the WT_SESSION environment variable.
+	if os.Getenv("WT_SESSION") != "" {
+		return ImageKitty
 	}
 	return ImageNone
 }

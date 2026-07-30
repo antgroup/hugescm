@@ -48,7 +48,7 @@ func (c *Graft) doOnce(ctx context.Context, g *Globals, p string) error {
 		fmt.Fprintf(os.Stderr, "%s %d\n", tr.W("You can increase the file size limit, the number of large files: "), len(e.Paths()))
 		return nil
 	}
-	matcher := newMatcher(e, c.ALL)
+	matcher := newMatcher(ctx, e, c.ALL)
 	if matcher == nil {
 		return nil
 	}

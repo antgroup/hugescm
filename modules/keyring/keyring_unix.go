@@ -212,6 +212,7 @@ func getFromSecretService(cred *Cred) (*Cred, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to secret service: %w", err)
 	}
+	defer svc.Close()
 
 	targetName := buildTargetName(cred)
 	item, err := findItem(svc, targetName, zetaUserName)
@@ -224,7 +225,7 @@ func getFromSecretService(cred *Cred) (*Cred, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open session: %w", err)
 	}
-	defer svc.Close(session)
+	defer svc.CloseSession(session)
 
 	// Unlock the item if it's locked
 	if err := svc.Unlock(item); err != nil {
@@ -266,13 +267,14 @@ func storeToSecretService(cred *Cred) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to secret service: %w", err)
 	}
+	defer svc.Close()
 
 	// Open a session
 	session, err := svc.OpenSession()
 	if err != nil {
 		return fmt.Errorf("failed to open session: %w", err)
 	}
-	defer svc.Close(session)
+	defer svc.CloseSession(session)
 
 	targetName := buildTargetName(cred)
 
@@ -339,6 +341,7 @@ func eraseFromSecretService(cred *Cred) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to secret service: %w", err)
 	}
+	defer svc.Close()
 
 	targetName := buildTargetName(cred)
 	item, err := findItem(svc, targetName, zetaUserName)

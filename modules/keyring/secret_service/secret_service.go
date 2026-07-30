@@ -1,10 +1,10 @@
 package ss
 
 import (
+	"errors"
 	"fmt"
 	"slices"
-
-	"errors"
+	"time"
 
 	dbus "github.com/godbus/dbus/v5"
 )
@@ -21,6 +21,11 @@ const (
 
 	loginCollectionAlias = "/org/freedesktop/secrets/aliases/default"
 	collectionBasePath   = "/org/freedesktop/secrets/collection/"
+
+	// promptTimeout is the maximum time to wait for a Secret Service prompt
+	// (e.g. keyring unlock dialog) to complete. In headless environments where
+	// no GUI can ever appear, this prevents the caller from blocking forever.
+	promptTimeout = 30 * time.Second
 )
 
 // Secret defines a org.freedesktop.Secret.Item secret struct.
@@ -48,10 +53,26 @@ type SecretService struct {
 }
 
 // NewSecretService inializes a new SecretService object.
+//
+// It uses SessionBusPrivateNoAutoStartup to avoid auto-launching dbus-daemon
+// on headless systems. This prevents orphaned dbus-daemon / gnome-keyring-daemon
+// processes from accumulating when zeta runs in environments without a desktop
+// session. If the session bus is not already available, NewSecretService returns
+// an error instead of starting one.
 func NewSecretService() (*SecretService, error) {
-	conn, err := dbus.SessionBus()
+	conn, err := dbus.SessionBusPrivateNoAutoStartup()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("secret service unavailable (no session bus): %w", err)
+	}
+
+	if err = conn.Auth(nil); err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to authenticate with D-Bus: %w", err)
+	}
+
+	if err = conn.Hello(); err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to register with D-Bus: %w", err)
 	}
 
 	return &SecretService{
@@ -128,9 +149,18 @@ func (s *SecretService) Unlock(collection dbus.ObjectPath) error {
 	return nil
 }
 
-// Close closes a secret service dbus session.
-func (s *SecretService) Close(session dbus.BusObject) error {
+// CloseSession closes a secret service dbus session.
+func (s *SecretService) CloseSession(session dbus.BusObject) error {
 	return session.Call(sessionInterface+".Close", 0).Err
+}
+
+// Close closes the underlying D-Bus connection. It must be called when the
+// SecretService is no longer needed to prevent leaked connections and orphaned
+// daemon processes. It should not be called on the shared connection returned
+// by dbus.SessionBus(); NewSecretService creates a private connection so this
+// is always safe.
+func (s *SecretService) Close() error {
+	return s.Conn.Close()
 }
 
 // CreateCollection with the supplied label.
@@ -204,12 +234,17 @@ func (s *SecretService) handlePrompt(prompt dbus.ObjectPath) (bool, dbus.Variant
 			return false, dbus.MakeVariant(""), err
 		}
 
-		signal := <-promptSignal
-		switch signal.Name {
-		case promptInterface + ".Completed":
-			dismissed := signal.Body[0].(bool)
-			result := signal.Body[1].(dbus.Variant)
-			return dismissed, result, nil
+		select {
+		case signal := <-promptSignal:
+			if signal.Name == promptInterface+".Completed" {
+				dismissed := signal.Body[0].(bool)
+				result := signal.Body[1].(dbus.Variant)
+				return dismissed, result, nil
+			}
+			return false, dbus.MakeVariant(""), fmt.Errorf("unexpected signal: %s", signal.Name)
+
+		case <-time.After(promptTimeout):
+			return false, dbus.MakeVariant(""), errors.New("secret service prompt timed out (no GUI available or user did not respond)")
 		}
 
 	}

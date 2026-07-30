@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/replay"
 	"github.com/antgroup/hugescm/cmd/hot/pkg/stat"
@@ -33,21 +34,27 @@ func (c *Smart) Run(ctx context.Context, g *Globals) error {
 	return nil
 }
 
-func multiSelect(i int, totalBatches int, input []string) ([]string, error) {
+func multiSelect(ctx context.Context, i int, totalBatches int, input []string) ([]string, error) {
 	var paths []string
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Title(fmt.Sprintf("%s [%s - %d/%d]:", tr.W("Which files need to be deleted"), tr.W("Batch"), i+1, totalBatches)).
+				Height(len(input) + 2).
 				Options(huh.NewOptions(input...)...).
-				Value(&paths)))
-	if err := form.Run(); err != nil {
+				Value(&paths))).
+		WithShowHelp(false).
+		WithViewHook(func(v tea.View) tea.View {
+			v.AltScreen = true
+			return v
+		})
+	if err := form.RunWithContext(ctx); err != nil {
 		return nil, err
 	}
 	return paths, nil
 }
 
-func newMatcher(sz *stat.SizeExecutor, matchAll bool) replay.Matcher {
+func newMatcher(ctx context.Context, sz *stat.SizeExecutor, matchAll bool) replay.Matcher {
 	if matchAll {
 		return sz
 	}
@@ -60,9 +67,7 @@ func newMatcher(sz *stat.SizeExecutor, matchAll bool) replay.Matcher {
 			break
 		}
 		minGroup := min(20, pathsLen)
-		var paths []string
-		var err error
-		paths, err = multiSelect(i, totalBatches, larges[0:minGroup])
+		paths, err := multiSelect(ctx, i, totalBatches, larges[0:minGroup])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "multi select error: %v\n", err)
 			return nil
@@ -92,7 +97,7 @@ func (c *Smart) doOnce(ctx context.Context, g *Globals, p string) error {
 		fmt.Fprintf(os.Stderr, "%s %d\n", tr.W("You can increase the file size limit, the number of large files: "), len(e.Paths()))
 		return nil
 	}
-	matcher := newMatcher(e, c.ALL)
+	matcher := newMatcher(ctx, e, c.ALL)
 	if matcher == nil {
 		return nil
 	}

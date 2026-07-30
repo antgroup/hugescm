@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-07-30
+
+### Fixed
+
+- **keyring**: Avoid D-Bus process leak on Linux when `secret-service` storage is enabled — `NewSecretService` now uses `SessionBusPrivateNoAutoStartup` instead of the shared `SessionBus`, preventing auto-launch of `dbus-daemon` / `gnome-keyring-daemon` on headless systems (root cause of orphaned process accumulation and PID exhaustion under concurrent tasks); add `defer svc.Close()` to all three Secret Service code paths (`getFromSecretService`, `storeToSecretService`, `eraseFromSecretService`) to properly close the private D-Bus connection; add 30 s timeout to `handlePrompt` to prevent indefinite blocking when no GUI is available
+- **git**: Fix `ParseVersionOutput` failing on Apple Git output format (`git version 2.50.1 (Apple Git-155)`) — use `strings.Cut` instead of `strings.SplitN` to correctly parse version strings with trailing parenthesized suffixes
+- **merge**: Fix `nameConflicts` returning duplicate entries when multiple paths share the same prefix — add `break` after first match to avoid redundant conflict pairs
+- **hot**: `command_graft` and `command_smart` now propagate `ctx` through `newMatcher` into `multiSelect`, replacing `form.Run()` with `form.RunWithContext(ctx)` so cancellation works during interactive file selection
+- **sshserver**: Use `errors.AsType[*zeta.ErrStatusCode]` in `TagPush` error handling for correct typed error unwrapping
+- **zeta-release**: Suppress unused error from `pr.Close()` in `uploadOne` error path
+
+### Changed
+
+- **ls-tree**: Add `--sort`/`-S` flag (e.g. `--sort=size`) to sort entries by file size, and `--summarize`/`-s` flag to display total size summary only
+- **imgview**: Rework Kitty graphics protocol rendering — non-PNG image formats (JPEG, GIF, BMP, TIFF, WebP) are now transcoded to PNG before transmission instead of being rejected; both iTerm2 and Kitty protocols support all formats in `renderableMIMETypes`
+- **merge**: Rename `TextGetter` → `TextResolver` in `MergeOptions` and `mergeOptions` for clarity; remove unused `MERGE_VARIANT_NORMAL` / `MERGE_VARIANT_OURS` / `MERGE_VARIANT_THEIRS` constants; `RefUpdater.closeWithError` now wraps close error with `%w` verb for proper error chaining
+- **mime**: Update vendored mimetype to upstream `2995287b`; add CDF (OLE2) file parser (`modules/mime/internal/cdf`) for improved MS Office (`.doc`, `.ppt`, `.xls`) detection via CLSID-based classification; improve MP3 frame detection with linear frame search and `.mo3`/`.swa` disqualification; add MP3 frame extractor (`modules/mime/internal/mp3`)
+- **zeta-release**: Use explicit subcommand names (`login`, `logout`, `release`) instead of relying on field-name inference
+- **zh-CN**: Remove legacy `zh-CN.tomlp1` translation file (469 lines); unified translation is in `zh-CN.toml`
+
+### Documentation
+
+- **merge**: Add comprehensive merge documentation — `docs/merge.md` (497 lines, Chinese) and `docs/merge-en.md` (504 lines, English) covering merge strategies, conflict resolution, and driver configuration
+- **merge-review-test**: Add `pkg/zeta/odb/merge_review_test.go` (191 lines) for merge review verification
+
 ## [0.29.0] - 2026-06-10
 
 ### Fixed

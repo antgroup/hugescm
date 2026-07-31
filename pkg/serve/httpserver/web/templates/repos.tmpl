@@ -1,0 +1,46 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+<div class="container">
+  <h1><i class="flu flu-folder"></i>Repositories</h1>
+  {{with .Content}}
+  {{$c := .}}
+  {{if eq (len .Repos) 0}}
+  <div class="empty-state">
+    <i class="flu flu-folder flu-xl"></i>
+    <p>No repositories found.</p>
+  </div>
+  {{else}}
+  <div class="repo-grid">
+    {{range .Repos}}
+    {{$ns := index $c.Namespaces .NamespaceID}}
+    <div class="repo-card">
+      <div class="repo-name">
+        {{if $ns}}
+        <a href="/{{$ns.Path}}/{{.Path}}"><i class="flu flu-folder"></i>{{$ns.Path}}/{{.Path}}</a>
+        {{else}}
+        <a href="/unknown/{{.Path}}"><i class="flu flu-folder"></i>{{.Path}}</a>
+        {{end}}
+      </div>
+      <div class="repo-desc">{{if .Description}}{{.Description}}{{else}}No description{{end}}</div>
+      <div class="repo-meta">
+        <span><i class="flu flu-branch"></i>{{if eq .DefaultBranch ""}}mainline{{else}}{{.DefaultBranch}}{{end}}</span>
+        <span>updated {{.UpdatedAt.Format "2006-01-02"}}</span>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  <div class="pagination">
+    {{if gt .Page 1}}
+    <a href="/repos?page={{decPage .Page}}"><i class="flu flu-prev"></i>Prev</a>
+    {{end}}
+    <span class="current">Page {{.Page}} of {{.TotalPages}}</span>
+    {{if and (lt .Page .TotalPages) (gt .TotalPages 0)}}
+    <a href="/repos?page={{incPage .Page}}">Next<i class="flu flu-next"></i></a>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+</div>
+</body>
+</html>

@@ -24,7 +24,7 @@ import (
 	"github.com/antgroup/hugescm/pkg/serve/database"
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
 	"github.com/antgroup/hugescm/pkg/serve/repo"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -147,9 +147,9 @@ func (s *Server) LsOrdinaryReference(w http.ResponseWriter, r *Request, refname 
 	ZetaEncodeVND(w, branch)
 }
 
-// GET /{namespace}/{repo}/reference/{refname:.*}
+// GET /{namespace}/{repo}/reference/*
 func (s *Server) LsReference(w http.ResponseWriter, r *Request) {
-	refname, err := url.PathUnescape(mux.Vars(r.Request)["refname"])
+	refname, err := url.PathUnescape(chi.URLParam(r.Request, "*"))
 	if err != nil {
 		renderFailureFormat(w, r.Request, http.StatusNotFound, r.W("'%s' is not a valid reference name"), refname)
 		return
@@ -275,8 +275,7 @@ func (s *Server) GetObject(w http.ResponseWriter, r *Request) {
 		renderFailure(w, r.Request, http.StatusBadRequest, err.Error())
 		return
 	}
-	m := mux.Vars(r.Request)
-	sid := m["oid"]
+	sid := chi.URLParam(r.Request, "oid")
 	if !plumbing.ValidateHashHex(sid) {
 		renderFailureFormat(w, r.Request, http.StatusBadRequest, r.W("'%s' is not a valid object name"), sid)
 		return
@@ -326,8 +325,15 @@ func (s *Server) updateBranchDryRun(w http.ResponseWriter, r *Request, branchNam
 }
 
 func (s *Server) updateReferenceDryRun(w http.ResponseWriter, r *Request) bool {
-	m := mux.Vars(r.Request)
-	escapedRefname := m["refname"]
+	// Both callers (BatchCheck and PutObject) are served by the unified
+	// /{namespace}/{repo}/reference/* catch-all route, so the chi URLParam "*"
+	// captures "{refname}/objects/{oid_or_batch}". Strip the /objects/ suffix
+	// (using LastIndex so nested refnames containing "/objects/" stay intact)
+	// to recover the escaped refname.
+	escapedRefname := chi.URLParam(r.Request, "*")
+	if i := strings.LastIndex(escapedRefname, "/objects/"); i >= 0 {
+		escapedRefname = escapedRefname[:i]
+	}
 	if len(escapedRefname) == 0 {
 		renderFailureFormat(w, r.Request, http.StatusInternalServerError, "invalid url location %s", r.URL.Path)
 		return false
@@ -405,7 +411,10 @@ func checkName(r *Request) string {
 	return "anonymous"
 }
 
-// PUT /{namespace}/{repo}/reference/{refname:.*}/objects/{oid}
+// PUT /{namespace}/{repo}/reference/*
+// The unified catch-all route makes both refname and oid live under chi's "*"
+// wildcard as "{refname}/objects/{oid}". Split them by locating the last
+// "/objects/" segment so nested refnames (e.g. feature/x) keep working.
 func (s *Server) PutObject(w http.ResponseWriter, r *Request) {
 	var err error
 	var uploadSize int64
@@ -414,7 +423,14 @@ func (s *Server) PutObject(w http.ResponseWriter, r *Request) {
 			renderFailureFormat(w, r.Request, http.StatusBadRequest, "'x-zeta-compressed-size' value not valid number: '%s'", us)
 		}
 	}
-	sid := mux.Vars(r.Request)["oid"]
+	rest := chi.URLParam(r.Request, "*")
+	idx := strings.LastIndex(rest, "/objects/")
+	if idx < 0 {
+		renderFailureFormat(w, r.Request, http.StatusBadRequest, "invalid url location %s", r.URL.Path)
+		return
+	}
+	escapedRefname := rest[:idx]
+	sid := rest[idx+len("/objects/"):]
 	if !plumbing.ValidateHashHex(sid) {
 		renderFailureFormat(w, r.Request, http.StatusBadRequest, "invalid hash string: %s", sid)
 		return
@@ -434,7 +450,7 @@ func (s *Server) PutObject(w http.ResponseWriter, r *Request) {
 		renderFailureFormat(w, r.Request, http.StatusConflict, "upload object '%s' error: %v", err, sid)
 		return
 	}
-	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", checkName(r), sid, strengthen.FormatSize(size), r.makeRemoteURL(), mux.Vars(r.Request)["refname"])
+	logrus.Infof("%s upload large object %s [size: %s] to %s [refname: %s] success", checkName(r), sid, strengthen.FormatSize(size), r.makeRemoteURL(), escapedRefname)
 	ZetaEncodeVND(w, &protocol.ErrorCode{Code: 200, Message: "OK"})
 }
 
@@ -476,9 +492,12 @@ func (s *Server) checkBranchCanUpdate(ctx context.Context, w http.ResponseWriter
 	return branch, nil
 }
 
-// POST /{namespace}/{repo}/reference/{refname:.*}
+// POST /{namespace}/{repo}/reference/*
+// When the path's catch-all ends in "/objects/batch", z1ReferencePostDispatch
+// routes to BatchCheck; otherwise this handler is reached. refname is the
+// captured catch-all value directly.
 func (s *Server) Push(w http.ResponseWriter, r *Request) {
-	escapedRefname := mux.Vars(r.Request)["refname"]
+	escapedRefname := chi.URLParam(r.Request, "*")
 	if len(escapedRefname) == 0 {
 		renderFailureFormat(w, r.Request, http.StatusInternalServerError, "invalid url location %s", r.URL.Path)
 		return

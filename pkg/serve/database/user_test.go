@@ -18,5 +18,5 @@ func TestUser(t *testing.T) {
 }
 
 func TestUser2(t *testing.T) {
-	fmt.Fprintf(os.Stderr, "%s\n", zeroLockedAt)
+	fmt.Fprintf(os.Stderr, "%v\n", zeroLockedAt)
 }

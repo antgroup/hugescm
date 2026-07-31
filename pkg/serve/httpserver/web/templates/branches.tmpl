@@ -1,0 +1,41 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container">
+  <div class="repo-header">
+    <div class="repo-title">
+      <h1><a href="/{{.Namespace.Path}}">{{.Namespace.Path}}</a><span class="ns"> / {{.Repo.Path}}</span></h1>
+    </div>
+  </div>
+
+  <div class="repo-tabs">
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev=HEAD"><i class="flu flu-code"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev=HEAD"><i class="flu flu-history"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches" class="active"><i class="flu flu-branch"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag"></i>Tags</a>
+  </div>
+
+  <h2><i class="flu flu-branch"></i>Branches</h2>
+  {{if eq (len .Branches) 0}}
+  <div class="empty-state">
+    <i class="flu flu-branch flu-xl"></i>
+    <p>No branches found.</p>
+  </div>
+  {{else}}
+  <div class="tree-view">
+    {{range .Branches}}
+    <div class="ref-item">
+      <i class="flu flu-branch"></i>
+      <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{.Name}}" class="ref-name">{{.Name}}</a>
+      <span class="ref-hash">{{.Hash}}</span>
+      <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commits?rev={{.Name}}" class="ref-link"><i class="flu flu-history"></i>commits</a>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+</body>
+</html>

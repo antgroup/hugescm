@@ -1,0 +1,62 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container">
+  <div class="repo-header">
+    <div class="repo-title">
+      <h1><a href="/{{.Namespace.Path}}">{{.Namespace.Path}}</a><span class="ns"> / {{.Repo.Path}}</span></h1>
+    </div>
+  </div>
+
+  <div class="repo-tabs">
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev=HEAD"><i class="flu flu-code"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev=HEAD"><i class="flu flu-history"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag"></i>Tags</a>
+  </div>
+
+  <div class="repo-info">
+    <span class="label"><i class="flu flu-history"></i>Commit:</span> <code>{{.Commit.Hash}}</code><br>
+    <span class="label"><i class="flu flu-person"></i>Author:</span> {{.Commit.Author}} <span style="color:var(--text-muted)">&lt;{{.Commit.Email}}&gt;</span><br>
+    <span class="label"><i class="flu flu-history"></i>Date:</span> {{.Commit.When}}<br>
+    {{if gt (len .Commit.Parents) 0}}
+    <span class="label"><i class="flu flu-branch"></i>Parent:</span> {{range .Commit.Parents}}<code>{{.}}</code> {{end}}
+    {{end}}
+  </div>
+
+  <div class="repo-info">
+    <pre style="white-space:pre-wrap; margin:0; font-size:0.9rem; font-family:inherit;">{{.CommitFull}}</pre>
+  </div>
+
+  {{if eq (len .Diff) 0}}
+  <p style="color:var(--text-muted)">No file changes detected.</p>
+  {{else}}
+  <h2><i class="flu flu-code"></i>Changes ({{len .Diff}} file{{if gt (len .Diff) 1}}s{{end}})</h2>
+  {{range .Diff}}
+  <div class="diff-view">
+    <div class="diff-header">
+      <span><i class="flu flu-document"></i>{{if .OldPath}}{{.OldPath}}{{else}}(new){{end}} &rarr; {{.NewPath}}</span>
+      {{if .IsBinary}}
+      <span class="diff-stats">binary</span>
+      {{else}}
+      <span class="diff-stats"><span class="diff-stat-add">+{{.Additions}}</span> <span class="diff-stat-del">-{{.Deletions}}</span></span>
+      {{end}}
+    </div>
+    <div class="diff-content">
+      {{if .IsBinary}}
+      <pre style="margin:0; padding:1rem; color:var(--text-muted)">Binary file - diff not available.</pre>
+      {{else if eq .PatchText ""}}
+      <pre style="margin:0; padding:1rem; color:var(--text-muted)">No textual changes.</pre>
+      {{else}}
+      <pre style="margin:0; padding:0.5rem;">{{highlightDiff .PatchText}}</pre>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+  {{end}}
+</div>
+{{end}}
+</body>
+</html>

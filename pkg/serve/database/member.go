@@ -80,3 +80,49 @@ func (d *database) AddMember(ctx context.Context, m *Member) error {
 	}
 	return nil
 }
+
+const (
+	sqlListMembers = `SELECT id, uid, access_level, rid, source_type, expires_at, created_at, updated_at
+	FROM   members
+	WHERE  rid = ? AND source_type = ?
+	ORDER BY id`
+)
+
+func (d *database) ListMembers(ctx context.Context, sourceID int64, sourceType MemberType) ([]*Member, error) {
+	rows, err := d.QueryContext(ctx, sqlListMembers, sourceID, sourceType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() //nolint:errcheck
+	members := make([]*Member, 0)
+	for rows.Next() {
+		m := &Member{}
+		if err := rows.Scan(&m.ID, &m.UID, &m.AccessLevel, &m.SourceID, &m.SourceType, &m.ExpiresAt, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			return nil, err
+		}
+		members = append(members, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
+const (
+	sqlUpdateMember = `UPDATE members
+	SET    access_level = ?,
+	       expires_at = ?,
+	       updated_at = ?
+	WHERE  id = ?`
+)
+
+func (d *database) UpdateMember(ctx context.Context, m *Member) error {
+	now := time.Now()
+	_, err := d.ExecContext(ctx, sqlUpdateMember, m.AccessLevel, m.ExpiresAt, now, m.ID)
+	return err
+}
+
+func (d *database) RemoveMember(ctx context.Context, id int64) error {
+	_, err := d.ExecContext(ctx, "DELETE FROM members WHERE id = ?", id)
+	return err
+}

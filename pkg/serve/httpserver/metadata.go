@@ -11,7 +11,7 @@ import (
 	"github.com/antgroup/hugescm/modules/plumbing"
 	"github.com/antgroup/hugescm/modules/zeta/object"
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -72,7 +72,7 @@ func (s *Server) FetchMetadata(w http.ResponseWriter, r *Request) {
 	if err != nil {
 		return
 	}
-	rev, _ := url.PathUnescape(mux.Vars(r.Request)["revision"])
+	rev, _ := url.PathUnescape(chi.URLParam(r.Request, "*"))
 	rr, err := s.open(w, r)
 	if err != nil {
 		return
@@ -111,7 +111,7 @@ func (s *Server) FetchMetadata(w http.ResponseWriter, r *Request) {
 
 // GetSparseMetadata: get commit metadata sparse-tree
 func (s *Server) GetSparseMetadata(w http.ResponseWriter, r *Request) {
-	rev, _ := url.PathUnescape(mux.Vars(r.Request)["revision"])
+	rev, _ := url.PathUnescape(chi.URLParam(r.Request, "*"))
 	if rev == "batch" {
 		// Z1 protocol hijacking: avoiding overwriting of batch metadata API
 		s.BatchMetadata(w, r)

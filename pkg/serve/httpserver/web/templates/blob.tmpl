@@ -1,0 +1,97 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container">
+  <div class="repo-header">
+    <div class="repo-title">
+      <h1><a href="/{{.Namespace.Path}}">{{.Namespace.Path}}</a><span class="ns"> / {{.Repo.Path}}</span></h1>
+    </div>
+  </div>
+
+  <div class="repo-tabs">
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-code"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}"><i class="flu flu-history"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag"></i>Tags</a>
+  </div>
+
+  <div class="breadcrumb">
+    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}"><i class="flu flu-folder"></i>root</a>
+    {{range .PathParts}}<span class="separator">/</span><a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}&path={{.Path}}">{{.Name}}</a>{{end}}
+    <span class="separator">/</span> <strong>{{$c.FileName}}</strong>
+  </div>
+
+  <div class="blob-header">
+    <span><i class="flu flu-document"></i>{{.FileName}}</span>
+    <div class="blob-actions">
+      {{if not .IsBinary}}
+      <button class="btn-copy" onclick="copyBlobContent(this)" title="Copy content" aria-label="Copy content"><i class="flu flu-copy"></i></button>
+      {{end}}
+      <span style="color:var(--text-muted);">{{.Size}} bytes</span>
+    </div>
+  </div>
+
+  <div class="blob-content" id="blob-content">
+    {{if .IsImage}}
+    <div style="text-align:center; padding:1rem;">
+      <img src="/api/v1/repos/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/blob/{{$c.Rev}}/{{$c.FilePath}}" alt="{{$c.FileName}}" style="max-width:100%; border-radius:4px;">
+    </div>
+    {{else if .IsBinary}}
+    <div class="download-view">
+      <div class="download-icon"><i class="flu flu-download flu-2xl"></i></div>
+      <div class="download-name">{{.FileName}}</div>
+      <div class="download-meta">
+        <span class="download-size">File size: {{humanSize .Size}}</span>
+        {{if .Hash}}
+        <span class="download-oid">OID: <code>{{.Hash}}</code></span>
+        {{end}}
+      </div>
+      <div class="download-actions">
+        <a href="/api/v1/repos/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/blob/{{$c.Rev}}/{{$c.FilePath}}" class="btn" download="{{$c.FileName}}">Download</a>
+      </div>
+    </div>
+    {{else if isMarkdown .FileName}}
+    <div class="markdown-body">{{renderMarkdown .Content}}</div>
+    {{else}}
+    {{highlight .Content .FileName}}
+    {{end}}
+  </div>
+
+  <div style="margin-top:1rem;">
+    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}" class="btn btn-secondary"><i class="flu flu-folder"></i>Back to tree</a>
+  </div>
+</div>
+<script>
+function copyBlobContent(btn) {
+  var container = document.getElementById('blob-content');
+  if (!container) return;
+  var chroma = container.querySelector('.chroma');
+  var md = container.querySelector('.markdown-body');
+  var text = '';
+  if (chroma) {
+    // Extract only code lines (skip line number spans)
+    var codeSpans = chroma.querySelectorAll('.cl');
+    if (codeSpans.length > 0) {
+      var parts = [];
+      codeSpans.forEach(function(s) { parts.push(s.textContent); });
+      text = parts.join('\n');
+    } else {
+      text = chroma.textContent;
+    }
+  } else if (md) {
+    text = md.textContent;
+  }
+  navigator.clipboard.writeText(text).then(function() {
+    var icon = btn.querySelector('.flu');
+    if (!icon) return;
+    icon.className = 'flu flu-check';
+    btn.style.color = 'var(--green)';
+    setTimeout(function() { icon.className = 'flu flu-copy'; btn.style.color = ''; }, 2000);
+  });
+}
+</script>
+{{end}}
+</body>
+</html>

@@ -105,6 +105,74 @@ const (
 VALUES    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
+const (
+	sqlCountRepos = `SELECT COUNT(*) FROM repositories WHERE deleted_at = 0`
+
+	sqlListRepos = `SELECT id, name, path, namespace_id, description, visible_level, default_branch, hash_algo, compression_algo, created_at, updated_at
+	FROM   repositories
+	WHERE  deleted_at = 0
+	ORDER BY id
+	LIMIT  ? OFFSET ?`
+
+	sqlCountReposByNamespace = `SELECT COUNT(*) FROM repositories WHERE namespace_id = ? AND deleted_at = 0`
+
+	sqlListReposByNamespace = `SELECT id, name, path, namespace_id, description, visible_level, default_branch, hash_algo, compression_algo, created_at, updated_at
+	FROM   repositories
+	WHERE  namespace_id = ? AND deleted_at = 0
+	ORDER BY id
+	LIMIT  ? OFFSET ?`
+)
+
+func (d *database) ListRepositories(ctx context.Context, page, perPage int) ([]*Repository, int64, error) {
+	var total int64
+	if err := d.QueryRowContext(ctx, sqlCountRepos).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * perPage
+	rows, err := d.QueryContext(ctx, sqlListRepos, perPage, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close() //nolint:errcheck
+	repos := make([]*Repository, 0, perPage)
+	for rows.Next() {
+		r := &Repository{}
+		if err := rows.Scan(&r.ID, &r.Name, &r.Path, &r.NamespaceID, &r.Description, &r.VisibleLevel, &r.DefaultBranch, &r.HashAlgo, &r.CompressionAlgo, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		repos = append(repos, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return repos, total, nil
+}
+
+func (d *database) ListRepositoriesByNamespace(ctx context.Context, namespaceID int64, page, perPage int) ([]*Repository, int64, error) {
+	var total int64
+	if err := d.QueryRowContext(ctx, sqlCountReposByNamespace, namespaceID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * perPage
+	rows, err := d.QueryContext(ctx, sqlListReposByNamespace, namespaceID, perPage, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close() //nolint:errcheck
+	repos := make([]*Repository, 0, perPage)
+	for rows.Next() {
+		r := &Repository{}
+		if err := rows.Scan(&r.ID, &r.Name, &r.Path, &r.NamespaceID, &r.Description, &r.VisibleLevel, &r.DefaultBranch, &r.HashAlgo, &r.CompressionAlgo, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		repos = append(repos, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return repos, total, nil
+}
+
 func (d *database) NewRepository(ctx context.Context, r *Repository) (*Repository, error) {
 	var err error
 	if err = r.Validate(); err != nil {

@@ -14,7 +14,7 @@ import (
 	"github.com/antgroup/hugescm/pkg/serve/argon2id"
 	"github.com/antgroup/hugescm/pkg/serve/database"
 	"github.com/antgroup/hugescm/pkg/serve/protocol"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -112,8 +112,7 @@ func (s *Server) basicAuth(w http.ResponseWriter, r *http.Request, operation pro
 	}
 	// cleanup
 	u.Guard()
-	mv := mux.Vars(r)
-	namespacePath, repoPath := mv["namespace"], mv["repo"]
+	namespacePath, repoPath := chi.URLParam(r, "namespace"), chi.URLParam(r, "repo")
 	ns, repo, err := s.db.FindRepositoryByPath(r.Context(), namespacePath, repoPath)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -148,8 +147,7 @@ func (s *Server) doAuth(w http.ResponseWriter, r *http.Request, operation protoc
 		renderFailureFormat(w, r, http.StatusForbidden, "access denied, bearer token operation '%s' not match request operation: '%s'", m.Operation, operation)
 		return nil, ErrStop
 	}
-	mv := mux.Vars(r)
-	namespacePath, repoPath := mv["namespace"], mv["repo"]
+	namespacePath, repoPath := chi.URLParam(r, "namespace"), chi.URLParam(r, "repo")
 	ns, repo, err := s.db.FindRepositoryByPath(r.Context(), namespacePath, repoPath)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

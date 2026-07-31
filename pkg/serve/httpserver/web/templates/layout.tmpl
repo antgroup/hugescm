@@ -1,0 +1,27 @@
+{{define "head"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} — HugeSCM</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/htmx.min.js"></script>
+</head>
+{{end}}
+
+{{define "navbar"}}
+<nav class="navbar">
+  <div class="navbar-brand"><a href="/"><svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5V19"/><path d="M7 12C9 12 13 12 17 12"/><circle cx="7" cy="5" r="2.4" fill="currentColor" stroke="none"/><circle cx="7" cy="19" r="2.4" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="2.4" fill="currentColor" stroke="none"/><circle cx="17" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>HugeSCM</a></div>
+  <div class="navbar-nav">
+    {{if .Username}}
+    <a href="/repos"><i class="flu flu-folder"></i>Repositories</a>
+    <a href="/repos/new" class="nav-new"><i class="flu flu-add"></i>New</a>
+    <span style="color: var(--text-muted); font-size: 0.85rem;"><i class="flu flu-person"></i>{{.Username}}</span>
+    <a href="/logout"><i class="flu flu-logout"></i>Logout</a>
+    {{else}}
+    <a href="/login"><i class="flu flu-person"></i>Login</a>
+    {{end}}
+  </div>
+</nav>
+{{end}}

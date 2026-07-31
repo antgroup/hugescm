@@ -13,7 +13,6 @@ import (
 	"github.com/antgroup/hugescm/modules/strengthen"
 	"github.com/antgroup/hugescm/pkg/serve/argon2id"
 	"github.com/antgroup/hugescm/pkg/serve/database"
-	"github.com/gorilla/mux"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -175,10 +174,4 @@ func (s *Server) NewKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	JsonEncode(w, k)
-}
-
-func (s *Server) ManagementRouter(r *mux.Router) {
-	r.HandleFunc("/api/v1/user", s.NewUser).Methods("POST")
-	r.HandleFunc("/api/v1/key", s.NewKey).Methods("POST")
-	r.HandleFunc("/api/v1/repo", s.NewRepo).Methods("POST")
 }

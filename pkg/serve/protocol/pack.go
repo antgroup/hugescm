@@ -4,8 +4,8 @@
 package protocol
 
 import (
-	"errors"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"

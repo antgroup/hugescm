@@ -37,6 +37,34 @@ type DB interface {
 	DoBranchUpdate(ctx context.Context, cmd *Command) (*Branch, error)
 	DoReferenceUpdate(ctx context.Context, cmd *Command) (*Reference, error)
 	Close() error
+
+	// Open API: User operations
+	ListUsers(ctx context.Context, page, perPage int) ([]*User, int64, error)
+	UpdateUser(ctx context.Context, u *User) (*User, error)
+	LockUser(ctx context.Context, uid int64) (*User, error)
+	UnlockUser(ctx context.Context, uid int64) (*User, error)
+	SoftDeleteUser(ctx context.Context, uid int64) error
+
+	// Open API: Key operations
+	ListKeysByUser(ctx context.Context, uid int64) ([]*Key, error)
+	DeleteKey(ctx context.Context, id int64) error
+
+	// Open API: Repository operations
+	ListRepositories(ctx context.Context, page, perPage int) ([]*Repository, int64, error)
+	ListRepositoriesByNamespace(ctx context.Context, namespaceID int64, page, perPage int) ([]*Repository, int64, error)
+
+	// Open API: Branch and Tag operations
+	ListBranches(ctx context.Context, rid int64) ([]*Branch, error)
+	ListTags(ctx context.Context, rid int64) ([]*Tag, error)
+
+	// Open API: Namespace operations
+	ListNamespaces(ctx context.Context, nsType *int, ownerID *int64, page, perPage int) ([]*Namespace, int64, error)
+	NewGroupNamespace(ctx context.Context, ns *Namespace) (*Namespace, error)
+
+	// Open API: Member operations
+	ListMembers(ctx context.Context, sourceID int64, sourceType MemberType) ([]*Member, error)
+	UpdateMember(ctx context.Context, m *Member) error
+	RemoveMember(ctx context.Context, id int64) error
 }
 
 type database struct {

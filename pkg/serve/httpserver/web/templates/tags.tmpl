@@ -1,0 +1,44 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container">
+  <div class="repo-header">
+    <div class="repo-title">
+      <h1><a href="/{{.Namespace.Path}}">{{.Namespace.Path}}</a><span class="ns"> / {{.Repo.Path}}</span></h1>
+    </div>
+  </div>
+
+  <div class="repo-tabs">
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev=HEAD"><i class="flu flu-code"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev=HEAD"><i class="flu flu-history"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags" class="active"><i class="flu flu-tag"></i>Tags</a>
+  </div>
+
+  <h2><i class="flu flu-tag"></i>Tags</h2>
+  {{if eq (len .Tags) 0}}
+  <div class="empty-state">
+    <i class="flu flu-tag flu-xl"></i>
+    <p>No tags found.</p>
+  </div>
+  {{else}}
+  <div class="tree-view">
+    {{range .Tags}}
+    <div class="ref-item">
+      <i class="flu flu-tag"></i>
+      <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{.Name}}" class="ref-name">{{.Name}}</a>
+      <span class="ref-hash">{{.Hash}}</span>
+      {{if .Subject}}
+      <span style="color:var(--text-muted); font-size:0.85rem;">{{firstLine .Subject}}</span>
+      {{end}}
+      <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commits?rev={{.Name}}" class="ref-link"><i class="flu flu-history"></i>commits</a>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+</body>
+</html>

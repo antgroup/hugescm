@@ -1,0 +1,47 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+<div class="login-container" style="max-width:560px;">
+  <h1><i class="flu flu-add"></i>New Repository</h1>
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+  <form method="POST" action="/repos/new">
+    <div class="form-group">
+      <label><i class="flu flu-org"></i>Namespace</label>
+      <select name="namespace_path" required style="width:100%; padding:0.6rem 0.75rem; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.9rem;">
+        {{range .Namespaces}}
+        <option value="{{.Path}}">{{.Path}}</option>
+        {{end}}
+      </select>
+    </div>
+    <div class="form-group">
+      <label><i class="flu flu-folder"></i>Repository name</label>
+      <input type="text" name="repo_path" required placeholder="my-project" style="width:100%; padding:0.6rem 0.75rem; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.9rem;">
+    </div>
+    <div class="form-group">
+      <label><i class="flu flu-desc"></i>Description (optional)</label>
+      <input type="text" name="description" placeholder="A short description" style="width:100%; padding:0.6rem 0.75rem; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.9rem;">
+    </div>
+    <div class="form-group">
+      <label><i class="flu flu-branch"></i>Default branch (optional)</label>
+      <input type="text" name="default_branch" placeholder="mainline" style="width:100%; padding:0.6rem 0.75rem; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.9rem;">
+    </div>
+    <div class="form-group">
+      <label><i class="flu flu-lock"></i>Visibility</label>
+      <select name="visible_level" style="width:100%; padding:0.6rem 0.75rem; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.9rem;">
+        <option value="private">Private</option>
+        <option value="internal">Internal</option>
+        <option value="public">Public</option>
+      </select>
+    </div>
+    <div style="margin-top:1.5rem; display:flex; gap:0.75rem;">
+      <button type="submit" class="btn"><i class="flu flu-add"></i>Create repository</button>
+      <a href="/repos" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}
+</body>
+</html>

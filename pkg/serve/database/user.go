@@ -56,7 +56,7 @@ AND       u.id = e.uid`
 )
 
 var (
-	zeroLockedAt = time.Unix(0, 0).UTC()
+	zeroLockedAt = sql.NullTime{}
 )
 
 func (d *database) FindUser(ctx context.Context, uid int64) (*User, error) {
@@ -127,4 +127,108 @@ func (d *database) NewUser(ctx context.Context, u *User) (*User, error) {
 		return nil, err
 	}
 	return d.FindUser(ctx, uid)
+}
+
+const (
+	sqlListUsers = `SELECT    id,
+	          username,
+	          name,
+	          admin,
+	          email,
+	          type,
+	          locked_at,
+	          created_at,
+	          updated_at
+	FROM      users
+	ORDER BY  id
+	LIMIT     ? OFFSET ?`
+
+	sqlCountUsers = `SELECT COUNT(*) FROM users`
+)
+
+func (d *database) ListUsers(ctx context.Context, page, perPage int) ([]*User, int64, error) {
+	var total int64
+	if err := d.QueryRowContext(ctx, sqlCountUsers).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * perPage
+	rows, err := d.QueryContext(ctx, sqlListUsers, perPage, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close() //nolint:errcheck
+	users := make([]*User, 0, perPage)
+	for rows.Next() {
+		u := &User{}
+		var lockedAt sql.NullTime
+		if err := rows.Scan(&u.ID, &u.UserName, &u.Name, &u.Administrator, &u.Email, &u.Type, &lockedAt, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		u.LockedAt = lockedAt.Time
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
+}
+
+const (
+	sqlUpdateUser = `UPDATE users
+	SET    name = ?,
+	       email = ?,
+	       password = ?,
+	       updated_at = ?
+	WHERE  id = ?`
+)
+
+func (d *database) UpdateUser(ctx context.Context, u *User) (*User, error) {
+	now := time.Now()
+	_, err := d.ExecContext(ctx, sqlUpdateUser, u.Name, u.Email, u.Password, now, u.ID)
+	if err != nil {
+		return nil, err
+	}
+	return d.FindUser(ctx, u.ID)
+}
+
+const (
+	sqlLockUser = `UPDATE users
+	SET    locked_at = ?,
+	       updated_at = ?
+	WHERE  id = ?`
+)
+
+func (d *database) LockUser(ctx context.Context, uid int64) (*User, error) {
+	now := time.Now()
+	_, err := d.ExecContext(ctx, sqlLockUser, now, now, uid)
+	if err != nil {
+		return nil, err
+	}
+	return d.FindUser(ctx, uid)
+}
+
+func (d *database) UnlockUser(ctx context.Context, uid int64) (*User, error) {
+	now := time.Now()
+	_, err := d.ExecContext(ctx, sqlLockUser, zeroLockedAt, now, uid)
+	if err != nil {
+		return nil, err
+	}
+	return d.FindUser(ctx, uid)
+}
+
+const (
+	sqlSoftDeleteUser = `UPDATE users
+	SET    username = CONCAT(username, ?),
+	       email = CONCAT(email, ?),
+	       password = '',
+	       signature_token = '',
+	       locked_at = ?,
+	       updated_at = ?
+	WHERE  id = ?`
+)
+
+func (d *database) SoftDeleteUser(ctx context.Context, uid int64) error {
+	now := time.Now()
+	_, err := d.ExecContext(ctx, sqlSoftDeleteUser, DeletedSuffix, DeletedSuffix, now, now, uid)
+	return err
 }

@@ -4,10 +4,10 @@
 package odb
 
 import (
-	"errors"
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"io"
 	"strings"
 

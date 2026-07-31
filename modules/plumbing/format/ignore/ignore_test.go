@@ -615,7 +615,7 @@ func BenchmarkWildmatchLiteral(b *testing.B) {
 }
 
 func BenchmarkWildmatchStar(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matchPattern("*-adobe-courier-bold-o-normal--12-120-75-75-m-70-iso8859-1",
 			"-adobe-courier-bold-o-normal--12-120-75-75-m-70-iso8859-1")
 	}

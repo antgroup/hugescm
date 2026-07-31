@@ -103,6 +103,20 @@ func highlightCode(source, filename string) template.HTML {
 	if source == "" {
 		return ""
 	}
+	// Expand tabs to 4 spaces BEFORE tokenising. The project ships its
+	// own .chroma CSS which does not include chroma's generated
+	// `tab-size: 4` rule; setting tab-size there also interacts badly
+	// with the line-number inline-block — the leading tab on every
+	// indented line squashes to ~0 columns wide because the line-number
+	// width (~7.84 monospace columns at 0.85rem font + 4rem padding) is
+	// not a multiple of the 4-column tab-stop, so the `\t` only advances
+	// to the next 4-multiple (~0.16 cols). Replacing the tabs in the
+	// source makes indentation robustly 4-spaces wide and the rendering
+	// independent of these layout quirks. The copy button still returns
+	// the ORIGINAL source (with \t) because blob.tmpl embeds the raw
+	// .Content in a hidden <pre id="blob-raw"> that copyBlobContent reads
+	// from directly, bypassing the highlighted DOM.
+	source = strings.ReplaceAll(source, "\t", "    ")
 	lexer := lexers.Match(filename)
 	if lexer == nil {
 		lexer = lexers.Analyse(source)

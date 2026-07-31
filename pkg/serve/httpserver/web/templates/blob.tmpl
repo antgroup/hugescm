@@ -53,8 +53,14 @@
       </div>
     </div>
     {{else if isMarkdown .FileName}}
+    <!-- Raw source stash for the copy button — preserves the original
+         bytes (including \t and \n) byte-for-byte; the highlighted DOM
+         below has had its \t expanded to 4 spaces for rendering. -->
+    <pre id="blob-raw" style="display:none">{{.Content}}</pre>
     <div class="markdown-body">{{renderMarkdown .Content}}</div>
     {{else}}
+    <!-- Raw source stash — see comment in the markdown branch above. -->
+    <pre id="blob-raw" style="display:none">{{.Content}}</pre>
     {{highlight .Content .FileName}}
     {{end}}
   </div>
@@ -65,31 +71,44 @@
 </div>
 <script>
 function copyBlobContent(btn) {
-  var container = document.getElementById('blob-content');
-  if (!container) return;
-  var chroma = container.querySelector('.chroma');
-  var md = container.querySelector('.markdown-body');
+  // Prefer the hidden raw-source stash (#blob-raw). It carries the
+  // original bytes (including \t) so the clipboard content exactly
+  // matches the on-disk file, even though the visible preview has had
+  // its \t expanded to 4 spaces for layout reasons (see highlightCode).
+  var raw = document.getElementById('blob-raw');
   var text = '';
-  if (chroma) {
-    // Extract only code lines (skip line number spans)
-    var codeSpans = chroma.querySelectorAll('.cl');
-    if (codeSpans.length > 0) {
-      var parts = [];
-      codeSpans.forEach(function(s) { parts.push(s.textContent); });
-      text = parts.join('\n');
-    } else {
-      text = chroma.textContent;
+  if (raw) {
+    text = raw.textContent;
+  } else {
+    // Fallback for legacy views without a stash: reconstruct from the
+    // chroma .cl spans (each carries its line's trailing \n already, so
+    // concatenate rather than joining with extra '\n').
+    var container = document.getElementById('blob-content');
+    if (container) {
+      var chroma = container.querySelector('.chroma');
+      var md = container.querySelector('.markdown-body');
+      if (chroma) {
+        var codeSpans = chroma.querySelectorAll('.cl');
+        if (codeSpans.length > 0) {
+          var parts = [];
+          codeSpans.forEach(function(s) { parts.push(s.textContent); });
+          text = parts.join('');
+        } else {
+          text = chroma.textContent;
+        }
+      } else if (md) {
+        text = md.textContent;
+      }
     }
-  } else if (md) {
-    text = md.textContent;
   }
+  if (!text) return;
   navigator.clipboard.writeText(text).then(function() {
     var icon = btn.querySelector('.flu');
     if (!icon) return;
     icon.className = 'flu flu-check';
     btn.style.color = 'var(--green)';
     setTimeout(function() { icon.className = 'flu flu-copy'; btn.style.color = ''; }, 2000);
-  });
+  }).catch(function() { /* ignore clipboard rejection */ });
 }
 </script>
 {{end}}

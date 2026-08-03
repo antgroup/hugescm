@@ -1,4 +1,4 @@
-listen = "127.0.0.1:21000"
+listen = "127.0.0.1:22000"
 endpoint = "zeta.io"
 repositories = "/tmp/repositories"
 host_private_keys = []

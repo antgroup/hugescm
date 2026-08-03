@@ -40,6 +40,12 @@
 | [cdc.md](cdc.md) | CDC 分片 - Content-Defined Chunking 实现原理和配置 |
 | [hot.md](hot.md) | hot 命令 - Git 存储库维护工具，清理大文件、删除敏感数据、迁移对象格式 |
 
+### 部署与运维
+
+| 文档 | 描述 |
+|------|------|
+| [serve.md](serve.md) | zeta-serve 私有化部署指南 - HTTP/SSH 服务、Web 管理界面、REST API、访问控制 |
+
 ---
 
 ## 快速开始
@@ -196,6 +202,7 @@ enable_cdc = true      # 启用 CDC 分片
 
 ## 文档更新
 
+- 2026-08-03: 新增 zeta-serve 私有化部署指南（serve.md）
 - 2026-03-18: 补全设计哲学、拉取策略、分支切换、暂存功能文档
 - 2026-03-17: 添加 CDC 分片功能文档
 - 2025-08-20: 初始文档创建

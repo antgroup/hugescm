@@ -217,18 +217,84 @@ func (d *database) UnlockUser(ctx context.Context, uid int64) (*User, error) {
 }
 
 const (
-	sqlSoftDeleteUser = `UPDATE users
-	SET    username = CONCAT(username, ?),
-	       email = CONCAT(email, ?),
-	       password = '',
-	       signature_token = '',
-	       locked_at = ?,
-	       updated_at = ?
-	WHERE  id = ?`
+	// sqlCountReposByOwner counts all non-deleted repositories across every
+	// namespace (personal + group) owned by the user. If the count > 0 the
+	// user cannot be hard-deleted because the repos' author/committer history
+	// and namespace ownership still reference them.
+	sqlCountReposByOwner = `SELECT COUNT(*)
+FROM   repositories r
+INNER  JOIN namespaces n ON r.namespace_id = n.id
+WHERE  n.owner_id = ?
+AND    r.deleted_at = 0`
+
+	// sqlLockUserOnDelete disables the account and wipes credentials. Unlike
+	// the plain LockUser (which only sets locked_at for a temporary suspension),
+	// this also clears password and signature_token so the user can never
+	// authenticate again — the row is kept solely to preserve referential
+	// integrity for the repositories they own.
+	sqlLockUserOnDelete = `UPDATE users
+SET    password = '',
+       signature_token = '',
+       locked_at = ?,
+       updated_at = ?
+WHERE  id = ?`
+
+	// sqlDeleteUserEmails removes all email-map rows owned by the target user.
+	sqlDeleteUserEmails = `DELETE FROM emails WHERE uid = ?`
+
+	// sqlDeleteUser removes the user row itself. Only reached when the user
+	// owns zero repositories, so there are no dangling references.
+	sqlDeleteUser = `DELETE FROM users WHERE id = ?`
 )
 
-func (d *database) SoftDeleteUser(ctx context.Context, uid int64) error {
+// DeleteUser deletes a user, or locks the account if the user still owns
+// repositories. When the user has repos the account is permanently disabled
+// (credentials wiped, locked_at set) so the row — and the repo ownership /
+// commit history it anchors — is preserved; locked is returned as true.
+// When the user has no repos the row and its email-map entries are
+// hard-deleted in a single transaction; locked is returned as false.
+func (d *database) DeleteUser(ctx context.Context, uid int64) (locked bool, err error) {
+	var count int64
+	if err := d.QueryRowContext(ctx, sqlCountReposByOwner, uid).Scan(&count); err != nil {
+		return false, fmt.Errorf("count repos of user %d: %w", uid, err)
+	}
 	now := time.Now()
-	_, err := d.ExecContext(ctx, sqlSoftDeleteUser, DeletedSuffix, DeletedSuffix, now, now, uid)
+	if count > 0 {
+		if _, err := d.ExecContext(ctx, sqlLockUserOnDelete, now, now, uid); err != nil {
+			return false, fmt.Errorf("lock user %d on delete: %w", uid, err)
+		}
+		return true, nil
+	}
+	tx, err := d.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck // commit wins on success
+	if _, err := tx.ExecContext(ctx, sqlDeleteUserEmails, uid); err != nil {
+		return false, fmt.Errorf("delete emails of user %d: %w", uid, err)
+	}
+	if _, err := tx.ExecContext(ctx, sqlDeleteUser, uid); err != nil {
+		return false, fmt.Errorf("delete user %d: %w", uid, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+const (
+	// sqlSetUserAdministrator is a dedicated statement that grants or revokes
+	// administrator status. It deliberately touches only the admin column —
+	// not folded into sqlUpdateUser — so privilege changes can be applied and
+	// audited independently of profile (name/email/password) edits.
+	sqlSetUserAdministrator = `UPDATE users
+SET    admin = ?,
+       updated_at = ?
+WHERE  id = ?`
+)
+
+func (d *database) SetUserAdministrator(ctx context.Context, uid int64, admin bool) error {
+	now := time.Now()
+	_, err := d.ExecContext(ctx, sqlSetUserAdministrator, admin, now, uid)
 	return err
 }

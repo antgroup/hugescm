@@ -1,27 +1,60 @@
-/* zeta-web - light theme stylesheet */
+/* zeta-web — Fluent UI 2 stylesheet (Web Light, with dark overrides).
+   Brand/neutral ramps and semantic status colors follow the
+   @fluentui/tokens Web Light token set; dark overrides live in the
+   `prefers-color-scheme: dark` block at the foot of this file. */
 
 :root {
-    --bg: #f6f8fa;
-    --bg-card: #ffffff;
-    --bg-hover: #f0f2f4;
-    --text: #24292f;
-    --text-muted: #636c76;
-    --border: #d0d7de;
-    --accent: #0969da;
-    --accent-hover: #0550ae;
-    --link: #0969da;
-    --link-hover: #0550ae;
-    --code-bg: #f6f8fa;
-    --code-border: #d0d7de;
-    --green: #1a7f37;
-    --red: #cf222e;
-    --yellow: #9a6700;
+    /* Neutral surface ramp */
+    --bg: #fafafa;            /* neutralBackground2 — app canvas */
+    --bg-card: #ffffff;       /* neutralBackground1 — cards/panels */
+    --bg-hover: #f5f5f5;      /* neutralBackground3 — hover/zebra */
+    --text: #242424;          /* neutralForeground1 */
+    --text-muted: #616161;    /* neutralForeground3 */
+    --border: #d1d1d1;        /* neutralStroke1 */
+
+    /* Brand (communication blue). Used for links, icon accents, borders. */
+    --accent: #0f6cbd;        /* brandForeground1 */
+    --accent-hover: #115ea3;  /* brandForeground1Hover */
+    --link: #0f6cbd;
+    --link-hover: #115ea3;
+    --code-bg: #f5f5f5;
+    --code-border: #d1d1d1;
+
+    /* Semantic status */
+    --green: #0e700e;         /* statusSuccessForeground1 */
+    --red: #b10e1c;           /* statusDangerForeground1 */
+    --red-hover: #8c0e19;
+    --yellow: #8a5400;        /* statusWarningForeground1 */
+    --status-success-bg: #dff6dd;
+    --status-danger-bg: #fdf3f4;
+    --status-danger-border: #a4262c;
+    --status-warning-bg: #fff4ce;
+    --brand-tint: rgba(15, 108, 189, 0.08);
+    --brand-tint-strong: rgba(15, 108, 189, 0.12);
+
+    /* Focus double-ring (2px surface + 2px brand-ish stroke) */
+    --focus-inner: #ffffff;
+    --focus-outer: #242424;
+
+    /* Buttons — primary stays a theme-independent mid-blue for contrast */
     --btn-text: #ffffff;
-    --btn-secondary-bg: #f6f8fa;
-    --btn-secondary-border: #d0d7de;
-    --btn-secondary-text: #24292f;
-    --btn-secondary-hover-bg: #f0f2f4;
-    --btn-secondary-hover-border: #afb8c1;
+    --btn-primary-bg: #0f6cbd;
+    --btn-primary-bg-hover: #115ea3;
+    --btn-danger-text: #ffffff;
+    /* Buttons — subtle/secondary */
+    --btn-secondary-bg: #ffffff;
+    --btn-secondary-border: #d1d1d1;
+    --btn-secondary-text: #242424;
+    --btn-secondary-hover-bg: #f5f5f5;
+    --btn-secondary-hover-border: #b3b3b3;
+
+    /* Radius scale (2/4/6/8) */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+
+    /* Surface shadow (Fluent shadow2) */
+    --shadow-2: 0 0 0 1px var(--border), 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 2px rgba(0, 0, 0, 0.08);
 }
 
 /* FluentUI System Icons (MIT) — embedded webfont */
@@ -86,11 +119,18 @@
     box-sizing: border-box;
 }
 
+html {
+    font-size: 16px; /* explicit base — all rem values pin to the 4px grid */
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system,
+        BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -143,7 +183,7 @@ code {
 
 .navbar-nav a {
     color: var(--text);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
 }
 
 .navbar-nav a.nav-new {
@@ -244,7 +284,7 @@ th, td {
 th {
     font-weight: 600;
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -264,9 +304,9 @@ tr:hover {
 .tree-entry {
     display: flex;
     align-items: center;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
 }
 
 .tree-entry:last-child {
@@ -328,14 +368,14 @@ tr:hover {
 }
 
 .btn-copy {
-    padding: 0.25rem 0.6rem;
+    padding: 0.25rem 0.5rem;
     background: var(--btn-secondary-bg);
     border: 1px solid var(--btn-secondary-border);
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     color: var(--btn-secondary-text);
     cursor: pointer;
     font-size: 0.8rem;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s cubic-bezier(0.33, 0, 0.67, 1), border-color 0.15s cubic-bezier(0.33, 0, 0.67, 1);
 }
 
 .btn-copy:hover {
@@ -403,8 +443,8 @@ tr:hover {
 .chroma .mo { color: #0550ae; }
 .chroma .o { color: #cf222e; }
 .chroma .ow { color: #cf222e; font-weight: 600; }
-.chroma .gd { color: var(--red); background-color: #ffebe9; }
-.chroma .gi { color: var(--green); background-color: #dafbe1; }
+.chroma .gd { color: var(--red); background-color: var(--status-danger-bg); }
+.chroma .gi { color: var(--green); background-color: var(--status-success-bg); }
 .chroma .gu { color: #0550ae; font-weight: bold; }
 .chroma .err { color: var(--red); }
 
@@ -449,17 +489,17 @@ tr:hover {
 }
 
 .diff-line-add {
-    background: #dafbe1;
+    background: var(--status-success-bg);
 }
 .diff-line-del {
-    background: #ffebe9;
+    background: var(--status-danger-bg);
 }
 .diff-line-meta {
     font-weight: 600;
     color: var(--text-muted);
 }
 .diff-line-hunk {
-    background: #ddf4ff;
+    background: var(--brand-tint);
     color: var(--accent);
 }
 
@@ -468,7 +508,7 @@ tr:hover {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.45rem 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
     overflow: hidden;
@@ -558,10 +598,10 @@ a.ref-name:hover {
 }
 
 .pagination a, .pagination span {
-    padding: 0.3rem 0.7rem;
+    padding: 0.25rem 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 0.85rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
     color: var(--text);
 }
 
@@ -583,8 +623,9 @@ a.ref-name:hover {
     margin: 4rem auto;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 2rem;
+    box-shadow: var(--shadow-2);
 }
 
 .login-container h1 {
@@ -599,47 +640,112 @@ a.ref-name:hover {
 
 .form-group label {
     display: block;
-    margin-bottom: 0.3rem;
-    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: var(--text-muted);
 }
 
-.form-group input {
+/* Single source of truth for text fields so templates never repeat the
+   rule inline. Anything inside .form-group, or tagged .form-control,
+   picks up the Fluent 2 field treatment. */
+.form-control,
+.form-group input,
+.form-group select,
+.form-group textarea {
     width: 100%;
-    padding: 0.6rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     color: var(--text);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
-.form-group input:focus {
+textarea.form-control,
+.form-group textarea {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+/* Dense control for inline/table-row fields — keeps width:auto so it sits
+   next to siblings instead of stretching to 100% like a stacked field. */
+.form-control-sm {
+    width: auto;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.form-control:focus,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+    box-shadow: none; /* :focus-visible double-ring handles the affordance */
+}
+
+.form-control:disabled,
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+    color: var(--text-muted);
+    background: var(--bg-hover);
+    cursor: not-allowed;
+}
+
+/* Checkboxes and radios sit inline — they must not inherit the width:100%
+   rule from .form-group input. */
+.form-group input[type="checkbox"],
+.form-group input[type="radio"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+/* Inline checkbox/radio label — Fluent UI pattern: box on the left, label
+   text on the right, same line, normal body type (not the small muted
+   field-caption style of .form-group label). */
+.form-group .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--text);
+    cursor: pointer;
 }
 
 /* Buttons */
 .btn {
     display: inline-block;
-    padding: 0.45rem 1.1rem;
-    background: var(--accent);
+    padding: 0.5rem 1rem;
+    background: var(--btn-primary-bg);
     color: var(--btn-text);
-    border: 1px solid var(--accent);
-    border-radius: 6px;
+    border: 1px solid var(--btn-primary-bg);
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     text-decoration: none;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s cubic-bezier(0.33, 0, 0.67, 1), border-color 0.15s cubic-bezier(0.33, 0, 0.67, 1);
     line-height: 1.4;
 }
 
 .btn:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
+    background: var(--btn-primary-bg-hover);
+    border-color: var(--btn-primary-bg-hover);
     color: var(--btn-text);
     text-decoration: none;
+}
+
+.btn:disabled,
+.btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -656,12 +762,22 @@ a.ref-name:hover {
 }
 
 .alert-error {
-    background: #ffebe9;
-    border: 1px solid var(--red);
+    background: var(--status-danger-bg);
+    border: 1px solid var(--status-danger-border);
     color: var(--red);
     padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.alert-info {
+    background: rgba(15, 108, 189, 0.08);
+    border: 1px solid rgba(15, 108, 189, 0.2);
+    color: var(--accent);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
     margin-bottom: 1rem;
 }
 
@@ -740,8 +856,8 @@ a.ref-name:hover {
 .download-meta code,
 .commit-hash code,
 .ref-hash code {
-    background: rgba(9, 105, 218, 0.07);
-    border: 1px solid rgba(9, 105, 218, 0.15);
+    background: var(--brand-tint);
+    border: 1px solid var(--brand-tint-strong);
 }
 
 /* Clone box */
@@ -766,7 +882,7 @@ a.ref-name:hover {
     font-weight: 600;
     flex-shrink: 0;
     padding: 0.5rem 0.75rem;
-    background: rgba(9, 105, 218, 0.06);
+    background: var(--brand-tint);
     border-right: 1px solid var(--border);
 }
 
@@ -985,4 +1101,167 @@ a.ref-name:hover {
 .clone-box .btn-copy:hover {
     background: var(--bg-hover);
     color: var(--accent);
+}
+
+/* -----------------------------------------------------------------
+   Component utilities — single source of truth so templates never
+   repeat these as inline styles.
+   ----------------------------------------------------------------- */
+
+/* Small/dense button — table-row actions, inline form buttons. */
+.btn-sm {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+}
+
+/* Destructive action on the semantic danger status tokens. */
+.btn-danger {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--btn-danger-text);
+}
+.btn-danger:hover {
+    background: var(--red-hover);
+    border-color: var(--red-hover);
+    color: var(--btn-danger-text);
+    text-decoration: none;
+}
+
+/* Danger-styled link (e.g. a "Delete" affordance inside a list). */
+.link-danger {
+    color: var(--red);
+}
+.link-danger:hover {
+    color: var(--red-hover);
+}
+
+/* Status badges — locked accounts, etc. */
+.status-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    vertical-align: middle;
+}
+.status-badge-danger {
+    background: var(--status-danger-bg);
+    color: var(--red);
+    border: 1px solid var(--status-danger-border);
+}
+
+/* Inline muted-danger text (status meta lines) without a filled badge. */
+.status-danger-fg {
+    color: var(--red);
+}
+
+/* Table helpers */
+.td-nowrap {
+    white-space: nowrap;
+}
+
+/* Surface depth — apply to panels that want a lifted card look. */
+.shadow-card {
+    box-shadow: var(--shadow-2);
+}
+
+/* Page-level layout helpers (deduplicated from per-template inline styles). */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.muted-meta {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+/* -----------------------------------------------------------------
+   Focus — Fluent 2 two-ring (2px surface inset + 2px stroke inset).
+   Shown for keyboard navigation only (:focus-visible); mouse clicks
+   keep a clean surface. Inputs additionally shift their border to the
+   brand color on focus via the .form-control:focus rule above.
+   ----------------------------------------------------------------- */
+:focus {
+    outline: none;
+}
+:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-inner), inset 0 0 0 4px var(--focus-outer);
+}
+
+/* -----------------------------------------------------------------
+   Dark theme — flip the same tokens to Fluent 2 Web Dark. The primary
+   button keeps the theme-independent mid-blue (--btn-primary-bg is
+   intentionally NOT overridden) so its white text stays legible; the
+   danger button flips to a light-red fill with dark text.
+   ----------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1f1f1f;
+        --bg-card: #292929;
+        --bg-hover: #383838;
+        --text: #ffffff;
+        --text-muted: #adadad;
+        --border: #525252;
+        --accent: #4cc2ff;
+        --accent-hover: #62b9ff;
+        --link: #4cc2ff;
+        --link-hover: #62b9ff;
+        --code-bg: #141414;
+        --code-border: #525252;
+        --green: #5bbf5b;
+        --red: #f1707b;
+        --red-hover: #f48795;
+        --yellow: #f1c338;
+        --status-success-bg: #0d2818;
+        --status-danger-bg: #3b1a1d;
+        --status-danger-border: #f1707b;
+        --status-warning-bg: #3d2e00;
+        --brand-tint: rgba(76, 194, 255, 0.12);
+        --brand-tint-strong: rgba(76, 194, 255, 0.18);
+        --focus-inner: #292929;
+        --focus-outer: #ffffff;
+        --btn-danger-text: #1f1f1f;
+        --btn-secondary-bg: #292929;
+        --btn-secondary-border: #525252;
+        --btn-secondary-text: #ffffff;
+        --btn-secondary-hover-bg: #383838;
+        --btn-secondary-hover-border: #707070;
+        --shadow-2: 0 0 0 1px var(--border), 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* Syntax highlighting adapts to dark mode — the GitHub-Light chroma
+   palette is unreadable on a dark code card, so re-tint the token
+   classes to a GitHub-Dark-adjacent palette (readable on #292929). */
+@media (prefers-color-scheme: dark) {
+    .chroma { color: #e5e5e5; }
+    .chroma .n, .chroma .ni, .chroma .nn { color: #e5e5e5; }
+    .chroma .k, .chroma .kd, .chroma .kn, .chroma .kp, .chroma .kr,
+    .chroma .o, .chroma .ow { color: #ff7b93; }
+    .chroma .kc { color: #79c0ff; }
+    .chroma .kt, .chroma .nb, .chroma .nc { color: #ffb380; }
+    .chroma .na { color: #79c0ff; }
+    .chroma .nd, .chroma .nf, .chroma .nl { color: #d2a8ff; }
+    .chroma .nt { color: #7ee787; }
+    .chroma .s, .chroma .s1, .chroma .s2, .chroma .se, .chroma .sh,
+    .chroma .si, .chroma .sx, .chroma .sr { color: #a5d6ff; }
+    .chroma .c, .chroma .c1, .chroma .cm, .chroma .cp { color: #8b949e; font-style: italic; }
+    .chroma .m, .chroma .mi, .chroma .mf, .chroma .mh, .chroma .mo { color: #79c0ff; }
+    .chroma .gu { color: #79c0ff; font-weight: bold; }
+    .chroma .err { color: #f48795; }
+    .chroma .gd { color: var(--red); background-color: var(--status-danger-bg); }
+    .chroma .gi { color: var(--green); background-color: var(--status-success-bg); }
 }

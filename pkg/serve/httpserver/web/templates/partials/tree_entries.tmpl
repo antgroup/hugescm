@@ -4,17 +4,17 @@
 <div class="tree-view">
   {{if eq (len .Entries) 0}}
   <div class="empty-state">
-    <i class="flu flu-folder flu-xl"></i>
+    <i class="flu flu-folder flu-xl" aria-hidden="true"></i>
     <p>This directory is empty.</p>
   </div>
   {{else}}
   {{range .Entries}}
   <div class="tree-entry">
     {{if eq .Type "tree"}}
-    <span class="icon dir"><i class="flu flu-folder"></i></span>
+    <span class="icon dir"><i class="flu flu-folder" aria-hidden="true"></i></span>
     <span class="name"><a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}&path={{if $c.Breadcrumbs}}{{$c.Breadcrumbs}}/{{end}}{{.Name}}">{{.Name}}</a></span>
     {{else}}
-    <span class="icon file"><i class="flu flu-document"></i></span>
+    <span class="icon file"><i class="flu flu-document" aria-hidden="true"></i></span>
     <span class="name"><a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/blob/{{$c.Rev}}/{{if $c.Breadcrumbs}}{{$c.Breadcrumbs}}/{{end}}{{.Name}}">{{.Name}}</a></span>
     {{end}}
     <span class="size">{{if eq .Type "tree"}}-{{else}}{{humanSize .Size}}{{end}}</span>

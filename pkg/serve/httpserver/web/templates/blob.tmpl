@@ -11,23 +11,23 @@
   </div>
 
   <div class="repo-tabs">
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-code"></i>Code</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}"><i class="flu flu-history"></i>Commits</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch"></i>Branches</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag"></i>Tags</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-code" aria-hidden="true"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}"><i class="flu flu-history" aria-hidden="true"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch" aria-hidden="true"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag" aria-hidden="true"></i>Tags</a>
   </div>
 
   <div class="breadcrumb">
-    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}"><i class="flu flu-folder"></i>root</a>
+    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}"><i class="flu flu-folder" aria-hidden="true"></i>root</a>
     {{range .PathParts}}<span class="separator">/</span><a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}&path={{.Path}}">{{.Name}}</a>{{end}}
     <span class="separator">/</span> <strong>{{$c.FileName}}</strong>
   </div>
 
   <div class="blob-header">
-    <span><i class="flu flu-document"></i>{{.FileName}}</span>
+    <span><i class="flu flu-document" aria-hidden="true"></i>{{.FileName}}</span>
     <div class="blob-actions">
       {{if not .IsBinary}}
-      <button class="btn-copy" onclick="copyBlobContent(this)" title="Copy content" aria-label="Copy content"><i class="flu flu-copy"></i></button>
+      <button class="btn-copy" onclick="copyBlobContent(this)" title="Copy content" aria-label="Copy content"><i class="flu flu-copy" aria-hidden="true"></i></button>
       {{end}}
       <span style="color:var(--text-muted);">{{.Size}} bytes</span>
     </div>
@@ -40,7 +40,7 @@
     </div>
     {{else if .IsBinary}}
     <div class="download-view">
-      <div class="download-icon"><i class="flu flu-download flu-2xl"></i></div>
+      <div class="download-icon"><i class="flu flu-download flu-2xl" aria-hidden="true"></i></div>
       <div class="download-name">{{.FileName}}</div>
       <div class="download-meta">
         <span class="download-size">File size: {{humanSize .Size}}</span>
@@ -66,7 +66,7 @@
   </div>
 
   <div style="margin-top:1rem;">
-    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}" class="btn btn-secondary"><i class="flu flu-folder"></i>Back to tree</a>
+    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}" class="btn btn-secondary"><i class="flu flu-folder" aria-hidden="true"></i>Back to tree</a>
   </div>
 </div>
 <script>

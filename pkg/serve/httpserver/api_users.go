@@ -159,7 +159,8 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	JsonEncode(w, updated)
 }
 
-// handleDeleteUser soft-deletes a user. Admin only.
+// handleDeleteUser deletes a user, or locks the account if the user still
+// owns repositories. Admin only.
 func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	req, err := s.doUserAuth(w, r)
 	if err != nil {
@@ -172,8 +173,13 @@ func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.db.SoftDeleteUser(r.Context(), target.ID); err != nil {
+	locked, err := s.db.DeleteUser(r.Context(), target.ID)
+	if err != nil {
 		s.renderErrorRaw(w, r, err)
+		return
+	}
+	if locked {
+		JsonEncode(w, map[string]any{"locked": true})
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

@@ -43,7 +43,8 @@ type DB interface {
 	UpdateUser(ctx context.Context, u *User) (*User, error)
 	LockUser(ctx context.Context, uid int64) (*User, error)
 	UnlockUser(ctx context.Context, uid int64) (*User, error)
-	SoftDeleteUser(ctx context.Context, uid int64) error
+	DeleteUser(ctx context.Context, uid int64) (locked bool, err error)
+	SetUserAdministrator(ctx context.Context, uid int64, admin bool) error
 
 	// Open API: Key operations
 	ListKeysByUser(ctx context.Context, uid int64) ([]*Key, error)
@@ -52,6 +53,9 @@ type DB interface {
 	// Open API: Repository operations
 	ListRepositories(ctx context.Context, page, perPage int) ([]*Repository, int64, error)
 	ListRepositoriesByNamespace(ctx context.Context, namespaceID int64, page, perPage int) ([]*Repository, int64, error)
+	UpdateRepository(ctx context.Context, r *Repository) (*Repository, error)
+	UpdateRepositoryDefaultBranch(ctx context.Context, rid int64, branch string) (*Repository, error)
+	SearchRepositories(ctx context.Context, q string, page, perPage int) ([]*Repository, int64, error)
 
 	// Open API: Branch and Tag operations
 	ListBranches(ctx context.Context, rid int64) ([]*Branch, error)
@@ -60,6 +64,7 @@ type DB interface {
 	// Open API: Namespace operations
 	ListNamespaces(ctx context.Context, nsType *int, ownerID *int64, page, perPage int) ([]*Namespace, int64, error)
 	NewGroupNamespace(ctx context.Context, ns *Namespace) (*Namespace, error)
+	DeleteNamespaceWithTransfer(ctx context.Context, srcID, dstID int64) (int64, error)
 
 	// Open API: Member operations
 	ListMembers(ctx context.Context, sourceID int64, sourceType MemberType) ([]*Member, error)

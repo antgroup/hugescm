@@ -32,9 +32,21 @@ func (s *Server) WebRouter() chi.Router {
 	r.Group(func(auth chi.Router) {
 		auth.Use(s.webAuthMiddleware)
 		auth.Get("/", s.handleWebIndex)
+		auth.Get("/account", s.handleWebAccount)
+		auth.Post("/account", s.handleWebAccountEdit)
+		auth.Post("/account/password", s.handleWebAccountPassword)
+		auth.Get("/account/keys", s.handleWebAccountKeys)
+		auth.Get("/my-repos", s.handleWebMyRepos)
+		auth.Post("/account/keys", s.handleWebAccountAddKey)
+		auth.Post("/account/keys/{kid:[0-9]+}/delete", s.handleWebAccountDeleteKey)
 		auth.Get("/repos", s.handleWebRepos)
 		auth.Get("/repos/new", s.handleWebNewRepo)
 		auth.Post("/repos/new", s.handleWebNewRepo)
+		auth.Get("/namespaces", s.handleWebNamespaces)
+		auth.Get("/namespaces/new", s.handleWebNewNamespace)
+		auth.Post("/namespaces/new", s.handleWebNewNamespace)
+		auth.Get("/namespaces/delete", s.handleWebNamespaceDelete)
+		auth.Post("/namespaces/delete", s.handleWebNamespaceDelete)
 		auth.Get("/{namespace}", s.handleWebNamespace)
 		auth.Get("/{namespace}/{repo}", s.handleWebRepo)
 		auth.Get("/{namespace}/{repo}/tree", s.handleWebTree)
@@ -43,6 +55,35 @@ func (s *Server) WebRouter() chi.Router {
 		auth.Get("/{namespace}/{repo}/commit/{hash}", s.handleWebCommit)
 		auth.Get("/{namespace}/{repo}/branches", s.handleWebBranches)
 		auth.Get("/{namespace}/{repo}/tags", s.handleWebTags)
+
+		// Repository settings — members + description/visibility edit.
+		// Access is enforced per-handler via RepoAccessLevel (master to view,
+		// owner to mutate), mirroring the API member handlers.
+		auth.Get("/{namespace}/{repo}/settings", s.handleWebRepoSettings)
+		auth.Post("/{namespace}/{repo}/settings", s.handleWebRepoSettingsUpdate)
+		auth.Post("/{namespace}/{repo}/settings/default-branch", s.handleWebRepoSetDefaultBranch)
+		auth.Post("/{namespace}/{repo}/settings/members", s.handleWebRepoAddMember)
+		auth.Post("/{namespace}/{repo}/settings/members/{member_uid:[0-9]+}", s.handleWebRepoUpdateMember)
+		auth.Post("/{namespace}/{repo}/settings/members/{member_uid:[0-9]+}/remove", s.handleWebRepoRemoveMember)
+
+		// Admin user management — guarded by webAdminMiddleware (admin only).
+		auth.Route("/admin/users", func(admin chi.Router) {
+			admin.Use(webAdminMiddleware)
+			admin.Get("/", s.handleWebAdminUsers)
+			admin.Get("/new", s.handleWebAdminNewUser)
+			admin.Post("/new", s.handleWebAdminNewUser)
+			admin.Get("/{uid:[0-9]+}", s.handleWebAdminUserDetail)
+			admin.Post("/{uid:[0-9]+}", s.handleWebAdminEditUser)
+			admin.Post("/{uid:[0-9]+}/lock", s.handleWebAdminLockUser)
+			admin.Post("/{uid:[0-9]+}/unlock", s.handleWebAdminUnlockUser)
+			admin.Post("/{uid:[0-9]+}/promote", s.handleWebAdminPromoteUser)
+			admin.Post("/{uid:[0-9]+}/demote", s.handleWebAdminDemoteUser)
+			admin.Post("/{uid:[0-9]+}/delete", s.handleWebAdminDeleteUser)
+			admin.Post("/{uid:[0-9]+}/password", s.handleWebAdminResetPassword)
+			admin.Get("/{uid:[0-9]+}/keys", s.handleWebAdminUserKeys)
+			admin.Post("/{uid:[0-9]+}/keys", s.handleWebAdminAddKeyForUser)
+			admin.Post("/{uid:[0-9]+}/keys/{kid:[0-9]+}/delete", s.handleWebAdminDeleteKeyForUser)
+		})
 	})
 
 	return r

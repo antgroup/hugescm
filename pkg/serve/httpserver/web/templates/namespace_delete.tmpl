@@ -1,0 +1,47 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container" style="max-width:680px;">
+  <h1><i class="flu flu-org" aria-hidden="true"></i>Delete namespace {{.Namespace.Path}}</h1>
+
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+
+  {{if gt .RepoCount 0}}
+  <div class="alert-error" style="margin-bottom:1rem;">
+    This namespace has <strong>{{.RepoCount}}</strong> repositories. You must transfer them to another group namespace before <strong>{{.Namespace.Path}}</strong> can be deleted.
+  </div>
+  <form method="POST" action="/namespaces/delete" onsubmit="return confirm('Transfer {{.RepoCount}} repositories to the chosen namespace and delete {{.Namespace.Path}}?');" style="margin-bottom:1.5rem;">
+    <input type="hidden" name="id" value="{{.Namespace.ID}}">
+    <div class="form-group">
+      <label>Transfer repositories to</label>
+      <select name="transfer_to" required>
+        {{range .Destinations}}
+        <option value="{{.Path}}">{{.Path}}</option>
+        {{end}}
+      </select>
+    </div>
+    {{if eq (len .Destinations) 0}}
+    <p style="color:var(--text-muted);font-size:0.85rem;">No other group namespaces to transfer to — create one first, or empty this namespace.</p>
+    {{else}}
+    <button type="submit" class="btn btn-danger">Transfer {{.RepoCount}} repos &amp; delete</button>
+    {{end}}
+    <a href="/namespaces" class="btn btn-secondary">Cancel</a>
+  </form>
+  {{else}}
+  <p>This namespace is empty (no repositories). Delete it now?</p>
+  <form method="POST" action="/namespaces/delete" onsubmit="return confirm('Delete namespace {{.Namespace.Path}}?');" style="margin-bottom:1.5rem;">
+    <input type="hidden" name="id" value="{{.Namespace.ID}}">
+    <button type="submit" class="btn btn-danger">Delete namespace</button>
+    <a href="/namespaces" class="btn btn-secondary">Cancel</a>
+  </form>
+  {{end}}
+
+  <a href="/{{$c.Namespace.Path}}"><i class="flu flu-folder" aria-hidden="true"></i>Back to {{.Namespace.Path}}</a>
+</div>
+{{end}}
+</body>
+</html>

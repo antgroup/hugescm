@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -101,13 +102,23 @@ type webRepoListData struct {
 	Page       int
 	PerPage    int
 	TotalPages int
+	Query      string
+	QueryEnc   string // url-encoded Query for href use
 }
 
 func (s *Server) handleWebRepos(w http.ResponseWriter, r *http.Request) {
 	u := webUserFromContext(r)
 	page, perPage, _ := paginationParams(r)
+	q := r.URL.Query().Get("q")
 
-	repos, total, err := s.db.ListRepositories(r.Context(), page, perPage)
+	var repos []*database.Repository
+	var total int64
+	var err error
+	if q != "" {
+		repos, total, err = s.db.SearchRepositories(r.Context(), q, page, perPage)
+	} else {
+		repos, total, err = s.db.ListRepositories(r.Context(), page, perPage)
+	}
 	if err != nil {
 		logrus.Errorf("web: list repos error: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -145,6 +156,8 @@ func (s *Server) handleWebRepos(w http.ResponseWriter, r *http.Request) {
 			Page:       page,
 			PerPage:    perPage,
 			TotalPages: totalPages,
+			Query:      q,
+			QueryEnc:   url.QueryEscape(q),
 		},
 	}
 	s.renderer.renderPage(w, s.serverName, "repos", data)
@@ -319,6 +332,7 @@ type webRepoDetailData struct {
 	PathParts   []webPathPart
 	Breadcrumbs string
 	CloneURL    string
+	CanManage   bool // master+ — may open the repository settings page
 }
 
 type webTreeEntry struct {
@@ -374,6 +388,13 @@ func (s *Server) handleWebRepo(w http.ResponseWriter, r *http.Request) {
 
 	cloneURL := fmt.Sprintf("%s://%s/%s/%s", resolveScheme(r), r.Host, ns.Path, repo.Path)
 
+	canManage := u.Administrator
+	if !canManage {
+		if _, lvl, err := s.db.RepoAccessLevel(r.Context(), repo, u); err == nil && lvl.Sudo() {
+			canManage = true
+		}
+	}
+
 	data := &webRepoDetailData{
 		Namespace:   ns,
 		Repo:        repo,
@@ -382,6 +403,7 @@ func (s *Server) handleWebRepo(w http.ResponseWriter, r *http.Request) {
 		PathParts:   buildPathParts(path),
 		Breadcrumbs: path,
 		CloneURL:    cloneURL,
+		CanManage:   canManage,
 	}
 	pageData := &webTemplateData{
 		Title:    fmt.Sprintf("%s/%s", ns.Path, repo.Path),

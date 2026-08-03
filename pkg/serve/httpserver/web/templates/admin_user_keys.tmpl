@@ -1,0 +1,61 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container" style="max-width:720px;">
+  <h1><i class="flu flu-key" aria-hidden="true"></i>SSH keys — {{.UserName}}</h1>
+  <p class="muted-meta">Manage this user's push keys. <a href="/admin/users/{{.UID}}">Back to user</a> · <a href="/admin/users">All users</a></p>
+
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+
+  {{if eq (len .Keys) 0}}
+  <div class="empty-state">
+    <i class="flu flu-key flu-xl" aria-hidden="true"></i>
+    <p>No SSH keys.</p>
+  </div>
+  {{else}}
+  <table role="table">
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Fingerprint</th>
+        <th scope="col">Added</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Keys}}
+      <tr>
+        <td>{{.Title}}</td>
+        <td><code>{{.Fingerprint}}</code></td>
+        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+        <td>
+          <form method="POST" action="/admin/users/{{$c.UID}}/keys/{{.ID}}/delete" style="display:inline;" onsubmit="return confirm('Delete key {{.Title}}?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{end}}
+
+  <h2 style="margin-top:1.5rem;">Add key</h2>
+  <form method="POST" action="/admin/users/{{.UID}}/keys" style="margin-bottom:1.5rem;">
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="title" value="{{.InputTitle}}" required placeholder="Laptop key">
+    </div>
+    <div class="form-group">
+      <label>Public key</label>
+      <textarea name="content" required rows="6" placeholder="ssh-ed25519 AAAA...">{{.InputContent}}</textarea>
+    </div>
+    <button type="submit" class="btn"><i class="flu flu-add" aria-hidden="true"></i>Add key</button>
+  </form>
+</div>
+{{end}}
+</body>
+</html>

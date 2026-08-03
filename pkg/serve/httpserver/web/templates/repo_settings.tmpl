@@ -1,0 +1,129 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+{{$c := .}}
+<div class="container" style="max-width:760px;">
+  <h1><a href="/{{.Namespace.Path}}">{{.Namespace.Path}}</a><span class="ns"> / {{.Repo.Path}}</span> <span style="color:var(--text-muted);font-size:0.85rem;">settings</span></h1>
+  <p style="margin:0.25rem 0 1rem 0;">Default branch <code>{{if eq .Repo.DefaultBranch ""}}mainline{{else}}{{.Repo.DefaultBranch}}{{end}}</code> · Created {{.Repo.CreatedAt.Format "2006-01-02"}}</p>
+
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+
+  {{if .CanEdit}}
+  <h2 style="margin-top:1.5rem;">Repository details</h2>
+  <form method="POST" action="/{{.Namespace.Path}}/{{.Repo.Path}}/settings" style="margin-bottom:1.5rem;">
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" name="description" value="{{.Repo.Description}}" placeholder="A short description">
+    </div>
+    <div class="form-group">
+      <label>Visibility</label>
+      <select name="visible_level">
+        <option value="private" {{if eq .Repo.VisibleLevel 0}}selected{{end}}>Private</option>
+        <option value="internal" {{if eq .Repo.VisibleLevel 10}}selected{{end}}>Internal</option>
+        <option value="public" {{if eq .Repo.VisibleLevel 20}}selected{{end}}>Public</option>
+        <option value="anonymous" {{if eq .Repo.VisibleLevel 30}}selected{{end}}>Anonymous</option>
+      </select>
+    </div>
+    <button type="submit" class="btn">Save changes</button>
+  </form>
+
+  <h2 style="margin-top:1.5rem;">Default branch</h2>
+  <p style="color:var(--text-muted);font-size:0.85rem;">The branch clients check out by default. Only existing branches can be selected{{if eq (len .Branches) 0}} — there are no branches yet{{end}}.</p>
+  <form method="POST" action="/{{.Namespace.Path}}/{{.Repo.Path}}/settings/default-branch" style="margin-bottom:1.5rem;display:inline-flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group" style="margin:0;">
+      <label>Default branch</label>
+      <select name="default_branch" class="form-control" style="min-width:240px">
+        {{if eq (len .Branches) 0}}
+        <option value="{{.Repo.DefaultBranch}}" selected>{{if eq .Repo.DefaultBranch ""}}mainline{{else}}{{.Repo.DefaultBranch}}{{end}} (no branches yet)</option>
+        {{else}}
+        {{range .Branches}}
+        <option value="{{.Name}}" {{if eq .Name $c.Repo.DefaultBranch}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+        {{end}}
+      </select>
+    </div>
+    <button type="submit" class="btn" {{if eq (len .Branches) 0}}disabled{{end}}>Update default branch</button>
+  </form>
+  {{else}}
+  <div class="alert-error">You do not have owner access on this repository — changes are disabled.</div>
+  {{end}}
+
+  <h2 style="margin-top:1.5rem;">Members</h2>
+  {{if eq (len .Members) 0}}
+  <p style="color:var(--text-muted);">No members.</p>
+  {{else}}
+  <table role="table">
+    <thead>
+      <tr>
+        <th scope="col">Username</th>
+        <th scope="col">Expires</th>
+        <th scope="col">Access level</th>
+        {{if .CanEdit}}<th scope="col">Actions</th>{{end}}
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Members}}
+      <tr>
+        <td>{{.UserName}}</td>
+        <td>{{.ExpiryLabel}}</td>
+        {{if $c.CanEdit}}
+        <td>
+          <form method="POST" action="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/settings/members/{{.UID}}" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
+            <select name="access_level" class="form-control form-control-sm">
+              <option value="20" {{if eq .Level 20}}selected{{end}}>Reporter</option>
+              <option value="30" {{if eq .Level 30}}selected{{end}}>Developer</option>
+              <option value="40" {{if eq .Level 40}}selected{{end}}>Maintainer</option>
+              <option value="50" {{if eq .Level 50}}selected{{end}}>Owner</option>
+            </select>
+            <input type="date" name="expires_at" value="{{.ExpiryInput}}" title="Expiry date (empty = permanent)" class="form-control form-control-sm">
+            <button type="submit" class="btn btn-secondary btn-sm">Update</button>
+          </form>
+        </td>
+        <td>
+          <form method="POST" action="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/settings/members/{{.UID}}/remove" style="display:inline;" onsubmit="return confirm('Remove member {{.UserName}}?');">
+            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+          </form>
+        </td>
+        {{else}}
+        <td>{{.LevelLabel}}</td>
+        {{end}}
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{end}}
+
+  {{if .CanEdit}}
+  <h2 style="margin-top:1.5rem;">Add member</h2>
+  <form method="POST" action="/{{.Namespace.Path}}/{{.Repo.Path}}/settings/members" style="display:inline-flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group" style="margin:0;">
+      <label>Username</label>
+      <input type="text" name="username" required placeholder="existing-username" style="width:240px">
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Access level</label>
+      <select name="access_level">
+        <option value="20">Reporter</option>
+        <option value="30" selected>Developer</option>
+        <option value="40">Maintainer</option>
+        <option value="50">Owner</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Expires (optional)</label>
+      <input type="date" name="expires_at">
+    </div>
+    <button type="submit" class="btn"><i class="flu flu-add" aria-hidden="true"></i>Add</button>
+  </form>
+  {{end}}
+
+  <div style="margin-top:1.5rem;">
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}" class="btn btn-secondary">Back to repository</a>
+  </div>
+</div>
+{{end}}
+</body>
+</html>

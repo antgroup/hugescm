@@ -1,0 +1,40 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+<div class="container">
+  <div class="toolbar">
+    <h1><i class="flu flu-org" aria-hidden="true"></i>Namespaces</h1>
+    <a href="/namespaces/new" class="btn"><i class="flu flu-add" aria-hidden="true"></i>New namespace</a>
+  </div>
+  {{with .Content}}
+  {{if eq (len .Namespaces) 0}}
+  <div class="empty-state">
+    <i class="flu flu-org flu-xl" aria-hidden="true"></i>
+    <p>No namespaces found.</p>
+  </div>
+  {{else}}
+  <div class="repo-grid">
+    {{range .Namespaces}}
+    <div class="repo-card">
+      <div class="repo-name">
+        <a href="/{{.Path}}"><i class="flu flu-org" aria-hidden="true"></i>{{.Path}}</a>
+      </div>
+      <div class="repo-desc">{{if .Description}}{{.Description}}{{else}}No description{{end}}</div>
+      <div class="repo-meta"><span>created {{.CreatedAt.Format "2006-01-02"}}</span> {{if .CanDelete}}· <a href="/namespaces/delete?id={{.ID}}" class="link-danger">Delete</a>{{end}}</div>
+    </div>
+    {{end}}
+  </div>
+  <div class="pagination">
+    {{if gt .Page 1}}
+    <a href="/namespaces?page={{decPage .Page}}"><i class="flu flu-prev" aria-hidden="true"></i>Prev</a>
+    {{end}}
+    <span class="current">Page {{.Page}} of {{.TotalPages}}</span>
+    {{if and (lt .Page .TotalPages) (gt .TotalPages 0)}}
+    <a href="/namespaces?page={{incPage .Page}}">Next<i class="flu flu-next" aria-hidden="true"></i></a>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+</div>
+</body>
+</html>

@@ -191,6 +191,10 @@ func NewServer(sc *ServerConfig) (*Server, error) {
 		_ = srv.db.Close()
 		return nil, err
 	}
+	// Seed the first admin from [admin] if configured; idempotent and non-fatal.
+	if err := srv.bootstrapAdmin(context.Background()); err != nil {
+		logrus.Warnf("bootstrap admin skipped: %v", err)
+	}
 	return srv, nil
 }
 

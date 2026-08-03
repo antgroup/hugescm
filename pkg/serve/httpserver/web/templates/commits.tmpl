@@ -11,24 +11,24 @@
   </div>
 
   <div class="repo-tabs">
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-code"></i>Code</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}" class="active"><i class="flu flu-history"></i>Commits</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch"></i>Branches</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag"></i>Tags</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-code" aria-hidden="true"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}" class="active"><i class="flu flu-history" aria-hidden="true"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch" aria-hidden="true"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag" aria-hidden="true"></i>Tags</a>
   </div>
 
-  <h2><i class="flu flu-history"></i>Commit History ({{.Rev}})</h2>
+  <h2><i class="flu flu-history" aria-hidden="true"></i>Commit History ({{.Rev}})</h2>
 
   {{if eq (len .Commits) 0}}
   <div class="empty-state">
-    <i class="flu flu-history flu-xl"></i>
+    <i class="flu flu-history flu-xl" aria-hidden="true"></i>
     <p>No commits found.</p>
   </div>
   {{else}}
   <div class="tree-view">
     {{range .Commits}}
     <div class="commit-item">
-      <i class="flu flu-history"></i>
+      <i class="flu flu-history" aria-hidden="true"></i>
       <span class="commit-hash"><a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commit/{{.Hash}}">{{.Hash}}</a></span>
       <span class="commit-msg">{{firstLine .Message}}</span>
       <span class="commit-author">{{.Author}}</span>
@@ -39,11 +39,11 @@
 
   <div class="pagination">
     {{if gt .Page 1}}
-    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commits?rev={{$c.Rev}}&page={{decPage .Page}}"><i class="flu flu-prev"></i>Prev</a>
+    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commits?rev={{$c.Rev}}&page={{decPage .Page}}"><i class="flu flu-prev" aria-hidden="true"></i>Prev</a>
     {{end}}
     <span class="current">Page {{.Page}}</span>
     {{if .HasNext}}
-    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commits?rev={{$c.Rev}}&page={{incPage .Page}}">Next<i class="flu flu-next"></i></a>
+    <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/commits?rev={{$c.Rev}}&page={{incPage .Page}}">Next<i class="flu flu-next" aria-hidden="true"></i></a>
     {{end}}
   </div>
   {{end}}

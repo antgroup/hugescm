@@ -1,0 +1,49 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+<div class="login-container" style="max-width:560px;">
+  <h1><i class="flu flu-add" aria-hidden="true"></i>New User</h1>
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+  <form method="POST" action="/admin/users/new">
+    <div class="form-group">
+      <label><i class="flu flu-person" aria-hidden="true"></i>Username</label>
+      <input type="text" name="username" required placeholder="newuser">
+    </div>
+    <div class="form-group">
+      <label><i class="flu flu-lock" aria-hidden="true"></i>Password</label>
+      <input type="password" name="password" required placeholder="********">
+    </div>
+    <div class="form-group">
+      <label>Name (optional)</label>
+      <input type="text" name="name" placeholder="Display name">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" placeholder="user@example.com">
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select name="type">
+        <option value="individual">Individual</option>
+        <option value="bot">Bot</option>
+        <option value="remote">Remote</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-check">
+        <input type="checkbox" name="administrator" value="on">
+        Administrator
+      </label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn"><i class="flu flu-add" aria-hidden="true"></i>Create user</button>
+      <a href="/admin/users" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}
+</body>
+</html>

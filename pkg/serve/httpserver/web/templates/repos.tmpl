@@ -2,13 +2,18 @@
 <body>
 {{template "navbar" .}}
 <div class="container">
-  <h1><i class="flu flu-folder"></i>Repositories</h1>
+  <h1><i class="flu flu-folder" aria-hidden="true"></i>Repositories</h1>
   {{with .Content}}
   {{$c := .}}
+  <form method="GET" action="/repos" style="margin:0.5rem 0 1rem;display:inline-flex;gap:0.5rem;">
+    <input type="text" name="q" value="{{.Query}}" placeholder="Search repositories by name, path, description..." class="form-control" style="min-width:300px">
+    <button type="submit" class="btn btn-secondary">Search</button>
+    {{if .Query}}<a href="/repos" class="btn btn-secondary">Clear</a>{{end}}
+  </form>
   {{if eq (len .Repos) 0}}
   <div class="empty-state">
-    <i class="flu flu-folder flu-xl"></i>
-    <p>No repositories found.</p>
+    <i class="flu flu-folder flu-xl" aria-hidden="true"></i>
+    <p>{{if .Query}}No repositories matched "{{.Query}}".{{else}}No repositories found.{{end}}</p>
   </div>
   {{else}}
   <div class="repo-grid">
@@ -17,14 +22,14 @@
     <div class="repo-card">
       <div class="repo-name">
         {{if $ns}}
-        <a href="/{{$ns.Path}}/{{.Path}}"><i class="flu flu-folder"></i>{{$ns.Path}}/{{.Path}}</a>
+        <a href="/{{$ns.Path}}/{{.Path}}"><i class="flu flu-folder" aria-hidden="true"></i>{{$ns.Path}}/{{.Path}}</a>
         {{else}}
-        <a href="/unknown/{{.Path}}"><i class="flu flu-folder"></i>{{.Path}}</a>
+        <a href="/unknown/{{.Path}}"><i class="flu flu-folder" aria-hidden="true"></i>{{.Path}}</a>
         {{end}}
       </div>
       <div class="repo-desc">{{if .Description}}{{.Description}}{{else}}No description{{end}}</div>
       <div class="repo-meta">
-        <span><i class="flu flu-branch"></i>{{if eq .DefaultBranch ""}}mainline{{else}}{{.DefaultBranch}}{{end}}</span>
+        <span><i class="flu flu-branch" aria-hidden="true"></i>{{if eq .DefaultBranch ""}}mainline{{else}}{{.DefaultBranch}}{{end}}</span>
         <span>updated {{.UpdatedAt.Format "2006-01-02"}}</span>
       </div>
     </div>
@@ -32,11 +37,11 @@
   </div>
   <div class="pagination">
     {{if gt .Page 1}}
-    <a href="/repos?page={{decPage .Page}}"><i class="flu flu-prev"></i>Prev</a>
+    <a href="/repos?page={{decPage .Page}}{{if .Query}}&amp;q={{.QueryEnc}}{{end}}"><i class="flu flu-prev" aria-hidden="true"></i>Prev</a>
     {{end}}
     <span class="current">Page {{.Page}} of {{.TotalPages}}</span>
     {{if and (lt .Page .TotalPages) (gt .TotalPages 0)}}
-    <a href="/repos?page={{incPage .Page}}">Next<i class="flu flu-next"></i></a>
+    <a href="/repos?page={{incPage .Page}}{{if .Query}}&amp;q={{.QueryEnc}}{{end}}">Next<i class="flu flu-next" aria-hidden="true"></i></a>
     {{end}}
   </div>
   {{end}}

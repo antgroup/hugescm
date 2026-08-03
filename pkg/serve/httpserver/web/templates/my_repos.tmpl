@@ -1,0 +1,44 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+<div class="container">
+  <div class="toolbar">
+    <h1><i class="flu flu-folder" aria-hidden="true"></i>My repositories</h1>
+    <a href="/repos/new" class="btn"><i class="flu flu-add" aria-hidden="true"></i>New repository</a>
+  </div>
+  {{with .Content}}
+  {{$c := .}}
+  {{if eq (len .Repos) 0}}
+  <div class="empty-state">
+    <i class="flu flu-folder flu-xl" aria-hidden="true"></i>
+    <p>You have no repositories yet.</p>
+  </div>
+  {{else}}
+  <div class="repo-grid">
+    {{range .Repos}}
+    <div class="repo-card">
+      <div class="repo-name">
+        <a href="/{{$c.NamespacePath}}/{{.Path}}"><i class="flu flu-folder" aria-hidden="true"></i>{{$c.NamespacePath}}/{{.Path}}</a>
+      </div>
+      <div class="repo-desc">{{if .Description}}{{.Description}}{{else}}No description{{end}}</div>
+      <div class="repo-meta">
+        <span><i class="flu flu-branch" aria-hidden="true"></i>{{if eq .DefaultBranch ""}}mainline{{else}}{{.DefaultBranch}}{{end}}</span>
+        <span>updated {{.UpdatedAt.Format "2006-01-02"}}</span>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  <div class="pagination">
+    {{if gt .Page 1}}
+    <a href="/my-repos?page={{decPage .Page}}"><i class="flu flu-prev" aria-hidden="true"></i>Prev</a>
+    {{end}}
+    <span class="current">Page {{.Page}} of {{.TotalPages}}</span>
+    {{if and (lt .Page .TotalPages) (gt .TotalPages 0)}}
+    <a href="/my-repos?page={{incPage .Page}}">Next<i class="flu flu-next" aria-hidden="true"></i></a>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+</div>
+</body>
+</html>

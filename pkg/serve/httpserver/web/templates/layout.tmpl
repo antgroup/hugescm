@@ -15,12 +15,15 @@
   <div class="navbar-brand"><a href="/"><svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5V19"/><path d="M7 12C9 12 13 12 17 12"/><circle cx="7" cy="5" r="2.4" fill="currentColor" stroke="none"/><circle cx="7" cy="19" r="2.4" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="2.4" fill="currentColor" stroke="none"/><circle cx="17" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>HugeSCM</a></div>
   <div class="navbar-nav">
     {{if .Username}}
-    <a href="/repos"><i class="flu flu-folder"></i>Repositories</a>
-    <a href="/repos/new" class="nav-new"><i class="flu flu-add"></i>New</a>
-    <span style="color: var(--text-muted); font-size: 0.85rem;"><i class="flu flu-person"></i>{{.Username}}</span>
-    <a href="/logout"><i class="flu flu-logout"></i>Logout</a>
+    <a href="/repos"><i class="flu flu-folder" aria-hidden="true"></i>Repositories</a>
+    <a href="/my-repos"><i class="flu flu-folder" aria-hidden="true"></i>Mine</a>
+    <a href="/repos/new" class="nav-new"><i class="flu flu-add" aria-hidden="true"></i>New</a>
+    <a href="/namespaces"><i class="flu flu-org" aria-hidden="true"></i>Namespaces</a>
+    {{if .IsAdmin}}<a href="/admin/users"><i class="flu flu-person" aria-hidden="true"></i>Users</a>{{end}}
+    <a href="/account" style="color: var(--text-muted); font-size: 0.85rem;"><i class="flu flu-person" aria-hidden="true"></i>{{.Username}}</a>
+    <a href="/logout"><i class="flu flu-logout" aria-hidden="true"></i>Logout</a>
     {{else}}
-    <a href="/login"><i class="flu flu-person"></i>Login</a>
+    <a href="/login"><i class="flu flu-person" aria-hidden="true"></i>Login</a>
     {{end}}
   </div>
 </nav>

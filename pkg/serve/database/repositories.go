@@ -173,6 +173,44 @@ func (d *database) ListRepositoriesByNamespace(ctx context.Context, namespaceID 
 	return repos, total, nil
 }
 
+const (
+	// sqlSearchRepos filters non-deleted repos by a LIKE substring on
+	// name/path/description. The caller wraps q with '%'.
+	sqlCountSearchRepos = `SELECT COUNT(*) FROM repositories WHERE deleted_at = 0 AND (name LIKE ? OR path LIKE ? OR description LIKE ?)`
+
+	sqlSearchRepos = `SELECT id, name, path, namespace_id, description, visible_level, default_branch, hash_algo, compression_algo, created_at, updated_at
+	FROM   repositories
+	WHERE  deleted_at = 0 AND (name LIKE ? OR path LIKE ? OR description LIKE ?)
+	ORDER BY id
+	LIMIT  ? OFFSET ?`
+)
+
+func (d *database) SearchRepositories(ctx context.Context, q string, page, perPage int) ([]*Repository, int64, error) {
+	like := "%" + q + "%"
+	var total int64
+	if err := d.QueryRowContext(ctx, sqlCountSearchRepos, like, like, like).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * perPage
+	rows, err := d.QueryContext(ctx, sqlSearchRepos, like, like, like, perPage, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close() //nolint:errcheck
+	repos := make([]*Repository, 0, perPage)
+	for rows.Next() {
+		r := &Repository{}
+		if err := rows.Scan(&r.ID, &r.Name, &r.Path, &r.NamespaceID, &r.Description, &r.VisibleLevel, &r.DefaultBranch, &r.HashAlgo, &r.CompressionAlgo, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		repos = append(repos, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return repos, total, nil
+}
+
 func (d *database) NewRepository(ctx context.Context, r *Repository) (*Repository, error) {
 	var err error
 	if err = r.Validate(); err != nil {
@@ -202,4 +240,49 @@ func (d *database) NewRepository(ctx context.Context, r *Repository) (*Repositor
 		UpdatedAt:       now,
 		CreatedAt:       now,
 	}, nil
+}
+
+const (
+	// sqlUpdateRepository updates only the mutable repo metadata exposed via
+	// the web settings page — description and visible_level. It deliberately
+	// does not touch default_branch / hash_algo / compression_algo.
+	sqlUpdateRepository = `UPDATE repositories
+SET    description = ?,
+       visible_level = ?,
+       updated_at = ?
+WHERE  id = ?`
+)
+
+func (d *database) UpdateRepository(ctx context.Context, r *Repository) (*Repository, error) {
+	now := time.Now()
+	if _, err := d.ExecContext(ctx, sqlUpdateRepository, r.Description, r.VisibleLevel, now, r.ID); err != nil {
+		return nil, err
+	}
+	_, repo, err := d.FindRepositoryByID(ctx, int(r.ID))
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
+const (
+	// sqlUpdateRepoDefaultBranch is a dedicated statement that changes only the
+	// repository's default-branch pointer. It must land a branch that actually
+	// exists (validated by the caller) so checkout keeps resolving.
+	sqlUpdateRepoDefaultBranch = `UPDATE repositories
+SET    default_branch = ?,
+       updated_at = ?
+WHERE  id = ?`
+)
+
+func (d *database) UpdateRepositoryDefaultBranch(ctx context.Context, rid int64, branch string) (*Repository, error) {
+	now := time.Now()
+	if _, err := d.ExecContext(ctx, sqlUpdateRepoDefaultBranch, branch, now, rid); err != nil {
+		return nil, err
+	}
+	_, repo, err := d.FindRepositoryByID(ctx, int(rid))
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
 }

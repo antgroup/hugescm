@@ -1,0 +1,28 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+<div class="login-container" style="max-width:560px;">
+  <h1><i class="flu flu-org" aria-hidden="true"></i>New Namespace</h1>
+  <p class="muted-meta">A group namespace holds related repositories and members you can assign as owner. <a href="/repos/new">Create a repository instead</a></p>
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+  <form method="POST" action="/namespaces/new">
+    <div class="form-group">
+      <label><i class="flu flu-org" aria-hidden="true"></i>Namespace path</label>
+      <input type="text" name="path" value="{{.InputPath}}" required placeholder="team-platform">
+    </div>
+    <div class="form-group">
+      <label><i class="flu flu-desc" aria-hidden="true"></i>Description (optional)</label>
+      <input type="text" name="description" value="{{.InputDesc}}" placeholder="A short description">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn"><i class="flu flu-add" aria-hidden="true"></i>Create namespace</button>
+      <a href="/repos" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}
+</body>
+</html>

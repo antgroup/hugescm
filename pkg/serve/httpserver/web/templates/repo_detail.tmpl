@@ -9,32 +9,33 @@
       <h1><a href="/{{.Namespace.Path}}">{{.Namespace.Path}}</a><span class="ns"> / {{.Repo.Path}}</span></h1>
     </div>
     <div class="repo-desc">
-      <i class="flu flu-desc"></i>
+      <i class="flu flu-desc" aria-hidden="true"></i>
       {{if eq .Repo.Description ""}}<span style="color:var(--text-muted)">No description</span>{{else}}<span>{{.Repo.Description}}</span>{{end}}
     </div>
   </div>
 
   <div class="repo-tabs">
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}" class="active"><i class="flu flu-code"></i>Code</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}"><i class="flu flu-history"></i>Commits</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch"></i>Branches</a>
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag"></i>Tags</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}" class="active"><i class="flu flu-code" aria-hidden="true"></i>Code</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/commits?rev={{.Rev}}"><i class="flu flu-history" aria-hidden="true"></i>Commits</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/branches"><i class="flu flu-branch" aria-hidden="true"></i>Branches</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}/tags"><i class="flu flu-tag" aria-hidden="true"></i>Tags</a>
+    {{if .CanManage}}<a href="/{{.Namespace.Path}}/{{.Repo.Path}}/settings"><i class="flu flu-key" aria-hidden="true"></i>Settings</a>{{end}}
   </div>
 
   <div class="repo-info">
-    <span class="label"><i class="flu flu-branch"></i>Default branch:</span> {{if eq .Repo.DefaultBranch ""}}mainline{{else}}{{.Repo.DefaultBranch}}{{end}}<br>
-    <span class="label"><i class="flu flu-history"></i>Revision:</span> <code>{{.Rev}}</code>
+    <span class="label"><i class="flu flu-branch" aria-hidden="true"></i>Default branch:</span> {{if eq .Repo.DefaultBranch ""}}mainline{{else}}{{.Repo.DefaultBranch}}{{end}}<br>
+    <span class="label"><i class="flu flu-history" aria-hidden="true"></i>Revision:</span> <code>{{.Rev}}</code>
   </div>
 
   <div class="clone-box">
-    <span class="clone-label"><i class="flu flu-link"></i>Clone</span>
+    <span class="clone-label"><i class="flu flu-link" aria-hidden="true"></i>Clone</span>
     <code class="clone-url" id="clone-url">zeta co {{.CloneURL}}</code>
-    <button class="btn-copy" onclick="copyCloneURL(this)" title="Copy clone command" aria-label="Copy clone command"><i class="flu flu-copy"></i></button>
+    <button class="btn-copy" onclick="copyCloneURL(this)" title="Copy clone command" aria-label="Copy clone command"><i class="flu flu-copy" aria-hidden="true"></i></button>
   </div>
 
   {{if .PathParts}}
   <div class="breadcrumb">
-    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-folder"></i>root</a>
+    <a href="/{{.Namespace.Path}}/{{.Repo.Path}}?rev={{.Rev}}"><i class="flu flu-folder" aria-hidden="true"></i>root</a>
     {{range .PathParts}}
     <span class="separator">/</span>
     <a href="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}?rev={{$c.Rev}}&path={{.Path}}">{{.Name}}</a>

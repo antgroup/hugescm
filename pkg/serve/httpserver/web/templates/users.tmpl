@@ -1,0 +1,69 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+<div class="container">
+  <div class="toolbar">
+    <h1><i class="flu flu-person" aria-hidden="true"></i>Users</h1>
+    <a href="/admin/users/new" class="btn"><i class="flu flu-add" aria-hidden="true"></i>New user</a>
+  </div>
+  {{with .Content}}
+  {{if .FlashMsg}}
+  <div class="alert-info">{{.FlashMsg}}</div>
+  {{end}}
+  {{if eq (len .Users) 0}}
+  <div class="empty-state">
+    <i class="flu flu-person flu-xl" aria-hidden="true"></i>
+    <p>No users found.</p>
+  </div>
+  {{else}}
+  <table role="table">
+    <thead>
+      <tr>
+        <th scope="col">Username</th>
+        <th scope="col">Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Type</th>
+        <th scope="col">Status</th>
+        <th scope="col">Created</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Users}}
+      <tr>
+        <td>{{.UserName}}{{if .Admin}} <span style="font-size:0.7rem;color:var(--text-muted);">(admin)</span>{{end}}</td>
+        <td>{{.Name}}</td>
+        <td>{{.Email}}</td>
+        <td>{{.TypeLabel}}</td>
+        <td>{{if .Locked}}<span class="status-badge status-badge-danger">Locked</span>{{else}}Active{{end}}</td>
+        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+        <td class="td-nowrap">
+          <a href="/admin/users/{{.ID}}" class="btn btn-secondary btn-sm">Edit</a>
+          {{if .Locked}}
+          <form method="POST" action="/admin/users/{{.ID}}/unlock" style="display:inline;">
+            <button type="submit" class="btn btn-secondary btn-sm">Unlock</button>
+          </form>
+          {{else}}
+          <form method="POST" action="/admin/users/{{.ID}}/lock" style="display:inline;">
+            <button type="submit" class="btn btn-secondary btn-sm">Lock</button>
+          </form>
+          {{end}}
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <div class="pagination">
+    {{if gt .Page 1}}
+    <a href="/admin/users?page={{decPage .Page}}"><i class="flu flu-prev" aria-hidden="true"></i>Prev</a>
+    {{end}}
+    <span class="current">Page {{.Page}} of {{.TotalPages}}</span>
+    {{if and (lt .Page .TotalPages) (gt .TotalPages 0)}}
+    <a href="/admin/users?page={{incPage .Page}}">Next<i class="flu flu-next" aria-hidden="true"></i></a>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+</div>
+</body>
+</html>

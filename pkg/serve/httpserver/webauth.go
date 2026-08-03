@@ -94,6 +94,21 @@ func (s *Server) webAuthMiddleware(next http.Handler) http.Handler {
 // webUserKey is the context key for the web session user.
 type webUserKey struct{}
 
+// webAdminMiddleware guards admin-only web routes. It runs after the parent
+// webAuthMiddleware, which has already authenticated the user and injected it
+// into the request context, so this only checks the administrator flag.
+// Non-admins get a 403, mirroring requireAdmin (auth_open_api.go).
+func webAdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := webUserFromContext(r)
+		if u == nil || !u.Administrator {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // webUserFromContext returns the authenticated user from the request context.
 func webUserFromContext(r *http.Request) *database.User {
 	if u, ok := r.Context().Value(webUserKey{}).(*database.User); ok {

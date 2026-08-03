@@ -141,3 +141,44 @@ func (d *database) NewGroupNamespace(ctx context.Context, ns *Namespace) (*Names
 	}
 	return d.FindNamespaceByPath(ctx, ns.Path)
 }
+
+const (
+	// sqlMoveNamespaceReposTo repoints every repository whose namespace_id == src
+	// to dst. The destination must not contain a same-path repository or the
+	// unique key uk_repositories_namespace_path trips the statement, which (inside
+	// the DeleteNamespaceWithTransfer transaction) rolls the whole op back.
+	sqlMoveNamespaceReposTo = `UPDATE repositories SET namespace_id = ?, updated_at = ? WHERE namespace_id = ?`
+
+	// sqlDeleteNamespaceByID removes the namespace row itself.
+	sqlDeleteNamespaceByID = `DELETE FROM namespaces WHERE id = ?`
+)
+
+// DeleteNamespaceWithTransfer deletes a namespace, optionally moving all its
+// repositories to another namespace first. Both steps run in one transaction so
+// a mid-move failure cannot leave repositories already repointed while the
+// source namespace survives. dstID==0 means the source is empty (no repos) and
+// only the delete runs. Returns the number of repositories moved.
+func (d *database) DeleteNamespaceWithTransfer(ctx context.Context, srcID, dstID int64) (int64, error) {
+	now := time.Now()
+	tx, err := d.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	var moved int64
+	if dstID != 0 {
+		res, err := tx.ExecContext(ctx, sqlMoveNamespaceReposTo, dstID, now, srcID)
+		if err != nil {
+			_ = tx.Rollback()
+			return 0, err
+		}
+		moved, _ = res.RowsAffected()
+	}
+	if _, err := tx.ExecContext(ctx, sqlDeleteNamespaceByID, srcID); err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return moved, nil
+}

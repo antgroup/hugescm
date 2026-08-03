@@ -27,7 +27,8 @@ type ServerConfig struct {
 	X25519Key     string          `toml:"x25519_key,omitempty"`
 	Cache         *serve.Cache    `toml:"cache,omitempty"`
 	DB            *serve.Database `toml:"database,omitempty"`
-	PersistentOSS *serve.OSS      `toml:"oss,omitempty"` // Persistent storage
+	PersistentOSS *serve.OSS      `toml:"oss,omitempty"`   // Persistent storage
+	Admin         *serve.Admin    `toml:"admin,omitempty"` // Optional first-admin seed
 }
 
 func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
@@ -60,6 +61,9 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 	}
 	sc.DB.Decrypt(d)
 	sc.PersistentOSS.Decrypt(d)
+	if sc.Admin != nil {
+		sc.Admin.Decrypt(d)
+	}
 	if sc.Cache == nil {
 		sc.Cache = &serve.Cache{
 			NumCounters: 1000000000,

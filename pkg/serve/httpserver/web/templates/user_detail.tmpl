@@ -1,0 +1,65 @@
+{{template "head" .}}
+<body>
+{{template "navbar" .}}
+{{with .Content}}
+<div class="container" style="max-width:720px;">
+  <h1><i class="flu flu-person" aria-hidden="true"></i>{{.UserName}}{{if .Admin}} <span style="font-size:0.7rem;color:var(--text-muted);">(admin)</span>{{end}}</h1>
+  <div class="muted-meta">
+    Type: {{.TypeLabel}} · Status: {{if .Locked}}<span class="status-badge status-badge-danger">Locked</span>{{else}}Active{{end}} · Created: {{.CreatedAt.Format "2006-01-02"}} · <a href="/admin/users/{{.UID}}/keys">SSH keys</a>
+  </div>
+  {{if .Error}}
+  <div class="alert-error">{{.Error}}</div>
+  {{end}}
+
+  <h2 style="margin-top:1.5rem;">Edit profile</h2>
+  <form method="POST" action="/admin/users/{{.UID}}" style="margin-bottom:1.5rem;">
+    <div class="form-group">
+      <label>Username (read-only)</label>
+      <input type="text" value="{{.UserName}}" disabled>
+    </div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" name="name" value="{{.Name}}">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" value="{{.Email}}">
+    </div>
+    <button type="submit" class="btn">Save</button>
+  </form>
+
+  <h2>Reset password</h2>
+  <form method="POST" action="/admin/users/{{.UID}}/password" style="margin-bottom:1.5rem;">
+    <div class="form-group">
+      <label>New password</label>
+      <input type="password" name="new_password" required placeholder="********">
+    </div>
+    <button type="submit" class="btn">Reset password</button>
+  </form>
+
+  <h2>Account actions</h2>
+  {{if .Admin}}
+  <form method="POST" action="/admin/users/{{.UID}}/demote" style="display:inline;margin-right:0.75rem;" onsubmit="return confirm('Revoke admin rights from {{.UserName}}?');">
+    <button type="submit" class="btn btn-secondary">Revoke admin</button>
+  </form>
+  {{else}}
+  <form method="POST" action="/admin/users/{{.UID}}/promote" style="display:inline;margin-right:0.75rem;" onsubmit="return confirm('Grant admin rights to {{.UserName}}?');">
+    <button type="submit" class="btn btn-secondary">Make admin</button>
+  </form>
+  {{end}}
+  {{if .Locked}}
+  <form method="POST" action="/admin/users/{{.UID}}/unlock" style="display:inline;margin-right:0.75rem;">
+    <button type="submit" class="btn btn-secondary">Unlock account</button>
+  </form>
+  {{else}}
+  <form method="POST" action="/admin/users/{{.UID}}/lock" style="display:inline;margin-right:0.75rem;">
+    <button type="submit" class="btn btn-secondary">Lock account</button>
+  </form>
+  {{end}}
+  <form method="POST" action="/admin/users/{{.UID}}/delete" style="display:inline;" onsubmit="return confirm('Delete user {{.UserName}}? If the user owns repositories, the account will be locked instead. Otherwise the user is permanently deleted.');">
+    <button type="submit" class="btn btn-danger">Delete user</button>
+  </form>
+</div>
+{{end}}
+</body>
+</html>

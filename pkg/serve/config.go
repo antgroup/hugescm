@@ -92,6 +92,28 @@ func (o *OSS) Decrypt(d *Decrypter) {
 	}
 }
 
+// Admin is the optional first-admin account seeded on server start.
+// It is only created when [admin] is present in the config and the configured
+// username does not already exist — never hard-coded, never overwrites an
+// existing user. The password may be plaintext or, when an x25519_key is
+// configured, encrypted with the same scheme as [database].passwd.
+type Admin struct {
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+	Email    string `toml:"email,omitempty"`
+}
+
+// Decrypt resolves the admin password against the x25519 key, mirroring
+// Database.Decrypt. Safe to call with a nil receiver or nil decrypter.
+func (a *Admin) Decrypt(dec *Decrypter) {
+	if dec == nil || a == nil {
+		return
+	}
+	if pwd, err := dec.Decrypt(a.Password); err == nil {
+		a.Password = pwd
+	}
+}
+
 type Cache struct {
 	NumCounters int64 `toml:"num_counters"`
 	MaxCost     int64 `toml:"max_cost"`

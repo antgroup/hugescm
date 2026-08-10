@@ -91,6 +91,25 @@ func (s *Server) webAuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// tryWebSession attempts to authenticate via the web session cookie.
+// Returns the authenticated user if the cookie is valid and the user is not locked;
+// returns nil otherwise. Used as a fallback in doAuth so that browser-initiated
+// requests (download links, image src) to /api/v1 endpoints work with cookie auth.
+func (s *Server) tryWebSession(r *http.Request) *database.User {
+	cookie, err := r.Cookie(webSessionCookieName)
+	if err != nil || cookie.Value == "" {
+		return nil
+	}
+	u, err := s.parseWebSessionJWT(r.Context(), cookie.Value)
+	if err != nil {
+		return nil
+	}
+	if !u.LockedAt.IsZero() {
+		return nil
+	}
+	return u
+}
+
 // webUserKey is the context key for the web session user.
 type webUserKey struct{}
 

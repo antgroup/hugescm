@@ -112,41 +112,36 @@ func (s *Server) basicAuth(w http.ResponseWriter, r *http.Request, operation pro
 	}
 	// cleanup
 	u.Guard()
-	namespacePath, repoPath := chi.URLParam(r, "namespace"), chi.URLParam(r, "repo")
-	ns, repo, err := s.db.FindRepositoryByPath(r.Context(), namespacePath, repoPath)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			renderFailureFormat(w, r, http.StatusNotFound, "repo '%s/%s' not found", namespacePath, repoPath)
-			return nil, ErrStop
-		}
-		renderFailureFormat(w, r, http.StatusInternalServerError, "search repo '%s/%s' error: %v", namespacePath, repoPath, err)
-		return nil, ErrStop
-	}
-	if _, err = s.checkAccess(w, r, operation, repo, u); err != nil {
-		return nil, err
-	}
-	return &Request{
-		Request: r,
-		U:       u,
-		N:       ns,
-		R:       repo,
-	}, nil
+	return s.resolveRepoAccess(w, r, operation, u)
 }
 
 func (s *Server) doAuth(w http.ResponseWriter, r *http.Request, operation protocol.Operation) (*Request, error) {
 	cred := r.Header.Get(AUTHORIZATION)
 	bearerToken, ok := parseBearerToken(cred)
-	if !ok {
-		return s.basicAuth(w, r, operation, cred)
+	if ok {
+		u, m, err := s.ParseJWT(w, r, bearerToken)
+		if err != nil {
+			return nil, err
+		}
+		if !m.Match(operation) {
+			renderFailureFormat(w, r, http.StatusForbidden, "access denied, bearer token operation '%s' not match request operation: '%s'", m.Operation, operation)
+			return nil, ErrStop
+		}
+		return s.resolveRepoAccess(w, r, operation, u)
 	}
-	u, m, err := s.ParseJWT(w, r, bearerToken)
-	if err != nil {
-		return nil, err
+	// No Authorization header — try web session cookie (browser context: download links, image src)
+	if cred == "" {
+		if u := s.tryWebSession(r); u != nil {
+			return s.resolveRepoAccess(w, r, operation, u)
+		}
 	}
-	if !m.Match(operation) {
-		renderFailureFormat(w, r, http.StatusForbidden, "access denied, bearer token operation '%s' not match request operation: '%s'", m.Operation, operation)
-		return nil, ErrStop
-	}
+	return s.basicAuth(w, r, operation, cred)
+}
+
+// resolveRepoAccess looks up the repository by {namespace}/{repo} URL params and
+// checks the user's access level for the requested operation. Shared by doAuth
+// (Bearer token and web session cookie paths) and basicAuth.
+func (s *Server) resolveRepoAccess(w http.ResponseWriter, r *http.Request, operation protocol.Operation, u *database.User) (*Request, error) {
 	namespacePath, repoPath := chi.URLParam(r, "namespace"), chi.URLParam(r, "repo")
 	ns, repo, err := s.db.FindRepositoryByPath(r.Context(), namespacePath, repoPath)
 	if err != nil {

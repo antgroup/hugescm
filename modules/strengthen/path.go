@@ -22,6 +22,7 @@ func ExpandPath(path string) string {
 	if filepath.IsAbs(path) {
 		return path
 	}
+	path = filepath.ToSlash(path)
 	if strings.HasPrefix(path, "~") {
 		// For Windows systems, please replace the path separator first
 		pos := strings.IndexByte(path, '/')

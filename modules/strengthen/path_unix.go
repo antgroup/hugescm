@@ -43,33 +43,36 @@ func ResolveSymbolicLink(path string) (string, error) {
 //
 //	~/.someconf -> /home/alec/.someconf
 //	~alec/.someconf -> /home/alec/.someconf
-func ExpandPath(path string) string {
-	if filepath.IsAbs(path) {
-		return path
+func ExpandPath(rawPath string) string {
+	if filepath.IsAbs(rawPath) {
+		return rawPath
 	}
-	if strings.HasPrefix(path, "~") {
-		// For Windows systems, please replace the path separator first
-		pos := strings.IndexByte(path, '/')
-		switch {
-		case pos == 1:
-			if homeDir, err := os.UserHomeDir(); err == nil {
-				return filepath.Join(homeDir, path[2:])
-			}
-		case pos > 1:
-			// https://github.com/golang/go/issues/24383
-			// macOS may not produce correct results
-			username := path[1:pos]
-			if userAccount, err := user.Lookup(username); err == nil {
-				return filepath.Join(userAccount.HomeDir, path[pos+1:])
-			}
-		default:
+	p, ok := strings.CutPrefix(rawPath, "~")
+	if !ok {
+		abspath, err := filepath.Abs(rawPath)
+		if err != nil {
+			return rawPath
 		}
+		return abspath
 	}
-	abspath, err := filepath.Abs(path)
-	if err != nil {
-		return path
+	username, suffix, ok := strings.Cut(p, "/")
+	var homeDir string
+	var err error
+	if username == "" {
+		if homeDir, err = os.UserHomeDir(); err != nil {
+			return rawPath
+		}
+	} else {
+		userAccount, err := user.Lookup(username)
+		if err != nil {
+			return rawPath
+		}
+		homeDir = userAccount.HomeDir
 	}
-	return abspath
+	if ok {
+		return filepath.Join(homeDir, suffix)
+	}
+	return homeDir
 }
 
 func PathResolve(p string) (string, error) {

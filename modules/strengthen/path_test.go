@@ -13,9 +13,18 @@ func TestExpandPath(t *testing.T) {
 		return
 	}
 	dirs := []string{
-		"~/.zetaignore", "~" + u.Username + "/jacksone", "/tmp/jock", "~root/downloads",
+		"~/.zetaignore",
+		"~" + u.Username + "/jacksone",
+		"/tmp/jock",
+		"~root/downloads",
+		"~root",
+		"~",
 	}
 	for _, d := range dirs {
 		fmt.Fprintf(os.Stderr, "%s --> %s\n", d, ExpandPath(d))
 	}
+}
+
+func TestPathCut(t *testing.T) {
+
 }

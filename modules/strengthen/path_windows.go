@@ -20,6 +20,8 @@ package strengthen
 
 import (
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"sync"
 	"unicode/utf16"
@@ -181,4 +183,79 @@ func ResolveSymbolicLink(path string) (string, error) {
 	// via resolvePath which uses GetFinalPathNameByHandle. This returns either a path prefixed with `\\?\`,
 	// or a remote share path in the form \\server\share. These should work with most Go and Windows APIs.
 	return resolvePath(path)
+}
+
+// ExpandPath is a helper function to expand a relative or home-relative path to an absolute path.
+//
+// eg.
+//
+//	~/.someconf -> /home/alec/.someconf
+//	~alec/.someconf -> /home/alec/.someconf
+func ExpandPath(path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	path = filepath.ToSlash(path)
+	if strings.HasPrefix(path, "~") {
+		// For Windows systems, please replace the path separator first
+		pos := strings.IndexByte(path, '/')
+		switch {
+		case pos == 1:
+			if homeDir, err := os.UserHomeDir(); err == nil {
+				return filepath.Join(homeDir, path[2:])
+			}
+		case pos > 1:
+			// https://github.com/golang/go/issues/24383
+			// macOS may not produce correct results
+			username := path[1:pos]
+			if userAccount, err := user.Lookup(username); err == nil {
+				return filepath.Join(userAccount.HomeDir, path[pos+1:])
+			}
+		default:
+		}
+	}
+	abspath, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	return abspath
+}
+
+func PathResolve(p string) (string, error) {
+	pp := WindowsExpandEnv(ExpandPath(p))
+	_, err := os.Stat(pp)
+	return pp, err
+}
+
+func WindowsExpandEnv(s string) string {
+	var b strings.Builder
+	for {
+		i := strings.Index(s, "%")
+		if i < 0 {
+			b.WriteString(s)
+			break
+		}
+		b.WriteString(s[:i])
+		s = s[i+1:]
+		j := strings.Index(s, "%")
+		if j < 0 {
+			b.WriteByte('%')
+			b.WriteString(s)
+			break
+		}
+		name := s[:j]
+		s = s[j+1:]
+		if name == "" {
+			b.WriteByte('%') // "%%" → "%"
+			continue
+		}
+		if v, ok := os.LookupEnv(name); ok {
+			b.WriteString(v)
+			continue
+		}
+		b.WriteByte('%')
+		b.WriteString(name)
+		b.WriteByte('%')
+	}
+	return b.String()
 }

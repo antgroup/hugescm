@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -112,21 +113,40 @@ func (d *database) ListDeployKeysByRepo(ctx context.Context, rid int64) ([]*Key,
 
 // AddDeployKey creates a deploy key (type=DeployKey, not bound to any user)
 // and binds it to the given repository via deploy_keys_repositories.
+// Both inserts are wrapped in a single transaction so a binding failure
+// (e.g. duplicate fingerprint) does not leave an orphan ssh_keys row.
 func (d *database) AddDeployKey(ctx context.Context, k *Key, rid int64) (*Key, error) {
 	now := time.Now()
 	if k.Type != DeployKey {
 		k.Type = DeployKey
 	}
-	result, err := d.ExecContext(ctx, "insert into ssh_keys(uid, content, title, type, fingerprint, created_at, updated_at) values(?,?,?,?,?,?,?)",
-		0, k.Content, k.Title, k.Type, k.Fingerprint, now, now)
+	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
+		return nil, fmt.Errorf("new tx error: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, "insert into ssh_keys(uid, content, title, type, fingerprint, created_at, updated_at) values(?,?,?,?,?,?,?)",
+		0, k.Content, k.Title, k.Type, k.Fingerprint, now, now)
+	if IsDupEntry(err) {
+		_ = tx.Rollback()
+		return nil, &ErrExist{message: "key already exists"}
+	}
+	if err != nil {
+		_ = tx.Rollback()
 		return nil, err
 	}
 	kid, err := result.LastInsertId()
 	if err != nil {
+		_ = tx.Rollback()
 		return nil, err
 	}
-	if _, err := d.ExecContext(ctx, "insert into deploy_keys_repositories(kid, rid) values(?,?)", kid, rid); err != nil {
+	if _, err := tx.ExecContext(ctx, "insert into deploy_keys_repositories(kid, rid) values(?,?)", kid, rid); err != nil {
+		_ = tx.Rollback()
+		if IsDupEntry(err) {
+			return nil, &ErrExist{message: "deploy key already exists"}
+		}
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return d.SearchKey(ctx, k.Fingerprint)
@@ -134,11 +154,38 @@ func (d *database) AddDeployKey(ctx context.Context, k *Key, rid int64) (*Key, e
 
 // RemoveDeployKey unbinds a deploy key from the repository and deletes
 // the key record. A deploy key is repo-scoped, so removal is a two-step
-// delete: first the binding, then the key itself.
+// delete inside a single transaction: first the binding (verified by
+// kid+rid), then the key itself (guarded by type=DeployKey).
+//
+// Security: the binding DELETE checks both kid AND rid, so a caller
+// cannot remove a key that is not bound to their repo. The RowsAffected
+// count must be 1 before deleting the ssh_keys row, and the ssh_keys
+// DELETE includes a type=DeployKey guard as defense-in-depth to ensure
+// a BasicKey (personal SSH key) can never be deleted through this path.
 func (d *database) RemoveDeployKey(ctx context.Context, kid int64, rid int64) error {
-	if _, err := d.ExecContext(ctx, "DELETE FROM deploy_keys_repositories WHERE kid=? AND rid=?", kid, rid); err != nil {
+	tx, err := d.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("new tx error: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, "DELETE FROM deploy_keys_repositories WHERE kid=? AND rid=?", kid, rid)
+	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
-	_, err := d.ExecContext(ctx, "DELETE FROM ssh_keys WHERE id=?", kid)
-	return err
+	n, err := result.RowsAffected()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if n == 0 {
+		_ = tx.Rollback()
+		// No binding found for this kid+rid — the key does not belong
+		// to this repo (or does not exist). Do not touch ssh_keys.
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM ssh_keys WHERE id=? AND type=?", kid, DeployKey); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }

@@ -43,6 +43,21 @@ linux*)
 		echo "build HugeSCM failed"
 		exit 1
 	fi
+	echo -e "build for \x1b[32mzeta-serve linux/amd64\x1b[0m"
+	if ! bali -M cmd/zeta-serve --pack='rpm,deb,tar' --target=linux --arch=amd64; then
+		echo "build zeta-serve failed"
+		exit 1
+	fi
+	echo -e "build for \x1b[32mzeta-serve linux/arm64\x1b[0m"
+	if ! bali -M cmd/zeta-serve --pack='rpm,deb,tar' --target=linux --arch=arm64; then
+		echo "build zeta-serve failed"
+		exit 1
+	fi
+	echo -e "build for \x1b[32mzeta-serve linux/loong64\x1b[0m"
+	if ! bali -M cmd/zeta-serve --pack='rpm,deb,tar' --target=linux --arch=loong64; then
+		echo "build zeta-serve failed"
+		exit 1
+	fi
 	echo -e "build for \x1b[32mdarwin/amd64\x1b[0m"
 	if ! bali '--pack=tar,sh' --target=darwin --arch=amd64; then
 		echo "build HugeSCM failed"

@@ -48,6 +48,10 @@ func (s *Server) handleWebRepoAddDeployKey(w http.ResponseWriter, r *http.Reques
 		Type:        database.DeployKey,
 		Fingerprint: ssh.FingerprintSHA256(pk),
 	}, repo.ID); err != nil {
+		if database.IsErrExist(err) {
+			http.Error(w, "deploy key already exists (duplicate fingerprint)", http.StatusConflict)
+			return
+		}
 		logrus.Errorf("web settings: add deploy key %s/%s: %v", ns.Path, repo.Path, err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return

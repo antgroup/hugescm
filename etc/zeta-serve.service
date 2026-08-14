@@ -1,0 +1,29 @@
+[Unit]
+Description=HugeSCM zeta-serve (HTTP + SSH) server
+Documentation=https://github.com/antgroup/hugescm
+After=network-online.target
+Wants=network-online.target
+# Edit / drop these if your OS doesn't have the relevant units.
+# After MySQL / OceanBase so the metadata DB is up before zeta-serve starts.
+After=mysqld.service mariadb.service oceanbase-server.service
+
+[Service]
+Type=simple
+User=zeta
+Group=zeta
+
+# Edit the config path to your environment. The -E flag expands ${var} in
+# the config (e.g. ${DB_PASSWORD}, ${OSS_SECRET}).
+EnvironmentFile=/etc/zeta-serve/zeta-serve.env
+ExecStart=/usr/local/bin/zeta-serve serve -c /etc/zeta-serve/zeta-serve.toml -E
+
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=6m
+
+# Large blob transfer: let zeta-serve use plenty of memory + FDs.
+LimitNOFILE=65535
+LimitDATA=infinity
+
+[Install]
+WantedBy=multi-user.target

@@ -120,6 +120,75 @@
   </form>
   {{end}}
 
+  {{if .CanEdit}}
+  <h2 style="margin-top:1.5rem;">Deploy keys</h2>
+  <p style="color:var(--text-muted);font-size:0.85rem;">Deploy keys are repo-scoped SSH public keys (not tied to a user). Use them for CI/CD and automation.</p>
+  {{if eq (len .DeployKeys) 0}}
+  <p style="color:var(--text-muted);">No deploy keys.</p>
+  {{else}}
+  <table role="table">
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Fingerprint</th>
+        <th scope="col">Added</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .DeployKeys}}
+      <tr>
+        <td>{{.Title}}</td>
+        <td><code>{{.Fingerprint}}</code></td>
+        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+        <td>
+          <form method="POST" action="/{{$c.Namespace.Path}}/{{$c.Repo.Path}}/settings/deploy-keys/{{.ID}}/remove" style="display:inline;" onsubmit="return confirm('Remove deploy key {{.Title}}?');">
+            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{end}}
+  <h3 style="margin-top:1rem;">Add deploy key</h3>
+  <form method="POST" action="/{{.Namespace.Path}}/{{.Repo.Path}}/settings/deploy-keys" style="margin-bottom:1.5rem;">
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="title" required placeholder="CI build key">
+    </div>
+    <div class="form-group">
+      <label>Public key</label>
+      <textarea name="content" required rows="6" placeholder="ssh-ed25519 AAAA..."></textarea>
+    </div>
+    <button type="submit" class="btn"><i class="flu flu-add" aria-hidden="true"></i>Add deploy key</button>
+  </form>
+  {{else}}
+  <h2 style="margin-top:1.5rem;">Deploy keys</h2>
+  {{if eq (len .DeployKeys) 0}}
+  <p style="color:var(--text-muted);">No deploy keys.</p>
+  {{else}}
+  <table role="table">
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Fingerprint</th>
+        <th scope="col">Added</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .DeployKeys}}
+      <tr>
+        <td>{{.Title}}</td>
+        <td><code>{{.Fingerprint}}</code></td>
+        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{end}}
+  {{end}}
+
   <div style="margin-top:1.5rem;">
     <a href="/{{.Namespace.Path}}/{{.Repo.Path}}" class="btn btn-secondary">Back to repository</a>
   </div>

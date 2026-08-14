@@ -50,6 +50,11 @@ type DB interface {
 	ListKeysByUser(ctx context.Context, uid int64) ([]*Key, error)
 	DeleteKey(ctx context.Context, id int64) error
 
+	// Deploy key operations (repo-level SSH keys for CI/CD)
+	ListDeployKeysByRepo(ctx context.Context, rid int64) ([]*Key, error)
+	AddDeployKey(ctx context.Context, k *Key, rid int64) (*Key, error)
+	RemoveDeployKey(ctx context.Context, kid int64, rid int64) error
+
 	// Open API: Repository operations
 	ListRepositories(ctx context.Context, page, perPage int) ([]*Repository, int64, error)
 	ListRepositoriesByNamespace(ctx context.Context, namespaceID int64, page, perPage int) ([]*Repository, int64, error)

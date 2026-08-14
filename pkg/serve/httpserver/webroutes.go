@@ -65,6 +65,8 @@ func (s *Server) WebRouter() chi.Router {
 		auth.Post("/{namespace}/{repo}/settings/members", s.handleWebRepoAddMember)
 		auth.Post("/{namespace}/{repo}/settings/members/{member_uid:[0-9]+}", s.handleWebRepoUpdateMember)
 		auth.Post("/{namespace}/{repo}/settings/members/{member_uid:[0-9]+}/remove", s.handleWebRepoRemoveMember)
+		auth.Post("/{namespace}/{repo}/settings/deploy-keys", s.handleWebRepoAddDeployKey)
+		auth.Post("/{namespace}/{repo}/settings/deploy-keys/{kid:[0-9]+}/remove", s.handleWebRepoRemoveDeployKey)
 
 		// Admin user management — guarded by webAdminMiddleware (admin only).
 		auth.Route("/admin/users", func(admin chi.Router) {

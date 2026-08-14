@@ -16,6 +16,7 @@ local/*
 *.tomlp1
 *.modp1
 *.sump1
+*.tmplp1
 *.rej
 *.mdp1
 /out/

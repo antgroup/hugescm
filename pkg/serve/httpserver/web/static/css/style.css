@@ -897,6 +897,45 @@ textarea.form-control,
     align-self: center;
 }
 
+/* Clone wrapper — wraps tabs + URL bar into one unit */
+.clone-wrapper {
+    margin-bottom: 1.5rem;
+}
+
+.clone-wrapper .clone-box {
+    margin-bottom: 0;
+}
+
+.clone-tabs {
+    display: inline-flex;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.4rem;
+}
+
+.clone-tabs .tab {
+    background: transparent;
+    border: none;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.1s ease, color 0.1s ease;
+}
+
+.clone-tabs .tab:hover {
+    color: var(--text);
+    background: var(--brand-tint);
+}
+
+.clone-tabs .tab.active {
+    background: var(--brand-tint-strong);
+    color: var(--accent);
+}
+
 /* Empty state */
 .empty-state {
     text-align: center;

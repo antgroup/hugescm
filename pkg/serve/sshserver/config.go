@@ -28,6 +28,11 @@ type ServerConfig struct {
 	Cache           *serve.Cache    `toml:"cache,omitempty"`
 	DB              *serve.Database `toml:"database,omitempty"`
 	PersistentOSS   *serve.OSS      `toml:"oss,omitempty"`
+	// SSHListen overrides Listen when set.  Useful for shared config files
+	// where top-level `listen` is the HTTP listen address and the SSH
+	// listen port is supplied via the alias `ssh_listen`.  In standalone
+	// sshd configs (no ssh_listen), `listen` is used as before.
+	SSHListen string `toml:"ssh_listen,omitempty"`
 }
 
 func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
@@ -48,6 +53,9 @@ func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {
 	}
 	if err := toml.NewDecoder(r).Decode(sc); err != nil {
 		return nil, err
+	}
+	if len(sc.SSHListen) > 0 {
+		sc.Listen = sc.SSHListen
 	}
 	var d *serve.Decrypter
 	if len(sc.X25519Key) != 0 {

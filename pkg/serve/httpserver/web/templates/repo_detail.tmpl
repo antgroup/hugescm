@@ -27,10 +27,17 @@
     <span class="label"><i class="flu flu-history" aria-hidden="true"></i>Revision:</span> <code>{{.Rev}}</code>
   </div>
 
-  <div class="clone-box">
-    <span class="clone-label"><i class="flu flu-link" aria-hidden="true"></i>Clone</span>
-    <code class="clone-url" id="clone-url">zeta co {{.CloneURL}}</code>
-    <button class="btn-copy" onclick="copyCloneURL(this)" title="Copy clone command" aria-label="Copy clone command"><i class="flu flu-copy" aria-hidden="true"></i></button>
+  <div class="clone-wrapper">
+    {{if .SSHCloneURL}}
+    <div class="clone-tabs">
+      <button type="button" class="tab active" data-cmd="zeta co {{.CloneURL}}" onclick="switchCloneTab(this)">HTTP</button>
+      <button type="button" class="tab" data-cmd="zeta co {{.SSHCloneURL}}" onclick="switchCloneTab(this)">SSH</button>
+    </div>
+    {{end}}
+    <div class="clone-box">
+      <code class="clone-url">zeta co {{.CloneURL}}</code>
+      <button class="btn-copy" onclick="copyCheckoutURL(this)" title="Copy checkout command" aria-label="Copy checkout command"><i class="flu flu-copy" aria-hidden="true"></i></button>
+    </div>
   </div>
 
   {{if .PathParts}}
@@ -48,8 +55,22 @@
   </div>
 </div>
 <script>
-function copyCloneURL(btn) {
-  var el = document.getElementById('clone-url');
+function switchCloneTab(btn) {
+  // Highlight the clicked tab and update the URL bar content.
+  var tabs = btn.parentElement.querySelectorAll('.tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  // The .clone-box sits next to .clone-tabs inside .clone-wrapper.
+  var box = btn.closest('.clone-wrapper').querySelector('.clone-box');
+  if (!box) return;
+  var url = box.querySelector('.clone-url');
+  if (url) url.textContent = btn.getAttribute('data-cmd');
+}
+
+function copyCheckoutURL(btn) {
+  var box = btn.closest('.clone-box');
+  if (!box) return;
+  var el = box.querySelector('.clone-url');
   if (!el) return;
   var icon = btn.querySelector('.flu');
   navigator.clipboard.writeText(el.textContent).then(function() {

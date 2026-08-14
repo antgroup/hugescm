@@ -1,0 +1,52 @@
+# https://toml.io/en/
+#
+# Bali packaging config for the zeta-serve server binary.
+# This file is intentionally separate from the project-root bali.toml (which
+# only packages the zeta client, zeta-mc and hot) so client and server can be
+# built and shipped independently.
+#
+# Usage:
+#   make zeta-serve-package
+#   # or directly:
+#   bali -M cmd/zeta-serve build -T linux -A amd64 --pack rpm --pack tar --release 0.30.0 -D out/zeta-serve
+#
+# The resulting package ships:
+#   /usr/local/bin/zeta-serve
+#   /usr/local/share/zeta-serve/LEGAL.md
+#   /usr/local/share/zeta-serve/LICENSE
+#   /usr/local/share/zeta-serve/zeta-serve.toml   ← unified sample config
+
+name = "zeta-serve"
+summary = "HugeSCM zeta-serve — HTTP + SSH server for the zeta version control system"
+description = "HugeSCM zeta-serve — HTTP + SSH server for the zeta version control system"
+package-name = "alipay-linkc-zeta-serve"
+version = "0.30.0"
+license = "MIT"
+prefix = "/usr/local"
+packager = "江二"
+vendor = "蚂蚁集团代码平台团队"
+group = "alipay/application"
+authors = [""]
+
+# Only the zeta-serve main package ships from this crate set. With
+# bali -M cmd/zeta-serve the module directory is cmd/zeta-serve/, so the
+# crate path "." points to the crate.toml in this same directory.
+crates = [
+    ".",
+]
+
+[[include]]
+path = "../../LEGAL.md"
+destination = "share/zeta-serve"
+
+[[include]]
+path = "../../LICENSE"
+destination = "share/zeta-serve"
+
+[[include]]
+path = "../../share/zeta-serve.toml"
+destination = "share/zeta-serve"
+
+[[include]]
+path = "../../etc/zeta-serve.service"
+destination = "share/zeta-serve/sample"

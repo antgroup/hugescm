@@ -1,0 +1,42 @@
+# Shared config for `zeta-serve serve` — read by both httpd and sshd
+# parsers from this single file. The TOML decoder ignores fields it
+# does not know, so the httpd sees its listen/[admin] and the sshd
+# sees its host_private_keys/ssh_listen from the same file.
+#
+# Field ownership:
+#   listen           → httpd HTTP listen  (sshd ignores unless ssh_listen is absent)
+#   ssh_listen       → sshd SSH listen    (overrides listen for sshd)
+#   endpoint         → shared: sshd uses it to build `zeta@{endpoint}:{ns}/{repo}`
+#                       remote URLs; httpd uses it (with ssh_listen) to render
+#                       an SSH checkout URL on the repository detail page
+#   host_private_keys → sshd only (httpd ignores)
+#   [admin]          → httpd only (sshd ignores) — seeds first admin from config
+
+listen          = "127.0.0.1:21000"
+ssh_listen      = "127.0.0.1:22000"
+endpoint        = "zeta.io"
+repositories    = "/tmp/repositories"
+host_private_keys = []
+
+# decrypted_key = """"""
+# 
+banner_version = "zeta-serve/1.0"
+
+[database]
+name = "zetadev"
+user = ""
+host = ""
+port = 2883
+passwd = ""
+
+[oss]
+endpoint = ""
+shared_endpoint = ""
+bucket = ""
+access_key_id = ""
+access_key_secret = ""
+
+[admin]
+username = "admin"
+password = ""
+email = "admin@example.com"

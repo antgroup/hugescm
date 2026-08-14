@@ -41,12 +41,13 @@ type webMemberRow struct {
 }
 
 type webRepoSettingsData struct {
-	Namespace *database.Namespace
-	Repo      *database.Repository
-	Members   []webMemberRow
-	Branches  []*database.Branch
-	CanEdit   bool // owner+ may edit metadata and manage members
-	Error     string
+	Namespace  *database.Namespace
+	Repo       *database.Repository
+	Members    []webMemberRow
+	Branches   []*database.Branch
+	DeployKeys []webKeyRow
+	CanEdit    bool // owner+ may edit metadata and manage members
+	Error      string
 }
 
 // webRepoForSettings resolves the {namespace}/{repo} path params to a repo and
@@ -128,16 +129,32 @@ func (s *Server) handleWebRepoSettings(w http.ResponseWriter, r *http.Request) {
 	if branches == nil {
 		branches = []*database.Branch{}
 	}
+	deployKeys, err := s.db.ListDeployKeysByRepo(r.Context(), repo.ID)
+	if err != nil {
+		logrus.Errorf("web settings: list deploy keys %s/%s: %v", ns.Path, repo.Path, err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	dkRows := make([]webKeyRow, 0, len(deployKeys))
+	for _, k := range deployKeys {
+		dkRows = append(dkRows, webKeyRow{
+			ID:          k.ID,
+			Title:       k.Title,
+			Fingerprint: k.Fingerprint,
+			CreatedAt:   k.CreatedAt,
+		})
+	}
 	pageData := &webTemplateData{
 		Title:    fmt.Sprintf("%s/%s settings", ns.Path, repo.Path),
 		Username: u.UserName,
 		IsAdmin:  u.Administrator,
 		Content: &webRepoSettingsData{
-			Namespace: ns,
-			Repo:      repo,
-			Members:   rows,
-			Branches:  branches,
-			CanEdit:   level >= database.OwnerAccess,
+			Namespace:  ns,
+			Repo:       repo,
+			Members:    rows,
+			Branches:   branches,
+			DeployKeys: dkRows,
+			CanEdit:    level >= database.OwnerAccess,
 		},
 	}
 	s.renderer.renderPage(w, s.serverName, "repo_settings", pageData)

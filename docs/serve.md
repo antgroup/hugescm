@@ -197,21 +197,156 @@ buffer_items = 64
 > zeta-serve httpd -c config.toml -E
 > ```
 
-### 2.6 启动服务
+#### 共享配置（推荐）
 
-```shell
-# 启动 HTTP 服务
-zeta-serve httpd -c ~/config/zeta-serve-httpd.toml
+为简化运维，zeta-serve 支持一份配置文件同时驱动 httpd + sshd。需要同时跑 HTTP 和 SSH 的私有化部署推荐用此模式，避免在两份文件中重复 `[database]` / `[oss]` / `x25519_key` 等字段。
 
-# 启动 SSH 服务
-zeta-serve sshd -c ~/config/zeta-serve-sshd.toml
+共享配置的写法在 `share/zeta-serve.toml` 中有完整模板，关键字段如下：
 
-# 调试模式
-zeta-serve httpd -c config.toml -V   # verbose
-zeta-serve sshd -c config.toml -V
+| 字段 | 归属 | 说明 |
+|------|------|------|
+| `listen` | httpd | HTTP 监听端口（默认 127.0.0.1:21000） |
+| `ssh_listen` | sshd | SSH 监听端口（**覆盖 listen** 给 sshd 用，默认 127.0.0.1:22000） |
+| `endpoint` | 共用 | sshd 用 `zeta@{endpoint}:{ns}/{repo}` 拼远程 URL；httpd 用它在仓库详情页提供 SSH checkout URL |
+| `host_private_keys` | sshd | SSH host key，httpd 忽略 |
+| `[admin]` | httpd | 首个管理员；sshd 忽略 |
+| `banner_version` / `x25519_key` / `repositories` / `[database]` / `[oss]` / `[cache]` | 共用 | 两边的 TOML decoder 各取所需 |
+
+一份最小共享配置：
+
+```toml
+listen          = "0.0.0.0:21000"      # httpd HTTP listen
+ssh_listen      = "0.0.0.0:22000"      # sshd SSH listen (覆盖 listen 给 sshd)
+endpoint        = "zeta.example.com"   # 共用：客户端 ssh URL 用其中主机部分
+banner_version  = "zeta-serve/1.0"
+repositories    = "/data/zeta/repositories"
+x25519_key      = '''<PEM>'''
+
+host_private_keys = [
+    '''-----BEGIN RSA PRIVATE KEY-----
+<RSA host key>
+-----END RSA PRIVATE KEY-----''',
+    '''-----BEGIN PRIVATE KEY-----
+<ed25519 host key>
+-----END PRIVATE KEY-----''',
+]
+
+[admin]
+username = "admin"
+password = "ENC@<encrypted_password>"
+email    = "admin@example.com"
+
+[database]
+# 共用
+...
+
+[oss]
+# 共用
+...
 ```
 
+### 2.6 启动服务
+
+三种启动方式：
+
+```shell
+# 1. 单独启动 HTTP（不带 SSH）
+zeta-serve httpd -c ~/config/zeta-serve-httpd.toml
+
+# 2. 单独启动 SSH（不带 HTTP）
+zeta-serve sshd -c ~/config/zeta-serve-sshd.toml
+
+# 3. 推荐：一个命令同时启动 HTTP + SSH（共享一份配置）
+zeta-serve serve -c ~/config/zeta-serve.toml -E
+
+# 调试模式（任何子命令都支持）
+zeta-serve httpd -c config.toml -V   # verbose
+zeta-serve sshd -c config.toml -V
+zeta-serve serve -c config.toml -V
+```
+
+`serve` 子命令同时起 httpd 和 sshd：
+
+- 默认配置文件 `~/config/zeta-serve.toml`
+- 单进程，两个 goroutine 分别跑 HTTP `ListenAndServe` 和 SSH `ListenAndServe`
+- 收到 SIGINT/SIGTERM/HUP 时同时触发双方 graceful shutdown（6 分钟超时兜底）
+- 任一服务异常退出会自动带停另一个，避免半边存活的状态
+
 启动后若配置了 `[admin]` 段，首个管理员账号会自动创建（幂等，重复启动不会覆盖已有账号）。
+
+### 2.7 打包与发行
+
+`make zeta-serve` 只编译单文件 `bin/zeta-serve`，不附带配置、systemd、License。要发行到生产环境时用 `make zeta-serve-package` 走 bali 流程打 tar/rpm 包。
+
+#### 2.7.1 构建一份完整的发行包
+
+```shell
+# linux/amd64 tar.gz + rpm
+make zeta-serve-package
+
+# 自定义输出格式（zip/sh/tar/rpm/deb/apk/arch 任意组合）
+make zeta-serve-package PACK_FORMAT=tar,sh
+
+# 默认产物：out/zeta-serve/zeta-serve-<version>-linux-amd64.tar.gz
+#           out/zeta-serve/zeta-serve-<version>-linux-amd64.rpm（PACK_FORMAT 包含 rpm 时）
+```
+
+bali 读取的清单：
+
+| 文件 | 作用 |
+|------|------|
+| `cmd/zeta-serve/bali.toml` | 包元数据、`crates` 列表（仅 `["."]` — 只打 zeta-serve crate）、`[[include]]` 文件清单 |
+| `cmd/zeta-serve/crate.toml` | 单 crate 级配置：name、description、ldflags、version |
+
+**与项目根 `bali.toml` 解耦**——根上的 bali.toml 仍然只打 zeta client + hot + zeta-mc，两者互不干扰。
+
+#### 2.7.2 tar 包内容
+
+```
+zeta-serve-<version>-linux-<arch>/
+├── bin/
+│   └── zeta-serve               # 主二进制
+└── share/zeta-serve/
+    ├── LEGAL.md
+    ├── LICENSE
+    ├── zeta-serve.toml          # 共享配置模板（含上述 ssh_listen / endpoint 等）
+    └── sample/
+        └── zeta-serve.service   # systemd 单元脚本模板
+```
+
+#### 2.7.3 system 部署：systemd + 反向代理
+
+把 tar 包拷贝到服务器后展开：
+
+```shell
+# 创建不带 shell 的系统用户
+sudo useradd --system --home /var/lib/zeta-serve --shell /usr/sbin/nologin zeta
+sudo mkdir -p /usr/local/bin /etc/zeta-serve /var/lib/zeta-serve /data/zeta/repositories
+sudo chown -R zeta:zeta /var/lib/zeta-serve /data/zeta
+
+# 展开 tar
+sudo tar xpf zeta-serve-*.tar.gz -C /usr/local --strip-components 1
+# 此后 /usr/local/bin/zeta-serve 和 /usr/local/share/zeta-serve/* 都就位
+
+# 放配置
+sudo cp /usr/local/share/zeta-serve/zeta-serve.toml /etc/zeta-serve/
+sudo $EDITOR /etc/zeta-serve/zeta-serve.toml
+
+# 放 systemd 单元
+sudo cp /usr/local/share/zeta-serve/sample/zeta-serve.service \
+        /etc/systemd/system/zeta-serve.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now zeta-serve
+sudo journalctl -u zeta-serve -f
+```
+
+systemd 单元 (`etc/zeta-serve.service`) 默认执行的是：
+
+```ini
+ExecStart=/usr/local/bin/zeta-serve serve -c /etc/zeta-serve/zeta-serve.toml -E
+```
+
+外部端口（443 / 22）交给反向代理做转发，详见 **十二、反向代理与 TLS 终端**。
 
 ---
 
@@ -510,10 +645,12 @@ zeta config --global core.accelerator direct
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `listen` | string | `127.0.0.1:21000` | 监听地址 |
+| `listen` | string | `127.0.0.1:21000` | HTTP 监听地址 |
 | `repositories` | string | - | 仓库本地缓存根目录 |
 | `banner_version` | string | 服务版本 | 服务标识 |
 | `x25519_key` | string | - | X25519 私钥（PEM），用于配置解密 |
+| `endpoint` | string | - | （共用字段）SSH 连接主机名，仅用于 Web 页面展示 SSH checkout URL。Shared 配置时来自同名字段，httpd 不监听此端口 |
+| `ssh_listen` | string | - | （共用字段）SSH 服务器监听地址。httpd 仅作"是否启用了 SSH"的存在性标记用 — 不实际监听。Shared 配置时由 sshd 解析为真实 SSH 监听 |
 | `read_timeout` | duration | `2h` | 读超时 |
 | `write_timeout` | duration | `2h` | 写超时 |
 | `idle_timeout` | duration | `5m` | 空闲超时 |
@@ -522,8 +659,9 @@ zeta config --global core.accelerator direct
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `listen` | string | `127.0.0.1:22000` | 监听地址 |
-| `endpoint` | string | `zeta.io` | 客户端连接用的 host（生成 remote URL） |
+| `listen` | string | `127.0.0.1:22000` | 默认监听地址；当 `ssh_listen` 字段存在时被其覆盖 |
+| `ssh_listen` | string | - | 覆盖 `listen` 的 SSH 监听地址（共享配置时用于把 SSH listen 与 HTTP listen 分开） |
+| `endpoint` | string | `zeta.io` | 客户端连接用的 host（生成 `zeta@{endpoint}:{ns}/{repo}` 远程 URL） |
 | `repositories` | string | - | 仓库本地缓存根目录 |
 | `host_private_keys` | []string | - | SSH 主机密钥（PEM 格式） |
 | `banner_version` | string | 服务版本 | 服务标识 |

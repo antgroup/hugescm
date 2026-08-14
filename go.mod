@@ -11,7 +11,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/x/ansi v0.11.8
-	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260812204851-3e0d13df57b2
+	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260813141921-f091cedeaf78
 	github.com/clipperhouse/displaywidth v0.11.0
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/ebitengine/purego v0.10.2
@@ -26,7 +26,7 @@ require (
 	github.com/klauspost/compress v1.19.2
 	github.com/klauspost/cpuid/v2 v2.4.0
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	github.com/yuin/goldmark v1.8.5
 	github.com/zeebo/blake3 v0.2.4
 	github.com/zeebo/xxh3 v1.1.0
@@ -50,7 +50,7 @@ require (
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
-	github.com/charmbracelet/x/exp/slice v0.0.0-20260812204851-3e0d13df57b2 // indirect
+	github.com/charmbracelet/x/exp/slice v0.0.0-20260813141921-f091cedeaf78 // indirect
 	github.com/charmbracelet/x/exp/strings v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect

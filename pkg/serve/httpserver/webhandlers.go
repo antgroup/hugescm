@@ -332,7 +332,8 @@ type webRepoDetailData struct {
 	PathParts   []webPathPart
 	Breadcrumbs string
 	CloneURL    string
-	CanManage   bool // master+ — may open the repository settings page
+	SSHCloneURL string // set when ssh_listen is configured AND endpoint has a value
+	CanManage   bool   // master+ — may open the repository settings page
 }
 
 type webTreeEntry struct {
@@ -388,6 +389,16 @@ func (s *Server) handleWebRepo(w http.ResponseWriter, r *http.Request) {
 
 	cloneURL := fmt.Sprintf("%s://%s/%s/%s", resolveScheme(r), r.Host, ns.Path, repo.Path)
 
+	// Build a SSH remote URL (`zeta@{endpoint}:{namespace}/{repo}`) when
+	// the operator has configured ssh_listen AND `endpoint` is set in the
+	// shared config.  Without `endpoint` we can't form a client-facing
+	// remote URL, so we leave it empty; the template only renders the
+	// SSH row when this is non-empty.
+	var sshCloneURL string
+	if s.SSHListen != "" && s.Endpoint != "" {
+		sshCloneURL = fmt.Sprintf("zeta@%s:%s/%s", s.Endpoint, ns.Path, repo.Path)
+	}
+
 	canManage := u.Administrator
 	if !canManage {
 		if _, lvl, err := s.db.RepoAccessLevel(r.Context(), repo, u); err == nil && lvl.Sudo() {
@@ -403,6 +414,7 @@ func (s *Server) handleWebRepo(w http.ResponseWriter, r *http.Request) {
 		PathParts:   buildPathParts(path),
 		Breadcrumbs: path,
 		CloneURL:    cloneURL,
+		SSHCloneURL: sshCloneURL,
 		CanManage:   canManage,
 	}
 	pageData := &webTemplateData{

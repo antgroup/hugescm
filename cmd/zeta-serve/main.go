@@ -16,6 +16,7 @@ type App struct {
 	Globals
 	HTTPD   HTTPD   `cmd:"httpd" help:"start zeta-serve httpd server"`
 	SSHD    SSHD    `cmd:"sshd" help:"start zeta-serve sshd server"`
+	Serve   Serve   `cmd:"serve" help:"start combined httpd and sshd server from a single config"`
 	Keygen  Keygen  `cmd:"keygen" help:"Generates a random private key"`
 	Encrypt Encrypt `cmd:"encrypt" help:"Encrypting Data Using RSA Key"`
 }

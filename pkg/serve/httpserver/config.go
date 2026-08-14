@@ -27,8 +27,10 @@ type ServerConfig struct {
 	X25519Key     string          `toml:"x25519_key,omitempty"`
 	Cache         *serve.Cache    `toml:"cache,omitempty"`
 	DB            *serve.Database `toml:"database,omitempty"`
-	PersistentOSS *serve.OSS      `toml:"oss,omitempty"`   // Persistent storage
-	Admin         *serve.Admin    `toml:"admin,omitempty"` // Optional first-admin seed
+	PersistentOSS *serve.OSS      `toml:"oss,omitempty"`        // Persistent storage
+	Admin         *serve.Admin    `toml:"admin,omitempty"`      // Optional first-admin seed
+	Endpoint      string          `toml:"endpoint,omitempty"`   // SSH connection hostname — shared with sshd (used by makeRemoteURL); httpd only displays it
+	SSHListen     string          `toml:"ssh_listen,omitempty"` // SSH listen address (parsed from shared config; info-only for the web UI — httpd never opens this port)
 }
 
 func NewServerConfig(file string, expandEnv bool) (*ServerConfig, error) {

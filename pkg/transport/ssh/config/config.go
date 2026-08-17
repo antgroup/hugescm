@@ -394,7 +394,7 @@ func (c *Config) Get(alias, key string) (string, error) {
 				// "keys are case insensitive" per the spec
 				lkey := strings.ToLower(t.Key)
 				if lkey == "match" && !c.ignoreMatchDirective {
-					panic("can't handle Match directives")
+					return "", errors.New("can't handle Match directives")
 				}
 				if lkey == lowerKey {
 					return t.Value, nil
@@ -429,7 +429,7 @@ func (c *Config) GetAll(alias, key string) ([]string, error) {
 				// "keys are case insensitive" per the spec
 				lkey := strings.ToLower(t.Key)
 				if lkey == "match" && !c.ignoreMatchDirective {
-					panic("can't handle Match directives")
+					return nil, errors.New("can't handle Match directives")
 				}
 				if lkey == lowerKey {
 					all = append(all, t.Value)

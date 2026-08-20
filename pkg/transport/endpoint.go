@@ -52,12 +52,10 @@ func parseSCPLike(endpoint string, opts *Options) (*Endpoint, bool) {
 		host = net.JoinHostPort(host, port)
 	}
 	e := &Endpoint{
-		URL: url.URL{
-			Scheme: "ssh",
-			User:   url.User(user),
-			Host:   host,
-			Path:   path,
-		},
+		Scheme: "ssh",
+		User:   url.User(user),
+		Host:   host,
+		Path:   path,
 		origin: endpoint,
 	}
 	if opts != nil {

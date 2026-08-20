@@ -31,13 +31,11 @@ func (s *Server) generateWebSessionJWT(u *database.User) (string, error) {
 	now := time.Now()
 	expiresAt := now.Add(time.Duration(webSessionExpiry) * time.Second)
 	claims := webSessionClaims{
-		UID: u.ID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    webJwtIssuer,
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(now),
-			NotBefore: jwt.NewNumericDate(now),
-		},
+		UID:       u.ID,
+		Issuer:    webJwtIssuer,
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		IssuedAt:  jwt.NewNumericDate(now),
+		NotBefore: jwt.NewNumericDate(now),
 	}
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return t.SignedString([]byte(u.SignatureToken))

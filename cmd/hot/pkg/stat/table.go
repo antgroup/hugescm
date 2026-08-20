@@ -3,6 +3,7 @@ package stat
 import (
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -134,8 +135,8 @@ func truncatePath(path string, maxWidth int) string {
 
 	width := 0
 	cut := len(runes)
-	for i := len(runes) - 1; i >= 0; i-- {
-		w := displaywidth.Rune(runes[i])
+	for i, rune := range slices.Backward(runes) {
+		w := displaywidth.Rune(rune)
 		if width+w > target {
 			break
 		}

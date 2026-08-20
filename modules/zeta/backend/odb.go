@@ -35,7 +35,7 @@ type Database struct {
 	// closed is a uint32 managed by sync/atomic's <X>Uint32 methods. It
 	// yields a value of 0 if the *Database it is stored upon is open,
 	// and a value of 1 if it is closed.
-	closed    uint32
+	closed    atomic.Uint32
 	mu        sync.RWMutex
 	backend   object.Backend
 	enableLRU bool
@@ -185,7 +185,7 @@ func closeSafe(a ...io.Closer) error {
 //
 // If Close() has already been called, this function will return an error.
 func (d *Database) Close() error {
-	if !atomic.CompareAndSwapUint32(&d.closed, 0, 1) {
+	if !d.closed.CompareAndSwap(0, 1) {
 		return errors.New("zeta: *Database already closed")
 	}
 	return closeSafe(d.ro, d.metaRO, d.rw, d.metaRW)

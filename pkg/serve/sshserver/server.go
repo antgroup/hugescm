@@ -38,7 +38,7 @@ type Server struct {
 	db         database.DB
 	hub        repo.Repositories
 	serverName string
-	uniqueID   int64
+	uniqueID   atomic.Int64
 }
 
 func NewServer(sc *ServerConfig) (*Server, error) {
@@ -106,7 +106,7 @@ func (s *Server) OnKey(ctx ssh.Context, key ssh.PublicKey) bool {
 		RemoteAddress: netAddrToAddr(ctx.RemoteAddr()),
 		LocalAddress:  netAddrToAddr(ctx.LocalAddr()),
 		SessionID:     ctx.SessionID(),
-		UniqueID:      atomic.AddInt64(&s.uniqueID, 1),
+		UniqueID:      s.uniqueID.Add(1),
 		ClientVersion: ctx.ClientVersion(),
 		KeyType:       key.Type(),
 		Fingerprint:   fingerprint,

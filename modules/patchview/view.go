@@ -3,6 +3,7 @@ package patchview
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -699,9 +700,9 @@ func (pv *PatchView) jumpToNextHunk() {
 
 func (pv *PatchView) jumpToPrevHunk() {
 	offsets := pv.renderer.HunkOffsets()
-	for i := len(offsets) - 1; i >= 0; i-- {
-		if offsets[i] < pv.yOffset {
-			pv.yOffset = offsets[i]
+	for _, offset := range slices.Backward(offsets) {
+		if offset < pv.yOffset {
+			pv.yOffset = offset
 			pv.clampYOffset()
 			return
 		}
@@ -872,8 +873,8 @@ func truncatePath(path string, maxWidth int) string {
 
 	width := 0
 	cut := len(runes)
-	for i := len(runes) - 1; i >= 0; i-- {
-		w := displaywidth.Rune(runes[i])
+	for i, rune := range slices.Backward(runes) {
+		w := displaywidth.Rune(rune)
 		if width+w > target {
 			break
 		}

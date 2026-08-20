@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/antgroup/hugescm/modules/plumbing"
@@ -159,8 +160,8 @@ func (w *Worktree) rebaseInternal(ctx context.Context, our, onto plumbing.Hash, 
 	}
 	lastCommitID := onto
 	mergeDriver := w.resolveMergeDriver()
-	for i := len(commits) - 1; i >= 0; i-- {
-		c := commits[i]
+	for _, c := range slices.Backward(commits) {
+
 		if len(c.Parents) == 2 {
 			// skip merge commit
 			continue
@@ -333,8 +334,8 @@ func (w *Worktree) rebaseWithUpstream(ctx context.Context, our, upstream, onto p
 	}
 	lastCommitID := onto
 	mergeDriver := w.resolveMergeDriver()
-	for i := len(commits) - 1; i >= 0; i-- {
-		c := commits[i]
+	for _, c := range slices.Backward(commits) {
+
 		if len(c.Parents) == 2 {
 			// skip merge commit
 			continue
@@ -543,8 +544,8 @@ func (w *Worktree) rebaseContinue(ctx context.Context) error {
 		die_error("log range base error: %v", err)
 		return err
 	}
-	for i := len(commits) - 1; i >= 0; i-- {
-		c := commits[i]
+	for _, c := range slices.Backward(commits) {
+
 		if len(c.Parents) == 2 {
 			// skip merge commit
 			continue

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -213,8 +214,8 @@ func (w *Worktree) makeSquashMessage(ctx context.Context, from plumbing.Hash, ig
 	var b strings.Builder
 	b.WriteString(messagePrefix)
 	b.WriteString("\nSquashed commit of the following:\n")
-	for i := len(commits) - 1; i >= 0; i-- {
-		c := commits[i]
+	for i, c := range slices.Backward(commits) {
+
 		subject := c.Subject()
 		if b.Len()+len(subject) >= maxSizeForSquashedCommitMessage {
 			fmt.Fprintf(&b, "\n...\n[ZETA] %d more commit(s) ignored to avoid oversized message\n", i)

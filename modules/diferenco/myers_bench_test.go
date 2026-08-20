@@ -3,6 +3,7 @@ package diferenco
 import (
 	"context"
 	"math/rand"
+	"slices"
 	"testing"
 )
 
@@ -76,8 +77,8 @@ func buildScriptFast[E comparable](trace [][]int, a, b []E, P1, P2 int) ([]Chang
 
 	changes := make([]Change, 0, 16)
 
-	for d := len(trace) - 1; d >= 0; d-- {
-		V := trace[d]
+	for d, V := range slices.Backward(trace) {
+
 		k := x - y
 
 		var prevK int

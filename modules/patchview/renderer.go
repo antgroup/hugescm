@@ -296,6 +296,29 @@ func (r *PatchRenderer) codeWidth() int {
 	return max(w, 0)
 }
 
+// with the horizontal viewport scroll. When `offset` is non-positive, the
+// content is empty, or `offset` exceeds the content width, the result is the
+// unmodified content (or empty) — i.e. the cell is scrolled past its end.
+func applyXOffset(content string, offset int) string {
+	if offset <= 0 || len(content) == 0 {
+		return content
+	}
+	if lipgloss.Width(content) > offset {
+		return ansi.TruncateLeftWc(content, offset, "")
+	}
+	return ""
+}
+
+// renderCodeCell applies the horizontal scroll offset (see applyXOffset),
+// truncates the result to `codeW`, and renders it within a fixed-width cell.
+// The explicit truncation is required because lipgloss Style.Width renders
+// content wider than `codeW` by wrapping to a new line — embedding a real
+// '\n' into a single logical row and displacing the subsequent diff content.
+func (r *PatchRenderer) renderCodeCell(codeStyle lipgloss.Style, content string, codeW int) string {
+	truncated := ansi.TruncateWc(applyXOffset(content, r.xOffset), codeW, "")
+	return codeStyle.Width(codeW).Render(truncated)
+}
+
 // renderHunkHeader renders a hunk header line (@@ -1,3 +1,4 @@).
 func (r *PatchRenderer) renderHunkHeader(hunk *diferenco.Hunk, showLineNums bool, codeW int) string {
 	style := &r.style.DividerLine
@@ -318,7 +341,7 @@ func (r *PatchRenderer) renderHunkHeader(hunk *diferenco.Hunk, showLineNums bool
 		sb.WriteString(style.LineNumber.Render(pad("…", r.afterNumDigits)))
 	}
 
-	sb.WriteString(style.Code.Width(codeW).Render(headerContent))
+	sb.WriteString(r.renderCodeCell(style.Code, headerContent, codeW))
 	return sb.String()
 }
 

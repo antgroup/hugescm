@@ -70,13 +70,13 @@ func (r *ReadCloserFn) Close() error {
 }
 
 func TestObjectReaderCallsClose(t *testing.T) {
-	var calls uint32
+	var calls atomic.Uint32
 	expected := errors.New("expected")
 
 	or, err := NewObjectReadCloser(&ReadCloserFn{
 		Reader: bytes.NewBuffer([]byte{0x78, 0x01}),
 		closeFn: func() error {
-			atomic.AddUint32(&calls, 1)
+			calls.Add(1)
 			return expected
 		},
 	})
@@ -89,8 +89,8 @@ func TestObjectReaderCallsClose(t *testing.T) {
 	if !errors.Is(got, expected) {
 		t.Errorf("Expected %v, got %v", expected, got)
 	}
-	if atomic.LoadUint32(&calls) != 1 {
-		t.Errorf("Expected %v, got %v", 1, atomic.LoadUint32(&calls))
+	if calls.Load() != 1 {
+		t.Errorf("Expected %v, got %v", 1, calls.Load())
 	}
 
 }

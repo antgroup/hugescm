@@ -91,9 +91,8 @@ func NewItem(line string) SingleItem {
 		line:      line,
 		sparsity:  sparsity,
 		fillStyle: fillStyle,
-	}
 
-	item.ansiCodeIndexes = findAnsiByteRanges(line)
+		ansiCodeIndexes: findAnsiByteRanges(line)}
 
 	if len(item.ansiCodeIndexes) > 0 {
 		totalLen := len(line)

@@ -1,6 +1,7 @@
 package item
 
 import (
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -291,8 +292,8 @@ func simplifyAnsiCodes(ansis []string) []string {
 	}
 
 	// return all ansis to the right of the rightmost reset seq
-	for i := len(ansis) - 1; i >= 0; i-- {
-		if isResetCode(ansis[i]) {
+	for i, ansi := range slices.Backward(ansis) {
+		if isResetCode(ansi) {
 			result := ansis[i+1:]
 			// keep reset at the start if present
 			if isResetCode(ansis[0]) {

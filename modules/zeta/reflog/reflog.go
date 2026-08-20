@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -142,8 +143,8 @@ func (d *DB) parse(r io.Reader) ([]*Entry, error) {
 }
 
 func (d *DB) serialize(w io.Writer, entries []*Entry) error {
-	for i := len(entries) - 1; i >= 0; i-- {
-		e := entries[i]
+	for _, e := range slices.Backward(entries) {
+
 		if len(e.Message) == 0 {
 			if _, err := fmt.Fprintf(w, "%s %s %s\n", e.O, e.N, &e.Committer); err != nil {
 				return err

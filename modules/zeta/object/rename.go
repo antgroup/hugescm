@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 
@@ -164,9 +165,9 @@ func (d *renameDetector) detectExactRenames() {
 
 			usedAdds := make(map[*Change]struct{})
 			usedDeletes := make(map[*Change]struct{})
-			for i := len(matrix) - 1; i >= 0; i-- {
-				del := deleted[matrix[i].deleted]
-				add := added[matrix[i].added]
+			for _, m := range slices.Backward(matrix) {
+				del := deleted[m.deleted]
+				add := added[m.added]
 
 				if add == nil || del == nil {
 					// it was already matched
@@ -176,8 +177,8 @@ func (d *renameDetector) detectExactRenames() {
 				usedAdds[add] = struct{}{}
 				usedDeletes[del] = struct{}{}
 				d.modified = append(d.modified, &Change{From: del.From, To: add.To})
-				added[matrix[i].added] = nil
-				deleted[matrix[i].deleted] = nil
+				added[m.added] = nil
+				deleted[m.deleted] = nil
 			}
 
 			for _, c := range added {
@@ -224,8 +225,8 @@ func (d *renameDetector) detectContentRenames(ctx context.Context) error {
 
 	// Match rename pairs on a first come, first serve basis until
 	// we have looked at everything that is above the minimum score.
-	for i := len(matrix) - 1; i >= 0; i-- {
-		pair := matrix[i]
+	for _, pair := range slices.Backward(matrix) {
+
 		src := srcs[pair.deleted]
 		dst := dsts[pair.added]
 

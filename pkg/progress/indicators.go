@@ -25,7 +25,7 @@ type Indicators struct {
 	description string
 	completed   string
 	quiet       bool
-	current     uint64
+	current     atomic.Uint64
 	total       uint64
 	g           sync.WaitGroup
 }
@@ -35,7 +35,7 @@ func NewIndicators(description, completed string, total uint64, quiet bool) *Ind
 }
 
 func (i *Indicators) Add(n int) {
-	atomic.AddUint64(&i.current, uint64(n))
+	i.current.Add(uint64(n))
 }
 
 func (i *Indicators) Wait() {
@@ -50,7 +50,7 @@ func (i *Indicators) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			current := atomic.LoadUint64(&i.current)
+			current := i.current.Load()
 			if err := context.Cause(ctx); errors.Is(err, context.Canceled) {
 				if i.total == 0 {
 					fmt.Fprintf(os.Stderr, "\x1b[2K\r%s, %s: %d, %s: %v%s\n",
@@ -63,7 +63,7 @@ func (i *Indicators) run(ctx context.Context) {
 			}
 			return
 		case <-tick.C:
-			current := atomic.LoadUint64(&i.current)
+			current := i.current.Load()
 			spinner := selectedSpinner[int(math.Round(math.Mod(float64(time.Since(startTime).Milliseconds()/100), float64(len(selectedSpinner)))))]
 			if i.total == 0 {
 				fmt.Fprintf(os.Stderr, "\x1b[2K\r%s %s... %s %d%s", blue, spinner, i.description, current, end)

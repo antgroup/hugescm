@@ -568,8 +568,7 @@ func (s *Server) TagPush(w http.ResponseWriter, r *Request, tagName string) {
 	w.Header().Set("Content-Type", ZETA_MIME_REPORT_RESULT)
 	w.Header().Set("Cache-Control", "no-cache")
 	if err = rr.DoPush(r.Context(), command, r.Body, w); err != nil {
-		var es *zeta.ErrStatusCode
-		if errors.As(err, &es) {
+		if es, ok := errors.AsType[*zeta.ErrStatusCode](err); ok {
 			renderFailure(w, r.Request, es.Code, es.Message)
 		}
 		return
@@ -613,8 +612,7 @@ func (s *Server) BranchPush(w http.ResponseWriter, r *Request, branchName string
 	w.Header().Set("Content-Type", ZETA_MIME_REPORT_RESULT)
 	w.Header().Set("Cache-Control", "no-cache")
 	if err = rr.DoPush(r.Context(), command, r.Body, w); err != nil {
-		var es *zeta.ErrStatusCode
-		if errors.As(err, &es) {
+		if es, ok := errors.AsType[*zeta.ErrStatusCode](err); ok {
 			renderFailure(w, r.Request, es.Code, es.Message)
 		}
 		return

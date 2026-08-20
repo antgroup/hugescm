@@ -990,9 +990,9 @@ func (p *ProgressBar) lengthKnown(maxVal int64) {
 func (p *ProgressBar) State() State {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	s := State{}
-	s.CurrentNum = p.state.currentNum
-	s.Max = p.config.max
+	s := State{
+		CurrentNum: p.state.currentNum,
+		Max:        p.config.max}
 	if p.config.ignoreLength {
 		s.Max = -1
 	}

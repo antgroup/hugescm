@@ -230,7 +230,7 @@ type Writer struct {
 	e       *Encoder
 	fd      *os.File
 	packDir string
-	closed  uint32
+	closed  atomic.Uint32
 }
 
 func NewWriter(packDir string, entries uint32) (*Writer, error) {
@@ -249,7 +249,7 @@ func NewWriter(packDir string, entries uint32) (*Writer, error) {
 }
 
 func (w *Writer) Close() error {
-	if w.fd != nil && atomic.CompareAndSwapUint32(&w.closed, 0, 1) {
+	if w.fd != nil && w.closed.CompareAndSwap(0, 1) {
 		_ = w.fd.Chmod(0444) // Set pack to read-only
 		return w.fd.Close()
 	}

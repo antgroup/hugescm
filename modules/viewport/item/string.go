@@ -1,6 +1,7 @@
 package item
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/clipperhouse/displaywidth"
@@ -181,8 +182,8 @@ func replaceEndWithContinuation(s string, continuationRunes []rune) string {
 	// build result string efficiently
 	var result strings.Builder
 	result.Grow(len(runesToPrepend) * 4) // estimate 4 bytes per rune on average
-	for i := len(runesToPrepend) - 1; i >= 0; i-- {
-		result.WriteRune(runesToPrepend[i])
+	for _, r := range slices.Backward(runesToPrepend) {
+		result.WriteRune(r)
 	}
 
 	return result.String()

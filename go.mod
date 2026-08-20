@@ -1,10 +1,10 @@
 module github.com/antgroup/hugescm
 
-go 1.26
+go 1.27
 
 require (
 	charm.land/bubbles/v2 v2.1.1
-	charm.land/bubbletea/v2 v2.0.8
+	charm.land/bubbletea/v2 v2.0.9
 	charm.land/glamour/v2 v2.0.1
 	charm.land/huh/v2 v2.0.3
 	charm.land/lipgloss/v2 v2.0.6
@@ -26,7 +26,7 @@ require (
 	github.com/klauspost/compress v1.19.2
 	github.com/klauspost/cpuid/v2 v2.4.0
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/yuin/goldmark v1.8.5
 	github.com/zeebo/blake3 v0.2.4
 	github.com/zeebo/xxh3 v1.1.0
@@ -61,7 +61,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
-	github.com/mattn/go-runewidth v0.0.27 // indirect
+	github.com/mattn/go-runewidth v0.0.28 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect

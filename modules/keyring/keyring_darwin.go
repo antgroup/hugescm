@@ -660,10 +660,15 @@ func newOptionalFields(cred *Cred, keys, values *[]uintptr) *darwinOptionalField
 // For example, Dlsym returns the address of kCFBooleanTrue, which itself
 // contains the actual CFBooleanRef value.
 //
-// The double-pointer cast pattern (**(**uintptr)(unsafe.Pointer(&ptr))) is used
-// instead of the simpler *(*uintptr)(unsafe.Pointer(ptr)) to satisfy go vet's
-// unsafe.Pointer conversion rules: we take the address of the local variable
-// (rule 1) rather than converting a uintptr directly to unsafe.Pointer (rule 4).
+// The address-and-dereference pattern follows the same approach used in
+// purego's own source code (e.g. internal/strings/strings.go GoString) to
+// satisfy go vet's unsafe.Pointer conversion rules: we take the address of
+// the local variable (rule 1) rather than converting a uintptr directly to
+// unsafe.Pointer (rule 4).
 func deref(ptr uintptr) uintptr {
-	return **(**uintptr)(unsafe.Pointer(&ptr))
+	p := *(*unsafe.Pointer)(unsafe.Pointer(&ptr))
+	if p == nil {
+		return 0
+	}
+	return *(*uintptr)(p)
 }

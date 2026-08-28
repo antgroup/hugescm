@@ -10,7 +10,6 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 	"github.com/antgroup/hugescm/modules/viewport/item"
 )
 
@@ -33,7 +32,7 @@ func newSaveTestViewport(t *testing.T) (*Model[saveTestObject], string) {
 	t.Helper()
 	tmpDir := t.TempDir()
 
-	vp := New[saveTestObject](80, 24,
+	vp := New(80, 24,
 		WithFileSaving[saveTestObject](tmpDir, saveKey),
 	)
 	return vp, tmpDir
@@ -168,7 +167,7 @@ func TestFileSaving_EnterWithCustomFilename(t *testing.T) {
 
 	// type custom filename
 	for _, r := range "myfile" {
-		vp, _ = vp.Update(internal.MakeKeyMsg(r))
+		vp, _ = vp.Update(MakeKeyMsg(r))
 	}
 
 	_, cmd := vp.Update(enterKeyMsg)
@@ -205,7 +204,7 @@ func TestFileSaving_CustomFilenameWithExtension(t *testing.T) {
 
 	// type filename with .txt extension already
 	for _, r := range "already.txt" {
-		vp, _ = vp.Update(internal.MakeKeyMsg(r))
+		vp, _ = vp.Update(MakeKeyMsg(r))
 	}
 
 	_, cmd := vp.Update(enterKeyMsg)
@@ -255,7 +254,7 @@ func TestFileSaving_ContentStripsAnsiCodes(t *testing.T) {
 
 func TestFileSaving_SuccessMessageShownAfterSave(t *testing.T) {
 	tmpDir := t.TempDir()
-	vp := New[saveTestObject](200, 24, // wide viewport to avoid truncation
+	vp := New(200, 24, // wide viewport to avoid truncation
 		WithFileSaving[saveTestObject](tmpDir, saveKey),
 	)
 	setSaveTestContent(vp, []string{"test"})
@@ -310,7 +309,7 @@ func TestFileSaving_IgnoresSaveKeyWhenAlreadyCapturingInput(t *testing.T) {
 	}
 
 	// type something
-	vp, _ = vp.Update(internal.MakeKeyMsg('a'))
+	vp, _ = vp.Update(MakeKeyMsg('a'))
 
 	// press save key again - should be ignored, typed text preserved
 	vp, cmd := vp.Update(saveKeyMsg)
@@ -342,9 +341,9 @@ func TestFileSaving_TextInputReceivesKeyMessages(t *testing.T) {
 	vp, _ = vp.Update(saveKeyMsg)
 
 	// type some characters
-	vp, _ = vp.Update(internal.MakeKeyMsg('a'))
-	vp, _ = vp.Update(internal.MakeKeyMsg('b'))
-	vp, _ = vp.Update(internal.MakeKeyMsg('c'))
+	vp, _ = vp.Update(MakeKeyMsg('a'))
+	vp, _ = vp.Update(MakeKeyMsg('b'))
+	vp, _ = vp.Update(MakeKeyMsg('c'))
 
 	// verify by completing the save and checking filename
 	_, cmd := vp.Update(enterKeyMsg)
@@ -404,10 +403,10 @@ func TestFileSaving_NavigationKeysIgnoredDuringFilenameEntry(t *testing.T) {
 	vp, _ = vp.Update(saveKeyMsg)
 
 	// try navigation keys - these should be typed into filename, not navigate
-	vp, _ = vp.Update(internal.MakeKeyMsg('j')) // down
-	vp, _ = vp.Update(internal.MakeKeyMsg('k')) // up
-	vp, _ = vp.Update(internal.MakeKeyMsg('g')) // top
-	vp, _ = vp.Update(internal.MakeKeyMsg('G')) // bottom
+	vp, _ = vp.Update(MakeKeyMsg('j')) // down
+	vp, _ = vp.Update(MakeKeyMsg('k')) // up
+	vp, _ = vp.Update(MakeKeyMsg('g')) // top
+	vp, _ = vp.Update(MakeKeyMsg('G')) // bottom
 
 	// filename should be jkgG.txt
 	_, cmd := vp.Update(enterKeyMsg)
@@ -424,7 +423,7 @@ func TestFileSaving_CreatesDirIfNotExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	nestedDir := filepath.Join(tmpDir, "nested", "save", "dir")
 
-	vp := New[saveTestObject](80, 24,
+	vp := New(80, 24,
 		WithFileSaving[saveTestObject](nestedDir, saveKey),
 	)
 	setSaveTestContent(vp, []string{"test content"})

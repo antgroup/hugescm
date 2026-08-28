@@ -857,6 +857,13 @@ func (pv *PatchView) renderFooter() string {
 }
 
 // truncatePath truncates a path from the left to fit within maxWidth.
+//
+// Iteration is performed over grapheme clusters (per UAX #29) rather than
+// runes so that multi-codepoint graphemes — ZWJ family emoji, regional
+// indicator pairs (flags), keycap sequences, etc. — are never split at a
+// rune boundary, which would otherwise produce a broken surrogate sequence
+// and a width mismatch. See DECSET mode 2027 for background on why grapheme
+// clusters are the right unit for terminal display width.
 func truncatePath(path string, maxWidth int) string {
 	if maxWidth <= 0 {
 		return ""
@@ -869,17 +876,34 @@ func truncatePath(path string, maxWidth int) string {
 	}
 
 	target := maxWidth - 1
-	runes := []rune(path)
+
+	// StringGraphemes is a forward-only iterator; collect the grapheme
+	// clusters with their display widths first so we can walk backward.
+	type grapheme struct {
+		value string
+		width int
+	}
+	var graphemes []grapheme
+	g := displaywidth.StringGraphemes(path)
+	for g.Next() {
+		graphemes = append(graphemes, grapheme{value: g.Value(), width: g.Width()})
+	}
 
 	width := 0
-	cut := len(runes)
-	for i, rune := range slices.Backward(runes) {
-		w := displaywidth.Rune(rune)
-		if width+w > target {
+	cut := len(graphemes)
+	for i, grapheme := range slices.Backward(graphemes) {
+		if width+grapheme.width > target {
 			break
 		}
-		width += w
+		width += grapheme.width
 		cut = i
 	}
-	return "…" + string(runes[cut:])
+
+	var sb strings.Builder
+	sb.Grow(len(path) + 3)
+	sb.WriteString("…")
+	for _, gm := range graphemes[cut:] {
+		sb.WriteString(gm.value)
+	}
+	return sb.String()
 }

@@ -168,10 +168,10 @@ func (m ConcatItem) takeUnpinned(
 			firstItemIdx = i
 			startWidthFirstItem = widthToLeft - skippedWidth
 
-			runeIdx := m.items[i].findRuneIndexWithWidthToLeft(startWidthFirstItem)
+			runeIdx := m.items[i].findClusterIndexWithWidthToLeft(startWidthFirstItem)
 			var firstItemByteIdx int
-			if runeIdx < m.items[i].numNoAnsiRunes {
-				firstItemByteIdx = int(m.items[i].getByteOffsetAtRuneIdx(runeIdx))
+			if runeIdx < m.items[i].numClusters {
+				firstItemByteIdx = int(m.items[i].getByteOffsetAtClusterIdx(runeIdx))
 			} else {
 				firstItemByteIdx = len(m.items[i].line)
 			}
@@ -329,10 +329,10 @@ func (m ConcatItem) takeNonPinnedItems(
 			firstItemIdx = i
 			startWidthFirstItem = widthToLeft - skippedWidth
 
-			runeIdx := m.items[i].findRuneIndexWithWidthToLeft(startWidthFirstItem)
+			runeIdx := m.items[i].findClusterIndexWithWidthToLeft(startWidthFirstItem)
 			var firstItemByteIdx int
-			if runeIdx < m.items[i].numNoAnsiRunes {
-				firstItemByteIdx = int(m.items[i].getByteOffsetAtRuneIdx(runeIdx))
+			if runeIdx < m.items[i].numClusters {
+				firstItemByteIdx = int(m.items[i].getByteOffsetAtClusterIdx(runeIdx))
 			} else {
 				firstItemByteIdx = len(m.items[i].line)
 			}
@@ -482,17 +482,17 @@ func (m ConcatItem) concatByteRangeToWidthRange(
 	endItemIdx, endLocalByteOffset := m.findItemForByteOffset(endByte, itemByteOffsets)
 
 	if startItemIdx >= 0 && startItemIdx < len(m.items) {
-		startRuneIdx := m.items[startItemIdx].getRuneIndexAtByteOffset(startLocalByteOffset)
+		startRuneIdx := m.items[startItemIdx].getClusterIndexAtByteOffset(startLocalByteOffset)
 		if startRuneIdx > 0 {
-			startWidth = int(m.items[startItemIdx].getCumulativeWidthAtRuneIdx(startRuneIdx - 1))
+			startWidth = int(m.items[startItemIdx].getCumulativeWidthAtClusterIdx(startRuneIdx - 1))
 		}
 		startWidth += itemWidthOffsets[startItemIdx]
 	}
 
 	if endItemIdx >= 0 && endItemIdx < len(m.items) {
-		endRuneIdx := m.items[endItemIdx].getRuneIndexAtByteOffset(endLocalByteOffset)
+		endRuneIdx := m.items[endItemIdx].getClusterIndexAtByteOffset(endLocalByteOffset)
 		if endRuneIdx > 0 {
-			endWidth = int(m.items[endItemIdx].getCumulativeWidthAtRuneIdx(endRuneIdx - 1))
+			endWidth = int(m.items[endItemIdx].getCumulativeWidthAtClusterIdx(endRuneIdx - 1))
 		}
 		endWidth += itemWidthOffsets[endItemIdx]
 	}

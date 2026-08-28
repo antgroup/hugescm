@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 )
 
 func TestAnsi_reapplyAnsi(t *testing.T) {
@@ -228,10 +227,10 @@ func TestAnsi_reapplyAnsi(t *testing.T) {
 		},
 		{
 			name:            "unicode with ansi",
-			original:        internal.RedBg.Render("A💖") + "中é",
+			original:        RedBg.Render("A💖") + "中é",
 			truncated:       "A💖中é",
 			truncByteOffset: 0,
-			expected:        internal.RedBg.Render("A💖") + "中é",
+			expected:        RedBg.Render("A💖") + "中é",
 		},
 	}
 
@@ -249,7 +248,7 @@ func TestAnsi_reapplyAnsi(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ansiCodeIndexes := toUInt32(ansiRegex.FindAllStringIndex(tt.original, -1))
 			actual := reapplyAnsi(tt.original, tt.truncated, tt.truncByteOffset, ansiCodeIndexes)
-			internal.CmpStr(t, tt.expected, actual)
+			CmpStr(t, tt.expected, actual)
 		})
 	}
 }
@@ -270,7 +269,7 @@ func TestHighlightString(t *testing.T) {
 			plainLine:                 "",
 			styledSegment:             "",
 			toHighlight:               "",
-			highlightStyle:            internal.RedFg,
+			highlightStyle:            RedFg,
 			plainLineSegmentStartByte: 0,
 			plainLineSegmentEndByte:   0,
 			expected:                  "",
@@ -280,7 +279,7 @@ func TestHighlightString(t *testing.T) {
 			plainLine:                 "hello",
 			styledSegment:             "hello",
 			toHighlight:               "",
-			highlightStyle:            internal.RedFg,
+			highlightStyle:            RedFg,
 			plainLineSegmentStartByte: 0,
 			plainLineSegmentEndByte:   5,
 			expected:                  "hello",
@@ -290,57 +289,57 @@ func TestHighlightString(t *testing.T) {
 			plainLine:                 "hello",
 			styledSegment:             "hello",
 			toHighlight:               "ell",
-			highlightStyle:            internal.RedFg,
+			highlightStyle:            RedFg,
 			plainLineSegmentStartByte: 0,
 			plainLineSegmentEndByte:   5,
-			expected:                  "h" + internal.RedFg.Render("ell") + "o",
+			expected:                  "h" + RedFg.Render("ell") + "o",
 		},
 		{
 			name:                      "highlight with existing style",
 			plainLine:                 "first line",
-			styledSegment:             internal.RedFg.Render("first line"),
+			styledSegment:             RedFg.Render("first line"),
 			toHighlight:               "first",
-			highlightStyle:            internal.BlueFg,
+			highlightStyle:            BlueFg,
 			plainLineSegmentStartByte: 0,
 			plainLineSegmentEndByte:   10,
-			expected:                  internal.BlueFg.Render("first") + internal.RedFg.Render(" line"),
+			expected:                  BlueFg.Render("first") + RedFg.Render(" line"),
 		},
 		{
 			name:                      "left overflow",
 			plainLine:                 "hello world",
 			styledSegment:             "ello world",
 			toHighlight:               "hello",
-			highlightStyle:            internal.RedFg,
+			highlightStyle:            RedFg,
 			plainLineSegmentStartByte: 1,
 			plainLineSegmentEndByte:   11,
-			expected:                  internal.RedFg.Render("ello") + " world",
+			expected:                  RedFg.Render("ello") + " world",
 		},
 		{
 			name:                      "right overflow",
 			plainLine:                 "hello world",
 			styledSegment:             "hello wo",
 			toHighlight:               "world",
-			highlightStyle:            internal.RedFg,
+			highlightStyle:            RedFg,
 			plainLineSegmentStartByte: 0,
 			plainLineSegmentEndByte:   8,
-			expected:                  "hello " + internal.RedFg.Render("wo"),
+			expected:                  "hello " + RedFg.Render("wo"),
 		},
 		{
 			name:                      "both overflow with existing style",
 			plainLine:                 "hello world",
-			styledSegment:             internal.RedFg.Render("ello wor"),
+			styledSegment:             RedFg.Render("ello wor"),
 			toHighlight:               "hello world",
-			highlightStyle:            internal.BlueFg,
+			highlightStyle:            BlueFg,
 			plainLineSegmentStartByte: 1,
 			plainLineSegmentEndByte:   9,
-			expected:                  internal.BlueFg.Render("ello wor"),
+			expected:                  BlueFg.Render("ello wor"),
 		},
 		{
 			name:                      "no match in segment",
 			plainLine:                 "outside middle outside",
 			styledSegment:             "middle",
 			toHighlight:               "outside",
-			highlightStyle:            internal.RedFg,
+			highlightStyle:            RedFg,
 			plainLineSegmentStartByte: 8,
 			plainLineSegmentEndByte:   14,
 			expected:                  "middle",
@@ -348,23 +347,23 @@ func TestHighlightString(t *testing.T) {
 		{
 			name:                      "across ansi styles",
 			plainLine:                 "hello world",
-			styledSegment:             internal.RedBg.Render("hello") + " " + internal.BlueBg.Render("world"),
+			styledSegment:             RedBg.Render("hello") + " " + BlueBg.Render("world"),
 			toHighlight:               "lo wo",
-			highlightStyle:            internal.GreenBg,
+			highlightStyle:            GreenBg,
 			plainLineSegmentStartByte: 0,
 			plainLineSegmentEndByte:   11,
-			expected:                  internal.RedBg.Render("hel") + internal.GreenBg.Render("lo wo") + internal.BlueBg.Render("rld"),
+			expected:                  RedBg.Render("hel") + GreenBg.Render("lo wo") + BlueBg.Render("rld"),
 		},
 		{
 			name: "unicode",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b), A (1w, 1b)
 			plainLine:                 "A💖中éA",
-			styledSegment:             internal.RedFg.Render("💖中éA"),
+			styledSegment:             RedFg.Render("💖中éA"),
 			toHighlight:               "💖中",
-			highlightStyle:            internal.GreenBg,
+			highlightStyle:            GreenBg,
 			plainLineSegmentStartByte: 1,
 			plainLineSegmentEndByte:   12,
-			expected:                  internal.GreenBg.Render("💖中") + internal.RedFg.Render("éA"),
+			expected:                  GreenBg.Render("💖中") + RedFg.Render("éA"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -376,7 +375,7 @@ func TestHighlightString(t *testing.T) {
 				tt.plainLineSegmentStartByte,
 				tt.plainLineSegmentEndByte,
 			)
-			internal.CmpStr(t, tt.expected, result)
+			CmpStr(t, tt.expected, result)
 		})
 	}
 }
@@ -448,7 +447,7 @@ func TestAnsi_getNonAnsiBytes(t *testing.T) {
 		},
 		{
 			name:         "ignore ansi",
-			s:            "abc" + internal.RedBg.Render("def") + "ghi",
+			s:            "abc" + RedBg.Render("def") + "ghi",
 			startByteIdx: 1,
 			numBytes:     7,
 			expected:     "bcdefgh",
@@ -464,7 +463,7 @@ func TestAnsi_getNonAnsiBytes(t *testing.T) {
 		{
 			name: "unicode with ansi",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b)
-			s:            "A💖" + internal.RedBg.Render("中") + "é",
+			s:            "A💖" + RedBg.Render("中") + "é",
 			startByteIdx: 0,
 			numBytes:     11,
 			expected:     "A💖中é",
@@ -588,9 +587,9 @@ func TestStripNonSGR(t *testing.T) {
 			expected: "hello",
 		},
 		{
-			name:     "osc hyperlink stripped",
+			name:     "osc hyperlink preserved",
 			input:    "\x1b]8;;https://example.com\x1b\\click\x1b]8;;\x1b\\",
-			expected: "click",
+			expected: "\x1b]8;;https://example.com\x1b\\click\x1b]8;;\x1b\\",
 		},
 		{
 			name:     "esc-M reverse index stripped",
@@ -745,9 +744,9 @@ func TestStripNonSGR(t *testing.T) {
 			expected: "text",
 		},
 		{
-			name:     "osc with embedded semicolons",
+			name:     "osc hyperlink with id preserved",
 			input:    "\x1b]8;id=link;https://example.com\x1b\\click here\x1b]8;;\x1b\\",
-			expected: "click here",
+			expected: "\x1b]8;id=link;https://example.com\x1b\\click here\x1b]8;;\x1b\\",
 		},
 		{
 			name:     "osc between text",
@@ -870,7 +869,7 @@ func TestStripNonSGR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			internal.CmpStr(t, tt.expected, stripNonSGR(tt.input))
+			CmpStr(t, tt.expected, stripNonSGR(tt.input))
 		})
 	}
 }

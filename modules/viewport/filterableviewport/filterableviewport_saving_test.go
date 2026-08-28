@@ -9,7 +9,6 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"github.com/antgroup/hugescm/modules/viewport"
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 	"github.com/antgroup/hugescm/modules/viewport/item"
 )
 
@@ -31,10 +30,10 @@ var (
 func newSaveTestFilterableViewport(t *testing.T) (*Model[saveTestObject], string) {
 	t.Helper()
 	tmpDir := t.TempDir()
-	vp := viewport.New[saveTestObject](80, 24,
+	vp := viewport.New(80, 24,
 		viewport.WithFileSaving[saveTestObject](tmpDir, saveKey),
 	)
-	fv := New[saveTestObject](vp)
+	fv := New(vp)
 	return fv, tmpDir
 }
 
@@ -57,11 +56,11 @@ func TestFilterableViewport_AllHotkeysTypedIntoFilename(t *testing.T) {
 	}
 
 	// type all filterableviewport hotkeys - should go into filename, not trigger actions
-	fv, _ = fv.Update(internal.MakeKeyMsg('/')) // filter key
-	fv, _ = fv.Update(internal.MakeKeyMsg('r')) // regex filter key
-	fv, _ = fv.Update(internal.MakeKeyMsg('n')) // next match key
-	fv, _ = fv.Update(internal.MakeKeyMsg('N')) // prev match key
-	fv, _ = fv.Update(internal.MakeKeyMsg('o')) // toggle matching items only key
+	fv, _ = fv.Update(viewport.MakeKeyMsg('/')) // filter key
+	fv, _ = fv.Update(viewport.MakeKeyMsg('r')) // regex filter key
+	fv, _ = fv.Update(viewport.MakeKeyMsg('n')) // next match key
+	fv, _ = fv.Update(viewport.MakeKeyMsg('N')) // prev match key
+	fv, _ = fv.Update(viewport.MakeKeyMsg('o')) // toggle matching items only key
 
 	// filter should not be activated
 	if fv.FilterFocused() {
@@ -87,7 +86,7 @@ func TestFilterableViewport_FilterWorksAfterCancelingSave(t *testing.T) {
 	fv, _ = fv.Update(savingEscapeKeyMsg)
 
 	// filter should work normally
-	fv, _ = fv.Update(internal.MakeKeyMsg('/'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('/'))
 	if !fv.FilterFocused() {
 		t.Error("expected filter to be focused after canceling save")
 	}
@@ -98,9 +97,9 @@ func TestFilterableViewport_SaveDuringActiveFilter(t *testing.T) {
 	setSaveTestObjects(fv, []string{"foo one", "bar two", "foo three"})
 
 	// apply a filter
-	fv, _ = fv.Update(internal.MakeKeyMsg('/'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('/'))
 	for _, r := range "foo" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(r))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(r))
 	}
 	fv, _ = fv.Update(savingEnterKeyMsg)
 

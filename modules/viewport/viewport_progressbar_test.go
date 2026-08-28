@@ -2,8 +2,6 @@ package viewport
 
 import (
 	"testing"
-
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 )
 
 func TestProgressBarDefaultDisabled(t *testing.T) {
@@ -11,14 +9,14 @@ func TestProgressBarDefaultDisabled(t *testing.T) {
 	vp := newViewport(w, h)
 	setContent(vp, []string{"line 1", "line 2", "line 3"})
 
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestProgressBarEnabled100Percent(t *testing.T) {
@@ -27,14 +25,14 @@ func TestProgressBarEnabled100Percent(t *testing.T) {
 	setContent(vp, []string{"line 1", "line 2", "line 3"})
 
 	// "100% (3/3)" = 10 chars, barSpace=19, barWidth=min(10,19)=10, filled=10
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"██████████ 100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestProgressBarEnabledPartialScrolling(t *testing.T) {
@@ -45,7 +43,7 @@ func TestProgressBarEnabledPartialScrolling(t *testing.T) {
 	setContent(vp, []string{"line 1", "line 2", "line 3", "line 4"})
 
 	// "25% (1/4)" = 9 chars, barSpace=20, barWidth=10, filled=int(10*25/100)=2
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		selectionStyle.Render("line 1"),
 		"line 2",
 		"line 3",
@@ -55,11 +53,11 @@ func TestProgressBarEnabledPartialScrolling(t *testing.T) {
 		"",
 		"██░░░░░░░░ 25% (1/4)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	vp.SetSelectedItemIdx(1)
 	// "50% (2/4)" = 9 chars, barWidth=10, filled=int(10*50/100)=5
-	expectedView = internal.Pad(w, h, []string{
+	expectedView = Pad(w, h, []string{
 		"line 1",
 		selectionStyle.Render("line 2"),
 		"line 3",
@@ -69,11 +67,11 @@ func TestProgressBarEnabledPartialScrolling(t *testing.T) {
 		"",
 		"█████░░░░░ 50% (2/4)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	vp.SetSelectedItemIdx(2)
 	// "75% (3/4)" = 9 chars, barWidth=10, filled=int(10*75/100)=7
-	expectedView = internal.Pad(w, h, []string{
+	expectedView = Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		selectionStyle.Render("line 3"),
@@ -83,11 +81,11 @@ func TestProgressBarEnabledPartialScrolling(t *testing.T) {
 		"",
 		"███████░░░ 75% (3/4)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	vp.SetSelectedItemIdx(3)
 	// "100% (4/4)" = 10 chars, barSpace=19, barWidth=10, filled=10
-	expectedView = internal.Pad(w, h, []string{
+	expectedView = Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
@@ -97,7 +95,7 @@ func TestProgressBarEnabledPartialScrolling(t *testing.T) {
 		"",
 		"██████████ 100% (4/4)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestProgressBarTooNarrowOmitted(t *testing.T) {
@@ -106,14 +104,14 @@ func TestProgressBarTooNarrowOmitted(t *testing.T) {
 	setContent(vp, []string{"line 1", "line 2", "line 3"})
 
 	// "100% (3/3)" = 10 chars, barSpace = 13-10-1 = 2 < 3, no bar
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestProgressBarMinimumWidth(t *testing.T) {
@@ -122,14 +120,14 @@ func TestProgressBarMinimumWidth(t *testing.T) {
 	setContent(vp, []string{"line 1", "line 2", "line 3"})
 
 	// "100% (3/3)" = 10 chars, barSpace = 14-10-1 = 3, barWidth=min(10,3)=3, filled=3
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"███ 100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestProgressBarToggle(t *testing.T) {
@@ -137,27 +135,27 @@ func TestProgressBarToggle(t *testing.T) {
 	vp := newViewport(w, h)
 	setContent(vp, []string{"line 1", "line 2", "line 3"})
 
-	plainFooter := internal.Pad(w, h, []string{
+	plainFooter := Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, plainFooter, vp.View())
+	CmpStr(t, plainFooter, vp.View())
 
 	vp.SetProgressBarEnabled(true)
-	withBar := internal.Pad(w, h, []string{
+	withBar := Pad(w, h, []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"██████████ 100% (3/3)",
 	})
-	internal.CmpStr(t, withBar, vp.View())
+	CmpStr(t, withBar, vp.View())
 
 	vp.SetProgressBarEnabled(false)
-	internal.CmpStr(t, plainFooter, vp.View())
+	CmpStr(t, plainFooter, vp.View())
 }
 
 func TestBuildProgressBar(t *testing.T) {

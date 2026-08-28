@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/key"
-	"github.com/antgroup/hugescm/modules/viewport/internal/fuzzy"
+
+	"github.com/antgroup/hugescm/modules/viewport/fuzzy"
 	"github.com/antgroup/hugescm/modules/viewport/item"
 )
 

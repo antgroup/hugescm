@@ -2,8 +2,6 @@ package item
 
 import (
 	"testing"
-
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 )
 
 func TestString_overflowsLeft(t *testing.T) {
@@ -396,16 +394,16 @@ func TestString_replaceStartWithContinuation(t *testing.T) {
 		{
 			name: "unicode start ansi",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b)
-			s:            internal.RedBg.Render("A💖") + "中é",
+			s:            RedBg.Render("A💖") + "中é",
 			continuation: "...",
-			expected:     internal.RedBg.Render("...") + "中é",
+			expected:     RedBg.Render("...") + "中é",
 		},
 		{
 			name: "unicode almost start ansi",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b)
-			s:            "A" + internal.RedBg.Render("💖") + "中é",
+			s:            "A" + RedBg.Render("💖") + "中é",
 			continuation: "...",
-			expected:     "." + internal.RedBg.Render("..") + "中é",
+			expected:     "." + RedBg.Render("..") + "中é",
 		},
 	}
 	for _, tt := range tests {
@@ -492,16 +490,16 @@ func TestString_replaceEndWithContinuation(t *testing.T) {
 		{
 			name: "unicode end ansi",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b)
-			s:            "A💖" + internal.RedBg.Render("中é"),
+			s:            "A💖" + RedBg.Render("中é"),
 			continuation: "...",
-			expected:     "A💖" + internal.RedBg.Render("..."),
+			expected:     "A💖" + RedBg.Render("..."),
 		},
 		{
 			name: "unicode almost end ansi",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b)
-			s:            "A" + internal.RedBg.Render("💖中") + "é",
+			s:            "A" + RedBg.Render("💖中") + "é",
 			continuation: "...",
-			expected:     "A" + internal.RedBg.Render("💖..") + ".",
+			expected:     "A" + RedBg.Render("💖..") + ".",
 		},
 	}
 	for _, tt := range tests {
@@ -596,8 +594,8 @@ func TestString_getBytesLeftOfWidth(t *testing.T) {
 		{
 			name: "ignore ansi codes",
 			items: []SingleItem{
-				NewItem("a" + internal.RedBg.Render("b") + "c"),
-				NewItem(internal.RedBg.Render("def")),
+				NewItem("a" + RedBg.Render("b") + "c"),
+				NewItem(RedBg.Render("def")),
 			},
 			nBytes:       5,
 			startItemIdx: 1,
@@ -716,8 +714,8 @@ func TestString_getBytesRightOfWidth(t *testing.T) {
 		{
 			name: "ignore ansi codes",
 			items: []SingleItem{
-				NewItem("a" + internal.RedBg.Render("b") + "c"),
-				NewItem(internal.RedBg.Render("def")),
+				NewItem("a" + RedBg.Render("b") + "c"),
+				NewItem(RedBg.Render("def")),
 			},
 			nBytes:       5,
 			endItemIdx:   0,

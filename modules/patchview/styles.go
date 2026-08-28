@@ -240,11 +240,15 @@ func DefaultLightStyle() Style {
 }
 
 // extractBgColor extracts background color hex value from lipgloss.Style.
+//
+// lipgloss.Style.GetBackground never returns nil — when no value is set
+// it returns lipgloss.NoColor{}, whose RGBA() is (0,0,0,0). The
+// subsequent alpha==0 check covers both NoColor and any transparent
+// color uniformly, so there is no need for an explicit nil guard here.
+// (Removing the old `if bg == nil` check also makes staticcheck SA4023
+// happy, which previously flagged the comparison as never true.)
 func extractBgColor(s lipgloss.Style) string {
 	bg := s.GetBackground()
-	if bg == nil {
-		return ""
-	}
 	r, g, b, a := bg.RGBA()
 	if a == 0 {
 		return ""

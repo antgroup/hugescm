@@ -91,25 +91,25 @@ func (m Matches) Less(i, j int) bool {
 	return m[i].Index < m[j].Index
 }
 
-// Option configures a fuzzy search.
-type Option func(*option)
+// FuzzyOption configures a fuzzy search.
+type FuzzyOption func(*fuzzyOption)
 
-type option struct {
+type fuzzyOption struct {
 	caseSensitive bool
 }
 
 // WithCaseSensitive enables or disables case-sensitive matching.
 // The default is case-insensitive.
-func WithCaseSensitive(v bool) Option {
-	return func(o *option) {
+func WithCaseSensitive(v bool) FuzzyOption {
+	return func(o *fuzzyOption) {
 		o.caseSensitive = v
 	}
 }
 
 // Find performs a fuzzy search of query against each string in items,
 // returning only the matches, sorted by quality.
-func Find(items []string, query string, opts ...Option) Matches {
-	var o option
+func Find(items []string, query string, opts ...FuzzyOption) Matches {
+	var o fuzzyOption
 	for _, fn := range opts {
 		fn(&o)
 	}
@@ -136,7 +136,7 @@ func Find(items []string, query string, opts ...Option) Matches {
 //  2. Backward pass: from the end of the string, match query chars in reverse to find the
 //     rightmost possible match.
 //  3. Forward pass over that window to tighten and record exact matched indexes.
-func match(str, query string, o option) (Match, bool) {
+func match(str, query string, o fuzzyOption) (Match, bool) {
 	normalizedStr := str
 	if !o.caseSensitive {
 		normalizedStr = strings.ToLower(str)

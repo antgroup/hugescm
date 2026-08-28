@@ -6,7 +6,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/antgroup/hugescm/modules/viewport"
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 )
 
 var upKeyMsg = tea.KeyPressMsg{Code: tea.KeyUp, Text: "up"}
@@ -33,7 +32,7 @@ func makeSearchHistoryFV() *Model[object] {
 
 func typeFilter(fv *Model[object], text string) {
 	for _, ch := range text {
-		fv.Update(internal.MakeKeyMsg(ch))
+		fv.Update(viewport.MakeKeyMsg(ch))
 	}
 }
 

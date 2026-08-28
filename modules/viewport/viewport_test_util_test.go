@@ -2,7 +2,6 @@ package viewport
 
 import (
 	"charm.land/lipgloss/v2"
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 	"github.com/antgroup/hugescm/modules/viewport/item"
 )
 
@@ -24,15 +23,15 @@ func objectsEqual(a, b object) bool {
 var _ Object = object{}
 
 var (
-	downKeyMsg       = internal.MakeKeyMsg('j')
-	halfPgDownKeyMsg = internal.MakeKeyMsg('d')
-	fullPgDownKeyMsg = internal.MakeKeyMsg('f')
-	upKeyMsg         = internal.MakeKeyMsg('k')
-	halfPgUpKeyMsg   = internal.MakeKeyMsg('u')
-	fullPgUpKeyMsg   = internal.MakeKeyMsg('b')
-	goToTopKeyMsg    = internal.MakeKeyMsg('g')
-	goToBottomKeyMsg = internal.MakeKeyMsg('G')
-	selectionStyle   = internal.BlueFg
+	downKeyMsg       = MakeKeyMsg('j')
+	halfPgDownKeyMsg = MakeKeyMsg('d')
+	fullPgDownKeyMsg = MakeKeyMsg('f')
+	upKeyMsg         = MakeKeyMsg('k')
+	halfPgUpKeyMsg   = MakeKeyMsg('u')
+	fullPgUpKeyMsg   = MakeKeyMsg('b')
+	goToTopKeyMsg    = MakeKeyMsg('g')
+	goToBottomKeyMsg = MakeKeyMsg('G')
+	selectionStyle   = BlueFg
 )
 
 func newViewport(width, height int, options ...Option[object]) *Model[object] {
@@ -46,5 +45,5 @@ func newViewport(width, height int, options ...Option[object]) *Model[object] {
 		WithStyles[object](styles),
 	}, options...)
 
-	return New[object](width, height, options...)
+	return New(width, height, options...)
 }

@@ -66,64 +66,60 @@ func overflowsRight(s string, endByteIdx int, substr string) (bool, int) {
 	return false, 0
 }
 
+// runeDisplayWidth returns the monospace display width of a single rune.
+// For user-visible text, grapheme clusters should be used instead;
+// this helper is only for continuation indicator runes which are always
+// standalone characters.
+func runeDisplayWidth(r rune) int {
+	return displaywidth.Rune(r)
+}
+
 func replaceStartWithContinuation(s string, continuationRunes []rune) string {
 	if len(s) == 0 || len(continuationRunes) == 0 {
 		return s
 	}
 
 	var sb strings.Builder
-	ansiCodeIndexes := findAnsiRuneRanges(s)
-	runes := []rune(s)
+	// ControlSequences: true makes uax29 treat ANSI escape sequences as
+	// zero-width grapheme clusters, so they pass through automatically.
+	opts := displaywidth.Options{ControlSequences: true}
+	g := opts.StringGraphemes(s)
 
-	for runeIdx := 0; runeIdx < len(runes); {
-		if len(ansiCodeIndexes) > 0 {
-			codeStart, codeEnd := int(ansiCodeIndexes[0][0]), int(ansiCodeIndexes[0][1])
-			if runeIdx == codeStart {
-				for j := codeStart; j < codeEnd; j++ {
-					sb.WriteRune(runes[j])
-				}
-				// skip ansi
-				runeIdx = codeEnd
-				ansiCodeIndexes = ansiCodeIndexes[1:]
-				continue
-			}
+	for g.Next() {
+		cluster := g.Value()
+		width := g.Width()
+
+		// Zero-width clusters (ANSI codes, standalone combining marks) pass through
+		if width == 0 {
+			sb.WriteString(cluster)
+			continue
 		}
-		if len(continuationRunes) > 0 {
-			rWidth := displaywidth.Rune(runes[runeIdx])
 
-			// if rune is wider than remaining continuation width, cut off the continuation
+		if len(continuationRunes) > 0 {
+			// Calculate total remaining continuation width
 			remainingContinuationWidth := 0
 			for _, cr := range continuationRunes {
-				remainingContinuationWidth += displaywidth.Rune(cr)
+				remainingContinuationWidth += runeDisplayWidth(cr)
 			}
-			if rWidth > remainingContinuationWidth {
-				sb.WriteRune(runes[runeIdx])
+
+			if width > remainingContinuationWidth {
+				// Cluster wider than remaining continuation — write cluster as-is, stop
+				sb.WriteString(cluster)
 				continuationRunes = nil
-			}
-
-			// replace current rune with continuation runes
-			for rWidth > 0 && len(continuationRunes) > 0 {
-				currContinuationRune := continuationRunes[0]
-				sb.WriteRune(currContinuationRune)
-				continuationRunes = continuationRunes[1:]
-				rWidth -= displaywidth.Rune(currContinuationRune)
-			}
-
-			// skip subsequent zero-width runes that are not ansi sequences
-			nextIdx := runeIdx + 1
-			for nextIdx < len(runes) {
-				nextRWidth := displaywidth.Rune(runes[nextIdx])
-				if nextRWidth == 0 && nextIdx < len(runes) && !runesHaveAnsiPrefix(runes[nextIdx:]) {
-					runeIdx++
-					nextIdx = runeIdx + 1
-				} else {
-					break
+			} else {
+				// Replace cluster with continuation runes
+				clusterWidth := width
+				for clusterWidth > 0 && len(continuationRunes) > 0 {
+					currContinuationRune := continuationRunes[0]
+					crWidth := runeDisplayWidth(currContinuationRune)
+					sb.WriteRune(currContinuationRune)
+					continuationRunes = continuationRunes[1:]
+					clusterWidth -= crWidth
 				}
 			}
 		} else {
-			sb.WriteRune(runes[runeIdx])
+			sb.WriteString(cluster)
 		}
-		runeIdx++
 	}
 
 	return sb.String()
@@ -134,56 +130,64 @@ func replaceEndWithContinuation(s string, continuationRunes []rune) string {
 		return s
 	}
 
-	// collect runes to prepend (we're iterating backwards)
-	var runesToPrepend []rune
-	ansiCodeIndexes := findAnsiRuneRanges(s)
-	runes := []rune(s)
+	// Segment the entire string into grapheme clusters using displaywidth
+	// with ControlSequences: true so ANSI escape sequences are returned as
+	// zero-width clusters automatically.
+	type segment struct {
+		data  string
+		width int // 0 for ANSI codes, >0 for visible clusters
+	}
+	var segs []segment
 
-	for runeIdx := len(runes) - 1; runeIdx >= 0; {
-		if len(ansiCodeIndexes) > 0 {
-			lastAnsiCodeIndexes := ansiCodeIndexes[len(ansiCodeIndexes)-1]
-			codeStart, codeEnd := int(lastAnsiCodeIndexes[0]), int(lastAnsiCodeIndexes[1])
-			if runeIdx == codeEnd-1 {
-				for j := codeEnd - 1; j >= codeStart; j-- {
-					runesToPrepend = append(runesToPrepend, runes[j])
-				}
-				// skip ansi
-				runeIdx = codeStart - 1
-				ansiCodeIndexes = ansiCodeIndexes[:len(ansiCodeIndexes)-1]
-				continue
-			}
-		}
-		if len(continuationRunes) > 0 {
-			rWidth := displaywidth.Rune(runes[runeIdx])
-
-			// if rune is wider than remaining continuation width, cut off the continuation
-			remainingContinuationWidth := 0
-			for _, cr := range continuationRunes {
-				remainingContinuationWidth += displaywidth.Rune(cr)
-			}
-			if rWidth > remainingContinuationWidth {
-				runesToPrepend = append(runesToPrepend, runes[runeIdx])
-				continuationRunes = nil
-			}
-
-			// replace current rune with continuation runes
-			for rWidth > 0 && len(continuationRunes) > 0 {
-				currContinuationRune := continuationRunes[len(continuationRunes)-1]
-				runesToPrepend = append(runesToPrepend, currContinuationRune)
-				continuationRunes = continuationRunes[:len(continuationRunes)-1]
-				rWidth -= displaywidth.Rune(currContinuationRune)
-			}
-		} else {
-			runesToPrepend = append(runesToPrepend, runes[runeIdx])
-		}
-		runeIdx--
+	opts := displaywidth.Options{ControlSequences: true}
+	g := opts.StringGraphemes(s)
+	for g.Next() {
+		segs = append(segs, segment{data: g.Value(), width: g.Width()})
 	}
 
-	// build result string efficiently
+	// Process segments from right to left, collecting output in reverse.
+	var parts []string
+	remainingCont := continuationRunes
+	for _, seg := range slices.Backward(segs) {
+
+		if seg.width == 0 {
+			// Zero-width cluster (ANSI code, standalone combining mark) — pass through
+			parts = append(parts, seg.data)
+			continue
+		}
+
+		if len(remainingCont) > 0 {
+			// Calculate total remaining continuation width
+			remainingContWidth := 0
+			for _, cr := range remainingCont {
+				remainingContWidth += runeDisplayWidth(cr)
+			}
+
+			if seg.width > remainingContWidth {
+				// Cluster wider than remaining continuation — write cluster as-is, stop
+				parts = append(parts, seg.data)
+				remainingCont = nil
+			} else {
+				// Replace cluster with continuation runes (from the end)
+				clusterWidthLeft := seg.width
+				for clusterWidthLeft > 0 && len(remainingCont) > 0 {
+					cr := remainingCont[len(remainingCont)-1]
+					crWidth := runeDisplayWidth(cr)
+					parts = append(parts, string(cr))
+					remainingCont = remainingCont[:len(remainingCont)-1]
+					clusterWidthLeft -= crWidth
+				}
+			}
+		} else {
+			parts = append(parts, seg.data)
+		}
+	}
+
+	// Build result by concatenating parts in reverse order.
 	var result strings.Builder
-	result.Grow(len(runesToPrepend) * 4) // estimate 4 bytes per rune on average
-	for _, r := range slices.Backward(runesToPrepend) {
-		result.WriteRune(r)
+	result.Grow(len(s))
+	for _, part := range slices.Backward(parts) {
+		result.WriteString(part)
 	}
 
 	return result.String()
@@ -201,13 +205,13 @@ func getBytesLeftOfWidth(nBytes int, items []SingleItem, startItemIdx int, width
 	// first try to get bytes from the current item
 	var result string
 	currentItem := items[startItemIdx]
-	runeIdx := currentItem.findRuneIndexWithWidthToLeft(widthToLeft)
-	if runeIdx > 0 {
+	clusterIdx := currentItem.findClusterIndexWithWidthToLeft(widthToLeft)
+	if clusterIdx > 0 {
 		var startByteOffset uint32
-		if runeIdx >= currentItem.numNoAnsiRunes {
+		if clusterIdx >= currentItem.numClusters {
 			startByteOffset = clampIntToUint32(len(currentItem.lineNoAnsi))
 		} else {
-			startByteOffset = currentItem.getByteOffsetAtRuneIdx(runeIdx)
+			startByteOffset = currentItem.getByteOffsetAtClusterIdx(clusterIdx)
 		}
 		noAnsiContent := currentItem.lineNoAnsi[:startByteOffset]
 		if len(noAnsiContent) >= nBytes {
@@ -247,9 +251,9 @@ func getBytesRightOfWidth(nBytes int, items []SingleItem, endItemIdx int, widthT
 	if widthToRight > 0 {
 		currentItemWidth := currentItem.Width()
 		widthToLeft := currentItemWidth - widthToRight
-		startRuneIdx := currentItem.findRuneIndexWithWidthToLeft(widthToLeft)
-		if startRuneIdx < currentItem.numNoAnsiRunes {
-			startByteOffset := currentItem.getByteOffsetAtRuneIdx(startRuneIdx)
+		startClusterIdx := currentItem.findClusterIndexWithWidthToLeft(widthToLeft)
+		if startClusterIdx < currentItem.numClusters {
+			startByteOffset := currentItem.getByteOffsetAtClusterIdx(startClusterIdx)
 			noAnsiContent := currentItem.lineNoAnsi[startByteOffset:]
 			if len(noAnsiContent) >= nBytes {
 				return noAnsiContent[:nBytes]

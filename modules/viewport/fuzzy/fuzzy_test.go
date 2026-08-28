@@ -46,7 +46,7 @@ func TestMatch(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("#%d_%s/%s", i, tt.str, tt.query), func(t *testing.T) {
-			m, ok := match(tt.str, tt.query, option{})
+			m, ok := match(tt.str, tt.query, fuzzyOption{})
 			if tt.matchedIndexes == nil {
 				if ok {
 					t.Fatalf("expected no match, got %+v", m)
@@ -89,7 +89,7 @@ func TestMatchCaseSensitive(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("#%d_%s/%s", i, tt.str, tt.query), func(t *testing.T) {
-			m, ok := match(tt.str, tt.query, option{caseSensitive: true})
+			m, ok := match(tt.str, tt.query, fuzzyOption{caseSensitive: true})
 			if tt.matchedIndexes == nil {
 				if ok {
 					t.Fatalf("expected no match, got %+v", m)
@@ -110,7 +110,7 @@ func TestMatchCaseSensitive(t *testing.T) {
 
 func TestMatchCaseInsensitiveDefault(t *testing.T) {
 	// Default (case-insensitive): "Hello" should match query "hello"
-	m, ok := match("Hello World", "hello", option{})
+	m, ok := match("Hello World", "hello", fuzzyOption{})
 	if !ok {
 		t.Fatal("expected case-insensitive match")
 	}
@@ -269,7 +269,7 @@ func TestMatchTightestSpan(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("#%d_%s/%s", i, tt.str, tt.query), func(t *testing.T) {
-			m, ok := match(tt.str, tt.query, option{})
+			m, ok := match(tt.str, tt.query, fuzzyOption{})
 			if !ok {
 				t.Fatalf("expected match, got no match")
 			}

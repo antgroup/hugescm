@@ -269,17 +269,17 @@ func (m MultiLineItem) byteRangeToWidthRange(
 	endLineIdx, endLocalByte := m.findLineForByteOffset(endByte, lineByteOffsets)
 
 	if startLineIdx >= 0 && startLineIdx < len(m.items) {
-		startRuneIdx := m.items[startLineIdx].getRuneIndexAtByteOffset(startLocalByte)
-		if startRuneIdx > 0 {
-			startWidth = int(m.items[startLineIdx].getCumulativeWidthAtRuneIdx(startRuneIdx - 1))
+		startClusterIdx := m.items[startLineIdx].getClusterIndexAtByteOffset(startLocalByte)
+		if startClusterIdx > 0 {
+			startWidth = int(m.items[startLineIdx].getCumulativeWidthAtClusterIdx(startClusterIdx - 1))
 		}
 		startWidth += lineWidthOffsets[startLineIdx]
 	}
 
 	if endLineIdx >= 0 && endLineIdx < len(m.items) {
-		endRuneIdx := m.items[endLineIdx].getRuneIndexAtByteOffset(endLocalByte)
-		if endRuneIdx > 0 {
-			endWidth = int(m.items[endLineIdx].getCumulativeWidthAtRuneIdx(endRuneIdx - 1))
+		endClusterIdx := m.items[endLineIdx].getClusterIndexAtByteOffset(endLocalByte)
+		if endClusterIdx > 0 {
+			endWidth = int(m.items[endLineIdx].getCumulativeWidthAtClusterIdx(endClusterIdx - 1))
 		}
 		endWidth += lineWidthOffsets[endLineIdx]
 	}

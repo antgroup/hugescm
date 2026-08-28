@@ -3,7 +3,6 @@ package viewport
 import (
 	"testing"
 
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 	"github.com/antgroup/hugescm/modules/viewport/item"
 )
 
@@ -44,16 +43,16 @@ func TestViewport_MultiLine_WrapOn_Basic(t *testing.T) {
 		item.NewItem("single line"),
 	})
 
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
-		internal.BlueFg.Render("{"), // segment 0 (selected)
-		internal.BlueFg.Render("  \"k\": \"val\""), // segment 1 (selected, 12 cells)
-		internal.BlueFg.Render("}"),                // segment 2 (selected)
+		BlueFg.Render("{"),                // segment 0 (selected)
+		BlueFg.Render("  \"k\": \"val\""), // segment 1 (selected, 12 cells)
+		BlueFg.Render("}"),                // segment 2 (selected)
 		"single line",
 		"",
 		"50% (1/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_SelectionMovement(t *testing.T) {
@@ -72,29 +71,29 @@ func TestViewport_MultiLine_WrapOn_SelectionMovement(t *testing.T) {
 	})
 
 	// Initially selected: first item (multi-line)
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
-		internal.BlueFg.Render("line one"),
-		internal.BlueFg.Render("line two"),
+		BlueFg.Render("line one"),
+		BlueFg.Render("line two"),
 		"after",
 		"",
 		"",
 		"50% (1/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	// Move selection down to "after"
 	vp, _ = vp.Update(downKeyMsg)
-	expectedView = internal.Pad(w, h, []string{
+	expectedView = Pad(w, h, []string{
 		"header",
 		"line one",
 		"line two",
-		internal.BlueFg.Render("after"),
+		BlueFg.Render("after"),
 		"",
 		"",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_EmptySegment(t *testing.T) {
@@ -113,16 +112,16 @@ func TestViewport_MultiLine_WrapOn_EmptySegment(t *testing.T) {
 		),
 	})
 
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
-		internal.BlueFg.Render("above"),
-		internal.BlueFg.Render(" "), // empty segment shows selection marker
-		internal.BlueFg.Render("below"),
+		BlueFg.Render("above"),
+		BlueFg.Render(" "), // empty segment shows selection marker
+		BlueFg.Render("below"),
 		"",
 		"",
 		"100% (1/1)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_SegmentWrapping(t *testing.T) {
@@ -140,17 +139,17 @@ func TestViewport_MultiLine_WrapOn_SegmentWrapping(t *testing.T) {
 		),
 	})
 
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
-		internal.BlueFg.Render("abcdefghij"), // segment 0, line 1
-		internal.BlueFg.Render("12"),         // segment 0, line 2
-		internal.BlueFg.Render("xyz"),        // segment 1
+		BlueFg.Render("abcdefghij"), // segment 0, line 1
+		BlueFg.Render("12"),         // segment 0, line 2
+		BlueFg.Render("xyz"),        // segment 1
 		"",
 		"",
 		"",
 		"100% (1/1)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_ScrollDown(t *testing.T) {
@@ -170,25 +169,25 @@ func TestViewport_MultiLine_WrapOn_ScrollDown(t *testing.T) {
 	})
 
 	// Initial view: header + 3 segment lines, fills viewport
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
-		internal.BlueFg.Render("seg1"),
-		internal.BlueFg.Render("seg2"),
-		internal.BlueFg.Render("seg3"),
+		BlueFg.Render("seg1"),
+		BlueFg.Render("seg2"),
+		BlueFg.Render("seg3"),
 		"50% (1/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	// Scroll down to next item
 	vp, _ = vp.Update(downKeyMsg)
-	expectedView = internal.Pad(w, h, []string{
+	expectedView = Pad(w, h, []string{
 		"header",
 		"seg2",
 		"seg3",
-		internal.BlueFg.Render("next item"),
+		BlueFg.Render("next item"),
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_NoSelection(t *testing.T) {
@@ -206,7 +205,7 @@ func TestViewport_MultiLine_WrapOn_NoSelection(t *testing.T) {
 		item.NewItem("third"),
 	})
 
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
 		"first",
 		"second",
@@ -214,7 +213,7 @@ func TestViewport_MultiLine_WrapOn_NoSelection(t *testing.T) {
 		"",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_SingleLineItemsUnchanged(t *testing.T) {
@@ -226,19 +225,19 @@ func TestViewport_MultiLine_WrapOn_SingleLineItemsUnchanged(t *testing.T) {
 	vp.SetSelectionEnabled(true)
 	setContent(vp, []string{
 		"first line",
-		internal.RedFg.Render("second") + " line",
-		internal.RedFg.Render("a really really long line"),
-		internal.RedFg.Render("a") + " really really long line",
+		RedFg.Render("second") + " line",
+		RedFg.Render("a really really long line"),
+		RedFg.Render("a") + " really really long line",
 	})
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"header",
-		internal.BlueFg.Render("first line"),
-		internal.RedFg.Render("second") + " line",
-		internal.RedFg.Render("a really really"),
-		internal.RedFg.Render(" long line"),
+		BlueFg.Render("first line"),
+		RedFg.Render("second") + " line",
+		RedFg.Render("a really really"),
+		RedFg.Render(" long line"),
 		"25% (1/4)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestViewport_MultiLine_WrapOn_MultipleMultiLineItems(t *testing.T) {
@@ -260,29 +259,29 @@ func TestViewport_MultiLine_WrapOn_MultipleMultiLineItems(t *testing.T) {
 	})
 
 	// First multi-line item selected
-	expectedView := internal.Pad(w, h, []string{
+	expectedView := Pad(w, h, []string{
 		"header",
-		internal.BlueFg.Render("a1"),
-		internal.BlueFg.Render("a2"),
+		BlueFg.Render("a1"),
+		BlueFg.Render("a2"),
 		"b1",
 		"b2",
 		"",
 		"",
 		"50% (1/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	// Move down to second multi-line item
 	vp, _ = vp.Update(downKeyMsg)
-	expectedView = internal.Pad(w, h, []string{
+	expectedView = Pad(w, h, []string{
 		"header",
 		"a1",
 		"a2",
-		internal.BlueFg.Render("b1"),
-		internal.BlueFg.Render("b2"),
+		BlueFg.Render("b1"),
+		BlueFg.Render("b2"),
 		"",
 		"",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }

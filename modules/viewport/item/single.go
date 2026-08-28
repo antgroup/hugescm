@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/clipperhouse/displaywidth"
 )
@@ -12,17 +11,17 @@ import (
 // SingleItem provides functionality to get sequential strings of a specified terminal cell width, accounting
 // for the ansi escape codes styling the line.
 type SingleItem struct {
-	line                 string     // underlying string with ansi codes. utf-8 encoded bytes
-	lineNoAnsi           string     // line without ansi codes. utf-8 encoded bytes
-	lineNoAnsiRuneWidths []uint8    // packed terminal cell widths, 4 widths per byte (2 bits each)
-	ansiCodeIndexes      [][]uint32 // slice of startByte, endByte indexes of ansi codes
-	numNoAnsiRunes       int        // number of runes in lineNoAnsi
-	totalWidth           int        // total width in terminal cells
-	fillStyle            string     // ANSI code to use when filling remaining width (emulates \x1b[K])
+	line            string     // underlying string with ansi codes. utf-8 encoded bytes
+	lineNoAnsi      string     // line without ansi codes. utf-8 encoded bytes
+	clusterWidths   []uint8    // display width of each grapheme cluster in lineNoAnsi
+	ansiCodeIndexes [][]uint32 // slice of startByte, endByte indexes of ansi codes
+	numClusters     int        // number of grapheme clusters in lineNoAnsi
+	totalWidth      int        // total width in terminal cells
+	fillStyle       string     // ANSI code to use when filling remaining width (emulates \x1b[K])
 
-	sparsity                        int      // interval for which to store cumulative cell width
-	sparseRuneIdxToNoAnsiByteOffset []uint32 // rune idx to byte offset of lineNoAnsi, stored every sparsity runes
-	sparseLineNoAnsiCumRuneWidths   []uint32 // cumulative terminal cell width, stored every sparsity runes
+	sparsity                         int      // interval for which to store cumulative cell width
+	sparseClusterStartByteOffset     []uint32 // cluster idx to byte offset, stored every sparsity clusters
+	sparseLineNoAnsiCumClusterWidths []uint32 // cumulative terminal cell width, stored every sparsity clusters
 }
 
 // type assertion that SingleItem implements Item
@@ -112,45 +111,47 @@ func NewItem(line string) SingleItem {
 		item.lineNoAnsi = line
 	}
 
-	numRunes := utf8.RuneCountInString(item.lineNoAnsi)
+	// First pass: count grapheme clusters.
+	// uax29/v2 (used by displaywidth) has a built-in ASCII hot path that
+	// makes this very fast for ASCII-heavy text (e.g. source code).
+	numClusters := 0
+	{
+		g := displaywidth.StringGraphemes(item.lineNoAnsi)
+		for g.Next() {
+			numClusters++
+		}
+	}
 
 	// calculate size needed for sparse cumulative widths
-	sparseLen := (numRunes + item.sparsity - 1) / item.sparsity
-	item.sparseRuneIdxToNoAnsiByteOffset = make([]uint32, sparseLen)
-	item.sparseLineNoAnsiCumRuneWidths = make([]uint32, sparseLen)
+	sparseLen := (numClusters + item.sparsity - 1) / item.sparsity
+	item.sparseClusterStartByteOffset = make([]uint32, sparseLen)
+	item.sparseLineNoAnsiCumClusterWidths = make([]uint32, sparseLen)
 
-	// calculate size needed for packed rune widths (4 widths per byte)
-	packedLen := (numRunes + 3) / 4
-	item.lineNoAnsiRuneWidths = make([]uint8, packedLen)
+	// one byte per cluster for widths (0/1/2/3/4)
+	item.clusterWidths = make([]uint8, numClusters)
 
-	var currentOffset uint32
-	var cumWidth uint32
-	runeIdx := 0
-	for byteOffset := 0; byteOffset < len(item.lineNoAnsi); {
-		r, runeNumBytes := utf8.DecodeRuneInString(item.lineNoAnsi[byteOffset:])
-		rw := displaywidth.Rune(r)
-		width := clampIntToUint8(rw)
+	// Second pass: fill in cluster widths, byte offsets, and cumulative widths.
+	{
+		g := displaywidth.StringGraphemes(item.lineNoAnsi)
+		var currentOffset uint32
+		var cumWidth uint32
+		for clusterIdx := 0; g.Next(); clusterIdx++ {
+			width := clampIntToUint8(g.Width())
 
-		// pack 4 widths per byte (2 bits each)
-		packedIdx := runeIdx / 4
-		bitPos := (runeIdx % 4) * 2
-		// clear the 2 bits at the position and set the new width
-		item.lineNoAnsiRuneWidths[packedIdx] &= ^(uint8(3) << bitPos)
-		item.lineNoAnsiRuneWidths[packedIdx] |= width << bitPos
+			item.clusterWidths[clusterIdx] = width
 
-		cumWidth += uint32(width)
-		if runeIdx%item.sparsity == 0 {
-			item.sparseRuneIdxToNoAnsiByteOffset[runeIdx/item.sparsity] = currentOffset
-			item.sparseLineNoAnsiCumRuneWidths[runeIdx/item.sparsity] = cumWidth
+			cumWidth += uint32(width)
+			if clusterIdx%item.sparsity == 0 {
+				item.sparseClusterStartByteOffset[clusterIdx/item.sparsity] = currentOffset
+				item.sparseLineNoAnsiCumClusterWidths[clusterIdx/item.sparsity] = cumWidth
+			}
+			if clusterIdx == numClusters-1 {
+				item.totalWidth = int(cumWidth)
+			}
+			currentOffset += clampIntToUint32(len(g.Value()))
 		}
-		if runeIdx == numRunes-1 {
-			item.totalWidth = int(cumWidth)
-		}
-		currentOffset += clampIntToUint32(runeNumBytes)
-		runeIdx++
-		byteOffset += runeNumBytes
 	}
-	item.numNoAnsiRunes = runeIdx
+	item.numClusters = numClusters
 
 	return item
 }
@@ -185,9 +186,9 @@ func (l SingleItem) Take(
 	}
 
 	widthToLeft = min(widthToLeft, l.Width())
-	startRuneIdx := l.findRuneIndexWithWidthToLeft(widthToLeft)
+	startClusterIdx := l.findClusterIndexWithWidthToLeft(widthToLeft)
 
-	if startRuneIdx >= l.numNoAnsiRunes || takeWidth == 0 {
+	if startClusterIdx >= l.numClusters || takeWidth == 0 {
 		if l.fillStyle != "" && takeWidth > 0 {
 			// content is empty but fill is requested — produce styled padding
 			return l.fillStyle + strings.Repeat(" ", takeWidth) + RST, takeWidth
@@ -197,41 +198,28 @@ func (l SingleItem) Take(
 
 	var result strings.Builder
 	remainingWidth := takeWidth
-	leftRuneIdx := startRuneIdx
-	startByteOffset := l.getByteOffsetAtRuneIdx(startRuneIdx)
+	leftClusterIdx := startClusterIdx
+	startByteOffset := l.getByteOffsetAtClusterIdx(startClusterIdx)
 
-	runesWritten := 0
-	for ; remainingWidth > 0 && leftRuneIdx < l.numNoAnsiRunes; leftRuneIdx++ {
-		r := l.runeAt(leftRuneIdx)
-		runeWidth := l.getRuneWidth(leftRuneIdx)
-		if int(runeWidth) > remainingWidth {
+	clustersWritten := 0
+	for ; remainingWidth > 0 && leftClusterIdx < l.numClusters; leftClusterIdx++ {
+		cw := l.getClusterWidth(leftClusterIdx)
+		if int(cw) > remainingWidth {
 			break
 		}
 
-		result.WriteRune(r)
-		runesWritten++
-		remainingWidth -= int(runeWidth)
+		result.WriteString(l.getClusterBytes(leftClusterIdx))
+		clustersWritten++
+		remainingWidth -= int(cw)
 	}
 
-	// if only zero-width runes were written, return ""
-	for i := 0; i < runesWritten; i++ {
-		if displaywidth.Rune(l.runeAt(startRuneIdx+i)) > 0 {
+	// if only zero-width clusters were written, return ""
+	for i := 0; i < clustersWritten; i++ {
+		if l.getClusterWidth(startClusterIdx+i) > 0 {
 			break
 		}
-		if i == runesWritten-1 {
+		if i == clustersWritten-1 {
 			return "", 0
-		}
-	}
-
-	// write the subsequent zero-width runes, e.g. the accent on an 'e'
-	if result.Len() > 0 {
-		for ; leftRuneIdx < l.numNoAnsiRunes; leftRuneIdx++ {
-			r := l.runeAt(leftRuneIdx)
-			if displaywidth.Rune(r) == 0 {
-				result.WriteRune(r)
-			} else {
-				break
-			}
 		}
 	}
 
@@ -244,8 +232,8 @@ func (l SingleItem) Take(
 
 	// highlight the desired string
 	var endByteOffset int
-	if leftRuneIdx < l.numNoAnsiRunes {
-		endByteOffset = int(l.getByteOffsetAtRuneIdx(leftRuneIdx))
+	if leftClusterIdx < l.numClusters {
+		endByteOffset = int(l.getByteOffsetAtClusterIdx(leftClusterIdx))
 	} else {
 		endByteOffset = len(l.lineNoAnsi)
 	}
@@ -257,16 +245,16 @@ func (l SingleItem) Take(
 	)
 
 	// apply left/right line continuation indicators
-	if len(continuation) > 0 && (startRuneIdx > 0 || leftRuneIdx < l.numNoAnsiRunes) {
+	if len(continuation) > 0 && (startClusterIdx > 0 || leftClusterIdx < l.numClusters) {
 		continuationRunes := []rune(continuation)
 
-		// if more runes to the left of the result, replace start runes with continuation indicator
-		if startRuneIdx > 0 {
+		// if more clusters to the left of the result, replace start with continuation indicator
+		if startClusterIdx > 0 {
 			res = replaceStartWithContinuation(res, continuationRunes)
 		}
 
-		// if more runes to the right, replace final runes in result with continuation indicator
-		if leftRuneIdx < l.numNoAnsiRunes {
+		// if more clusters to the right, replace final clusters in result with continuation indicator
+		if leftClusterIdx < l.numClusters {
 			res = replaceEndWithContinuation(res, continuationRunes)
 		}
 	}
@@ -305,65 +293,81 @@ func (l SingleItem) repr() string {
 	return fmt.Sprintf("Item(%q)", l.line)
 }
 
-// runeAt decodes the desired rune from the lineNoAnsi string
-// it serves as a memory-saving technique compared to storing all the runes in a slice
-func (l SingleItem) runeAt(runeIdx int) rune {
-	if runeIdx < 0 || runeIdx >= l.numNoAnsiRunes {
-		return -1
+// getClusterBytes returns the string of the grapheme cluster at the given index
+func (l SingleItem) getClusterBytes(clusterIdx int) string {
+	if clusterIdx < 0 || clusterIdx >= l.numClusters {
+		return ""
 	}
-	start := l.getByteOffsetAtRuneIdx(runeIdx)
+	start := l.getByteOffsetAtClusterIdx(clusterIdx)
 	var end uint32
-	if runeIdx+1 >= l.numNoAnsiRunes {
+	if clusterIdx+1 >= l.numClusters {
 		end = clampIntToUint32(len(l.lineNoAnsi))
 	} else {
-		end = l.getByteOffsetAtRuneIdx(runeIdx + 1)
+		end = l.getByteOffsetAtClusterIdx(clusterIdx + 1)
 	}
-	r, _ := utf8.DecodeRuneInString(l.lineNoAnsi[start:end])
-	return r
+	return l.lineNoAnsi[start:end]
 }
 
-func (l SingleItem) getByteOffsetAtRuneIdx(runeIdx int) uint32 {
-	if runeIdx < 0 {
-		panic("runeIdx must be greater or equal to 0")
+func (l SingleItem) getByteOffsetAtClusterIdx(clusterIdx int) uint32 {
+	if clusterIdx < 0 {
+		panic("clusterIdx must be greater or equal to 0")
 	}
-	if runeIdx == 0 || len(l.line) == 0 || l.sparsity == 0 {
+	if clusterIdx == 0 || len(l.line) == 0 || l.sparsity == 0 {
 		return 0
 	}
-	if runeIdx >= l.numNoAnsiRunes {
-		panic("rune index greater than num runes")
+	if clusterIdx >= l.numClusters {
+		panic("cluster index greater than num clusters")
 	}
 
 	// get the last stored byte offset before this index
-	sparseIdx := runeIdx / l.sparsity
-	baseRuneIdx := sparseIdx * l.sparsity
+	sparseIdx := clusterIdx / l.sparsity
+	baseClusterIdx := sparseIdx * l.sparsity
 
-	if baseRuneIdx == runeIdx {
-		return l.sparseRuneIdxToNoAnsiByteOffset[sparseIdx]
+	if baseClusterIdx == clusterIdx {
+		return l.sparseClusterStartByteOffset[sparseIdx]
 	}
 
-	currRuneIdx := baseRuneIdx
-	byteOffset := l.sparseRuneIdxToNoAnsiByteOffset[sparseIdx]
-	for ; currRuneIdx != runeIdx; currRuneIdx++ {
-		_, nBytes := utf8.DecodeRuneInString(l.lineNoAnsi[byteOffset:])
-		byteOffset += clampIntToUint32(nBytes)
+	// ASCII fast path: if all bytes between the sparse base and the target
+	// are printable ASCII, each cluster is exactly 1 byte.
+	startByte := l.sparseClusterStartByteOffset[sparseIdx]
+	remaining := clusterIdx - baseClusterIdx
+	if int(startByte)+remaining <= len(l.lineNoAnsi) {
+		allASCII := true
+		for i := range remaining {
+			b := l.lineNoAnsi[int(startByte)+i]
+			if b < 0x20 || b > 0x7E {
+				allASCII = false
+				break
+			}
+		}
+		if allASCII {
+			return startByte + uint32(remaining)
+		}
+	}
+
+	byteOffset := startByte
+	g := displaywidth.StringGraphemes(l.lineNoAnsi[startByte:])
+	for range remaining {
+		g.Next()
+		byteOffset += clampIntToUint32(len(g.Value()))
 	}
 	return byteOffset
 }
 
-// getRuneIndexAtByteOffset finds the rune index at the given byte offset
-func (l SingleItem) getRuneIndexAtByteOffset(byteOffset int) int {
+// getClusterIndexAtByteOffset finds the cluster index at the given byte offset
+func (l SingleItem) getClusterIndexAtByteOffset(byteOffset int) int {
 	if byteOffset <= 0 || len(l.lineNoAnsi) == 0 {
 		return 0
 	}
 	if byteOffset >= len(l.lineNoAnsi) {
-		return l.numNoAnsiRunes
+		return l.numClusters
 	}
 
-	// binary search to find the rune index
-	left, right := 0, l.numNoAnsiRunes-1
+	// binary search to find the cluster index
+	left, right := 0, l.numClusters-1
 	for left <= right {
 		mid := left + (right-left)/2
-		midByteOffset := int(l.getByteOffsetAtRuneIdx(mid))
+		midByteOffset := int(l.getByteOffsetAtClusterIdx(mid))
 
 		if midByteOffset == byteOffset {
 			return mid
@@ -374,77 +378,74 @@ func (l SingleItem) getRuneIndexAtByteOffset(byteOffset int) int {
 		}
 	}
 
-	// if exact match not found, return the rune index where byteOffset would fall
+	// if exact match not found, return the cluster index where byteOffset would fall
 	return right
 }
 
-// getRuneWidth extracts the width of a rune from the packed array
-func (l SingleItem) getRuneWidth(runeIdx int) uint8 {
-	if runeIdx < 0 || runeIdx >= l.numNoAnsiRunes {
+// getClusterWidth returns the width of the grapheme cluster at the given index
+func (l SingleItem) getClusterWidth(clusterIdx int) uint8 {
+	if clusterIdx < 0 || clusterIdx >= l.numClusters {
 		return 0
 	}
-
-	packedIdx := runeIdx / 4
-	bitPos := (runeIdx % 4) * 2
-	return (l.lineNoAnsiRuneWidths[packedIdx] >> bitPos) & 3
+	return l.clusterWidths[clusterIdx]
 }
 
-func (l SingleItem) getCumulativeWidthAtRuneIdx(runeIdx int) uint32 {
-	if runeIdx < 0 {
+func (l SingleItem) getCumulativeWidthAtClusterIdx(clusterIdx int) uint32 {
+	if clusterIdx < 0 {
 		return 0
 	}
-	if runeIdx >= l.numNoAnsiRunes {
-		panic("runeIdx greater than num runes")
+	if clusterIdx >= l.numClusters {
+		panic("clusterIdx greater than num clusters")
 	}
 
 	// get the last stored cumulative width before this index
-	sparseIdx := runeIdx / l.sparsity
-	baseRuneIdx := sparseIdx * l.sparsity
+	sparseIdx := clusterIdx / l.sparsity
+	baseClusterIdx := sparseIdx * l.sparsity
 
-	if baseRuneIdx == runeIdx {
-		return l.sparseLineNoAnsiCumRuneWidths[sparseIdx]
+	if baseClusterIdx == clusterIdx {
+		return l.sparseLineNoAnsiCumClusterWidths[sparseIdx]
 	}
 
 	// sum the widths from the last stored point to our target index
 	var additionalWidth uint32
-	for i := baseRuneIdx + 1; i <= runeIdx; i++ {
-		additionalWidth += uint32(l.getRuneWidth(i))
+	for i := baseClusterIdx + 1; i <= clusterIdx; i++ {
+		additionalWidth += uint32(l.getClusterWidth(i))
 	}
 
-	return l.sparseLineNoAnsiCumRuneWidths[sparseIdx] + additionalWidth
+	return l.sparseLineNoAnsiCumClusterWidths[sparseIdx] + additionalWidth
 }
 
-// findRuneIndexWithWidthToLeft returns the index of the rune that has the input width to the left of it
-func (l SingleItem) findRuneIndexWithWidthToLeft(widthToLeft int) int {
+// findClusterIndexWithWidthToLeft returns the index of the cluster that has the input width to the left of it
+func (l SingleItem) findClusterIndexWithWidthToLeft(widthToLeft int) int {
 	if widthToLeft < 0 {
 		panic("widthToLeft less than 0")
 	}
-	if widthToLeft == 0 || l.numNoAnsiRunes == 0 {
+	if widthToLeft == 0 || l.numClusters == 0 {
 		return 0
 	}
 	if widthToLeft > l.Width() {
 		panic("widthToLeft greater than total width")
 	}
 
-	left, right := 0, l.numNoAnsiRunes-1
+	left, right := 0, l.numClusters-1
 	widthToLeftUint32 := clampIntToUint32(widthToLeft)
-	if l.getCumulativeWidthAtRuneIdx(right) < widthToLeftUint32 {
-		return l.numNoAnsiRunes
+	if l.getCumulativeWidthAtClusterIdx(right) < widthToLeftUint32 {
+		return l.numClusters
 	}
 
 	for left < right {
 		mid := left + (right-left)/2
-		if l.getCumulativeWidthAtRuneIdx(mid) >= widthToLeftUint32 {
+		if l.getCumulativeWidthAtClusterIdx(mid) >= widthToLeftUint32 {
 			right = mid
 		} else {
 			left = mid + 1
 		}
 	}
 
-	// skip over zero-width runes
-	w := l.getCumulativeWidthAtRuneIdx(left)
+	// skip over zero-width clusters
+	w := l.getCumulativeWidthAtClusterIdx(left)
 	nextLeft := left + 1
-	for nextLeft < l.numNoAnsiRunes && l.getCumulativeWidthAtRuneIdx(nextLeft) == w {
+	for nextLeft < l.numClusters && l.getCumulativeWidthAtClusterIdx(nextLeft) == w {
 		left = nextLeft
 		nextLeft++
 	}
@@ -470,14 +471,14 @@ func (l SingleItem) ByteRangesToMatches(byteRanges []ByteRange) []Match {
 
 // byteRangeToWidthRange converts a byte range to a width range for a SingleItem.
 func (l SingleItem) byteRangeToWidthRange(startByte, endByte int) (startWidth, endWidth int) {
-	startRuneIdx := l.getRuneIndexAtByteOffset(startByte)
-	endRuneIdx := l.getRuneIndexAtByteOffset(endByte)
+	startClusterIdx := l.getClusterIndexAtByteOffset(startByte)
+	endClusterIdx := l.getClusterIndexAtByteOffset(endByte)
 
-	if startRuneIdx > 0 {
-		startWidth = int(l.getCumulativeWidthAtRuneIdx(startRuneIdx - 1))
+	if startClusterIdx > 0 {
+		startWidth = int(l.getCumulativeWidthAtClusterIdx(startClusterIdx - 1))
 	}
-	if endRuneIdx > 0 {
-		endWidth = int(l.getCumulativeWidthAtRuneIdx(endRuneIdx - 1))
+	if endClusterIdx > 0 {
+		endWidth = int(l.getCumulativeWidthAtClusterIdx(endClusterIdx - 1))
 	}
 	return
 }

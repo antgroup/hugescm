@@ -2,8 +2,6 @@ package viewport
 
 import (
 	"testing"
-
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 )
 
 func TestPostHeaderLineWithFooterEnabled(t *testing.T) {
@@ -16,25 +14,25 @@ func TestPostHeaderLineWithFooterEnabled(t *testing.T) {
 	})
 
 	// Without post-header: 3 content lines + footer
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	// With post-header: post-header + 2 content lines + footer (height 5 - 1 post-header - 1 footer = 3 content)
 	vp.SetPostHeaderLine("Post-header text")
-	expectedView = internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView = Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header text",
 		"line 1",
 		"line 2",
 		"line 3",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineWithFooterDisabled(t *testing.T) {
@@ -48,25 +46,25 @@ func TestPostHeaderLineWithFooterDisabled(t *testing.T) {
 	vp.SetFooterEnabled(false)
 
 	// Without post-header
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 		"",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 
 	// With post-header (still renders even though footer disabled)
 	vp.SetPostHeaderLine("Post-header text")
-	expectedView = internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView = Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header text",
 		"line 1",
 		"line 2",
 		"line 3",
 		"",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestEmptyPostHeaderLine(t *testing.T) {
@@ -81,14 +79,14 @@ func TestEmptyPostHeaderLine(t *testing.T) {
 
 	// Empty post-header means no extra line rendered
 	vp.SetPostHeaderLine("")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"line 4",
 		"100% (4/4)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineTruncation(t *testing.T) {
@@ -101,13 +99,13 @@ func TestPostHeaderLineTruncation(t *testing.T) {
 
 	// Set post-header longer than viewport width
 	vp.SetPostHeaderLine("This is a very long post-header line that exceeds the width")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"This is a ve...",
 		"line 1",
 		"line 2",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineSmallHeight(t *testing.T) {
@@ -121,12 +119,12 @@ func TestPostHeaderLineSmallHeight(t *testing.T) {
 
 	// Height 3 with footer and post-header: 1 post-header + 1 content + 1 footer
 	vp.SetPostHeaderLine("Post-header")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header",
 		"line 1",
 		"33% (1/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineWithHeader(t *testing.T) {
@@ -141,7 +139,7 @@ func TestPostHeaderLineWithHeader(t *testing.T) {
 
 	// Height 7 with header, post-header, footer: 1 header + 1 post-header + 3 content + 1 padding + 1 footer
 	vp.SetPostHeaderLine("Post-header")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Header",
 		"Post-header",
 		"line 1",
@@ -150,7 +148,7 @@ func TestPostHeaderLineWithHeader(t *testing.T) {
 		"",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineDynamicToggle(t *testing.T) {
@@ -164,40 +162,40 @@ func TestPostHeaderLineDynamicToggle(t *testing.T) {
 	})
 
 	// Initially no post-header
-	expectedNoPostHeader := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedNoPostHeader := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"line 4",
 		"100% (4/4)",
 	})
-	internal.CmpStr(t, expectedNoPostHeader, vp.View())
+	CmpStr(t, expectedNoPostHeader, vp.View())
 
 	// Set post-header
 	vp.SetPostHeaderLine("Post-header")
-	expectedWithPostHeader := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedWithPostHeader := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header",
 		"line 1",
 		"line 2",
 		"line 3",
 		"75% (3/4)",
 	})
-	internal.CmpStr(t, expectedWithPostHeader, vp.View())
+	CmpStr(t, expectedWithPostHeader, vp.View())
 
 	// Remove post-header
 	vp.SetPostHeaderLine("")
-	internal.CmpStr(t, expectedNoPostHeader, vp.View())
+	CmpStr(t, expectedNoPostHeader, vp.View())
 
 	// Set post-header again with different text
 	vp.SetPostHeaderLine("Different post-header")
-	expectedDifferent := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedDifferent := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Different post-header",
 		"line 1",
 		"line 2",
 		"line 3",
 		"75% (3/4)",
 	})
-	internal.CmpStr(t, expectedDifferent, vp.View())
+	CmpStr(t, expectedDifferent, vp.View())
 }
 
 func TestPostHeaderLineReducesContentLines(t *testing.T) {
@@ -212,25 +210,25 @@ func TestPostHeaderLineReducesContentLines(t *testing.T) {
 	})
 
 	// Without post-header: 4 content lines visible (height 5 - 1 footer = 4)
-	expectedNoPostHeader := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedNoPostHeader := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"line 4",
 		"80% (4/5)",
 	})
-	internal.CmpStr(t, expectedNoPostHeader, vp.View())
+	CmpStr(t, expectedNoPostHeader, vp.View())
 
 	// With post-header: 3 content lines visible (height 5 - 1 post-header - 1 footer = 3)
 	vp.SetPostHeaderLine("Post-header")
-	expectedWithPostHeader := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedWithPostHeader := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header",
 		"line 1",
 		"line 2",
 		"line 3",
 		"60% (3/5)",
 	})
-	internal.CmpStr(t, expectedWithPostHeader, vp.View())
+	CmpStr(t, expectedWithPostHeader, vp.View())
 }
 
 func TestPostHeaderLineWithWrap(t *testing.T) {
@@ -243,7 +241,7 @@ func TestPostHeaderLineWithWrap(t *testing.T) {
 
 	// Post-header should appear before content
 	vp.SetPostHeaderLine("Post-head")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-head",
 		"short",
 		"longer tex",
@@ -251,7 +249,7 @@ func TestPostHeaderLineWithWrap(t *testing.T) {
 		"ps",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineScrolling(t *testing.T) {
@@ -268,25 +266,25 @@ func TestPostHeaderLineScrolling(t *testing.T) {
 	vp.SetPostHeaderLine("Post-header")
 
 	// Initially shows first 3 content lines (height 5 - 1 post-header - 1 footer = 3)
-	expectedInitial := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedInitial := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header",
 		"line 1",
 		"line 2",
 		"line 3",
 		"50% (3/6)",
 	})
-	internal.CmpStr(t, expectedInitial, vp.View())
+	CmpStr(t, expectedInitial, vp.View())
 
 	// Scroll down
 	vp, _ = vp.Update(downKeyMsg)
-	expectedAfterScroll := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedAfterScroll := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header",
 		"line 2",
 		"line 3",
 		"line 4",
 		"66% (4/6)",
 	})
-	internal.CmpStr(t, expectedAfterScroll, vp.View())
+	CmpStr(t, expectedAfterScroll, vp.View())
 }
 
 func TestPostHeaderLineStyled(t *testing.T) {
@@ -298,16 +296,16 @@ func TestPostHeaderLineStyled(t *testing.T) {
 	})
 
 	// Set a styled post-header line
-	styledPostHeader := internal.RedFg.Render("Red") + " and " + internal.BlueFg.Render("Blue")
+	styledPostHeader := RedFg.Render("Red") + " and " + BlueFg.Render("Blue")
 	vp.SetPostHeaderLine(styledPostHeader)
 
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
-		internal.RedFg.Render("Red") + " and " + internal.BlueFg.Render("Blue"),
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
+		RedFg.Render("Red") + " and " + BlueFg.Render("Blue"),
 		"line 1",
 		"line 2",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineDoesNotWrap(t *testing.T) {
@@ -322,7 +320,7 @@ func TestPostHeaderLineDoesNotWrap(t *testing.T) {
 	vp.SetPostHeaderLine("This is a very long post-header that should not wrap")
 
 	// Post-header should be truncated to single line, not wrapped
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"This is...",
 		"short",
 		"another",
@@ -330,7 +328,7 @@ func TestPostHeaderLineDoesNotWrap(t *testing.T) {
 		"",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineWithPreFooterLine(t *testing.T) {
@@ -347,7 +345,7 @@ func TestPostHeaderLineWithPreFooterLine(t *testing.T) {
 	// Both post-header and pre-footer: height 6 - 1 post-header - 1 pre-footer - 1 footer = 3 content
 	vp.SetPostHeaderLine("Post-header")
 	vp.SetPreFooterLine("Pre-footer")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Post-header",
 		"line 1",
 		"line 2",
@@ -355,7 +353,7 @@ func TestPostHeaderLineWithPreFooterLine(t *testing.T) {
 		"Pre-footer",
 		"60% (3/5)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineWithHeaderAndPreFooter(t *testing.T) {
@@ -374,7 +372,7 @@ func TestPostHeaderLineWithHeaderAndPreFooter(t *testing.T) {
 	// (height 7 - 1 header - 1 post-header - 1 pre-footer - 1 footer = 3 content)
 	vp.SetPostHeaderLine("Post-header")
 	vp.SetPreFooterLine("Pre-footer")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"Header",
 		"Post-header",
 		"line 1",
@@ -383,7 +381,7 @@ func TestPostHeaderLineWithHeaderAndPreFooter(t *testing.T) {
 		"Pre-footer",
 		"60% (3/5)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineExactWidth(t *testing.T) {
@@ -396,13 +394,13 @@ func TestPostHeaderLineExactWidth(t *testing.T) {
 
 	// Post-header exactly matches width - should not truncate
 	vp.SetPostHeaderLine("1234567890")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"1234567890",
 		"line 1",
 		"line 2",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }
 
 func TestPostHeaderLineOneCharOverWidth(t *testing.T) {
@@ -415,11 +413,11 @@ func TestPostHeaderLineOneCharOverWidth(t *testing.T) {
 
 	// Post-header one char over width - should truncate
 	vp.SetPostHeaderLine("12345678901")
-	expectedView := internal.Pad(vp.GetWidth(), vp.GetHeight(), []string{
+	expectedView := Pad(vp.GetWidth(), vp.GetHeight(), []string{
 		"1234567...",
 		"line 1",
 		"line 2",
 		"100% (2/2)",
 	})
-	internal.CmpStr(t, expectedView, vp.View())
+	CmpStr(t, expectedView, vp.View())
 }

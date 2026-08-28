@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/antgroup/hugescm/modules/viewport/internal"
-
 	"charm.land/lipgloss/v2"
 )
 
@@ -41,24 +39,24 @@ func getEquivalentItems() map[string][]Item {
 			),
 		},
 		"ansi": {
-			NewItem(internal.RedBg.Render("hello") + " " + internal.BlueBg.Render("world")),
-			NewConcat(NewItem(internal.RedBg.Render("hello") + " " + internal.BlueBg.Render("world"))),
+			NewItem(RedBg.Render("hello") + " " + BlueBg.Render("world")),
+			NewConcat(NewItem(RedBg.Render("hello") + " " + BlueBg.Render("world"))),
 			NewConcat(
-				NewItem(internal.RedBg.Render("hello")+" "),
-				NewItem(internal.BlueBg.Render("world")),
+				NewItem(RedBg.Render("hello")+" "),
+				NewItem(BlueBg.Render("world")),
 			),
 			NewConcat(
-				NewItem(internal.RedBg.Render("hello")),
+				NewItem(RedBg.Render("hello")),
 				NewItem(" "),
-				NewItem(internal.BlueBg.Render("world")),
+				NewItem(BlueBg.Render("world")),
 			),
 		},
 		"unicode_ansi": {
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b) = 6w, 11b
-			NewItem(internal.RedBg.Render("A💖") + "中é"),
-			NewConcat(NewItem(internal.RedBg.Render("A💖") + "中é")),
+			NewItem(RedBg.Render("A💖") + "中é"),
+			NewConcat(NewItem(RedBg.Render("A💖") + "中é")),
 			NewConcat(
-				NewItem(internal.RedBg.Render("A💖")),
+				NewItem(RedBg.Render("A💖")),
 				NewItem("中"),
 				NewItem("é"),
 			),
@@ -173,8 +171,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      11,
 			continuation:   "",
 			toHighlight:    "hello",
-			highlightStyle: internal.RedBg,
-			expected:       internal.RedBg.Render("hello") + " world",
+			highlightStyle: RedBg,
+			expected:       RedBg.Render("hello") + " world",
 		},
 		{
 			name:           "hello world with highlight across boundary",
@@ -183,8 +181,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      6,
 			continuation:   "",
 			toHighlight:    "lo wo",
-			highlightStyle: internal.RedBg,
-			expected:       internal.RedBg.Render("lo wo") + "r",
+			highlightStyle: RedBg,
+			expected:       RedBg.Render("lo wo") + "r",
 		},
 		{
 			name:           "hello world with highlight and middle continuation",
@@ -193,8 +191,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      7,
 			continuation:   "..",
 			toHighlight:    "lo ",
-			highlightStyle: internal.RedBg,
-			expected:       ".." + internal.RedBg.Render("lo ") + "..",
+			highlightStyle: RedBg,
+			expected:       ".." + RedBg.Render("lo ") + "..",
 		},
 		{
 			name:           "hello world with highlight and overlapping continuation",
@@ -203,7 +201,7 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      7,
 			continuation:   "...",
 			toHighlight:    "lo ",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			expected:       "..\x1b[48;2;255;0;0m.o." + RST + "..",
 		},
 		{
@@ -214,7 +212,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("hello") + " " + internal.BlueBg.Render("w"),
+			expected:       RedBg.Render("hello") + " " + BlueBg.Render("w"),
 		},
 		{
 			name:           "ansi start at 1",
@@ -224,7 +222,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("ello") + " " + internal.BlueBg.Render("wo"),
+			expected:       RedBg.Render("ello") + " " + BlueBg.Render("wo"),
 		},
 		{
 			name:           "ansi end",
@@ -234,7 +232,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.BlueBg.Render("d"),
+			expected:       BlueBg.Render("d"),
 		},
 		{
 			name:           "ansi past end",
@@ -254,7 +252,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "...",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("hell.") + "." + internal.BlueBg.Render("."),
+			expected:       RedBg.Render("hell.") + "." + BlueBg.Render("."),
 		},
 		{
 			name:           "ansi with continuation at start",
@@ -264,7 +262,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "...",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render(".") + "." + internal.BlueBg.Render(".orld"),
+			expected:       RedBg.Render(".") + "." + BlueBg.Render(".orld"),
 		},
 		{
 			name:           "ansi with continuation both ends",
@@ -274,7 +272,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "...",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("...") + " " + internal.BlueBg.Render("..."),
+			expected:       RedBg.Render("...") + " " + BlueBg.Render("..."),
 		},
 		{
 			name:           "ansi with highlight whole word",
@@ -283,8 +281,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      11,
 			continuation:   "",
 			toHighlight:    "hello",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.GreenBg.Render("hello") + " " + internal.BlueBg.Render("world"),
+			highlightStyle: GreenBg,
+			expected:       GreenBg.Render("hello") + " " + BlueBg.Render("world"),
 		},
 		{
 			name:           "ansi with highlight partial word",
@@ -293,8 +291,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      11,
 			continuation:   "",
 			toHighlight:    "ell",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.RedBg.Render("h") + internal.GreenBg.Render("ell") + internal.RedBg.Render("o") + " " + internal.BlueBg.Render("world"),
+			highlightStyle: GreenBg,
+			expected:       RedBg.Render("h") + GreenBg.Render("ell") + RedBg.Render("o") + " " + BlueBg.Render("world"),
 		},
 		{
 			name:           "ansi with highlight across boundary",
@@ -303,8 +301,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      11,
 			continuation:   "",
 			toHighlight:    "lo wo",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.RedBg.Render("hel") + internal.GreenBg.Render("lo wo") + internal.BlueBg.Render("rld"),
+			highlightStyle: GreenBg,
+			expected:       RedBg.Render("hel") + GreenBg.Render("lo wo") + BlueBg.Render("rld"),
 		},
 		{
 			name:           "ansi with highlight and middle continuation",
@@ -313,8 +311,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      7,
 			continuation:   "..",
 			toHighlight:    "lo ",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.RedBg.Render("..") + internal.GreenBg.Render("lo ") + internal.BlueBg.Render(".."),
+			highlightStyle: GreenBg,
+			expected:       RedBg.Render("..") + GreenBg.Render("lo ") + BlueBg.Render(".."),
 		},
 		{
 			name:           "ansi with highlight and overlapping continuation",
@@ -323,8 +321,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      7,
 			continuation:   "...",
 			toHighlight:    "lo ",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.RedBg.Render("..") + internal.GreenBg.Render(".o.") + internal.BlueBg.Render(".."),
+			highlightStyle: GreenBg,
+			expected:       RedBg.Render("..") + GreenBg.Render(".o.") + BlueBg.Render(".."),
 		},
 		{
 			name:           "unicode_ansi start at 0",
@@ -334,7 +332,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("A💖") + "中é",
+			expected:       RedBg.Render("A💖") + "中é",
 		},
 		{
 			name:           "unicode_ansi start at 1",
@@ -344,7 +342,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("💖") + "中é",
+			expected:       RedBg.Render("💖") + "中é",
 		},
 		{
 			name:           "unicode_ansi end",
@@ -374,7 +372,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "...",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("A💖") + "..", // bit of an edge cases, seems fine
+			expected:       RedBg.Render("A💖") + "..", // bit of an edge cases, seems fine
 		},
 		{
 			name:           "unicode_ansi with continuation at start",
@@ -384,7 +382,7 @@ func TestConcatItem_Take(t *testing.T) {
 			continuation:   "...",
 			toHighlight:    "",
 			highlightStyle: lipgloss.NewStyle(),
-			expected:       internal.RedBg.Render("..") + "中é",
+			expected:       RedBg.Render("..") + "中é",
 		},
 		{
 			name:           "unicode_ansi with highlight whole word",
@@ -393,8 +391,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      6,
 			continuation:   "",
 			toHighlight:    "A💖",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.GreenBg.Render("A💖") + "中é",
+			highlightStyle: GreenBg,
+			expected:       GreenBg.Render("A💖") + "中é",
 		},
 		{
 			name:           "unicode_ansi with highlight partial word",
@@ -403,8 +401,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      6,
 			continuation:   "",
 			toHighlight:    "A",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.GreenBg.Render("A") + internal.RedBg.Render("💖") + "中é",
+			highlightStyle: GreenBg,
+			expected:       GreenBg.Render("A") + RedBg.Render("💖") + "中é",
 		},
 		{
 			name:           "unicode_ansi with highlight across boundary",
@@ -413,8 +411,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      6,
 			continuation:   "",
 			toHighlight:    "💖中",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.RedBg.Render("A") + internal.GreenBg.Render("💖中") + "é",
+			highlightStyle: GreenBg,
+			expected:       RedBg.Render("A") + GreenBg.Render("💖中") + "é",
 		},
 		{
 			name:           "unicode_ansi with highlight and overlapping continuation",
@@ -423,8 +421,8 @@ func TestConcatItem_Take(t *testing.T) {
 			takeWidth:      5,
 			continuation:   "..",
 			toHighlight:    "💖",
-			highlightStyle: internal.GreenBg,
-			expected:       internal.GreenBg.Render("..") + "中é",
+			highlightStyle: GreenBg,
+			expected:       GreenBg.Render("..") + "中é",
 		},
 	}
 
@@ -434,7 +432,7 @@ func TestConcatItem_Take(t *testing.T) {
 				byteRanges := eq.ExtractExactMatches(tt.toHighlight)
 				highlights := toHighlights(byteRanges, tt.highlightStyle)
 				actual, _ := eq.Take(tt.widthToLeft, tt.takeWidth, tt.continuation, highlights)
-				internal.CmpStr(t, tt.expected, actual, fmt.Sprintf("for %s", eq.repr()))
+				CmpStr(t, tt.expected, actual, fmt.Sprintf("for %s", eq.repr()))
 			}
 		})
 	}
@@ -540,8 +538,8 @@ func TestConcatItem_TakeWithPinned(t *testing.T) {
 			widthToLeft:    0,
 			takeWidth:      8,
 			toHighlight:    "12",
-			highlightStyle: internal.RedBg,
-			expected:       internal.RedBg.Render("12") + "3hello",
+			highlightStyle: RedBg,
+			expected:       RedBg.Render("12") + "3hello",
 		},
 		{
 			name:           "highlight in non-pinned section",
@@ -550,16 +548,16 @@ func TestConcatItem_TakeWithPinned(t *testing.T) {
 			widthToLeft:    0,
 			takeWidth:      8,
 			toHighlight:    "ell",
-			highlightStyle: internal.RedBg,
-			expected:       "123h" + internal.RedBg.Render("ell") + "o",
+			highlightStyle: RedBg,
+			expected:       "123h" + RedBg.Render("ell") + "o",
 		},
 		{
 			name:        "pinned item with ANSI",
-			items:       []SingleItem{NewItem(internal.RedBg.Render("123")), NewItem("hello")},
+			items:       []SingleItem{NewItem(RedBg.Render("123")), NewItem("hello")},
 			pinnedCount: 1,
 			widthToLeft: 2, // pans "he" off
 			takeWidth:   6, // 3 for "123" + 3 for "llo"
-			expected:    internal.RedBg.Render("123") + "llo",
+			expected:    RedBg.Render("123") + "llo",
 		},
 		{
 			name:        "two pinned items",
@@ -622,7 +620,7 @@ func TestConcatItem_TakeWithPinned(t *testing.T) {
 			}
 
 			actual, _ := concat.Take(tt.widthToLeft, tt.takeWidth, tt.continuation, highlights)
-			internal.CmpStr(t, tt.expected, actual, fmt.Sprintf("for pinnedCount=%d", tt.pinnedCount))
+			CmpStr(t, tt.expected, actual, fmt.Sprintf("for pinnedCount=%d", tt.pinnedCount))
 		})
 	}
 }

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/antgroup/hugescm/modules/viewport/internal"
-
 	"charm.land/lipgloss/v2"
 )
 
@@ -654,10 +652,10 @@ func TestSingle_Take(t *testing.T) {
 			width:          15,
 			continuation:   "",
 			toHighlight:    "very",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       1,
 			expected: []string{
-				"a " + internal.RedBg.Render("very") + " normal l",
+				"a " + RedBg.Render("very") + " normal l",
 			},
 		},
 		{
@@ -666,10 +664,10 @@ func TestSingle_Take(t *testing.T) {
 			width:          15,
 			continuation:   "",
 			toHighlight:    "very",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       1,
 			expected: []string{
-				"a " + internal.RedBg.Render("very") + " normal l",
+				"a " + RedBg.Render("very") + " normal l",
 			},
 		},
 		{
@@ -678,7 +676,7 @@ func TestSingle_Take(t *testing.T) {
 			width:          15,
 			continuation:   "...",
 			toHighlight:    "l l",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       1,
 			expected: []string{
 				"a very norma\x1b[48;2;255;0;0m..." + RST,
@@ -690,7 +688,7 @@ func TestSingle_Take(t *testing.T) {
 			width:          15,
 			continuation:   "...",
 			toHighlight:    "very",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			startWidth:     1,
 			numTakes:       1,
 			expected: []string{
@@ -703,7 +701,7 @@ func TestSingle_Take(t *testing.T) {
 			width:          6,
 			continuation:   "",
 			toHighlight:    "r",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
 				strings.Repeat("\x1b[48;2;255;0;0mr"+RST+"", 6),
@@ -716,7 +714,7 @@ func TestSingle_Take(t *testing.T) {
 			width:          15,
 			continuation:   "",
 			toHighlight:    "er",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       1,
 			expected: []string{
 				"\x1b[38;2;0;0;255mhi \x1b[48;2;0;255;0mth" + RST + "\x1b[48;2;255;0;0mer" + RST + "\x1b[38;2;0;0;255m\x1b[48;2;0;255;0me" + RST + " \x1b[48;2;255;0;0mer" + RST,
@@ -728,11 +726,11 @@ func TestSingle_Take(t *testing.T) {
 			width:          6,
 			continuation:   "",
 			toHighlight:    "hi there",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
-				internal.RedBg.Render("hi the"),
-				internal.RedBg.Render("re") + " re",
+				RedBg.Render("hi the"),
+				RedBg.Render("re") + " re",
 			},
 		},
 		{
@@ -741,7 +739,7 @@ func TestSingle_Take(t *testing.T) {
 			width:          6,
 			continuation:   "",
 			toHighlight:    "hi there",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
 				"\x1b[48;2;255;0;0mhi the" + RST,
@@ -750,14 +748,14 @@ func TestSingle_Take(t *testing.T) {
 		},
 		{
 			name:           "toHighlight, no continuation, another ansi",
-			s:              internal.RedBg.Render("hello") + " " + internal.BlueBg.Render("world"),
+			s:              RedBg.Render("hello") + " " + BlueBg.Render("world"),
 			width:          11,
 			continuation:   "",
 			toHighlight:    "lo wo",
-			highlightStyle: internal.GreenBg,
+			highlightStyle: GreenBg,
 			numTakes:       1,
 			expected: []string{
-				internal.RedBg.Render("hel") + internal.GreenBg.Render("lo wo") + internal.BlueBg.Render("rld"),
+				RedBg.Render("hel") + GreenBg.Render("lo wo") + BlueBg.Render("rld"),
 			},
 		},
 		{
@@ -766,11 +764,11 @@ func TestSingle_Take(t *testing.T) {
 			width:          7,
 			continuation:   "",
 			toHighlight:    "hi there",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
-				internal.RedBg.Render("hi ther"),
-				internal.RedBg.Render("e") + " re",
+				RedBg.Render("hi ther"),
+				RedBg.Render("e") + " re",
 			},
 		},
 		{
@@ -779,11 +777,11 @@ func TestSingle_Take(t *testing.T) {
 			width:          7,
 			continuation:   "",
 			toHighlight:    "世界",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
-				internal.RedBg.Render("世界") + "🌟",
-				internal.RedBg.Render("世界") + "🌟",
+				RedBg.Render("世界") + "🌟",
+				RedBg.Render("世界") + "🌟",
 			},
 		},
 		{
@@ -792,11 +790,11 @@ func TestSingle_Take(t *testing.T) {
 			width:          7,
 			continuation:   "",
 			toHighlight:    "世界🌟世",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
-				internal.RedBg.Render("世界🌟"),
-				internal.RedBg.Render("世") + "界🌟",
+				RedBg.Render("世界🌟"),
+				RedBg.Render("世") + "界🌟",
 			},
 		},
 		{
@@ -805,11 +803,11 @@ func TestSingle_Take(t *testing.T) {
 			width:          7,
 			continuation:   "",
 			toHighlight:    "世界🌟世",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
-				internal.RedBg.Render("世界🌟"),
-				internal.RedBg.Render("世") + "\x1b[38;2;0;0;255m界🌟" + RST,
+				RedBg.Render("世界🌟"),
+				RedBg.Render("世") + "\x1b[38;2;0;0;255m界🌟" + RST,
 			},
 		},
 		{
@@ -818,7 +816,7 @@ func TestSingle_Take(t *testing.T) {
 			width:          7,
 			continuation:   "...",
 			toHighlight:    "世界🌟世",
-			highlightStyle: internal.RedBg,
+			highlightStyle: RedBg,
 			numTakes:       2,
 			expected: []string{
 				"\x1b[48;2;255;0;0m世界.." + RST,
@@ -848,12 +846,12 @@ func TestSingle_Take(t *testing.T) {
 		{
 			name: "unicode with heart start continuation and ansi",
 			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b) = 6w, 11b
-			s:            internal.RedBg.Render("A💖") + "中é",
+			s:            RedBg.Render("A💖") + "中é",
 			width:        5,
 			continuation: "...",
 			startWidth:   1,
 			numTakes:     1,
-			expected:     []string{internal.RedBg.Render("..") + "中é"},
+			expected:     []string{RedBg.Render("..") + "中é"},
 		},
 		{
 			name: "unicode combining",
@@ -881,7 +879,7 @@ func TestSingle_Take(t *testing.T) {
 			highlights := toHighlights(byteRanges, tt.highlightStyle)
 			for i := 0; i < tt.numTakes; i++ {
 				actual, actualWidth := item.Take(startWidth, tt.width, tt.continuation, highlights)
-				internal.CmpStr(t, tt.expected[i], actual)
+				CmpStr(t, tt.expected[i], actual)
 				startWidth += actualWidth
 			}
 		})
@@ -967,7 +965,7 @@ func TestSingle_Take_EraseInLine(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			item := NewItem(tt.s)
 			actual, actualWidth := item.Take(tt.startWidth, tt.width, "", []Highlight{})
-			internal.CmpStr(t, tt.expected, actual)
+			CmpStr(t, tt.expected, actual)
 			expectedWidth := tt.expectedWidth
 			if expectedWidth == 0 {
 				expectedWidth = tt.width
@@ -1020,8 +1018,8 @@ func TestSingle_NewItem_stripsNonSGR(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			item := NewItem(tt.input)
-			internal.CmpStr(t, tt.expectedContent, item.Content())
-			internal.CmpStr(t, tt.expectedNoAnsi, item.ContentNoAnsi())
+			CmpStr(t, tt.expectedContent, item.Content())
+			CmpStr(t, tt.expectedNoAnsi, item.ContentNoAnsi())
 			if item.Width() != tt.expectedWidth {
 				t.Errorf("expected width %d, got %d", tt.expectedWidth, item.Width())
 			}
@@ -1041,7 +1039,7 @@ func TestSingle_Take_NoAnsiLeak(t *testing.T) {
 
 	item := NewItem(s)
 	byteRanges := item.ExtractExactMatches("\"")
-	highlights := toHighlights(byteRanges, internal.RedBg)
+	highlights := toHighlights(byteRanges, RedBg)
 
 	actual, _ := item.Take(0, 80, "", highlights)
 	stripped := StripAnsi(actual)
@@ -1108,25 +1106,25 @@ func TestSingle_NumWrappedLines(t *testing.T) {
 		},
 		{
 			name:      "ansi wrap 5",
-			s:         internal.RedBg.Render("hello world"), // 11 width
+			s:         RedBg.Render("hello world"), // 11 width
 			wrapWidth: 5,
 			expected:  3,
 		},
 		{
 			name:      "unicode_ansi wrap 3",
-			s:         internal.RedBg.Render("A💖") + "中é", // 6 width
+			s:         RedBg.Render("A💖") + "中é", // 6 width
 			wrapWidth: 3,
 			expected:  2,
 		},
 		{
 			name:      "unicode_ansi wrap 6",
-			s:         internal.RedBg.Render("A💖") + "中é", // 6 width
+			s:         RedBg.Render("A💖") + "中é", // 6 width
 			wrapWidth: 6,
 			expected:  1,
 		},
 		{
 			name:      "unicode_ansi wrap 7",
-			s:         internal.RedBg.Render("A💖") + "中é", // 6 width
+			s:         RedBg.Render("A💖") + "中é", // 6 width
 			wrapWidth: 7,
 			expected:  1,
 		},
@@ -1670,19 +1668,19 @@ func TestSingleItem_ExtractRegexMatches(t *testing.T) {
 	}
 }
 
-func TestSingle_findRuneIndexWithWidthToLeft(t *testing.T) {
+func TestSingle_findClusterIndexWithWidthToLeft(t *testing.T) {
 	tests := []struct {
-		name            string
-		s               string
-		widthToLeft     int
-		expectedRuneIdx int
-		shouldPanic     bool
+		name               string
+		s                  string
+		widthToLeft        int
+		expectedClusterIdx int
+		shouldPanic        bool
 	}{
 		{
-			name:            "empty string",
-			s:               "",
-			widthToLeft:     0,
-			expectedRuneIdx: 0,
+			name:               "empty string",
+			s:                  "",
+			widthToLeft:        0,
+			expectedClusterIdx: 0,
 		},
 		{
 			name:        "negative widthToLeft",
@@ -1691,16 +1689,16 @@ func TestSingle_findRuneIndexWithWidthToLeft(t *testing.T) {
 			shouldPanic: true,
 		},
 		{
-			name:            "single char",
-			s:               "a",
-			widthToLeft:     1,
-			expectedRuneIdx: 1,
+			name:               "single char",
+			s:                  "a",
+			widthToLeft:        1,
+			expectedClusterIdx: 1,
 		},
 		{
-			name:            "widthToLeft at end",
-			s:               "abc",
-			widthToLeft:     3,
-			expectedRuneIdx: 3,
+			name:               "widthToLeft at end",
+			s:                  "abc",
+			widthToLeft:        3,
+			expectedClusterIdx: 3,
 		},
 		{
 			name:        "widthToLeft past total width",
@@ -1709,36 +1707,36 @@ func TestSingle_findRuneIndexWithWidthToLeft(t *testing.T) {
 			shouldPanic: true,
 		},
 		{
-			name:            "longer",
-			s:               "hello",
-			widthToLeft:     3,
-			expectedRuneIdx: 3,
+			name:               "longer",
+			s:                  "hello",
+			widthToLeft:        3,
+			expectedClusterIdx: 3,
 		},
 		{
-			name:            "ansi",
-			s:               "hi " + internal.RedBg.Render("there") + " leo",
-			widthToLeft:     8,
-			expectedRuneIdx: 8,
+			name:               "ansi",
+			s:                  "hi " + RedBg.Render("there") + " leo",
+			widthToLeft:        8,
+			expectedClusterIdx: 8,
 		},
 		{
 			name: "unicode",
-			s:    "A💖中é",
-			// A (1w, 1b, 1r), 💖 (2w, 4b, 1r), 中 (2w, 3b, 1r), é (1w, 3b, 2r) = 6w, 11b, 5r
-			widthToLeft:     5,
-			expectedRuneIdx: 3,
+			s:    "A💖中é",
+			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b) = 6w, 11b, 4 clusters
+			widthToLeft:        5,
+			expectedClusterIdx: 3, // A+💖+中 = 5w, next is é
 		},
 		{
 			name: "unicode zero-width",
-			s:    "A💖中é",
-			// A (1w, 1b, 1r), 💖 (2w, 4b, 1r), 中 (2w, 3b, 1r), é (1w, 3b, 2r) = 6w, 11b, 5r
-			widthToLeft:     6,
-			expectedRuneIdx: 5,
+			s:    "A💖中é",
+			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b) = 6w, 11b, 4 clusters
+			widthToLeft:        6,
+			expectedClusterIdx: 4, // all consumed
 		},
 		{
-			name:            "unicode zero-width single char",
-			s:               "é",
-			widthToLeft:     1,
-			expectedRuneIdx: 2,
+			name:               "unicode combined single char",
+			s:                  "é",
+			widthToLeft:        1,
+			expectedClusterIdx: 1, // é is one grapheme cluster
 		},
 	}
 
@@ -1748,82 +1746,76 @@ func TestSingle_findRuneIndexWithWidthToLeft(t *testing.T) {
 
 			if tt.shouldPanic {
 				assertPanic(t, func() {
-					item.findRuneIndexWithWidthToLeft(tt.widthToLeft)
+					item.findClusterIndexWithWidthToLeft(tt.widthToLeft)
 				})
 				return
 			}
 
-			actual := item.findRuneIndexWithWidthToLeft(tt.widthToLeft)
-			if actual != tt.expectedRuneIdx {
-				t.Errorf("findRuneIndexWithWidthToLeft() got %d, expected %d", actual, tt.expectedRuneIdx)
+			actual := item.findClusterIndexWithWidthToLeft(tt.widthToLeft)
+			if actual != tt.expectedClusterIdx {
+				t.Errorf("findClusterIndexWithWidthToLeft() got %d, expected %d", actual, tt.expectedClusterIdx)
 			}
 		})
 	}
 }
 
-func TestSingle_getByteOffsetAtRuneIdx(t *testing.T) {
+func TestSingle_getByteOffsetAtClusterIdx(t *testing.T) {
 	tests := []struct {
 		name               string
 		s                  string
-		runeIdx            int
+		clusterIdx         int
 		expectedByteOffset int
 		shouldPanic        bool
 	}{
 		{
 			name:               "empty string",
 			s:                  "",
-			runeIdx:            0,
+			clusterIdx:         0,
 			expectedByteOffset: 0,
 		},
 		{
-			name:        "negative runeIdx",
+			name:        "negative clusterIdx",
 			s:           "hello",
-			runeIdx:     -1,
+			clusterIdx:  -1,
 			shouldPanic: true,
 		},
 		{
 			name:               "single char",
 			s:                  "a",
-			runeIdx:            0,
+			clusterIdx:         0,
 			expectedByteOffset: 0,
 		},
 		{
-			name:        "runeIdx out of bounds",
+			name:        "clusterIdx out of bounds",
 			s:           "a",
-			runeIdx:     1,
+			clusterIdx:  1,
 			shouldPanic: true,
 		},
 		{
 			name:               "longer",
 			s:                  "hello",
-			runeIdx:            3,
+			clusterIdx:         3,
 			expectedByteOffset: 3,
 		},
 		{
 			name:               "ansi",
-			s:                  "hi " + internal.RedBg.Render("there") + " leo",
-			runeIdx:            8,
+			s:                  "hi " + RedBg.Render("there") + " leo",
+			clusterIdx:         8,
 			expectedByteOffset: 8,
 		},
 		{
 			name: "unicode",
-			s:    "A💖中é",
-			// A (1w, 1b, 1r), 💖 (2w, 4b, 1r), 中 (2w, 3b, 1r), é (1w, 3b, 2r) = 6w, 11b, 5r
-			runeIdx:            3, // first rune in é
+			s:    "A💖中é",
+			// A (1w, 1b), 💖 (2w, 4b), 中 (2w, 3b), é (1w, 3b) = 6w, 11b, 4 clusters
+			clusterIdx:         3, // é cluster
 			expectedByteOffset: 8,
 		},
 		{
-			name: "unicode zero-width",
-			s:    "A💖中é",
-			// A (1w, 1b, 1r), 💖 (2w, 4b, 1r), 中 (2w, 3b, 1r), é (1w, 3b, 2r) = 6w, 11b, 5r
-			runeIdx:            4, // second rune in é
-			expectedByteOffset: 9,
-		},
-		{
-			name:               "unicode zero-width single char",
-			s:                  "é",
-			runeIdx:            1,
-			expectedByteOffset: 1,
+			name: "unicode combined single char",
+			s:    "é", // e + combining acute = 1 cluster, 3 bytes
+			// clusterIdx 0 → byte 0
+			clusterIdx:         0,
+			expectedByteOffset: 0,
 		},
 	}
 
@@ -1833,14 +1825,14 @@ func TestSingle_getByteOffsetAtRuneIdx(t *testing.T) {
 
 			if tt.shouldPanic {
 				assertPanic(t, func() {
-					item.getByteOffsetAtRuneIdx(tt.runeIdx)
+					item.getByteOffsetAtClusterIdx(tt.clusterIdx)
 				})
 				return
 			}
 
-			actual := item.getByteOffsetAtRuneIdx(tt.runeIdx)
+			actual := item.getByteOffsetAtClusterIdx(tt.clusterIdx)
 			if int(actual) != tt.expectedByteOffset {
-				t.Errorf("getByteOffsetAtRuneIdx() got %d, expected %d", actual, tt.expectedByteOffset)
+				t.Errorf("getByteOffsetAtClusterIdx() got %d, expected %d", actual, tt.expectedByteOffset)
 			}
 		})
 	}

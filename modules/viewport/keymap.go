@@ -27,7 +27,7 @@ func DefaultKeyMap() KeyMap {
 		),
 		PageUp: key.NewBinding(
 			key.WithKeys("pgup", "b", "ctrl+b"),
-			key.WithHelp("b", "pgup"),
+			key.WithHelp("b", "page up"),
 		),
 		HalfPageUp: key.NewBinding(
 			key.WithKeys("u", "ctrl+u"),
@@ -42,7 +42,7 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("↑/k", "scroll up"),
 		),
 		Down: key.NewBinding(
-			key.WithKeys("down", "j", "enter"),
+			key.WithKeys("down", "j"),
 			key.WithHelp("↓/j", "scroll down"),
 		),
 		Left: key.NewBinding(
@@ -54,11 +54,11 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("→", "right"),
 		),
 		Top: key.NewBinding(
-			key.WithKeys("g", "ctrl+g", "home"),
+			key.WithKeys("g", "ctrl+g"),
 			key.WithHelp("g", "top"),
 		),
 		Bottom: key.NewBinding(
-			key.WithKeys("G", "end"),
+			key.WithKeys("G"),
 			key.WithHelp("G", "bottom"),
 		),
 	}

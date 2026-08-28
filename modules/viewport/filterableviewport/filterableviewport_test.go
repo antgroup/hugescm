@@ -10,7 +10,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/antgroup/hugescm/modules/viewport"
-	"github.com/antgroup/hugescm/modules/viewport/internal"
 	"github.com/antgroup/hugescm/modules/viewport/item"
 )
 
@@ -25,14 +24,14 @@ func (i object) GetItem() item.Item {
 var _ viewport.Object = object{}
 
 var (
-	filterKeyMsg                = internal.MakeKeyMsg('/')
-	regexFilterKeyMsg           = internal.MakeKeyMsg('r')
-	caseInsensitiveFilterKeyMsg = internal.MakeKeyMsg('i')
+	filterKeyMsg                = viewport.MakeKeyMsg('/')
+	regexFilterKeyMsg           = viewport.MakeKeyMsg('r')
+	caseInsensitiveFilterKeyMsg = viewport.MakeKeyMsg('i')
 	applyFilterKeyMsg           = tea.KeyPressMsg{Code: tea.KeyEnter, Text: "enter"}
 	cancelFilterKeyMsg          = tea.KeyPressMsg{Code: tea.KeyEscape, Text: "esc"}
-	toggleMatchesKeyMsg         = internal.MakeKeyMsg('o')
-	nextMatchKeyMsg             = internal.MakeKeyMsg('n')
-	prevMatchKeyMsg             = internal.MakeKeyMsg('N')
+	toggleMatchesKeyMsg         = viewport.MakeKeyMsg('o')
+	nextMatchKeyMsg             = viewport.MakeKeyMsg('n')
+	prevMatchKeyMsg             = viewport.MakeKeyMsg('N')
 	downKeyMsg                  = tea.KeyPressMsg{Code: tea.KeyDown, Text: "down"}
 
 	footerStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
@@ -74,8 +73,8 @@ func makeFilterableViewport(
 	defaultTestItemDescriptorOption := WithItemDescriptor[object]("items")
 	fvOptions = append([]Option[object]{defaultTestFvStylesOption, defaultTestItemDescriptorOption}, fvOptions...)
 
-	vp := viewport.New[object](width, height, vpOptions...)
-	return New[object](vp, fvOptions...)
+	vp := viewport.New(width, height, vpOptions...)
+	return New(vp, fvOptions...)
 }
 
 func TestNew(t *testing.T) {
@@ -93,13 +92,13 @@ func TestNew(t *testing.T) {
 		"Line 2",
 		"Line 3",
 	}))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"Line 1",
 		"Line 2",
 		"No Filter",
 		footerStyle.Render("66% (2/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestNewLongText(t *testing.T) {
@@ -117,14 +116,14 @@ func TestNewLongText(t *testing.T) {
 		"Line 2",
 		"Line 3",
 	}))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"Line 1",
 		"Line 2",
 		"Line 3",
 		"Nada Fi...",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestNewWidthHeight(t *testing.T) {
@@ -155,7 +154,7 @@ func TestZeroDimensions(t *testing.T) {
 	if fv.GetHeight() != 0 {
 		t.Errorf("expected height 0, got %d", fv.GetHeight())
 	}
-	internal.CmpStr(t, "", fv.View())
+	viewport.CmpStr(t, "", fv.View())
 }
 
 func TestNegativeDimensions(t *testing.T) {
@@ -171,7 +170,7 @@ func TestNegativeDimensions(t *testing.T) {
 	if fv.GetHeight() != 0 {
 		t.Errorf("expected height 0 for negative input, got %d", fv.GetHeight())
 	}
-	internal.CmpStr(t, "", fv.View())
+	viewport.CmpStr(t, "", fv.View())
 }
 
 func TestSetWidthSetHeight(t *testing.T) {
@@ -215,13 +214,13 @@ func TestEmptyContent(t *testing.T) {
 		},
 	)
 	fv.SetObjects([]object{})
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"",
 		"",
 		"No filter",
 		"",
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestWithMatchesOnlyTrue(t *testing.T) {
@@ -240,14 +239,14 @@ func TestWithMatchesOnlyTrue(t *testing.T) {
 		"cherry",
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a" + focusedStyle.Render("p") + unfocusedStyle.Render("p") + "le",
 		"",
 		"[exact] Filter: p" + cursorStyle.Render(" ") + " (1/2 matches on 1 items) showing matches only",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestWithMatchesOnlyFalse(t *testing.T) {
@@ -266,15 +265,15 @@ func TestWithMatchesOnlyFalse(t *testing.T) {
 		"cherry",
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a" + focusedStyle.Render("p") + unfocusedStyle.Render("p") + "le",
 		"banana",
 		"cherry",
 		"[exact] Filter: p" + cursorStyle.Render(" ") + " (1/2 matches on 1 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestNoItemDescriptor(t *testing.T) {
@@ -292,16 +291,16 @@ func TestNoItemDescriptor(t *testing.T) {
 		"cherry",
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a" + focusedStyle.Render("p") + unfocusedStyle.Render("p") + "le",
 		"banana",
 		"cherry",
 		"[exact] p  (1/2 matches)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestWithCanToggleMatchesOnlyTrue(t *testing.T) {
@@ -319,24 +318,24 @@ func TestWithCanToggleMatchesOnlyTrue(t *testing.T) {
 		"cherry",
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a" + focusedStyle.Render("p") + unfocusedStyle.Render("p") + "le",
 		"banana",
 		"[exact] p  (1/2 matches on 1 items)",
 		footerStyle.Render("66% (2/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	fv, _ = fv.Update(toggleMatchesKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a" + focusedStyle.Render("p") + unfocusedStyle.Render("p") + "le",
 		"",
 		"[exact] p  (1/2 matches on 1 items) showing matches only",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestWithCanToggleMatchesOnlyFalse(t *testing.T) {
@@ -354,18 +353,18 @@ func TestWithCanToggleMatchesOnlyFalse(t *testing.T) {
 		"cherry",
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a" + focusedStyle.Render("p") + unfocusedStyle.Render("p") + "le",
 		"banana",
 		"[exact] p  (1/2 matches on 1 items)",
 		footerStyle.Render("66% (2/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	fv, _ = fv.Update(toggleMatchesKeyMsg)
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestNilContent(t *testing.T) {
@@ -379,13 +378,13 @@ func TestNilContent(t *testing.T) {
 		},
 	)
 	fv.SetObjects(nil)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"",
 		"",
 		"No Filter",
 		"",
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestDefaultText(t *testing.T) {
@@ -396,24 +395,24 @@ func TestDefaultText(t *testing.T) {
 		[]Option[object]{},
 	)
 	fv.SetObjects(stringsToItems([]string{"test"}))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"test",
 		"",
 		"No Filter",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"test",
 		"",
 		"[exact] p  (no matches)",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestFilterKeyFocus(t *testing.T) {
@@ -459,16 +458,16 @@ func TestCaseInsensitiveFilterKeyEmpty(t *testing.T) {
 		t.Error("filter should be focused after pressing case insensitive filter key")
 	}
 
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 	// 'a' matches 'A' in Apple and 3 'a's in banana = 4 matches on 2 items
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("A") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[iregex] Filter: a  (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSwitchFromExactToCaseInsensitive(t *testing.T) {
@@ -484,29 +483,29 @@ func TestSwitchFromExactToCaseInsensitive(t *testing.T) {
 
 	// exact filter
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// exact filter matches only lowercase 'a'
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"Apple",
 		"b" + focusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[exact] Filter: a  (1/3 matches on 1 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// 'i' to switch to case-insensitive mode
 	fv, _ = fv.Update(caseInsensitiveFilterKeyMsg)
 
 	// now matches both cases, no (?i) in text, label is [iregex]
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("A") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[iregex] Filter: a" + cursorStyle.Render(" ") + " (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSwitchFromCaseInsensitiveToExact(t *testing.T) {
@@ -522,29 +521,29 @@ func TestSwitchFromCaseInsensitiveToExact(t *testing.T) {
 
 	// start case-insensitive filter
 	fv, _ = fv.Update(caseInsensitiveFilterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// case-insensitive matching (matches both 'A' and 'a')
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("A") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[iregex] Filter: a  (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// switch to exact mode with '/'
 	fv, _ = fv.Update(filterKeyMsg)
 
 	// filter text preserved as-is, just switches to exact mode
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"Apple",
 		"b" + focusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[exact] Filter: a" + cursorStyle.Render(" ") + " (1/3 matches on 1 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestCaseInsensitiveKeyReEntersEditingMode(t *testing.T) {
@@ -560,29 +559,29 @@ func TestCaseInsensitiveKeyReEntersEditingMode(t *testing.T) {
 
 	// start case-insensitive filter
 	fv, _ = fv.Update(caseInsensitiveFilterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// case-insensitive matching
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("A") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[iregex] Filter: a  (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// press 'i' again - should just re-enter editing mode
 	fv, _ = fv.Update(caseInsensitiveFilterKeyMsg)
 
 	// still case-insensitive, filter should be focused for editing
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("A") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[iregex] Filter: a" + cursorStyle.Render(" ") + " (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestApplyFilterKey(t *testing.T) {
@@ -594,18 +593,18 @@ func TestApplyFilterKey(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 	if fv.FilterFocused() {
 		t.Error("filter should not be focused after applying filter")
 	}
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("a") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"[exact] a  (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestCancelFilterKey(t *testing.T) {
@@ -617,18 +616,18 @@ func TestCancelFilterKey(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(cancelFilterKeyMsg)
 	if fv.FilterFocused() {
 		t.Error("filter should not be focused after canceling")
 	}
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"No Filter",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestRegexFilterValidPattern(t *testing.T) {
@@ -642,16 +641,16 @@ func TestRegexFilterValidPattern(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana", "apricot"}))
 	fv, _ = fv.Update(regexFilterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('+'))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('+'))
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("app") + "le",
 		"banana",
 		"[regex] Filter: ap+" + cursorStyle.Render(" ") + " (1/2 matches on 2 items)",
 		footerStyle.Render("66% (2/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestRegexFilterInvalidPattern(t *testing.T) {
@@ -665,14 +664,14 @@ func TestRegexFilterInvalidPattern(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(regexFilterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('['))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	fv, _ = fv.Update(viewport.MakeKeyMsg('['))
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"[regex] Filter: [" + cursorStyle.Render(" ") + " (no matches)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestStyleOverlay(t *testing.T) {
@@ -686,34 +685,34 @@ func TestStyleOverlay(t *testing.T) {
 
 	fv.SetObjects(stringsToItems([]string{
 		"apple pie",
-		internal.RedFg.Render("apple") + " pie " + internal.BlueFg.Render("yum"),
+		viewport.RedFg.Render("apple") + " pie " + viewport.BlueFg.Render("yum"),
 	}))
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "apple pie" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// on selected lines, match highlights keep their original styles and selection fills gaps
 	// first item is selected, has focused match covering entire content "apple pie"
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple pie"),
-		unfocusedStyle.Render("apple pie") + " " + internal.BlueFg.Render("yum"),
+		unfocusedStyle.Render("apple pie") + " " + viewport.BlueFg.Render("yum"),
 		"[exact] apple pie  (1/2 matches on 2 items)",
 		footerStyle.Render("50% (1/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// move selection down to second item: match keeps unfocused style, selection fills " yum"
 	fv, _ = fv.Update(downKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple pie"),
 		unfocusedStyle.Render("apple pie") + selectedItemStyle.Render(" yum"),
 		"[exact] apple pie  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestRegexFilterMultipleMatchesInSingleLine(t *testing.T) {
@@ -733,12 +732,12 @@ func TestRegexFilterMultipleMatchesInSingleLine(t *testing.T) {
 	fv, _ = fv.Update(regexFilterKeyMsg)
 	// use regex pattern \bthe\b to match whole word "the"
 	for _, c := range "\\bthe\\b" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// should focus on first match in first line
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("the") + " cat sat on " + unfocusedStyle.Render("the") + " mat",
 		"dog",
 		"another " + unfocusedStyle.Render("the") + " and " + unfocusedStyle.Render("the") + " end",
@@ -746,11 +745,11 @@ func TestRegexFilterMultipleMatchesInSingleLine(t *testing.T) {
 		"[regex] Filter: \\bthe\\b  (1/4 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	// navigate to second match (still in first line)
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedSecondMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedSecondMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("the") + " cat sat on " + focusedStyle.Render("the") + " mat",
 		"dog",
 		"another " + unfocusedStyle.Render("the") + " and " + unfocusedStyle.Render("the") + " end",
@@ -758,11 +757,11 @@ func TestRegexFilterMultipleMatchesInSingleLine(t *testing.T) {
 		"[regex] Filter: \\bthe\\b  (2/4 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	// navigate to third match (third line, first match)
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedThirdMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedThirdMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("the") + " cat sat on " + unfocusedStyle.Render("the") + " mat",
 		"dog",
 		"another " + focusedStyle.Render("the") + " and " + unfocusedStyle.Render("the") + " end",
@@ -770,11 +769,11 @@ func TestRegexFilterMultipleMatchesInSingleLine(t *testing.T) {
 		"[regex] Filter: \\bthe\\b  (3/4 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedThirdMatch, fv.View())
+	viewport.CmpStr(t, expectedThirdMatch, fv.View())
 
 	// navigate to fourth match (third line, second match)
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedFourthMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFourthMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("the") + " cat sat on " + unfocusedStyle.Render("the") + " mat",
 		"dog",
 		"another " + unfocusedStyle.Render("the") + " and " + focusedStyle.Render("the") + " end",
@@ -782,16 +781,16 @@ func TestRegexFilterMultipleMatchesInSingleLine(t *testing.T) {
 		"[regex] Filter: \\bthe\\b  (4/4 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedFourthMatch, fv.View())
+	viewport.CmpStr(t, expectedFourthMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedFourthMatch, fv.View())
+	viewport.CmpStr(t, expectedFourthMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedThirdMatch, fv.View())
+	viewport.CmpStr(t, expectedThirdMatch, fv.View())
 }
 
 func TestNoMatchesShowsNoMatchesText(t *testing.T) {
@@ -803,16 +802,16 @@ func TestNoMatchesShowsNoMatchesText(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('x'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('y'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('z'))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	fv, _ = fv.Update(viewport.MakeKeyMsg('x'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('y'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('z'))
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"[exact] xyz" + cursorStyle.Render(" ") + " (no matches)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestWithFilterModes(t *testing.T) {
@@ -842,20 +841,20 @@ func TestViewportControls(t *testing.T) {
 		[]Option[object]{},
 	)
 	fv.SetObjects(stringsToItems([]string{"line1", "line2", "line3"}))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line1",
 		"No Filter",
 		footerStyle.Render("33% (1/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	fv, _ = fv.Update(downKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line2",
 		"No Filter",
 		footerStyle.Render("66% (2/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestApplyEmptyFilterShowsWhenEmptyText(t *testing.T) {
@@ -870,13 +869,13 @@ func TestApplyEmptyFilterShowsWhenEmptyText(t *testing.T) {
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(filterKeyMsg)
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"No filter applied",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestEditingEmptyFilterShowsEditingMessage(t *testing.T) {
@@ -890,13 +889,13 @@ func TestEditingEmptyFilterShowsEditingMessage(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(filterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"[exact] Filter: " + cursorStyle.Render(" ") + " type to filter",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSpecialKeysWhileFiltering(t *testing.T) {
@@ -915,19 +914,19 @@ func TestSpecialKeysWhileFiltering(t *testing.T) {
 		"cherry",
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
 	fv, _ = fv.Update(toggleMatchesKeyMsg) // 'o'
 	fv, _ = fv.Update(nextMatchKeyMsg)     // 'n'
 	fv, _ = fv.Update(prevMatchKeyMsg)     // 'N'
 	fv, _ = fv.Update(filterKeyMsg)        // '/'
 	fv, _ = fv.Update(regexFilterKeyMsg)   // 'r'
-	expectedViewAfterO := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedViewAfterO := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"book",
 		"[exact] ponN/r" + cursorStyle.Render(" ") + " (no matches)",
 		footerStyle.Render("50% (2/4)"),
 	})
-	internal.CmpStr(t, expectedViewAfterO, fv.View())
+	viewport.CmpStr(t, expectedViewAfterO, fv.View())
 }
 
 func TestAnsiEscapeCodesNotMatched(t *testing.T) {
@@ -938,23 +937,23 @@ func TestAnsiEscapeCodesNotMatched(t *testing.T) {
 		[]Option[object]{},
 	)
 	fv.SetObjects(stringsToItems([]string{
-		internal.RedFg.Render("apple"),
-		internal.RedFg.Render("book"),
-		internal.RedFg.Render("food"),
-		internal.RedFg.Render("cherry"),
+		viewport.RedFg.Render("apple"),
+		viewport.RedFg.Render("book"),
+		viewport.RedFg.Render("food"),
+		viewport.RedFg.Render("cherry"),
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "x1b" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
-		internal.RedFg.Render("apple"),
-		internal.RedFg.Render("book"),
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+		viewport.RedFg.Render("apple"),
+		viewport.RedFg.Render("book"),
 		"[exact] x1b  (no matches)",
 		footerStyle.Render("50% (2/4)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestMatchNavigationWithNoMatches(t *testing.T) {
@@ -966,21 +965,21 @@ func TestMatchNavigationWithNoMatches(t *testing.T) {
 	)
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('x'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('x'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"[exact] x  (no matches)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestMatchNavigationWithOverlappingMatches(t *testing.T) {
@@ -993,16 +992,16 @@ func TestMatchNavigationWithOverlappingMatches(t *testing.T) {
 	fv.SetObjects(stringsToItems([]string{"aaa"}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "aa" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aa") + "a",
 		"",
 		"[exact] aa  (1/1 matches on 1 items)",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 }
 
 func TestMatchNavigationWithAllItemsWrap(t *testing.T) {
@@ -1025,7 +1024,7 @@ func TestMatchNavigationWithAllItemsWrap(t *testing.T) {
 		"hi over there",
 		"no match",
 	}))
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hi ther",
 		"e",
 		"hi over",
@@ -1033,14 +1032,14 @@ func TestMatchNavigationWithAllItemsWrap(t *testing.T) {
 		"None",
 		footerStyle.Render("66% ..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "there" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hi " + focusedStyle.Render("ther"),
 		focusedStyle.Render("e"),
 		"hi over",
@@ -1048,10 +1047,10 @@ func TestMatchNavigationWithAllItemsWrap(t *testing.T) {
 		"[exa...",
 		footerStyle.Render("66% ..."),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedSecondMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedSecondMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hi " + unfocusedStyle.Render("ther"),
 		unfocusedStyle.Render("e"),
 		"hi over",
@@ -1059,16 +1058,16 @@ func TestMatchNavigationWithAllItemsWrap(t *testing.T) {
 		"[exa...",
 		footerStyle.Render("66% ..."),
 	})
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 }
 
 func TestMatchNavigationWithMatchingItemsOnlyWrap(t *testing.T) {
@@ -1091,7 +1090,7 @@ func TestMatchNavigationWithMatchingItemsOnlyWrap(t *testing.T) {
 		"hi over there",
 		"no match",
 	}))
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hi ther",
 		"e",
 		"hi over",
@@ -1099,14 +1098,14 @@ func TestMatchNavigationWithMatchingItemsOnlyWrap(t *testing.T) {
 		"None",
 		footerStyle.Render("66% ..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "there" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hi " + focusedStyle.Render("ther"),
 		focusedStyle.Render("e"),
 		"hi over",
@@ -1114,10 +1113,10 @@ func TestMatchNavigationWithMatchingItemsOnlyWrap(t *testing.T) {
 		"[exa...",
 		footerStyle.Render("100%..."),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedSecondMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedSecondMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hi " + unfocusedStyle.Render("ther"),
 		unfocusedStyle.Render("e"),
 		"hi over",
@@ -1125,16 +1124,16 @@ func TestMatchNavigationWithMatchingItemsOnlyWrap(t *testing.T) {
 		"[exa...",
 		footerStyle.Render("100%..."),
 	})
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 }
 
 func TestMatchNavigationWrapLineOffset(t *testing.T) {
@@ -1151,17 +1150,17 @@ func TestMatchNavigationWrapLineOffset(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "goose" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		strings.Repeat("a", 20),
 		strings.Repeat("a", 20),
 		focusedStyle.Render("goose") + strings.Repeat("a", 15),
 		"[exact] goose  (1...",
 		footerStyle.Render("99% (1/1)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestMatchNavigationWrappedLinesWithMatches(t *testing.T) {
@@ -1179,10 +1178,10 @@ func TestMatchNavigationWrappedLinesWithMatches(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "aaa" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aaa") + unfocusedStyle.Render("a"),
 		unfocusedStyle.Render("aa") + unfocusedStyle.Render("aa"),
 		unfocusedStyle.Render("a") + "a",
@@ -1190,10 +1189,10 @@ func TestMatchNavigationWrappedLinesWithMatches(t *testing.T) {
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("aaa") + focusedStyle.Render("a"),
 		focusedStyle.Render("aa") + unfocusedStyle.Render("aa"),
 		unfocusedStyle.Render("a") + "a",
@@ -1201,15 +1200,15 @@ func TestMatchNavigationWrappedLinesWithMatches(t *testing.T) {
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(cancelFilterKeyMsg)
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "bbb" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"aaaa",
 		"aaaa",
 		"aa",
@@ -1217,10 +1216,10 @@ func TestMatchNavigationWrappedLinesWithMatches(t *testing.T) {
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"aaaa",
 		"aa",
 		unfocusedStyle.Render("bbb") + focusedStyle.Render("b"),
@@ -1228,7 +1227,7 @@ func TestMatchNavigationWrappedLinesWithMatches(t *testing.T) {
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestMatchNavigationWrappedLinesWithWrappedMatches(t *testing.T) {
@@ -1246,118 +1245,118 @@ func TestMatchNavigationWrappedLinesWithWrappedMatches(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for range 5 {
-		fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+		fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aaaa"),
 		focusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		unfocusedStyle.Render("aa"),
 		"[...",
 		footerStyle.Render("5..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("aaaa"),
 		unfocusedStyle.Render("a") + focusedStyle.Render("aaa"),
 		focusedStyle.Render("aa"),
 		"[...",
 		footerStyle.Render("5..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("aa"),
 		focusedStyle.Render("aaaa"),
 		focusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("aaaa"),
 		unfocusedStyle.Render("a") + focusedStyle.Render("aaa"),
 		focusedStyle.Render("aa") + unfocusedStyle.Render("aa"),
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		unfocusedStyle.Render("aa") + focusedStyle.Render("aa"),
 		focusedStyle.Render("aaa"),
 		"[...",
 		footerStyle.Render("1..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("a") + focusedStyle.Render("aaa"),
 		focusedStyle.Render("aa") + unfocusedStyle.Render("aa"),
 		unfocusedStyle.Render("aaa"),
 		"[...",
 		footerStyle.Render("1..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aaaa"),
 		focusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		unfocusedStyle.Render("aa") + unfocusedStyle.Render("aa"),
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("a") + focusedStyle.Render("aaa"),
 		focusedStyle.Render("aa"),
 		unfocusedStyle.Render("aaaa"),
 		"[...",
 		footerStyle.Render("9..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aaaa"),
 		focusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		unfocusedStyle.Render("aa"),
 		"[...",
 		footerStyle.Render("5..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// rollover
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		unfocusedStyle.Render("aa") + focusedStyle.Render("aa"),
 		focusedStyle.Render("aaa"),
 		"[...",
 		footerStyle.Render("1..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aaaa"),
 		focusedStyle.Render("a") + unfocusedStyle.Render("aaa"),
 		unfocusedStyle.Render("aa"),
 		"[...",
 		footerStyle.Render("5..."),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestMatchNavigationNoWrap(t *testing.T) {
@@ -1376,10 +1375,10 @@ func TestMatchNavigationNoWrap(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "goose" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"...k duck duck duck duck " + focusedStyle.Render("goose"),
 		unfocusedStyle.Render("...se") + " duck duck duck duck duck",
 		"...ck duck duck duck duck duck",
@@ -1387,10 +1386,10 @@ func TestMatchNavigationNoWrap(t *testing.T) {
 		"[exact] goose  (1/3 matches...",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedSecondMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedSecondMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"...k duck duck duck duck " + unfocusedStyle.Render("goose"),
 		focusedStyle.Render("...se") + " duck duck duck duck duck",
 		"...ck duck duck duck duck duck",
@@ -1398,10 +1397,10 @@ func TestMatchNavigationNoWrap(t *testing.T) {
 		"[exact] goose  (2/3 matches...",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedThirdMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedThirdMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"duck duck duck duck duck du...",
 		"duck duck duck duck duck " + unfocusedStyle.Render("go..."),
 		focusedStyle.Render("goose") + " duck duck duck duck d...",
@@ -1409,10 +1408,10 @@ func TestMatchNavigationNoWrap(t *testing.T) {
 		"[exact] goose  (3/3 matches...",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedThirdMatch, fv.View())
+	viewport.CmpStr(t, expectedThirdMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 }
 
 func TestMatchNavigationNoWrapPanning(t *testing.T) {
@@ -1429,75 +1428,75 @@ func TestMatchNavigationNoWrapPanning(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for range 4 {
-		fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+		fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedLeftmostMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedLeftmostMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("aaaa") + unfocusedStyle.Render("aaa.") + unfocusedStyle.Render(".."),
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
 
-	internal.CmpStr(t, expectedLeftmostMatch, fv.View())
+	viewport.CmpStr(t, expectedLeftmostMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("aaaa") + focusedStyle.Render("aaa.") + unfocusedStyle.Render(".."),
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedTravelingRight := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedTravelingRight := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("..") + unfocusedStyle.Render(".aaa") + focusedStyle.Render("a..."),
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedTravelingRight, fv.View())
+	viewport.CmpStr(t, expectedTravelingRight, fv.View())
 
 	for range 4 {
 		fv, _ = fv.Update(nextMatchKeyMsg)
-		internal.CmpStr(t, expectedTravelingRight, fv.View())
+		viewport.CmpStr(t, expectedTravelingRight, fv.View())
 	}
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedRightmostMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedRightmostMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("..") + unfocusedStyle.Render(".aaa") + focusedStyle.Render("aaaa"),
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedRightmostMatch, fv.View())
+	viewport.CmpStr(t, expectedRightmostMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("..") + focusedStyle.Render(".aaa") + unfocusedStyle.Render("aaaa"),
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expectedTravelingLeft := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedTravelingLeft := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("...a") + unfocusedStyle.Render("aaa.") + unfocusedStyle.Render(".."),
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedTravelingLeft, fv.View())
+	viewport.CmpStr(t, expectedTravelingLeft, fv.View())
 
 	for range 4 {
 		fv, _ = fv.Update(prevMatchKeyMsg)
-		internal.CmpStr(t, expectedTravelingLeft, fv.View())
+		viewport.CmpStr(t, expectedTravelingLeft, fv.View())
 	}
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedLeftmostMatch, fv.View())
+	viewport.CmpStr(t, expectedLeftmostMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedRightmostMatch, fv.View())
+	viewport.CmpStr(t, expectedRightmostMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedLeftmostMatch, fv.View())
+	viewport.CmpStr(t, expectedLeftmostMatch, fv.View())
 }
 
 func TestMatchNavigationNoWrapUnicode(t *testing.T) {
@@ -1515,15 +1514,15 @@ func TestMatchNavigationNoWrapUnicode(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "hi" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"💖💖💖💖💖💖💖💖 " + focusedStyle.Render("hi") + " aaaaaaaaa...",
 		"[exact] hi  (1/1 matches on 1...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 }
 
 func TestMatchNavigationManyMatchesWrap(t *testing.T) {
@@ -1537,10 +1536,10 @@ func TestMatchNavigationManyMatchesWrap(t *testing.T) {
 	)
 	numAs := 10000
 	fv.SetObjects(stringsToItems([]string{
-		internal.RedFg.Render(strings.Repeat("a", numAs)),
+		viewport.RedFg.Render(strings.Repeat("a", numAs)),
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 	firstRows := []string{
 		focusedStyle.Render("a") + strings.Repeat(unfocusedStyle.Render("a"), fv.GetWidth()-1),
@@ -1551,8 +1550,8 @@ func TestMatchNavigationManyMatchesWrap(t *testing.T) {
 	}
 	rest = append(rest, fmt.Sprintf("[exact] a  (1/%d matches on 1 items)", numAs))
 	rest = append(rest, footerStyle.Render("99% (1/1)"))
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), append(firstRows, rest...))
-	internal.CmpStr(t, expected, fv.View())
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), append(firstRows, rest...))
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestMatchNavigationManyMatchesWrapPerformance(t *testing.T) {
@@ -1567,10 +1566,10 @@ func TestMatchNavigationManyMatchesWrapPerformance(t *testing.T) {
 		)
 		numAs := 5000
 		fv.SetObjects(stringsToItems([]string{
-			internal.RedFg.Render(strings.Repeat("a", numAs)),
+			viewport.RedFg.Render(strings.Repeat("a", numAs)),
 		}))
 		fv, _ = fv.Update(filterKeyMsg)
-		fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+		fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 		fv, _ = fv.Update(applyFilterKeyMsg)
 		firstRows := []string{
 			focusedStyle.Render("a") + strings.Repeat(unfocusedStyle.Render("a"), fv.GetWidth()-1),
@@ -1581,8 +1580,8 @@ func TestMatchNavigationManyMatchesWrapPerformance(t *testing.T) {
 		}
 		rest = append(rest, fmt.Sprintf("[exact] a  (1/%d matches on 1 items)", numAs))
 		rest = append(rest, footerStyle.Render("99% (1/1)"))
-		expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), append(firstRows, rest...))
-		internal.CmpStr(t, expected, fv.View())
+		expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), append(firstRows, rest...))
+		viewport.CmpStr(t, expected, fv.View())
 
 		numNext := 40
 		for range numNext {
@@ -1597,10 +1596,10 @@ func TestMatchNavigationManyMatchesWrapPerformance(t *testing.T) {
 		}
 		restAfterNext = append(restAfterNext, fmt.Sprintf("[exact] a  (%d/%d matches on 1 items)", numNext+1, numAs))
 		restAfterNext = append(restAfterNext, footerStyle.Render("99% (1/1)"))
-		expectedAfterNextView := internal.Pad(fv.GetWidth(), fv.GetHeight(), append(expectedAfterNext, restAfterNext...))
-		internal.CmpStr(t, expectedAfterNextView, fv.View())
+		expectedAfterNextView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), append(expectedAfterNext, restAfterNext...))
+		viewport.CmpStr(t, expectedAfterNextView, fv.View())
 	}
-	internal.RunWithTimeout(t, runTest, 200*time.Millisecond)
+	viewport.RunWithTimeout(t, runTest, 200*time.Millisecond)
 }
 
 func TestScrollingWithManyHighlightedMatchesPerformance(t *testing.T) {
@@ -1625,7 +1624,7 @@ func TestScrollingWithManyHighlightedMatchesPerformance(t *testing.T) {
 
 		// everything on screen highlighted
 		fv, _ = fv.Update(filterKeyMsg)
-		fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+		fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 		fv, _ = fv.Update(applyFilterKeyMsg)
 
 		firstView := fv.View()
@@ -1647,7 +1646,7 @@ func TestScrollingWithManyHighlightedMatchesPerformance(t *testing.T) {
 			}
 		}
 	}
-	internal.RunWithTimeout(t, runTest, 220*time.Millisecond)
+	viewport.RunWithTimeout(t, runTest, 220*time.Millisecond)
 }
 
 func TestScrollingWithManyHighlightedMatchesPerformanceSelectionEnabled(t *testing.T) {
@@ -1673,7 +1672,7 @@ func TestScrollingWithManyHighlightedMatchesPerformanceSelectionEnabled(t *testi
 
 		// everything on screen highlighted
 		fv, _ = fv.Update(filterKeyMsg)
-		fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+		fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 		fv, _ = fv.Update(applyFilterKeyMsg)
 
 		firstView := fv.View()
@@ -1706,7 +1705,7 @@ func TestScrollingWithManyHighlightedMatchesPerformanceSelectionEnabled(t *testi
 			}
 		}
 	}
-	internal.RunWithTimeout(t, runTest, 200*time.Millisecond)
+	viewport.RunWithTimeout(t, runTest, 200*time.Millisecond)
 }
 
 func TestMatchNavigationWithSelectionEnabled(t *testing.T) {
@@ -1726,30 +1725,30 @@ func TestMatchNavigationWithSelectionEnabled(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "apple" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + selectedItemStyle.Render(" pie"),
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("33% (1/3)"),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedSecondMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedSecondMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("apple") + " pie",
 		"banana bread",
 		focusedStyle.Render("apple") + selectedItemStyle.Render(" cake"),
 		"[exact] apple  (2/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 }
 
 func TestFocusedIfSelectedMatchStyle(t *testing.T) {
@@ -1779,43 +1778,43 @@ func TestFocusedIfSelectedMatchStyle(t *testing.T) {
 	// start filtering for "apple"
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "apple" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// focused match is on item 0 (selected) — should use focusedIfSelectedStyle
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedIfSelectedStyle.Render("apple") + selectedItemStyle.Render(" pie"),
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("33% (1/3)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// navigate to next match — focused match moves to item 2 (now selected),
 	// item 0 becomes unfocused
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("apple") + " pie",
 		"banana bread",
 		focusedIfSelectedStyle.Render("apple") + selectedItemStyle.Render(" cake"),
 		"[exact] apple  (2/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// navigate back — focused match on item 0 again (selected),
 	// uses focusedIfSelectedStyle again
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedIfSelectedStyle.Render("apple") + selectedItemStyle.Render(" pie"),
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("33% (1/3)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestFocusedIfSelectedWithReverseSelection(t *testing.T) {
@@ -1853,43 +1852,43 @@ func TestFocusedIfSelectedWithReverseSelection(t *testing.T) {
 	// Apply filter
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "apple" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// After apply: focused match (1/2) on item 0 which IS selected
 	// FocusedIfSelected should be used for "apple", SelectedItemStyle for " pie"
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		cyanFgStyle.Render("apple") + reverseStyle.Render(" pie"),
 		"banana bread",
 		brightRedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		"33% (1/3)",
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// Press n — focused match moves to item 2, selection follows
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		brightRedStyle.Render("apple") + " pie",
 		"banana bread",
 		cyanFgStyle.Render("apple") + reverseStyle.Render(" cake"),
 		"[exact] apple  (2/2 matches on 2 items)",
 		"100% (3/3)",
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// Move selection up — focused match stays on item 2 but selection moves to item 1,
 	// so focused match should now use Focused (reverse+cyan) instead of FocusedIfSelected
-	fv, _ = fv.Update(internal.MakeKeyMsg('k'))
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	fv, _ = fv.Update(viewport.MakeKeyMsg('k'))
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		brightRedStyle.Render("apple") + " pie",
 		reverseStyle.Render("banana bread"),
 		reverseCyanStyle.Render("apple") + " cake",
 		"[exact] apple  (2/2 matches on 2 items)",
 		"66% (2/3)",
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestMatchNavigationWithSelectionEnabledWrap(t *testing.T) {
@@ -1910,11 +1909,11 @@ func TestMatchNavigationWithSelectionEnabledWrap(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "the" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedFirstMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedFirstMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("the") + selectedItemStyle.Render(" quick brown fox"),
 		"jumped over " + unfocusedStyle.Render("the") + " lazy",
 		" dog",
@@ -1922,10 +1921,10 @@ func TestMatchNavigationWithSelectionEnabledWrap(t *testing.T) {
 		"[exact] the  (1/3...",
 		footerStyle.Render("33% (1/3)"),
 	})
-	internal.CmpStr(t, expectedFirstMatch, fv.View())
+	viewport.CmpStr(t, expectedFirstMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedSecondMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedSecondMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("the") + " quick brown fox",
 		selectedItemStyle.Render("jumped over ") + focusedStyle.Render("the") + selectedItemStyle.Render(" lazy"),
 		selectedItemStyle.Render(" dog"),
@@ -1933,10 +1932,10 @@ func TestMatchNavigationWithSelectionEnabledWrap(t *testing.T) {
 		"[exact] the  (2/3...",
 		footerStyle.Render("66% (2/3)"),
 	})
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedThirdMatch := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedThirdMatch := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("the") + " quick brown fox",
 		"jumped over " + unfocusedStyle.Render("the") + " lazy",
 		" dog",
@@ -1944,10 +1943,10 @@ func TestMatchNavigationWithSelectionEnabledWrap(t *testing.T) {
 		"[exact] the  (3/3...",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedThirdMatch, fv.View())
+	viewport.CmpStr(t, expectedThirdMatch, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedSecondMatch, fv.View())
+	viewport.CmpStr(t, expectedSecondMatch, fv.View())
 }
 
 func TestMatchNavigationWithSelectionEnabledWrapScrolling(t *testing.T) {
@@ -1966,31 +1965,31 @@ func TestMatchNavigationWithSelectionEnabledWrapScrolling(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "long " {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedTopFocused := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedTopFocused := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("long "),
 		unfocusedStyle.Render("long "),
 		"[e...",
 		footerStyle.Render("10..."),
 	})
-	internal.CmpStr(t, expectedTopFocused, fv.View())
+	viewport.CmpStr(t, expectedTopFocused, fv.View())
 
 	for range 2 {
 		fv, _ = fv.Update(nextMatchKeyMsg)
-		expectedBottomFocused := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+		expectedBottomFocused := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 			unfocusedStyle.Render("long "),
 			focusedStyle.Render("long "),
 			"[e...",
 			footerStyle.Render("10..."),
 		})
-		internal.CmpStr(t, expectedBottomFocused, fv.View())
+		viewport.CmpStr(t, expectedBottomFocused, fv.View())
 	}
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	internal.CmpStr(t, expectedTopFocused, fv.View())
+	viewport.CmpStr(t, expectedTopFocused, fv.View())
 }
 
 func TestToggleWrap(t *testing.T) {
@@ -2007,12 +2006,12 @@ func TestToggleWrap(t *testing.T) {
 	}))
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "lazy" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// at first the match is in view
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"...ped over the " + focusedStyle.Render("l..."),
 		"",
 		"",
@@ -2020,12 +2019,12 @@ func TestToggleWrap(t *testing.T) {
 		"[exact] lazy  (1/...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// when we toggle wrapping here, the match happens to still be in view, but we don't force that
 	// otherwise there would be surprising jumps if the user is scrolled away from the current match and toggles wrap
 	fv.SetWrapText(true)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"the quick brown fox ",
 		"jumped over the " + focusedStyle.Render("lazy"),
 		" dog",
@@ -2033,11 +2032,11 @@ func TestToggleWrap(t *testing.T) {
 		"[exact] lazy  (1/...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// the match is out of view here, demonstrating the above comment
 	fv.SetWrapText(false)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"the quick brown f...",
 		"",
 		"",
@@ -2045,7 +2044,7 @@ func TestToggleWrap(t *testing.T) {
 		"[exact] lazy  (1/...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestApplyFilterScrollsToFirstMatch(t *testing.T) {
@@ -2065,68 +2064,68 @@ func TestApplyFilterScrollsToFirstMatch(t *testing.T) {
 		"match here",
 		"line 8",
 	}))
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"No Filter",
 		footerStyle.Render("37% (3/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 5",
 		"line 6",
 		focusedStyle.Render("match") + " here",
 		"[exact] match  (1/1 matches...",
 		footerStyle.Render("87% (7/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(cancelFilterKeyMsg)
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "lin" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("lin") + "e 1",
 		unfocusedStyle.Render("lin") + "e 2",
 		unfocusedStyle.Render("lin") + "e 3",
 		"[exact] lin  (1/7 matches o...",
 		footerStyle.Render("37% (3/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("lin") + "e 1",
 		focusedStyle.Render("lin") + "e 2",
 		unfocusedStyle.Render("lin") + "e 3",
 		"[exact] lin  (2/7 matches o...",
 		footerStyle.Render("37% (3/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('e'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('e'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("line") + " 1",
 		unfocusedStyle.Render("line") + " 2",
 		unfocusedStyle.Render("line") + " 3",
 		"[exact] line  (1/7 matches ...",
 		footerStyle.Render("37% (3/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestSetObjectsPreservesMatchIndex(t *testing.T) {
@@ -2144,19 +2143,19 @@ func TestSetObjectsPreservesMatchIndex(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("match") + " one",
 		focusedStyle.Render("match") + " two",
 		unfocusedStyle.Render("match") + " three",
 		"[exact] match  (2/3 matches...",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// add a new item - should stay on match 2, now 2/4
 	fv.SetObjects(stringsToItems([]string{
@@ -2166,14 +2165,14 @@ func TestSetObjectsPreservesMatchIndex(t *testing.T) {
 		"match three",
 	}))
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("match") + " one",
 		focusedStyle.Render("match") + " new",
 		unfocusedStyle.Render("match") + " two",
 		"[exact] match  (2/4 matches...",
 		footerStyle.Render("75% (3/4)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestAppendObjectsPreservesMatchIndex(t *testing.T) {
@@ -2190,19 +2189,19 @@ func TestAppendObjectsPreservesMatchIndex(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("match") + " one",
 		focusedStyle.Render("match") + " two",
 		"",
 		"[exact] match  (2/2 matches...",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// append new items - should stay on match 2, now 2/4
 	fv.AppendObjects(stringsToItems([]string{
@@ -2210,14 +2209,14 @@ func TestAppendObjectsPreservesMatchIndex(t *testing.T) {
 		"match four",
 	}))
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("match") + " one",
 		focusedStyle.Render("match") + " two",
 		unfocusedStyle.Render("match") + " three",
 		"[exact] match  (2/4 matches...",
 		footerStyle.Render("75% (3/4)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestAppendObjectsWithNil(t *testing.T) {
@@ -2235,14 +2234,14 @@ func TestAppendObjectsWithNil(t *testing.T) {
 	// appending nil should not crash or change objects
 	fv.AppendObjects(nil)
 
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"item one",
 		"item two",
 		"",
 		"No Filter",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestAppendObjectsRespectsMatchLimit(t *testing.T) {
@@ -2262,19 +2261,19 @@ func TestAppendObjectsRespectsMatchLimit(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// 3 matches, under limit
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("match") + " one",
 		unfocusedStyle.Render("match") + " two",
 		unfocusedStyle.Render("match") + " three",
 		"[exact] match  (1/3 matches on 3 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// append 3 more items, which will exceed the limit of 5
 	fv.AppendObjects(stringsToItems([]string{
@@ -2284,14 +2283,14 @@ func TestAppendObjectsRespectsMatchLimit(t *testing.T) {
 	}))
 
 	// should now show limit exceeded message and all items
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"match one",
 		"match two",
 		"match three",
 		"[exact] match  (5+ matches on 6+ items)",
 		footerStyle.Render("50% (3/6)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestAppendObjectsIncrementalWithMatchingItemsOnly(t *testing.T) {
@@ -2311,12 +2310,12 @@ func TestAppendObjectsIncrementalWithMatchingItemsOnly(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// should show only matching items
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("match") + " one",
 		unfocusedStyle.Render("match") + " two",
 		"",
@@ -2324,7 +2323,7 @@ func TestAppendObjectsIncrementalWithMatchingItemsOnly(t *testing.T) {
 		"[exact] match  (1/2 matches on 2 item...",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// append mixed items (some matching, some not)
 	fv.AppendObjects(stringsToItems([]string{
@@ -2335,7 +2334,7 @@ func TestAppendObjectsIncrementalWithMatchingItemsOnly(t *testing.T) {
 	}))
 
 	// should show only matching items, including new matches
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("match") + " one",
 		unfocusedStyle.Render("match") + " two",
 		unfocusedStyle.Render("match") + " three",
@@ -2343,7 +2342,7 @@ func TestAppendObjectsIncrementalWithMatchingItemsOnly(t *testing.T) {
 		"[exact] match  (1/4 matches on 4 item...",
 		footerStyle.Render("100% (4/4)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestVerticalPadding(t *testing.T) {
@@ -2372,13 +2371,13 @@ func TestVerticalPadding(t *testing.T) {
 	// apply filter to find "match"
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// first match at item 10 should have at least 2 lines above and below
 	// with 8 content lines and verticalPad=2, it shows items 5-12
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"item 5",
 		"item 6",
 		"item 7",
@@ -2390,11 +2389,11 @@ func TestVerticalPadding(t *testing.T) {
 		"[exact] match  (1/3 matches...",
 		footerStyle.Render("26% (13/50)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// navigate to second match at item 20
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"item 15",
 		"item 16",
 		"item 17",
@@ -2406,7 +2405,7 @@ func TestVerticalPadding(t *testing.T) {
 		"[exact] match  (2/3 matches...",
 		footerStyle.Render("46% (23/50)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestHorizontalPadding(t *testing.T) {
@@ -2428,30 +2427,30 @@ func TestHorizontalPadding(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "goose" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// first match attempted padding of 3 on each side
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		".." + focusedStyle.Render(".oose") + "...",
 		"... " + unfocusedStyle.Render("goo..") + ".",
 		"",
 		"[exact]...",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// second match attempted padding of 3 on each side
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("...se") + " t...",
 		".." + focusedStyle.Render(".oose") + "...",
 		"",
 		"[exact]...",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestMatchNavigationWithVerticalPadding(t *testing.T) {
@@ -2476,7 +2475,7 @@ func TestMatchNavigationWithVerticalPadding(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "hi" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -2488,8 +2487,8 @@ func TestMatchNavigationWithVerticalPadding(t *testing.T) {
 	}
 	expectedStrings = append(expectedStrings, "[exact] hi  (1/50 matches on 50 items)")
 	expectedStrings = append(expectedStrings, footerStyle.Render("64% (32/50)"))
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), expectedStrings)
-	internal.CmpStr(t, expectedView, fv.View())
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), expectedStrings)
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// go to bottom match, then previous match 21 times to reach the 10 padding above
 	fv, _ = fv.Update(prevMatchKeyMsg)
@@ -2507,8 +2506,8 @@ func TestMatchNavigationWithVerticalPadding(t *testing.T) {
 	}
 	expectedStrings = append(expectedStrings, "[exact] hi  (29/50 matches on 50 items)")
 	expectedStrings = append(expectedStrings, footerStyle.Render("100% (50/50)"))
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), expectedStrings)
-	internal.CmpStr(t, expectedView, fv.View())
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), expectedStrings)
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// next previous match should keep 10 lines above and scroll one up
 	fv, _ = fv.Update(prevMatchKeyMsg)
@@ -2522,8 +2521,8 @@ func TestMatchNavigationWithVerticalPadding(t *testing.T) {
 	}
 	expectedStrings = append(expectedStrings, "[exact] hi  (28/50 matches on 50 items)")
 	expectedStrings = append(expectedStrings, footerStyle.Render("98% (49/50)"))
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), expectedStrings)
-	internal.CmpStr(t, expectedView, fv.View())
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), expectedStrings)
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestMatchNavigationRolloverWithVerticalPadding(t *testing.T) {
@@ -2548,11 +2547,11 @@ func TestMatchNavigationRolloverWithVerticalPadding(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "hi" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("hi"),
 		unfocusedStyle.Render("hi"),
 		unfocusedStyle.Render("hi"),
@@ -2564,11 +2563,11 @@ func TestMatchNavigationRolloverWithVerticalPadding(t *testing.T) {
 		"[exact] hi  (1/20 matches on 20 items)",
 		footerStyle.Render("5% (1/20)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// previous match (last one)
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expectedViewAfterScroll := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedViewAfterScroll := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("hi"),
 		unfocusedStyle.Render("hi"),
 		unfocusedStyle.Render("hi"),
@@ -2580,7 +2579,7 @@ func TestMatchNavigationRolloverWithVerticalPadding(t *testing.T) {
 		"[exact] hi  (20/20 matches on 20 items)",
 		footerStyle.Render("100% (20/20)"),
 	})
-	internal.CmpStr(t, expectedViewAfterScroll, fv.View())
+	viewport.CmpStr(t, expectedViewAfterScroll, fv.View())
 }
 
 func stringsToItems(vals []string) []object {
@@ -2612,7 +2611,7 @@ func TestSelectionAndFocusedMatchAfterItemsChange(t *testing.T) {
 	fv.SetObjects(stringsToItems(initialItems))
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('1'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('1'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// focus second match
@@ -2621,14 +2620,14 @@ func TestSelectionAndFocusedMatchAfterItemsChange(t *testing.T) {
 	// move selection to third item
 	fv, _ = fv.Update(downKeyMsg)
 
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("1") + " 2",
 		focusedStyle.Render("1") + " 2",
 		unfocusedStyle.Render("1") + selectedItemStyle.Render(" 2"),
 		"[exact] 1  (2/5 matches on 5 items)",
 		footerStyle.Render("60% (3/5)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// add a new item
 	initialItems = append(initialItems, "1 2")
@@ -2637,28 +2636,28 @@ func TestSelectionAndFocusedMatchAfterItemsChange(t *testing.T) {
 	// neither match nor selection should change
 	expected = strings.ReplaceAll(expected, "2/5 matches on 5", "2/6 matches on 6")
 	expected = strings.ReplaceAll(expected, "60% (3/5)", "50% (3/6)")
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// changing match should change selection too
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("1") + " 2",
 		unfocusedStyle.Render("1") + " 2",
 		focusedStyle.Render("1") + selectedItemStyle.Render(" 2"),
 		"[exact] 1  (3/6 matches on 6 items)",
 		footerStyle.Render("50% (3/6)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("1") + " 2",
 		focusedStyle.Render("1") + selectedItemStyle.Render(" 2"),
 		unfocusedStyle.Render("1") + " 2",
 		"[exact] 1  (2/6 matches on 6 items)",
 		footerStyle.Render("33% (2/6)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestCurrentMatchNotCenteredAfterItemsChange(t *testing.T) {
@@ -2680,32 +2679,32 @@ func TestCurrentMatchNotCenteredAfterItemsChange(t *testing.T) {
 	fv.SetObjects(stringsToItems(initialItems))
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('1'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('1'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("1"),
 		"2",
 		"[exact] 1  (1/1 matches on 1 items)",
 		footerStyle.Render("33% (2/6)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// scroll so focused match out of view
 	fv, _ = fv.Update(downKeyMsg)
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"2",
 		"3",
 		"[exact] 1  (1/1 matches on 1 items)",
 		footerStyle.Render("50% (3/6)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	initialItems = append(initialItems, "7", "8", "9")
 	fv.SetObjects(stringsToItems(initialItems))
 
 	newExpected := strings.ReplaceAll(expected, "50% (3/6)", "33% (3/9)")
-	internal.CmpStr(t, newExpected, fv.View())
+	viewport.CmpStr(t, newExpected, fv.View())
 }
 
 func TestMaxMatchLimit(t *testing.T) {
@@ -2732,11 +2731,11 @@ func TestMaxMatchLimit(t *testing.T) {
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "app" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple apple",
 		"apple apple",
 		"apple apple",
@@ -2744,11 +2743,11 @@ func TestMaxMatchLimit(t *testing.T) {
 		"[exact] Filter: app  (5+ matches on 3+ items)",
 		footerStyle.Render("66% (4/6)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// view should be unchanged by navigating matches when limit exceeded
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// clear search filter
 	fv, _ = fv.Update(filterKeyMsg)
@@ -2760,10 +2759,10 @@ func TestMaxMatchLimit(t *testing.T) {
 
 	// filter that doesn't exceed limit
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('b'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('b'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("b") + "anana",
 		"",
 		"",
@@ -2771,7 +2770,7 @@ func TestMaxMatchLimit(t *testing.T) {
 		"[exact] Filter: b  (1/1 matches on 1 items) showing matches only",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestMaxMatchLimitWithAppendObjects(t *testing.T) {
@@ -2792,25 +2791,25 @@ func TestMaxMatchLimitWithAppendObjects(t *testing.T) {
 	fv.SetObjects(stringsToItems(items))
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("a"),
 		"[exact] Filter: a  (1/1 matches on 1 items)",
 		footerStyle.Render("50% (1/2)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// append new items that cause match limit to be exceeded
 	fv.AppendObjects(stringsToItems([]string{"aaa", "aaa"}))
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"a",
 		"[exact] Filter: a  (3+ matches on 2+ items)",
 		footerStyle.Render("25% (1/4)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestMaxMatchLimitUnlimited(t *testing.T) {
@@ -2829,10 +2828,10 @@ func TestMaxMatchLimitUnlimited(t *testing.T) {
 	}))
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("a") + "pple " + unfocusedStyle.Render("a") + "pple",
 		"",
 		"",
@@ -2840,7 +2839,7 @@ func TestMaxMatchLimitUnlimited(t *testing.T) {
 		"[exact] Filter: a  (1/2 matches on 1 items)",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestToggleWrap_DoesNotJumpToMatchWhenScrolledAway(t *testing.T) {
@@ -2864,46 +2863,46 @@ func TestToggleWrap_DoesNotJumpToMatchWhenScrolledAway(t *testing.T) {
 		"line 8",
 	}))
 
-	expected := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		selectedItemStyle.Render("line 1"),
 		"line 2",
 		"line 3",
 		"No Filter",
 		footerStyle.Render("12% (1/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	fv, _ = fv.Update(filterKeyMsg)
 	for _, c := range "match" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(c))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(c))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 5",
 		"line 6",
 		focusedStyle.Render("match") + selectedItemStyle.Render(" here"),
 		"[exact] match  (1/1 matches...",
 		footerStyle.Render("87% (7/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
-	fv, _ = fv.Update(internal.MakeKeyMsg('g'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('g'))
 
-	expected = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expected = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		selectedItemStyle.Render("line 1"),
 		"line 2",
 		"line 3",
 		"[exact] match  (1/1 matches...",
 		footerStyle.Render("12% (1/8)"),
 	})
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 
 	// toggling wrap should not change view
 	fv.SetWrapText(true)
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 	fv.SetWrapText(false)
-	internal.CmpStr(t, expected, fv.View())
+	viewport.CmpStr(t, expected, fv.View())
 }
 
 func TestFilterLineAtBottom(t *testing.T) {
@@ -2923,28 +2922,28 @@ func TestFilterLineAtBottom(t *testing.T) {
 	}))
 
 	// Filter line should appear just above footer, not at top
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"No Filter",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Apply a filter - filter line still at bottom
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('l'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('l'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("l") + "ine 1",
 		unfocusedStyle.Render("l") + "ine 2",
 		unfocusedStyle.Render("l") + "ine 3",
 		"[exact] Filter: l  (1/3 matches on 3 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestEmptyTextAtBottom(t *testing.T) {
@@ -2963,14 +2962,14 @@ func TestEmptyTextAtBottom(t *testing.T) {
 	}))
 
 	// Empty text should appear just above footer when filter mode is off
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"No active filter",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestFilterLinePositionWithWrap(t *testing.T) {
@@ -2990,7 +2989,7 @@ func TestFilterLinePositionWithWrap(t *testing.T) {
 	}))
 
 	// Filter line should appear just above footer, after wrapped content
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"short",
 		"longer text tha",
 		"t wraps",
@@ -2999,7 +2998,7 @@ func TestFilterLinePositionWithWrap(t *testing.T) {
 		"None",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestFilterLinePositionDuringEditing(t *testing.T) {
@@ -3019,20 +3018,20 @@ func TestFilterLinePositionDuringEditing(t *testing.T) {
 
 	// Enter filter editing mode
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('t'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('e'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('s'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('t'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('t'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('e'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('s'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('t'))
 
 	// Cursor should appear in filter line at bottom
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 1",
 		"line 2",
 		"line 3",
 		"[exact] Filter: test" + cursorStyle.Render(" ") + " (no matches)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestHeightConsistencyAfterRefactor(t *testing.T) {
@@ -3092,7 +3091,7 @@ func TestContentStartsAtTop(t *testing.T) {
 
 	// Content should start at the very top of the viewport
 	// not shifted down by any filter header
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"line 1", // Content starts at top
 		"line 2",
 		"line 3",
@@ -3100,7 +3099,7 @@ func TestContentStartsAtTop(t *testing.T) {
 		"No Filter",                      // Filter line just above footer
 		footerStyle.Render("100% (4/4)"), // Footer at bottom
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_ExactMode(t *testing.T) {
@@ -3125,14 +3124,14 @@ func TestSetFilter_ExactMode(t *testing.T) {
 		t.Errorf("expected active filter mode %q, got %q", FilterExact, fv.GetActiveFilterMode().Name)
 	}
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_RegexMode(t *testing.T) {
@@ -3158,14 +3157,14 @@ func TestSetFilter_RegexMode(t *testing.T) {
 	}
 
 	// regex ap.*e matches "apple pie" (greedy match to the last 'e')
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple pie"),
 		"banana bread",
 		"apricot tart",
 		"[regex] ap.*e  (1/1 matches on 1 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_ClearsFilterWhenEmpty(t *testing.T) {
@@ -3194,14 +3193,14 @@ func TestSetFilter_ClearsFilterWhenEmpty(t *testing.T) {
 		t.Errorf("expected empty filter text, got '%s'", fv.GetFilterText())
 	}
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple pie",
 		"banana bread",
 		"",
 		"No Filter",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_SwitchBetweenModes(t *testing.T) {
@@ -3232,14 +3231,14 @@ func TestSetFilter_SwitchBetweenModes(t *testing.T) {
 	}
 
 	// Both lines should match the regex
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("test123"),
 		unfocusedStyle.Render("test456"),
 		"",
 		"[regex] test\\d+ (1/2 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_WithMatchingItemsOnly(t *testing.T) {
@@ -3260,14 +3259,14 @@ func TestSetFilter_WithMatchingItemsOnly(t *testing.T) {
 	fv.SetFilter("apple", FilterExact)
 
 	// Only matching items should be shown
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		unfocusedStyle.Render("apple") + " cake",
 		"",
 		"[exact] apple  (1/2 matches on 2 items) showing matches only",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetMatchingItemsOnly_EnableShowsOnlyMatches(t *testing.T) {
@@ -3290,14 +3289,14 @@ func TestSetMatchingItemsOnly_EnableShowsOnlyMatches(t *testing.T) {
 	if fv.GetMatchingItemsOnly() {
 		t.Error("expected GetMatchingItemsOnly to be false initially")
 	}
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Enable matching items only
 	fv.SetMatchingItemsOnly(true)
@@ -3305,14 +3304,14 @@ func TestSetMatchingItemsOnly_EnableShowsOnlyMatches(t *testing.T) {
 	if !fv.GetMatchingItemsOnly() {
 		t.Error("expected GetMatchingItemsOnly to be true after SetMatchingItemsOnly(true)")
 	}
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		unfocusedStyle.Render("apple") + " cake",
 		"",
 		"[exact] apple  (1/2 matches on 2 items) showing matches only",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetMatchingItemsOnly_DisableShowsAllItems(t *testing.T) {
@@ -3335,14 +3334,14 @@ func TestSetMatchingItemsOnly_DisableShowsAllItems(t *testing.T) {
 	if !fv.GetMatchingItemsOnly() {
 		t.Error("expected GetMatchingItemsOnly to be true initially")
 	}
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		unfocusedStyle.Render("apple") + " cake",
 		"",
 		"[exact] apple  (1/2 matches on 2 items) showing matches only",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Disable matching items only
 	fv.SetMatchingItemsOnly(false)
@@ -3350,14 +3349,14 @@ func TestSetMatchingItemsOnly_DisableShowsAllItems(t *testing.T) {
 	if fv.GetMatchingItemsOnly() {
 		t.Error("expected GetMatchingItemsOnly to be false after SetMatchingItemsOnly(false)")
 	}
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetMatchingItemsOnly_ToggleBackAndForth(t *testing.T) {
@@ -3416,14 +3415,14 @@ func TestSetMatchingItemsOnly_NoEffectWithoutFilter(t *testing.T) {
 	// Set matching items only without a filter - all items should still show
 	fv.SetMatchingItemsOnly(true)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"cherry",
 		"No Filter",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilterableViewportStyles_ChangesMatchStyles(t *testing.T) {
@@ -3441,14 +3440,14 @@ func TestSetFilterableViewportStyles_ChangesMatchStyles(t *testing.T) {
 	fv.SetFilter("apple", FilterExact)
 
 	// Verify initial styles are applied
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("apple") + " pie",
 		"banana bread",
 		unfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Change to new styles
 	newFocusedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("2"))
@@ -3461,14 +3460,14 @@ func TestSetFilterableViewportStyles_ChangesMatchStyles(t *testing.T) {
 	})
 
 	// Verify new styles are applied
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		newFocusedStyle.Render("apple") + " pie",
 		"banana bread",
 		newUnfocusedStyle.Render("apple") + " cake",
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilterableViewportStyles_UpdatesExistingHighlights(t *testing.T) {
@@ -3489,14 +3488,14 @@ func TestSetFilterableViewportStyles_UpdatesExistingHighlights(t *testing.T) {
 	fv, _ = fv.Update(nextMatchKeyMsg)
 
 	// Now second match should be focused
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		unfocusedStyle.Render("test") + " one",
 		focusedStyle.Render("test") + " two",
 		unfocusedStyle.Render("test") + " three",
 		"[exact] test  (2/3 matches on 3 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Change styles - should update all highlights including the focused one
 	newFocusedStyle := lipgloss.NewStyle().Bold(true).Underline(true)
@@ -3509,14 +3508,14 @@ func TestSetFilterableViewportStyles_UpdatesExistingHighlights(t *testing.T) {
 	})
 
 	// Verify new styles applied with correct focus
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		newUnfocusedStyle.Render("test") + " one",
 		newFocusedStyle.Render("test") + " two",
 		newUnfocusedStyle.Render("test") + " three",
 		"[exact] test  (2/3 matches on 3 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestAdjustObjectsForFilter_CalledOnFilterChange(t *testing.T) {
@@ -3530,7 +3529,7 @@ func TestAdjustObjectsForFilter_CalledOnFilterChange(t *testing.T) {
 		5,
 		[]viewport.Option[object]{},
 		[]Option[object]{
-			WithAdjustObjectsForFilter[object](func(filterText string, mode FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(filterText string, mode FilterModeName) []object {
 				hookCalls = append(hookCalls, struct {
 					filterText string
 					mode       FilterModeName
@@ -3543,7 +3542,7 @@ func TestAdjustObjectsForFilter_CalledOnFilterChange(t *testing.T) {
 
 	// Start filter mode and type
 	fv, _ = fv.Update(filterKeyMsg)
-	_, _ = fv.Update(internal.MakeKeyMsg('a'))
+	_, _ = fv.Update(viewport.MakeKeyMsg('a'))
 
 	if len(hookCalls) < 1 {
 		t.Fatal("expected hook to be called at least once")
@@ -3567,7 +3566,7 @@ func TestAdjustObjectsForFilter_CalledWithRegexMode(t *testing.T) {
 		5,
 		[]viewport.Option[object]{},
 		[]Option[object]{
-			WithAdjustObjectsForFilter[object](func(_ string, mode FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(_ string, mode FilterModeName) []object {
 				lastMode = mode
 				return nil
 			}),
@@ -3577,7 +3576,7 @@ func TestAdjustObjectsForFilter_CalledWithRegexMode(t *testing.T) {
 
 	// Start regex filter mode
 	fv, _ = fv.Update(regexFilterKeyMsg)
-	_, _ = fv.Update(internal.MakeKeyMsg('a'))
+	_, _ = fv.Update(viewport.MakeKeyMsg('a'))
 
 	if lastMode != FilterRegex {
 		t.Errorf("expected mode %q (regex), got %q", FilterRegex, lastMode)
@@ -3592,7 +3591,7 @@ func TestAdjustObjectsForFilter_ReplacesObjects(t *testing.T) {
 		[]viewport.Option[object]{},
 		[]Option[object]{
 			WithMatchingItemsOnly[object](false),
-			WithAdjustObjectsForFilter[object](func(filterText string, _ FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(filterText string, _ FilterModeName) []object {
 				if filterText == "" {
 					return stringsToItems([]string{"apple", "banana", "cherry"})
 				}
@@ -3604,7 +3603,7 @@ func TestAdjustObjectsForFilter_ReplacesObjects(t *testing.T) {
 	fv.SetObjects(stringsToItems([]string{"apple", "banana", "cherry"}))
 
 	// Before filter: should show original objects
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"apple",
 		"banana",
 		"cherry",
@@ -3612,15 +3611,15 @@ func TestAdjustObjectsForFilter_ReplacesObjects(t *testing.T) {
 		"No Filter",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Apply filter with "a"
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// After filter: should show hook's objects with "a" highlighted
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"p" + focusedStyle.Render("a") + "rent",
 		"child-" + unfocusedStyle.Render("a") + "pple",
 		"",
@@ -3628,7 +3627,7 @@ func TestAdjustObjectsForFilter_ReplacesObjects(t *testing.T) {
 		"[exact] a  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestAdjustObjectsForFilter_NilKeepsExistingObjects(t *testing.T) {
@@ -3640,7 +3639,7 @@ func TestAdjustObjectsForFilter_NilKeepsExistingObjects(t *testing.T) {
 		[]viewport.Option[object]{},
 		[]Option[object]{
 			WithMatchingItemsOnly[object](false),
-			WithAdjustObjectsForFilter[object](func(_ string, _ FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(_ string, _ FilterModeName) []object {
 				hookCallCount++
 				return nil // explicitly return nil
 			}),
@@ -3649,7 +3648,7 @@ func TestAdjustObjectsForFilter_NilKeepsExistingObjects(t *testing.T) {
 	fv.SetObjects(stringsToItems([]string{"apple", "banana"}))
 
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// hook is called twice: once when mode activates (empty text), once when text changes to "a"
@@ -3658,14 +3657,14 @@ func TestAdjustObjectsForFilter_NilKeepsExistingObjects(t *testing.T) {
 	}
 
 	// Original objects should still be shown, with "a" highlighted
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("a") + "pple",
 		"b" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a") + "n" + unfocusedStyle.Render("a"),
 		"",
 		"[exact] a  (1/4 matches on 2 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestAdjustObjectsForFilter_WithMatchingItemsOnlyTrue(t *testing.T) {
@@ -3676,7 +3675,7 @@ func TestAdjustObjectsForFilter_WithMatchingItemsOnlyTrue(t *testing.T) {
 		[]viewport.Option[object]{},
 		[]Option[object]{
 			WithMatchingItemsOnly[object](true),
-			WithAdjustObjectsForFilter[object](func(_ string, _ FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(_ string, _ FilterModeName) []object {
 				// Return parent + child, but only child matches "apple"
 				return stringsToItems([]string{"parent-node", "child-apple"})
 			}),
@@ -3686,14 +3685,14 @@ func TestAdjustObjectsForFilter_WithMatchingItemsOnlyTrue(t *testing.T) {
 	fv.SetFilter("apple", FilterExact)
 
 	// Only child-apple matches "apple", so only it should be shown
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"child-" + focusedStyle.Render("apple"),
 		"",
 		"",
 		"[exact] apple  (1/1 matches on 1 items) showing matches only",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestAdjustObjectsForFilter_WithMatchingItemsOnlyFalse(t *testing.T) {
@@ -3704,7 +3703,7 @@ func TestAdjustObjectsForFilter_WithMatchingItemsOnlyFalse(t *testing.T) {
 		[]viewport.Option[object]{},
 		[]Option[object]{
 			WithMatchingItemsOnly[object](false),
-			WithAdjustObjectsForFilter[object](func(_ string, _ FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(_ string, _ FilterModeName) []object {
 				return stringsToItems([]string{"parent-node", "child-apple"})
 			}),
 		},
@@ -3713,14 +3712,14 @@ func TestAdjustObjectsForFilter_WithMatchingItemsOnlyFalse(t *testing.T) {
 	fv.SetFilter("apple", FilterExact)
 
 	// Both should be visible, child-apple has match highlighted
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"parent-node",
 		"child-" + focusedStyle.Render("apple"),
 		"",
 		"[exact] apple  (1/1 matches on 1 items)",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestAdjustObjectsForFilter_MatchNavigationWorks(t *testing.T) {
@@ -3731,7 +3730,7 @@ func TestAdjustObjectsForFilter_MatchNavigationWorks(t *testing.T) {
 		[]viewport.Option[object]{},
 		[]Option[object]{
 			WithMatchingItemsOnly[object](false),
-			WithAdjustObjectsForFilter[object](func(_ string, _ FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(_ string, _ FilterModeName) []object {
 				return stringsToItems([]string{
 					"first-apple",
 					"no-match-here",
@@ -3744,7 +3743,7 @@ func TestAdjustObjectsForFilter_MatchNavigationWorks(t *testing.T) {
 	fv.SetFilter("apple", FilterExact)
 
 	// Should show "1/2 matches" (two items contain "apple"), first match focused
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"first-" + focusedStyle.Render("apple"),
 		"no-match-here",
 		"second-" + unfocusedStyle.Render("apple"),
@@ -3752,11 +3751,11 @@ func TestAdjustObjectsForFilter_MatchNavigationWorks(t *testing.T) {
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Navigate to next match
 	fv, _ = fv.Update(nextMatchKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"first-" + unfocusedStyle.Render("apple"),
 		"no-match-here",
 		"second-" + focusedStyle.Render("apple"),
@@ -3764,11 +3763,11 @@ func TestAdjustObjectsForFilter_MatchNavigationWorks(t *testing.T) {
 		"[exact] apple  (2/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Navigate to previous match
 	fv, _ = fv.Update(prevMatchKeyMsg)
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"first-" + focusedStyle.Render("apple"),
 		"no-match-here",
 		"second-" + unfocusedStyle.Render("apple"),
@@ -3776,7 +3775,7 @@ func TestAdjustObjectsForFilter_MatchNavigationWorks(t *testing.T) {
 		"[exact] apple  (1/2 matches on 2 items)",
 		footerStyle.Render("100% (3/3)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestAdjustObjectsForFilter_ClearFilterRestoresOriginalBehavior(t *testing.T) {
@@ -3786,7 +3785,7 @@ func TestAdjustObjectsForFilter_ClearFilterRestoresOriginalBehavior(t *testing.T
 		5,
 		[]viewport.Option[object]{},
 		[]Option[object]{
-			WithAdjustObjectsForFilter[object](func(filterText string, _ FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(filterText string, _ FilterModeName) []object {
 				callCount++
 				if filterText != "" {
 					return stringsToItems([]string{"hook-provided"})
@@ -3799,29 +3798,29 @@ func TestAdjustObjectsForFilter_ClearFilterRestoresOriginalBehavior(t *testing.T
 
 	// Apply a filter
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('x'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('x'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"hook-provided",
 		"",
 		"",
 		"[exact] x  (no matches)",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// Clear filter
 	fv, _ = fv.Update(cancelFilterKeyMsg)
 
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"original-a",
 		"original-b",
 		"",
 		"No Filter",
 		footerStyle.Render("100% (2/2)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_SelectionAtBottomWithBottomSticky(t *testing.T) {
@@ -3847,7 +3846,7 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky(t *testing.T) {
 	})
 	fv.SetObjects(items)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"error: another problem",
 		"info: fine",
 		"info: ok",
@@ -3855,12 +3854,12 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky(t *testing.T) {
 		"No Filter",
 		footerStyle.Render("100% (8/8)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// apply filter - should move selection to the first match
 	fv.SetFilter("error", FilterExact)
 
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("error") + selectedItemStyle.Render(": something broke"),
 		"info: all good",
 		"info: still good",
@@ -3868,7 +3867,7 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky(t *testing.T) {
 		"[exact] error  (1/2 matches on 2 items)",
 		footerStyle.Render("12% (1/8)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 func TestSetFilter_SelectionAtBottomWithBottomSticky_AppendDoesNotJump(t *testing.T) {
@@ -3894,7 +3893,7 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky_AppendDoesNotJump(t *testin
 	})
 	fv.SetObjects(items)
 
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"error: another problem",
 		"info: fine",
 		"info: ok",
@@ -3902,12 +3901,12 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky_AppendDoesNotJump(t *testin
 		"No Filter",
 		footerStyle.Render("100% (8/8)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// apply filter while selection is at bottom
 	fv.SetFilter("error", FilterExact)
 
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("error") + selectedItemStyle.Render(": something broke"),
 		"info: all good",
 		"info: still good",
@@ -3915,13 +3914,13 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky_AppendDoesNotJump(t *testin
 		"[exact] error  (1/2 matches on 2 items)",
 		footerStyle.Render("12% (1/8)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 
 	// append new logs - selection should stay at the first match, not jump to bottom
 	fv.AppendObjects(stringsToItems([]string{
 		"error: whoops",
 	}))
-	expectedView = internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView = viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		focusedStyle.Render("error") + selectedItemStyle.Render(": something broke"),
 		"info: all good",
 		"info: still good",
@@ -3929,7 +3928,7 @@ func TestSetFilter_SelectionAtBottomWithBottomSticky_AppendDoesNotJump(t *testin
 		"[exact] error  (1/3 matches on 3 items)",
 		footerStyle.Render("11% (1/9)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }
 
 // TestCustomFilterMode verifies that a custom filter mode with a custom MatchFunc works correctly.
@@ -3967,7 +3966,7 @@ func TestCustomFilterMode(t *testing.T) {
 	}))
 
 	// Activate custom mode with 'p'
-	fv, _ = fv.Update(internal.MakeKeyMsg('p'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('p'))
 	if fv.GetActiveFilterMode().Name != "prefix" {
 		t.Fatalf("expected active mode 'prefix', got %q", fv.GetActiveFilterMode().Name)
 	}
@@ -3977,7 +3976,7 @@ func TestCustomFilterMode(t *testing.T) {
 
 	// Type "alpha"
 	for _, ch := range "alpha" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4017,8 +4016,8 @@ func TestCustomFilterModeWithError(t *testing.T) {
 		"banana",
 	}))
 
-	fv, _ = fv.Update(internal.MakeKeyMsg('e'))
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('e'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// Error mode should result in 0 matches
@@ -4049,7 +4048,7 @@ func TestFuzzyFilterMode(t *testing.T) {
 	}))
 
 	// Activate fuzzy mode
-	fv, _ = fv.Update(internal.MakeKeyMsg('f'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('f'))
 	if fv.GetActiveFilterMode().Label != "[fuzzy]" {
 		t.Fatalf("expected label '[fuzzy]', got %q", fv.GetActiveFilterMode().Label)
 	}
@@ -4057,7 +4056,7 @@ func TestFuzzyFilterMode(t *testing.T) {
 	// Type "hlo" — should match "hello world" (h-e-l-l-o), "hxexlxlxo" (h-x-e-x-l-x-l-x-o)
 	// but not "help wanted" (no 'o' after 'l') or "goodbye" (no 'h')
 	for _, ch := range "hlo" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4085,9 +4084,9 @@ func TestFuzzyFilterModeNoMatch(t *testing.T) {
 		"def",
 	}))
 
-	fv, _ = fv.Update(internal.MakeKeyMsg('f'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('f'))
 	for _, ch := range "xyz" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4116,9 +4115,9 @@ func TestFuzzyFilterModeCaseInsensitive(t *testing.T) {
 		"goodbye",
 	}))
 
-	fv, _ = fv.Update(internal.MakeKeyMsg('f'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('f'))
 	for _, ch := range "helo" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4200,7 +4199,7 @@ func TestModeSwitching(t *testing.T) {
 	// Activate exact mode and type "hello"
 	fv, _ = fv.Update(filterKeyMsg) // '/'
 	for _, ch := range "hello" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4222,7 +4221,7 @@ func TestModeSwitching(t *testing.T) {
 
 	// Type "hello" again
 	for _, ch := range "hello" {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4240,7 +4239,7 @@ func TestModeSwitching(t *testing.T) {
 
 	// Type regex pattern
 	for _, ch := range `^[hH]ello` {
-		fv, _ = fv.Update(internal.MakeKeyMsg(ch))
+		fv, _ = fv.Update(viewport.MakeKeyMsg(ch))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
@@ -4406,7 +4405,7 @@ func TestWithFilterModesCustom(t *testing.T) {
 	}
 
 	// Custom key 'x' should work
-	fv, _ = fv.Update(internal.MakeKeyMsg('x'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('x'))
 	if fv.GetActiveFilterMode().Name != "custom" {
 		t.Errorf("expected mode 'custom' after 'x', got %q", fv.GetActiveFilterMode().Name)
 	}
@@ -4421,7 +4420,7 @@ func TestAdjustObjectsForFilter_ModeNonEmptyOnClear(t *testing.T) {
 		5,
 		[]viewport.Option[object]{},
 		[]Option[object]{
-			WithAdjustObjectsForFilter[object](func(_ string, mode FilterModeName) []object {
+			WithAdjustObjectsForFilter(func(_ string, mode FilterModeName) []object {
 				receivedModes = append(receivedModes, mode)
 				if mode == "" {
 					t.Fatalf("adjustObjectsForFilter received empty mode name")
@@ -4434,7 +4433,7 @@ func TestAdjustObjectsForFilter_ModeNonEmptyOnClear(t *testing.T) {
 
 	// Activate filter, type, apply
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// Clear filter — this sets activeFilterModeName to "" internally,
@@ -4465,7 +4464,7 @@ func TestModeSwitchAfterCancel(t *testing.T) {
 
 	// Activate exact mode, type, apply
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	// "apple" has 1 'a', "banana" has 3 'a's = 4 total matches
@@ -4506,7 +4505,7 @@ func TestDuplicateFilterModeNamePanics(t *testing.T) {
 	}()
 
 	vp := viewport.New[object](80, 6)
-	New[object](vp,
+	New(vp,
 		WithFilterModes[object]([]FilterMode{
 			ExactFilterMode(key.NewBinding(key.WithKeys("/"))),
 			ExactFilterMode(key.NewBinding(key.WithKeys("f"))), // same Name: "exact"
@@ -4527,7 +4526,7 @@ func TestNoFilterModesPanics(t *testing.T) {
 	}()
 
 	vp := viewport.New[object](80, 6)
-	New[object](vp,
+	New(vp,
 		WithFilterModes[object]([]FilterMode{}),
 	)
 }
@@ -4545,7 +4544,7 @@ func TestEmptyFilterModeNamePanics(t *testing.T) {
 	}()
 
 	vp := viewport.New[object](80, 6)
-	New[object](vp,
+	New(vp,
 		WithFilterModes[object]([]FilterMode{
 			{Key: key.NewBinding(key.WithKeys("x")), Label: "[x]", GetMatchFunc: func(_ string) (MatchFunc, error) { return nil, nil }},
 		}),
@@ -4568,7 +4567,7 @@ func TestNoMatchesResetsXOffsetWhenUnwrapped(t *testing.T) {
 	// filter for "a" and navigate to a right-side match so xOffset > 0
 	fv, _ = fv.Update(filterKeyMsg)
 	for range 4 {
-		fv, _ = fv.Update(internal.MakeKeyMsg('a'))
+		fv, _ = fv.Update(viewport.MakeKeyMsg('a'))
 	}
 	fv, _ = fv.Update(applyFilterKeyMsg)
 	fv, _ = fv.Update(nextMatchKeyMsg)
@@ -4580,16 +4579,16 @@ func TestNoMatchesResetsXOffsetWhenUnwrapped(t *testing.T) {
 	// cancel filter and start a new one that produces no matches
 	fv, _ = fv.Update(cancelFilterKeyMsg)
 	fv, _ = fv.Update(filterKeyMsg)
-	fv, _ = fv.Update(internal.MakeKeyMsg('z'))
+	fv, _ = fv.Update(viewport.MakeKeyMsg('z'))
 	fv, _ = fv.Update(applyFilterKeyMsg)
 
 	if fv.vp.GetXOffsetWidth() != 0 {
 		t.Fatalf("expected xOffset=0 when no matches and unwrapped, got %d", fv.vp.GetXOffsetWidth())
 	}
-	expectedView := internal.Pad(fv.GetWidth(), fv.GetHeight(), []string{
+	expectedView := viewport.Pad(fv.GetWidth(), fv.GetHeight(), []string{
 		"aaaaaaa...",
 		"[exact]...",
 		footerStyle.Render("100% (1/1)"),
 	})
-	internal.CmpStr(t, expectedView, fv.View())
+	viewport.CmpStr(t, expectedView, fv.View())
 }

@@ -305,13 +305,11 @@ func simplifyAnsiCodes(ansis []string) []string {
 	return ansis
 }
 
-func runesHaveAnsiPrefix(runes []rune) bool {
-	return len(runes) >= 2 && runes[0] == '\x1b' && runes[1] == '['
-}
-
 func findAnsiByteRanges(s string) [][]uint32 {
-	// pre-count to allocate exact size
-	count := strings.Count(s, "\x1b[")
+	// pre-count to allocate exact size: CSI sequences + OSC 8 sequences
+	csiCount := strings.Count(s, "\x1b[")
+	osc8Count := strings.Count(s, "\x1b]8;")
+	count := csiCount + osc8Count
 	if count == 0 {
 		return nil
 	}
@@ -342,44 +340,25 @@ func findAnsiByteRanges(s string) [][]uint32 {
 				continue
 			}
 		}
-		i++
-	}
-	return ranges[:rangeIdx]
-}
-
-func findAnsiRuneRanges(s string) [][]uint32 {
-	// pre-count to allocate exact size
-	count := strings.Count(s, "\x1b[")
-	if count == 0 {
-		return nil
-	}
-
-	allRanges := make([]uint32, count*2)
-	ranges := make([][]uint32, count)
-
-	for i := range count {
-		ranges[i] = allRanges[i*2 : i*2+2]
-	}
-
-	rangeIdx := 0
-	runes := []rune(s)
-	for i := 0; i < len(runes); {
-		if i+1 < len(runes) && runes[i] == '\x1b' && runes[i+1] == '[' {
+		if i+3 < len(s) && s[i] == '\x1b' && s[i+1] == ']' && s[i+2] == '8' && s[i+3] == ';' {
+			// OSC 8 hyperlink: \x1b]8;...BEL or \x1b]8;...\x1b\\
 			start := i
-			i += 2 // skip \x1b[
-
-			// find the 'm' that ends this sequence
-			for i < len(runes) && runes[i] != 'm' {
+			i += 4 // skip \x1b]8;
+			for i < len(s) {
+				if s[i] == '\x07' {
+					i++
+					break
+				}
+				if s[i] == '\x1b' && i+1 < len(s) && s[i+1] == '\\' {
+					i += 2
+					break
+				}
 				i++
 			}
-
-			if i < len(runes) && runes[i] == 'm' {
-				allRanges[rangeIdx*2] = clampIntToUint32(start)
-				allRanges[rangeIdx*2+1] = clampIntToUint32(i + 1)
-				rangeIdx++
-				i++
-				continue
-			}
+			allRanges[rangeIdx*2] = clampIntToUint32(start)
+			allRanges[rangeIdx*2+1] = clampIntToUint32(i)
+			rangeIdx++
+			continue
 		}
 		i++
 	}
@@ -387,9 +366,10 @@ func findAnsiRuneRanges(s string) [][]uint32 {
 }
 
 // stripNonSGR removes all non-SGR ANSI escape sequences from the input string.
-// SGR sequences (\x1b[...m) are preserved. all other escape sequences (CSI non-SGR,
-// OSC, Fe, Fp, nF, SS2, SS3) are stripped. uses lazy allocation so lines containing
-// only SGR sequences (the common case) incur zero allocations.
+// SGR sequences (\x1b[...m) and OSC 8 hyperlinks (\x1b]8;...) are preserved.
+// All other escape sequences (CSI non-SGR, non-hyperlink OSC, Fe, Fp, nF, SS2, SS3)
+// are stripped. Uses lazy allocation so lines containing only SGR sequences (the
+// common case) incur zero allocations.
 func stripNonSGR(line string) string {
 	if !strings.Contains(line, "\x1b") {
 		return line
@@ -470,7 +450,11 @@ func stripNonSGR(line string) string {
 				}
 				i++
 			}
-			// strip (including unterminated OSC at end of string)
+			// Preserve OSC 8 hyperlinks; strip all other OSC sequences.
+			isOSC8 := strings.HasPrefix(line[seqStart:], "\x1b]8;")
+			if isOSC8 {
+				continue
+			}
 			if !allocated {
 				b.Grow(len(line))
 				allocated = true

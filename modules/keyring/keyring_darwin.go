@@ -16,6 +16,8 @@ import (
 	"unsafe"
 
 	"github.com/ebitengine/purego"
+	"github.com/ebitengine/purego/cstrings"
+	"github.com/ebitengine/purego/objc"
 )
 
 // Core Foundation and Security framework constants
@@ -90,8 +92,6 @@ var (
 	SecItemUpdate        func(query uintptr, attributesToUpdate uintptr) osStatus
 	SecItemDelete        func(query uintptr) osStatus
 	CFDictionaryGetValue func(theDict uintptr, key uintptr) uintptr
-	CFStringGetCString   func(theString uintptr, buffer *byte, bufferSize int64, encoding uint32) int64
-	CFStringGetLength    func(theString uintptr) int64
 )
 
 var (
@@ -189,8 +189,6 @@ func initializeKeyring() error {
 	purego.RegisterLibFunc(&SecItemUpdate, secLib, "SecItemUpdate")
 	purego.RegisterLibFunc(&SecItemDelete, secLib, "SecItemDelete")
 	purego.RegisterLibFunc(&CFDictionaryGetValue, cfLib, "CFDictionaryGetValue")
-	purego.RegisterLibFunc(&CFStringGetCString, cfLib, "CFStringGetCString")
-	purego.RegisterLibFunc(&CFStringGetLength, cfLib, "CFStringGetLength")
 
 	return nil
 }
@@ -290,19 +288,10 @@ func getFromKeychain(ctx context.Context, cred *Cred) (*Cred, error) {
 	defer CFRelease(result)
 
 	// Extract username from result
+	// CFString is toll-free bridged with NSString, so we can use cstrings.NSStringToString
+	// to efficiently read the UTF-8 contents via the UTF8String selector.
 	accountValue := CFDictionaryGetValue(result, kSecAttrAccount)
-	username := ""
-	if accountValue != 0 {
-		// CFStringGetLength returns UTF-16 code units, but CFStringGetCString needs UTF-8 buffer.
-		// UTF-8 can use up to 4 bytes per character, so allocate 4x the UTF-16 length.
-		if length := CFStringGetLength(accountValue); length > 0 {
-			buffer := make([]byte, length*4+1)
-			if CFStringGetCString(accountValue, &buffer[0], int64(len(buffer)), kCFStringEncodingUTF8) == 0 {
-				return nil, errors.New("failed to convert username to UTF-8")
-			}
-			username = strings.TrimRight(string(buffer), "\x00")
-		}
-	}
+	username := cstrings.NSStringToString(objc.ID(accountValue))
 
 	// Extract password from result
 	passwordValue := CFDictionaryGetValue(result, kSecValueData)

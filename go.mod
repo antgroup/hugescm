@@ -11,7 +11,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/x/ansi v0.11.8
-	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260906004030-3986e9119cf9
+	github.com/charmbracelet/x/exp/charmtone v0.1.0
 	github.com/clipperhouse/displaywidth v0.11.0
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/ebitengine/purego v0.11.1

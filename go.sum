@@ -78,8 +78,8 @@ github.com/dlclark/regexp2/v2 v2.8.4 h1:yfDDXTn4oxyLDC10/ieOBNDCCdIVWS9WbT6ddVXs
 github.com/dlclark/regexp2/v2 v2.8.4/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
 github.com/dustin/go-humanize v1.1.0 h1:dbKTrvD0klcbBV/h4AWJdMuZogJACoMlvWIWZ5b2xWg=
 github.com/dustin/go-humanize v1.1.0/go.mod h1:hc1CvRkJMsgxqjmjMQF3QNRAZBwY8AXBAzKYoSX9sFI=
-github.com/ebitengine/purego v0.11.1 h1:2zpWRSQNVKN4eKsKO9eM1ILDgWfYMY9GwqRmK6XeQ/0=
-github.com/ebitengine/purego v0.11.1/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
+github.com/ebitengine/purego v0.11.2 h1:WWiTx8rD8zYdOwSj8O/NiNbsOvSAgJMTlyV1XlbUSeU=
+github.com/ebitengine/purego v0.11.2/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/gliderlabs/ssh v0.3.8 h1:a4YXD1V7xMF9g5nTkdfnja3Sxy1PVDCj1Zg4Wb8vY6c=

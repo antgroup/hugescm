@@ -181,7 +181,54 @@ zeta --config /etc/shadow
 
 ## 从官方版同步的功能
 
-我们定期从官方版同步新功能和修复。以下是本次（2026-03-18）从官方版移植的功能：
+我们定期从官方版同步新功能和修复。
+
+### 2026-11-05 全量同步（上游 `258b13a` → HEAD `af6c651`）
+
+本次采用三方合并（base=上游 `258b13a`，ours=魔改版，theirs=上游 HEAD），全量吸收上游 2026-02-07 至 2026-10-30 的约 40 个提交，并保留全部魔改功能。主要变更：
+
+**新增功能**
+
+| 功能 | 提交 | PR/Issue | 说明 |
+|------|------|----------|------|
+| `BindFor[T]` 泛型绑定 | `a2df5f5` | #590 | 替代 `BindTo(v, (*T)(nil))`，多数场景可自动推断类型 |
+| last-wins 标志组 | `a60008c` | #653 | `lastwins:"group"` 组内后出现的取值覆盖先前值 |
+| negatable bool mapper | `4e565e8` | #618 | 取反提升到令牌层（`--no-flag=false` 反转后再 Decode），自定义 bool mapper 拥有字段表示权；`flipBoolValue` 已删除 |
+| 位置参数 `env` 标签 | `974c7fb` | #601 | `arg:"" env:"FOO"` 可从环境变量取默认值 |
+| `envprefix` 传播 | `b778e12` | #635 | 子命令继承父级 `envprefix:` |
+| 根节点 `Help()` | `14c97a2` | #593 | 根命令可实现 `HelpProvider` 提供帮助详情 |
+| `NoAppDescFormat` | `bf3d068` | #597 | 跳过应用描述的换行/段落重排等格式化 |
+| path 空默认值 | `db42183` | #592 | 显式 `--path=` 可清空带默认值的 path |
+| Run 无需子命令 | `9d8d9f7` | #614 | 带 `Run()` 的节点可不带子命令直接执行 |
+
+**重要修复**
+
+| 修复 | 提交/PR | 说明 |
+|------|---------|------|
+| 默认命令拒绝兄弟命令标志 | `af6c651` / #679 | |
+| 插值空回退 `${var=}` | `24be2f9` | 空默认值不再报 undefined variable |
+| unexported 嵌入字段 hooks | `27d969c` / #620 | `getMethods` 重写为 `walkEmbedded` + `getExplicitMethod`（`runtime.FuncForPC` 识别编译器包装方法） |
+| 重复嵌入回调 / 嵌入 `Validate()` | `ff16446` #616、`59826d1` #607 | |
+| 多项 panic 修复 | #621 #623 #625 #626 #627 #651 | float 自整型、`set` 无值、filecontent 非 `[]byte`、counter `--flag=N`、map 键值类型、provider 值类型错误 |
+| 配置覆盖无效默认值 | `49b8029` / #633 | |
+| env 冲突 / env-only AfterApply / DefaultEnvars 后缀 | `c2c0229` #619、`7ee1766` #600、`0678fd3` #638 | |
+| 单字符别名泄漏 / 视为短标志 | `33d3305` #637、`b03affc3` #605 | |
+
+**冲突解决原则**：上游结构性重写（`getMethods`/`walkEmbedded`、令牌级取反、插值正则分组）按上游实现，fork 现代化写法（`Fields()` 迭代器、`errors.AsType`、`%w` 包装等）叠加其上。
+
+**已知行为变化与使用约束**（对抗审查确认，当前 zeta 均未命中，仅作迁移备忘）：
+
+- `negatable:` 仅适用于 Decode 时会消费 FlagValueToken 的 mapper（plain bool 均可）。类似 `VersionFlag` 这种不消费令牌的自定义 bool mapper 若加 negatable，将报 `unexpected flag argument` 错误而非翻转（上游 #618 令牌级取反的固有限制）。
+- path 型显式空串（`--path=`）：结果为空字符串（上游 #592 有意设计，提示用 "."）；旧版为展开后的当前目录。zeta 的 `--cwd=`、`--config=` 属边缘用法。
+- 带 `Run()` 且有子命令的父节点：缺子命令名不再报错，而是静默执行父 Run（上游 #614）。zeta 当前无此结构；新增此类结构时需自行校验。
+- 上游 mapper.go 的 fileMapper 有 `HasDefault && Set` 早返回段（`theirs mapper.go:639`），本 fork 自基线前即缺失且 zeta 无 `type:"file"` 用法，未吸收；未来引入 os.File flag 时注意补齐。
+
+**附带修复**（非 kong 代码）：
+
+- `utils/cli/command_test.go`：`430d2b0d` 曾把 `cmd:"" name:"co"` 误改为 `cmd:"co"`（kong 语义中 `cmd` 标签值不参与命名，命令名取字段名），导致 `TestCheckout` 预存失败；本次恢复 `name:` 写法后测试通过。注意官方 CLI（`cmd/zeta/main.go`）一直使用 `cmd:"checkout" aliases:"co"`，不受影响。
+- `pkg/kong/levenshtein.go`：清理一处复制粘贴损坏的注释。
+
+### 2026-03-18 选择性移植
 
 | 功能 | 提交/版本 | PR/Issue | 说明 |
 |------|----------|----------|------|
@@ -193,13 +240,20 @@ zeta --config /etc/shadow
 
 ### 魔改版已有的现代语法
 
-魔改版已采用官方版的现代 Go 语法：
+魔改版已采用现代 Go 语法（zeta 工具链 go 1.27）：
 
 - `reflect.Pointer` (Go 1.18+) - 替代 `reflect.Ptr`
 - `errors.AsType[T]()` - 泛型错误处理
 - `strings.SplitSeq()` (Go 1.24+) - 迭代器方法
+- `for i := range n` / `for v := range value.Len()` - range-over-int 与迭代器
+- `reflect.Value.Fields()` / `Methods()` - 结构字段与方法迭代器（Go 1.27）
+- `reflect.TypeFor[T]()` - 替代 `reflect.TypeOf((*T)(nil)).Elem()`
+- `maps.Copy` / `slices.Clone` / `slices.Contains` - 标准库集合操作
+- `fmt.Errorf` 的 `%w` 包装 - 替代 `%s`/`%v`
 - `max()` 函数 - 内置最大值函数
 - `go/doc/comment.Printer` - 替代废弃的 `doc.ToText`
+- `strings.Builder` - 字符串拼接
+- `golang.org/x/text/cases.Title` - 替代废弃的 `strings.Title`
 
 ### 魔改版独立的优化
 
@@ -255,11 +309,18 @@ pkg/kong/
 
 ### 同步官方更新
 
-1. 克隆官方仓库到 `/tmp/kong`
-2. 对比差异：`diff -r pkg/kong/ /tmp/kong/`
-3. 谨慎合并，保留魔改功能
-4. 运行测试：`go test ./pkg/kong/...`
-5. 验证命令行：`go run ./cmd/zeta/ --help`
+1. 克隆官方仓库到 `/tmp/kong`（保持最新）
+2. 定位基线：找到上次同步时对应的上游提交（可比对本节各次同步记录的区间）
+3. 对上游 `基线..HEAD` 区间内变更的每个非测试文件做三方合并：
+   ```sh
+   git show 基线:$f > base && git show HEAD:$f > theirs
+   cp pkg/kong/$f ours
+   git merge-file -L fork -L base -L upstream-HEAD -p ours base theirs > merged
+   ```
+4. 手工解决冲突：上游结构性重写按上游实现，fork 的 `W()` i18n、`PassthroughProvider`、`SummaryProvider`、安全检查与现代化语法必须保留；注意检查 `merged` 中自动合并区域是否引用了未定义的新符号（如本次的 `parseBoolToken` 定义在 mapper.go）
+5. 落盘后运行：`go build ./... && go vet ./pkg/kong/ && go test ./pkg/kong/... ./utils/cli/...`
+6. 验证命令行：`go run ./cmd/zeta/ --help` 与 `go run ./cmd/zeta/ co --help`
+7. 更新本文件的同步记录（区间、功能、修复、附带修复）
 
 ### 核心功能不可删除
 

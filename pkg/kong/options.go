@@ -244,6 +244,13 @@ func BindTo(impl, iface any) Option {
 	})
 }
 
+// BindFor allows binding of implementations to the compile-time type. It
+// is equivalent to BindTo(v, (*T)(nil)), but can usually infer the
+// correct type T.
+func BindFor[T any](v T) Option {
+	return BindTo(v, (*T)(nil))
+}
+
 // BindToProvider binds an injected value to a provider function.
 //
 // The provider function must have one of the following signatures:
@@ -518,6 +525,7 @@ func DefaultEnvars(prefix string) Option {
 			return
 		case len(env) == 1 && env[0] == "-":
 			flag.Envs = nil
+			flag.Value.Tag.Envs = nil
 			return
 		case len(env) > 0:
 			return

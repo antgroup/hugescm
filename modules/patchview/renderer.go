@@ -2,6 +2,7 @@ package patchview
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -159,10 +160,24 @@ func (r *PatchRenderer) Render() string {
 	var sb strings.Builder
 	sb.Grow(r.width * r.height)
 
+	// Jump straight to the hunk containing the viewport start via binary
+	// search over the precomputed hunk line offsets, so per-frame cost stays
+	// O(log h + viewport) instead of scanning every skipped line of the
+	// patch. Falls back to a full scan if metadata is missing.
+	startHunk := 0
 	lineIdx := 0
+	if len(r.hunkLineOffsets) > 0 {
+		// hunkLineOffsets[0] is always 0, so the search result is >= 0 here
+		// for any yOffset >= 0 (SetYOffset clamps negatives away).
+		startHunk = max(sort.Search(len(r.hunkLineOffsets), func(i int) bool {
+			return r.hunkLineOffsets[i] > r.yOffset
+		})-1, 0)
+		lineIdx = r.hunkLineOffsets[startHunk]
+	}
 	printed := 0
 
-	for _, hunk := range r.patch.Hunks {
+	for hi := startHunk; hi < len(r.patch.Hunks); hi++ {
+		hunk := r.patch.Hunks[hi]
 		// Hunk header line
 		if lineIdx >= r.yOffset && printed < r.height {
 			line := r.renderHunkHeader(hunk, showLineNums, codeW)

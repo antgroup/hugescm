@@ -30,6 +30,21 @@ type BlameResult struct {
 	Lines []*Line
 }
 
+// BlameFile returns a BlameResult with the information about the last author
+// of each line from file `path` at `rev` (a branch, tag or commit hash). An
+// empty `rev` defaults to HEAD. Annotated tags are resolved to their commit,
+// following the same resolution rules as Show.
+func (r *Repository) BlameFile(ctx context.Context, rev, path string) (*BlameResult, error) {
+	if rev == "" {
+		rev = "HEAD"
+	}
+	cc, err := r.parseRevExhaustive(ctx, rev)
+	if err != nil {
+		return nil, err
+	}
+	return Blame(ctx, cc, path)
+}
+
 func contentLines(content string) []string {
 	splits := strings.Split(content, "\n")
 	// remove the last line if it is empty
@@ -309,6 +324,24 @@ func (b *blame) addBlames(ctx context.Context, curItems []*queueItem) (bool, err
 		u, err := diferenco.Unified(ctx, &diferenco.Options{
 			S1: prevContents,
 			S2: curItem.Contents,
+			// The walk below visits every line of the diff to keep the
+			// prevl/curl counters in sync with the file line numbers. The
+			// default 3-line context would hide unchanged lines between
+			// hunks and desync the walk (and misattribute those lines to
+			// the newest commit). A context wide enough to merge all
+			// changes into a single hunk restores the full-sequence
+			// semantics the algorithm requires; the sink clamps the
+			// context to the file bounds.
+			//
+			// Performance characteristic: the resulting single hunk holds
+			// the whole file, so each parent comparison materializes a
+			// patch growing linearly with file size. That matches the
+			// asymptotics of the original full-sequence walk (both file
+			// contents are already held in memory), but huge files pay a
+			// proportionally larger allocation per comparison. If this
+			// ever matters, rewrite the walk over Changes directly instead
+			// of shrinking this context again.
+			ContextLines: max(strings.Count(prevContents, "\n"), strings.Count(curItem.Contents, "\n")),
 		})
 		if err != nil {
 			return false, err
@@ -344,7 +377,12 @@ func (b *blame) addBlames(ctx context.Context, curItems []*queueItem) (bool, err
 					}
 				case diferenco.Delete:
 					prevl++
-					continue out
+					// The deleted line has no counterpart in the current
+					// revision; keep walking the remaining lines of this
+					// hunk (do NOT `continue out` here - abandoning the
+					// rest of the hunk drops every mapping after the
+					// first deletion and misattributes those lines).
+					continue
 				default:
 					return false, errors.New("invalid state: invalid hunk Type")
 				}

@@ -195,8 +195,13 @@ type CommitOptions struct {
 	// is when no changes to the tree were made, but a new commit message is
 	// provided. The default behavior is false, which results in ErrEmptyCommit.
 	AllowEmptyCommits bool
-	// Author is the author's signature of the commit. If Author is empty the
-	// Name and Email is read from the config, and time.Now it's used as When.
+	// Author is currently NOT used to build the commit identity: the name
+	// and email are always resolved at commit time from the repository
+	// config (user.name / user.email) with the ZETA_AUTHOR_NAME /
+	// ZETA_AUTHOR_EMAIL environment variables as fallback, and time.Now
+	// as When - see Repository.authorName/authorEmail. Honoring a non-empty
+	// Author remains an open API decision; the only production caller
+	// (command commit) never sets it.
 	Author object.Signature
 	// Committer is the committer's signature of the commit. If Committer is
 	// nil the Author signature is used.

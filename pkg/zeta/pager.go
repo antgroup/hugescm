@@ -164,7 +164,10 @@ func (p *printer) LogOne(c *object.Commit, refs []*ReferenceLite) (err error) {
 }
 
 func NewPrinter(ctx context.Context) *printer {
-	if term.StdoutLevel == term.LevelNone {
+	// Paginate only on a real terminal. With --color=always the forced color
+	// level must survive the pipe, so the (possibly forced) level is kept as
+	// the color mode but no pager is spawned for piped or redirected stdout.
+	if !term.IsTerminal(os.Stdout.Fd()) || term.StdoutLevel == term.LevelNone {
 		return &printer{w: os.Stdout, colorMode: term.StdoutLevel}
 	}
 	pager, ok := lookupPager()

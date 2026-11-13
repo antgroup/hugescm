@@ -175,7 +175,12 @@ func (r *Repository) catBlob(ctx context.Context, opts *CatOptions, o *promiseOb
 	if opts.Limit < 0 {
 		opts.Limit = b.Size
 	}
-	if len(opts.Output) == 0 && term.StdoutLevel != term.LevelNone && !meta.IsText() {
+	// Inline image protocols embed binary payloads into the output stream,
+	// so they stay gated on a real terminal on top of the color level:
+	// --color=always forces ANSI colors through pipes, but it must not
+	// flush kitty/iTerm2 image escapes into non-terminal consumers
+	// (e.g. `zeta cat-file <image> --color always | tee log`).
+	if len(opts.Output) == 0 && term.IsTerminal(os.Stdout.Fd()) && term.StdoutLevel != term.LevelNone && !meta.IsText() {
 		// Prefer inline image rendering when the blob is a raster image and
 		// the host terminal advertises support for one of the inline-image
 		// protocols. The protocol probe is intentionally on the cold path:

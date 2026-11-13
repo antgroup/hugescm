@@ -19,7 +19,11 @@ import (
 type PatchOptions struct {
 	Algorithm diferenco.Algorithm
 	Textconv  bool
-	Match     func(string) bool
+	// ContextLines is the number of context lines surrounding each change;
+	// negative means diferenco.DefaultContextLines. It only affects Unified
+	// patch generation - the Stat-based paths ignore it.
+	ContextLines int
+	Match        func(string) bool
 }
 
 func sizeOverflow(f *File) bool {
@@ -146,7 +150,7 @@ func filePatchWithContext(ctx context.Context, opts *PatchOptions, c *Change) (*
 	if err != nil {
 		return nil, err
 	}
-	return diferenco.Unified(ctx, &diferenco.Options{From: from.asFile(), To: to.asFile(), S1: fromContent, S2: toContent, A: opts.Algorithm})
+	return diferenco.Unified(ctx, &diferenco.Options{From: from.asFile(), To: to.asFile(), S1: fromContent, S2: toContent, A: opts.Algorithm, ContextLines: opts.ContextLines})
 }
 
 func getPatchContext(ctx context.Context, opts *PatchOptions, changes ...*Change) ([]*diferenco.Patch, error) {

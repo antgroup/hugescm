@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -57,6 +58,7 @@ type App struct {
 	HashObject  command.HashObject  `cmd:"hash-object" help:"Compute hash or create object"`
 	MergeFile   command.MergeFile   `cmd:"merge-file" help:"Run a three-way file merge"`
 	Show        command.Show        `cmd:"show" help:"Show various types of objects"`
+	Blame       command.Blame       `cmd:"blame" help:"Show what revision and author last modified each line of a file"`
 	Version     command.Version     `cmd:"version" help:"Display version information"`
 	CherryPick  command.CherryPick  `cmd:"cherry-pick" help:"EXPERIMENTAL: Apply the changes introduced by some existing commit"`
 	Revert      command.Revert      `cmd:"revert" help:"EXPERIMENTAL: Revert commit"`
@@ -98,6 +100,12 @@ func main() {
 	m := strengthen.NewMeasurer("zeta", app.Debug)
 	if app.Verbose {
 		trace.EnableDebugMode()
+	}
+	// Apply --color=always|never|auto before any command runs: the color
+	// levels are read lazily by printers and diff encoders.
+	if err := app.ApplyColorOverride(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(127)
 	}
 	err := ctx.Run(&app.Globals)
 	m.Close()

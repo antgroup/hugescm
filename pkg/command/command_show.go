@@ -25,6 +25,7 @@ type Show struct {
 	Patience      bool     `name:"patience" help:"Generate a diff using the \"Patience diff\" algorithm"`
 	Minimal       bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
 	DiffAlgorithm string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
+	ContextLines  int      `name:"unified" short:"U" default:"-1" placeholder:"<n>" help:"Generate diffs with <n> lines of context instead of the usual three"`
 	Limit         int64    `name:"limit" short:"L" help:"Omits blobs larger than n bytes or units. n may be zero. Supported units: KB, MB, GB, K, M, G" default:"-1" type:"size"`
 	Objects       []string `arg:"" optional:"" name:"object" help:""`
 }
@@ -76,10 +77,11 @@ func (c *Show) Run(ctx context.Context, g *Globals) error {
 		return err
 	}
 	return r.Show(ctx, &zeta.ShowOptions{
-		Nav:       c.Nav,
-		Objects:   c.Objects,
-		Textconv:  c.Textconv,
-		Limit:     c.Limit,
-		Algorithm: a,
+		Nav:          c.Nav,
+		Objects:      c.Objects,
+		Textconv:     c.Textconv,
+		Limit:        c.Limit,
+		Algorithm:    a,
+		ContextLines: c.ContextLines,
 	})
 }

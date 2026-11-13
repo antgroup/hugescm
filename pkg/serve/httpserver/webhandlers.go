@@ -27,7 +27,9 @@ import (
 // webDiffOptions passes a non-nil PatchOptions to changes.Patch. getPatchContext
 // dereferences opts without a nil check, so a zero literal would panic.
 var webDiffOptions = &object.PatchOptions{
-	Match: func(string) bool { return true },
+	// The web diff renders patches; keep the default context lines.
+	ContextLines: diferenco.DefaultContextLines,
+	Match:        func(string) bool { return true },
 }
 
 // -----------------------------------------------------------------------------

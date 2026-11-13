@@ -521,6 +521,21 @@ func (w *Worktree) AddWithOptions(ctx context.Context, opts *AddOptions) error {
 	return err
 }
 
+// absPathSpec resolves a user-supplied pathspec to an absolute path.
+// Relative pathspecs resolve against the process working directory;
+// absolute pathspecs are honored as-is - like git, `zeta add` accepts
+// in-repo absolute paths. Joining an absolute path onto the cwd would
+// mangle it into a different path (filepath.Join concatenates rather
+// than replaces), which either failed with "is outside repository" or,
+// when the cwd already sits at the worktree root, silently matched
+// nothing at all.
+func absPathSpec(cwd, p string) string {
+	if filepath.IsAbs(p) {
+		return filepath.Clean(p)
+	}
+	return filepath.Join(cwd, p)
+}
+
 func (w *Worktree) cleanPatterns(paths []string) ([]string, bool, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -529,7 +544,7 @@ func (w *Worktree) cleanPatterns(paths []string) ([]string, bool, error) {
 	var hasDot bool
 	patterns := make([]string, 0, len(paths))
 	for _, p := range paths {
-		absPath := filepath.Join(cwd, p)
+		absPath := absPathSpec(cwd, p)
 		rel, err := filepath.Rel(w.baseDir, absPath)
 		if err != nil {
 			return nil, false, err
@@ -620,7 +635,7 @@ func (w *Worktree) chmod(ctx context.Context, paths []string, mask bool) error {
 	}
 	cleanedPaths := make([]string, 0, len(paths))
 	for _, p := range paths {
-		rel, err := filepath.Rel(w.baseDir, filepath.Join(cwd, p))
+		rel, err := filepath.Rel(w.baseDir, absPathSpec(cwd, p))
 		if err != nil {
 			return fmt.Errorf("chmod (%s) error: %w", p, err)
 		}

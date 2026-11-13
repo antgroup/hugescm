@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **blame**: New `zeta blame [<revision>] <path>` command rendering git-blame style output — colored commit hash, dimmed date and line number on color terminals and through `--color always`; new exported `Repository.BlameFile` API resolves and blames a file at any revision. Two attribution bugs surfaced on first use were fixed: the internal walk abandoned the remainder of a hunk after the first deletion (mislabeled `continue out`), and it desynchronized line counters because only hunk context lines were visited — lines after the first change of a file were misattributed to the newest commit. A full-file diff context and a plain `continue` restore correct attribution; empty-file blame confirmed safe
+- **diff/show**: Add `-U<n>` / `--unified=<n>` to control the number of context lines, threaded through the whole pipeline (`--no-index`, worktree, index, commit-to-commit, merge-base, show). `-U0` suppresses all context like git; negative values keep the default of 3
+- **global**: Add `--color=<always|never|auto>` tri-state flag on all commands; the explicit flag overrides `FORCE_COLOR` / `NO_COLOR` environment variables; `--color always` keeps ANSI colors through pipes without spawning a pager, `--color never` disables colors everywhere
+- **diff**: Hunk headers now carry the enclosing section context (git's default funcname heuristic): `diferenco`'s `ToPatch` scans upward from the hunk start over its line index registry and anchors on the nearest column-zero identifier line (`hunkSection`, bounded window; indented, blank and non-identifier lines never anchor — a go.mod change is labeled `require (`, not the entry above it) — a field that previously only the diff-parsing paths ever filled. The section flows to the unified encoder output, `--json` and the `--nav` patchview hunk headers; regression-tested in `TestUnifiedHunkSection` and performance-gated by `BenchmarkUnifiedToPatch` (zero added allocations; typical case within noise; engineered worst case +4%)
+
+### Fixed
+
+- **patchview**: `Render()` locates the viewport hunk via binary search over the precomputed hunk offsets instead of scanning every line from the patch top — deep-scroll frame cost on a 1.8M-line patch drops from ~2.4ms to ~0.53ms, independent of scroll position and patch size. New render benchmarks (`BenchmarkRenderViewport`, `BenchmarkRenderScrollStep`) lock this in as a regression gate
+- **pager**: `NewPrinter` spawns a pager only when stdout is a real terminal (the pager decision was keyed on the color level); `--nav` mode is likewise gated on a real terminal so `--color always` piped can no longer launch a full-screen TUI into the pipe
+- **cat-file**: Inline image protocol rendering (kitty/iTerm2) is additionally gated on a real terminal so `--color=always` cannot flush binary image escapes into non-terminal streams
+- **add**: Absolute pathspecs pointing inside the repository are honored as-is (matching `git add`) instead of being joined onto the process cwd — previously they failed with "is outside repository" and, when the cwd already sat at the worktree root, silently matched nothing; the same resolution now backs `add --chmod` and `rename` path validation. Regression-tested in `TestAddAbsolutePathspec`
+
 ## [0.30.0] - 2026-07-30
 
 ### Fixed

@@ -26,7 +26,10 @@ type ShowOptions struct {
 	Objects   []string
 	Textconv  bool
 	Algorithm diferenco.Algorithm
-	Limit     int64
+	// ContextLines is the number of context lines surrounding each change;
+	// negative means diferenco.DefaultContextLines (set by -U/--unified).
+	ContextLines int
+	Limit        int64
 }
 
 type showObject struct {
@@ -148,7 +151,9 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 	// the output mirrors `git show`. Nav mode renders the same metadata
 	// inside the patchview top header (see below), so emitting LogOne
 	// here would just duplicate it (and corrupt the alt-screen).
-	navMode := opts.Nav && term.StdoutLevel != term.LevelNone
+	// Gate nav mode on a real terminal rather than the color level: with
+	// --color=always piped to e.g. `cat`, the TUI must not launch.
+	navMode := opts.Nav && term.IsTerminal(os.Stdout.Fd())
 	if !navMode {
 		if err := w.LogOne(cc, rdb.M[cc.Hash]); err != nil {
 			return err
@@ -204,8 +209,9 @@ func (r *Repository) showCommit(ctx context.Context, w *printer, opts *ShowOptio
 		return err
 	}
 	patch, err := changes.Patch(ctx, &object.PatchOptions{
-		Algorithm: opts.Algorithm,
-		Textconv:  opts.Textconv,
+		Algorithm:    opts.Algorithm,
+		Textconv:     opts.Textconv,
+		ContextLines: opts.ContextLines,
 	})
 	if err != nil {
 		return err

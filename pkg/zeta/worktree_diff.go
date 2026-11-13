@@ -88,7 +88,7 @@ func (w *Worktree) readContent(ctx context.Context, p noder.Path, textconv bool)
 	return nil, "", false, false, errors.New("unsupported noder type")
 }
 
-func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool) (*diferenco.Patch, error) {
+func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Change, textconv bool, contextLines int) (*diferenco.Patch, error) {
 	if c.From == nil && c.To == nil {
 		return nil, errors.New("malformed change: nil from and to")
 	}
@@ -106,11 +106,11 @@ func (w *Worktree) filePatchWithContext(ctx context.Context, c *merkletrie.Chang
 	if isBinA || isBinB {
 		return &diferenco.Patch{From: from, To: to, IsBinary: true}, nil
 	}
-	return diferenco.Unified(ctx, &diferenco.Options{From: from, To: to, S1: fromContent, S2: toContent})
+	return diferenco.Unified(ctx, &diferenco.Options{From: from, To: to, S1: fromContent, S2: toContent, ContextLines: contextLines})
 }
 
 // getPatchContext: In the object package, there is no patch implementation for worktree diff, so we need
-func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool) ([]*diferenco.Patch, error) {
+func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Changes, m *Matcher, textconv bool, contextLines int) ([]*diferenco.Patch, error) {
 	var filePatches []*diferenco.Patch
 	for _, c := range changes {
 		select {
@@ -122,7 +122,7 @@ func (w *Worktree) getPatchContext(ctx context.Context, changes merkletrie.Chang
 		if !m.Match(name) {
 			continue
 		}
-		p, err := w.filePatchWithContext(ctx, &c, textconv)
+		p, err := w.filePatchWithContext(ctx, &c, textconv, contextLines)
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +217,7 @@ func (w *Worktree) showChanges(ctx context.Context, opts *DiffOptions, changes m
 		return opts.ShowStats(ctx, fileStats)
 	}
 
-	filePatches, err := w.getPatchContext(ctx, changes, m, opts.Textconv)
+	filePatches, err := w.getPatchContext(ctx, changes, m, opts.Textconv, opts.ContextLines)
 	if err != nil {
 		return err
 	}

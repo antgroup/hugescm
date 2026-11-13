@@ -110,6 +110,15 @@ func detectColorLevel() Level {
 	return detectColorLevelHijack()
 }
 
+// DetectColorLevel returns the color support level implied by the
+// environment (WT_SESSION, TERM_PROGRAM, COLORTERM and TERM), ignoring
+// whether the streams are attached to a terminal. Callers that reserve
+// the right to force color on non-terminal streams (e.g. --color=always)
+// use this instead of the StdoutLevel/StderrLevel globals.
+func DetectColorLevel() Level {
+	return detectColorLevel()
+}
+
 func init() {
 	// Detect FORCE_COLOR and override detection
 	if colorLevel, ok := detectForceColor(); ok {

@@ -149,6 +149,37 @@ func (s *Sink) addEqualLines(h *Hunk, index []int, start, end int) int {
 	return delta
 }
 
+// hunkSectionScanLimit bounds the upward scan when looking for a hunk
+// section line; it keeps the cost constant on files without any plausible
+// declaration above a change.
+const hunkSectionScanLimit = 80
+
+// hunkSection returns a single context line describing where a hunk starts,
+// mirroring git's default hunk-header heuristic: it scans upward from the
+// line above `start` (a position inside `index`, the OLD-side line
+// registry) and anchors on the nearest line whose RAW FIRST BYTE is an
+// ASCII identifier character (a-z, A-Z, '_' or '$') - exactly git's
+// isalpha-style test, without unicode decoding. Indented lines, blanks,
+// braces and comments never anchor and never stop the scan - this is what
+// keeps a go.mod dependency list labeled "require (" instead of the entry
+// above the change. No candidate within the window yields "".
+func (s *Sink) hunkSection(index []int, start int) string {
+	limit := max(start-hunkSectionScanLimit, 0)
+	for i := start - 1; i >= limit; i-- {
+		line := s.Lines[index[i]]
+		if line == "" {
+			continue
+		}
+		if c := line[0]; c == '_' || c == '$' ||
+			'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' {
+			// keep the section free of raw-mode line terminators; matches
+			// the consumer-side trimming in the patchview renderer.
+			return strings.TrimRight(line, "\r\n")
+		}
+	}
+	return ""
+}
+
 func (s *Sink) ToPatch(from, to *File, changes []Change, linesA, linesB []int, contextLines int) *Patch {
 	gap := contextLines * 2
 	p := &Patch{
@@ -185,6 +216,16 @@ func (s *Sink) ToPatch(from, to *File, changes []Change, linesA, linesB []int, c
 			delta := s.addEqualLines(h, linesA, start-contextLines, start)
 			h.FromLine -= delta
 			h.ToLine -= delta
+			// expose the enclosing context line of the hunk: the diff
+			// operates on line indices, so the surrounding source is
+			// already registered in s.Lines and just needs carrying
+			// through to the hunk header. Anchor the scan like git: it
+			// starts above the hunk's DISPLAY start (leading context
+			// included, clamped at the file top), not above the change
+			// itself - the two differ by contextLines, and picking the
+			// wrong one lands on a lower anchor line than git on files
+			// without declarations (e.g. go.sum entries).
+			h.Section = s.hunkSection(linesA, start-delta)
 		}
 		last = start
 		for i := start; i < end; i++ {

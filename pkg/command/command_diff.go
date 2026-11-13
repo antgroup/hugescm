@@ -37,6 +37,7 @@ type Diff struct {
 	Patience        bool     `name:"patience" help:"Generate a diff using the \"Patience diff\" algorithm"`
 	Minimal         bool     `name:"minimal" help:"Spend extra time to make sure the smallest possible diff is produced"`
 	DiffAlgorithm   string   `name:"diff-algorithm" help:"Choose a diff algorithm, supported: histogram|onp|myers|patience|minimal" placeholder:"<algorithm>"`
+	ContextLines    int      `name:"unified" short:"U" default:"-1" placeholder:"<n>" help:"Generate diffs with <n> lines of context instead of the usual three"`
 	Output          string   `name:"output" help:"Output to a specific file instead of stdout" placeholder:"<file>"`
 	From            string   `arg:"" optional:"" name:"from" help:""`
 	To              string   `arg:"" optional:"" name:"to" help:""`
@@ -94,22 +95,23 @@ func (c *Diff) NewOptions() (*zeta.DiffOptions, error) {
 		return nil, err
 	}
 	opts := &zeta.DiffOptions{
-		Nav:        c.Nav && len(c.Output) == 0,
-		NameOnly:   c.NameOnly,
-		NameStatus: c.NameStatus,
-		Numstat:    c.Numstat,
-		Stat:       c.Stat,
-		Shortstat:  c.Shortstat,
-		JSON:       c.JSON,
-		NewLine:    c.NewLine(),
-		NewOutput:  c.NewOutput,
-		PathSpec:   slashPaths(c.passthroughArgs),
-		From:       c.From,
-		To:         c.To,
-		Staged:     c.Staged || c.Cached,
-		MergeBase:  c.MergeBase,
-		Textconv:   c.Textconv,
-		Algorithm:  a,
+		Nav:          c.Nav && len(c.Output) == 0,
+		NameOnly:     c.NameOnly,
+		NameStatus:   c.NameStatus,
+		Numstat:      c.Numstat,
+		Stat:         c.Stat,
+		Shortstat:    c.Shortstat,
+		JSON:         c.JSON,
+		NewLine:      c.NewLine(),
+		NewOutput:    c.NewOutput,
+		PathSpec:     slashPaths(c.passthroughArgs),
+		From:         c.From,
+		To:           c.To,
+		Staged:       c.Staged || c.Cached,
+		MergeBase:    c.MergeBase,
+		Textconv:     c.Textconv,
+		Algorithm:    a,
+		ContextLines: c.ContextLines,
 	}
 	if len(c.To) == 0 {
 		if from, to, ok := strings.Cut(c.From, "..."); ok {
@@ -231,11 +233,12 @@ func (c *Diff) diffNoIndex(ctx context.Context) error {
 		})
 	}
 	u, err := diferenco.Unified(ctx, &diferenco.Options{
-		From: &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
-		To:   &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
-		S1:   from.Text,
-		S2:   to.Text,
-		A:    a,
+		From:         &diferenco.File{Name: c.From, Hash: from.Hash, Mode: uint32(from.Mode)},
+		To:           &diferenco.File{Name: c.To, Hash: to.Hash, Mode: uint32(to.Mode)},
+		S1:           from.Text,
+		S2:           to.Text,
+		A:            a,
+		ContextLines: c.ContextLines,
 	})
 	if err != nil {
 		diev("zeta diff --no-index error: %v", err)

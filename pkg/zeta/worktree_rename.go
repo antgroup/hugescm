@@ -40,7 +40,7 @@ func (w *Worktree) validateRenameArgs(source, destination string) (string, strin
 		return "", "", err
 	}
 
-	sourceRel, err := filepath.Rel(w.baseDir, filepath.Join(cwd, source))
+	sourceRel, err := filepath.Rel(w.baseDir, absPathSpec(cwd, source))
 	if err != nil {
 		die("zeta rename error: %v", err)
 		return "", "", err
@@ -51,7 +51,7 @@ func (w *Worktree) validateRenameArgs(source, destination string) (string, strin
 		return "", "", ErrAborting
 	}
 
-	destinationRel, err := filepath.Rel(w.baseDir, filepath.Join(cwd, destination))
+	destinationRel, err := filepath.Rel(w.baseDir, absPathSpec(cwd, destination))
 	if err != nil {
 		die("zeta rename error: %v", err)
 		return "", "", err

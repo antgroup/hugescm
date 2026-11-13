@@ -141,6 +141,9 @@ type Options struct {
 	S1, S2   string
 	R1, R2   io.Reader
 	A        Algorithm // algorithm
+	// ContextLines is the number of context lines surrounding each change.
+	// Negative means DefaultContextLines; zero is a valid value (as in git's -U0).
+	ContextLines int
 }
 
 // Name returns the filename from To or From.

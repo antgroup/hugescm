@@ -223,8 +223,7 @@ func BenchmarkMyersFastLarge(b *testing.B) {
 		c[idx] = randStringBench(20)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = myersFast(ctx, a, 0, c, 0)
 	}
 }

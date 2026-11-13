@@ -38,11 +38,14 @@ type DiffOptions struct {
 	UseColor  bool
 	ThreeWay  bool
 	Algorithm diferenco.Algorithm
+	// ContextLines is the number of context lines surrounding each change;
+	// negative means diferenco.DefaultContextLines (set by -U/--unified).
+	ContextLines int
 }
 
 func (opts *DiffOptions) po() *object.PatchOptions {
 	m := NewMatcher(opts.PathSpec)
-	return &object.PatchOptions{Textconv: opts.Textconv, Algorithm: opts.Algorithm, Match: m.Match}
+	return &object.PatchOptions{Textconv: opts.Textconv, Algorithm: opts.Algorithm, ContextLines: opts.ContextLines, Match: m.Match}
 }
 
 // headerTitle returns the value for the "Diff:" row in the patchview
@@ -298,7 +301,11 @@ func (opts *DiffOptions) ShowPatch(ctx context.Context, patch []*diferenco.Patch
 		}
 		return json.NewEncoder(os.Stdout).Encode(patch)
 	}
-	if opts.Nav && term.StdoutLevel != term.LevelNone {
+	// Nav is an interactive full-screen TUI: gate it on a real terminal
+	// instead of the color level, so --color=always piped to a non-terminal
+	// falls through to the plain unified encoder instead of launching
+	// a TUI into the pipe.
+	if opts.Nav && term.IsTerminal(os.Stdout.Fd()) {
 		// Build a top header that describes the diff scope, e.g.
 		//   Diff:  HEAD~3..HEAD
 		//   Diff:  --cached

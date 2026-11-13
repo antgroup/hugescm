@@ -247,5 +247,9 @@ func Unified(ctx context.Context, opts *Options) (*Patch, error) {
 	if err != nil {
 		return nil, err
 	}
-	return sink.ToPatch(opts.From, opts.To, changes, a, b, DefaultContextLines), nil
+	contextLines := opts.ContextLines
+	if contextLines < 0 {
+		contextLines = DefaultContextLines
+	}
+	return sink.ToPatch(opts.From, opts.To, changes, a, b, contextLines), nil
 }

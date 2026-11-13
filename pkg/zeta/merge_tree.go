@@ -105,6 +105,8 @@ type mergeTreeResult struct {
 	bases []plumbing.Hash
 }
 
+var _ error = (*mergeTreeResult)(nil)
+
 func (r *Repository) resolveAncestorTree0(ctx context.Context, into, from *object.Commit, mergeDriver odb.MergeDriver, allowUnrelatedHistories, textconv bool) (*object.Tree, error) {
 	bases, err := into.MergeBase(ctx, from)
 	if err != nil {
